@@ -3,7 +3,13 @@
  * and work duration from first in → last out / now minus breaks.
  */
 
-export type PunchRow = { checkType: string; checkinTime: Date };
+export type PunchRow = {
+  checkType: string;
+  checkinTime: Date;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+};
 
 export function getEffectiveDisplayPunches(records: PunchRow[]) {
   const sorted = [...records].sort(
@@ -55,14 +61,9 @@ export function computePwaDayDurations(records: PunchRow[], asOf: Date) {
   }
 
   const endMs =
-    lastOut != null
-      ? lastOut.checkinTime.getTime()
-      : asOf.getTime();
+    lastOut != null ? lastOut.checkinTime.getTime() : asOf.getTime();
 
-  const workMs = Math.max(
-    0,
-    endMs - firstIn.checkinTime.getTime() - breakMs,
-  );
+  const workMs = Math.max(0, endMs - firstIn.checkinTime.getTime() - breakMs);
 
   return {
     workMs,

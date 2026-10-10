@@ -1,4 +1,4 @@
-const BASE = '/backend/geo';
+const BASE = "/backend/geo";
 
 export async function fetchCountries(q: string) {
   const res = await fetch(`${BASE}/countries?q=${encodeURIComponent(q)}`);
@@ -38,15 +38,35 @@ export type PincodeLocation = {
 
 export async function fetchLocationByPincode(
   pincode: string,
-  country = '',
+  country = "",
 ): Promise<PincodeLocation | null> {
-  const code = pincode.replace(/\s/g, '');
+  const code = pincode.replace(/\s/g, "");
   if (!code || code.length < 4) return null;
   const params = new URLSearchParams({ code });
-  if (country.trim()) params.set('country', country.trim());
+  if (country.trim()) params.set("country", country.trim());
   const res = await fetch(`${BASE}/pincode?${params}`);
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (!data?.city && !data?.state && !data?.country) return null;
+
+  if (!res.ok) {
+    console.warn("Pincode lookup failed:", res.status);
+    return null;
+  }
+
+  const contentType = res.headers.get("content-type") ?? "";
+
+  if (!contentType.toLowerCase().includes("application/json")) {
+    console.warn(
+      "Pincode API returned a non-JSON response:",
+      res.status,
+      contentType,
+    );
+    return null;
+  }
+
+  const data = await res.json().catch(() => null);
+
+  if (!data?.city && !data?.state && !data?.country) {
+    return null;
+  }
+
   return data as PincodeLocation;
 }

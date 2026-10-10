@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { wallClockInZoneToStorageDate } from '../common/device-punch-time';
 import { reverseGeocode } from '../common/reverse-geocode';
 import { PrismaService } from '../prisma/prisma.service';
@@ -70,7 +74,9 @@ export class EmpLocationAttendanceService {
 
   private getLastPunch(records: { checkType: string; checkinTime: Date }[]) {
     if (!records.length) return null;
-    return [...records].sort((a, b) => a.checkinTime.getTime() - b.checkinTime.getTime()).at(-1)!;
+    return [...records]
+      .sort((a, b) => a.checkinTime.getTime() - b.checkinTime.getTime())
+      .at(-1)!;
   }
 
   private getPunchState(lastType: string | null): 'OUT' | 'IN' | 'ON_BREAK' {
@@ -81,8 +87,12 @@ export class EmpLocationAttendanceService {
   }
 
   /** True when the employee still has an open work session (checked in, not yet out). */
-  private hasOpenWorkSession(records: { checkType: string; checkinTime?: Date }[]): boolean {
-    const dated = records.filter((r): r is { checkType: string; checkinTime: Date } => !!r.checkinTime);
+  private hasOpenWorkSession(
+    records: { checkType: string; checkinTime?: Date }[],
+  ): boolean {
+    const dated = records.filter(
+      (r): r is { checkType: string; checkinTime: Date } => !!r.checkinTime,
+    );
     const last = this.getLastPunch(dated);
     if (!last) return false;
     const state = this.getPunchState(last.checkType);
@@ -103,7 +113,9 @@ export class EmpLocationAttendanceService {
         );
       }
       if (state !== 'OUT') {
-        throw new BadRequestException('You must check out before checking in again.');
+        throw new BadRequestException(
+          'You must check out before checking in again.',
+        );
       }
       return;
     }
@@ -126,7 +138,10 @@ export class EmpLocationAttendanceService {
     }
   }
 
-  private computeMinutes(records: { checkType: string; checkinTime: Date }[], now = new Date()) {
+  private computeMinutes(
+    records: { checkType: string; checkinTime: Date }[],
+    now = new Date(),
+  ) {
     return computePwaDayDurations(records, now);
   }
 
@@ -148,7 +163,9 @@ export class EmpLocationAttendanceService {
       orderBy: { punch_time: 'asc' },
       select: { punch_time: true },
     });
-    return logs.filter((l) => l.punch_time != null).map((l) => l.punch_time as Date);
+    return logs
+      .filter((l) => l.punch_time != null)
+      .map((l) => l.punch_time as Date);
   }
 
   /**
@@ -188,7 +205,9 @@ export class EmpLocationAttendanceService {
     }
   }
 
-  private async tryOfficeFencePoint(branch: BranchFenceRow | null): Promise<FencePoint | null> {
+  private async tryOfficeFencePoint(
+    branch: BranchFenceRow | null,
+  ): Promise<FencePoint | null> {
     if (!branch) return null;
     const resolved = await resolveCoords({
       latitude: branch.latitude,
@@ -203,7 +222,12 @@ export class EmpLocationAttendanceService {
     });
     if (!resolved) return null;
     if (resolved.fromGeocode) {
-      await this.persistEmptyCoords('branch', branch.id, resolved.lat, resolved.lng);
+      await this.persistEmptyCoords(
+        'branch',
+        branch.id,
+        resolved.lat,
+        resolved.lng,
+      );
     }
     return { lat: resolved.lat, lng: resolved.lng, type: 'OFFICE' };
   }
@@ -234,7 +258,8 @@ export class EmpLocationAttendanceService {
     empBranch: BranchFenceRow | null;
   }): Promise<{ points: FencePoint[]; branches: BranchFenceRow[] }> {
     const byId = new Map<number, BranchFenceRow>();
-    if (opts.assignedBranch) byId.set(opts.assignedBranch.id, opts.assignedBranch);
+    if (opts.assignedBranch)
+      byId.set(opts.assignedBranch.id, opts.assignedBranch);
     if (opts.empBranch) byId.set(opts.empBranch.id, opts.empBranch);
     if (opts.companyID) {
       const companyBranches = await this.prisma.branches.findMany({
@@ -289,12 +314,20 @@ export class EmpLocationAttendanceService {
       return null;
     }
     if (resolved.fromGeocode) {
-      await this.persistEmptyCoords('employee', employee.id, resolved.lat, resolved.lng);
+      await this.persistEmptyCoords(
+        'employee',
+        employee.id,
+        resolved.lat,
+        resolved.lng,
+      );
     }
     return { lat: resolved.lat, lng: resolved.lng, type: 'HOME' };
   }
 
-  private async siteFencePoints(employeeId: number, todayKey: string): Promise<FencePoint[]> {
+  private async siteFencePoints(
+    employeeId: number,
+    todayKey: string,
+  ): Promise<FencePoint[]> {
     const tasks = await this.prisma.taskProject.findMany({
       where: {
         isDeleted: false,
@@ -364,7 +397,12 @@ export class EmpLocationAttendanceService {
       });
       if (!resolved) continue;
       if (resolved.fromGeocode) {
-        await this.persistEmptyCoords('site', site.id, resolved.lat, resolved.lng);
+        await this.persistEmptyCoords(
+          'site',
+          site.id,
+          resolved.lat,
+          resolved.lng,
+        );
       }
       points.push({
         lat: resolved.lat,
@@ -387,7 +425,11 @@ export class EmpLocationAttendanceService {
     wfhHomeAddress?: string | null;
     wfhHomeLatitude?: number | null;
     wfhHomeLongitude?: number | null;
-  }): Promise<{ radiusMeters: number; points: FencePoint[]; session: SessionFence }> {
+  }): Promise<{
+    radiusMeters: number;
+    points: FencePoint[];
+    session: SessionFence;
+  }> {
     const offices = await this.companyOfficeFencePoints({
       companyID: opts.companyID,
       assignedBranch: opts.branch,
@@ -411,7 +453,10 @@ export class EmpLocationAttendanceService {
     );
     if (home) points.push(home);
 
-    const sitePoints = await this.siteFencePoints(opts.employeeId, opts.todayKey);
+    const sitePoints = await this.siteFencePoints(
+      opts.employeeId,
+      opts.todayKey,
+    );
     points.push(...sitePoints);
 
     if (!points.length) {
@@ -428,9 +473,15 @@ export class EmpLocationAttendanceService {
     return { radiusMeters, points, session };
   }
 
-  async checkIn(employeeId: number, dto: CreateAttendanceLocationDto, ipAddress: string) {
+  async checkIn(
+    employeeId: number,
+    dto: CreateAttendanceLocationDto,
+    ipAddress: string,
+  ) {
     if (!VALID_TYPES.includes(dto.checkType as PunchType)) {
-      throw new BadRequestException('checkType must be CHECK_IN, CHECK_OUT, BREAK_IN, or BREAK_OUT');
+      throw new BadRequestException(
+        'checkType must be CHECK_IN, CHECK_OUT, BREAK_IN, or BREAK_OUT',
+      );
     }
 
     const checkType = dto.checkType as PunchType;
@@ -473,10 +524,15 @@ export class EmpLocationAttendanceService {
 
     const photoPunchEnabled = employee.photoPunchEnabled === true;
     const photoUrl =
-      photoPunchEnabled && (checkType === 'CHECK_IN' || checkType === 'CHECK_OUT')
+      photoPunchEnabled &&
+      (checkType === 'CHECK_IN' || checkType === 'CHECK_OUT')
         ? normalizePhotoUrl(dto.photoUrl)
         : null;
-    if (photoPunchEnabled && (checkType === 'CHECK_IN' || checkType === 'CHECK_OUT') && !photoUrl) {
+    if (
+      photoPunchEnabled &&
+      (checkType === 'CHECK_IN' || checkType === 'CHECK_OUT') &&
+      !photoUrl
+    ) {
       throw new BadRequestException('A photo is required to mark IN or OUT.');
     }
 
@@ -493,7 +549,10 @@ export class EmpLocationAttendanceService {
     });
 
     let sessionFence: SessionFence | null = null;
-    if (photoPunchEnabled && (checkType === 'CHECK_IN' || checkType === 'CHECK_OUT')) {
+    if (
+      photoPunchEnabled &&
+      (checkType === 'CHECK_IN' || checkType === 'CHECK_OUT')
+    ) {
       const fence = await this.resolvePunchFence({
         employeeId,
         todayKey,
@@ -585,10 +644,12 @@ export class EmpLocationAttendanceService {
       });
 
       try {
-        const fullName = [employee?.employeeFirstName, employee?.employeeLastName]
-          .filter(Boolean)
-          .join(' ') || String(employeeId);
-        const shouldWrite = checkType !== 'BREAK_IN' && checkType !== 'BREAK_OUT';
+        const fullName =
+          [employee?.employeeFirstName, employee?.employeeLastName]
+            .filter(Boolean)
+            .join(' ') || String(employeeId);
+        const shouldWrite =
+          checkType !== 'BREAK_IN' && checkType !== 'BREAK_OUT';
 
         if (shouldWrite) {
           if (checkType === 'CHECK_OUT') {
@@ -612,7 +673,9 @@ export class EmpLocationAttendanceService {
               },
             });
           } else if (checkType === 'CHECK_IN') {
-            const alreadyCheckedInToday = todayRecords.some((r) => r.checkType === 'CHECK_IN');
+            const alreadyCheckedInToday = todayRecords.some(
+              (r) => r.checkType === 'CHECK_IN',
+            );
             const existingInMirror = await tx.process_att_logs.count({
               where: {
                 manage_employee_id: employeeId,
@@ -630,7 +693,8 @@ export class EmpLocationAttendanceService {
                   punch_time: created.checkinTime,
                   company_name: employee?.company?.companyName ?? null,
                   branch_name: employee?.branches?.branchName ?? null,
-                  department_name: employee?.departments?.departmentName ?? null,
+                  department_name:
+                    employee?.departments?.departmentName ?? null,
                   device_emp_code: employee?.employeeID ?? null,
                   manage_employee_id: employeeId,
                   device_id: null,
@@ -658,7 +722,10 @@ export class EmpLocationAttendanceService {
     employeeId: number,
     opts?: { from?: Date; to?: Date; limit?: number },
   ) {
-    const where: { employeeId: number; checkinTime?: { gte?: Date; lte?: Date } } = {
+    const where: {
+      employeeId: number;
+      checkinTime?: { gte?: Date; lte?: Date };
+    } = {
       employeeId,
     };
     if (opts?.from || opts?.to) {
@@ -677,14 +744,16 @@ export class EmpLocationAttendanceService {
    * Display-only: for days with no GPS CHECK_IN/CHECK_OUT, synthesize records
    * from biometric process_att_logs so the Attendance tab matches reports.
    */
-  async mergeDevicePunchesIntoRecords<T extends {
-    id: number;
-    checkType: string;
-    checkinTime: Date;
-    address?: string | null;
-    latitude?: number | null;
-    longitude?: number | null;
-  }>(
+  async mergeDevicePunchesIntoRecords<
+    T extends {
+      id: number;
+      checkType: string;
+      checkinTime: Date;
+      address?: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
+    },
+  >(
     employeeId: number,
     from: Date | undefined,
     to: Date | undefined,
@@ -767,42 +836,70 @@ export class EmpLocationAttendanceService {
         if (log.device_id != null) deviceIdSet.add(log.device_id);
       }
     }
-    const deviceLocOr: { id?: { in: number[] }; deviceSN?: { in: string[] } }[] = [];
-    if (deviceIdSet.size > 0) deviceLocOr.push({ id: { in: [...deviceIdSet] } });
-    if (deviceSnSet.size > 0) deviceLocOr.push({ deviceSN: { in: [...deviceSnSet] } });
+    const deviceLocOr: {
+      id?: { in: number[] };
+      deviceSN?: { in: string[] };
+    }[] = [];
+    if (deviceIdSet.size > 0)
+      deviceLocOr.push({ id: { in: [...deviceIdSet] } });
+    if (deviceSnSet.size > 0)
+      deviceLocOr.push({ deviceSN: { in: [...deviceSnSet] } });
     const deviceRows =
       deviceLocOr.length > 0
         ? await this.prisma.devices.findMany({
             where: { OR: deviceLocOr },
-            select: { id: true, deviceSN: true, address: true, latitude: true, longitude: true },
+            select: {
+              id: true,
+              deviceSN: true,
+              address: true,
+              latitude: true,
+              longitude: true,
+            },
           })
         : [];
     const addressByDeviceId = new Map<number, string | null>();
     const addressByDeviceSn = new Map<string, string | null>();
-    const latLngByDeviceId = new Map<number, { latitude: number | null; longitude: number | null }>();
-    const latLngByDeviceSn = new Map<string, { latitude: number | null; longitude: number | null }>();
+    const latLngByDeviceId = new Map<
+      number,
+      { latitude: number | null; longitude: number | null }
+    >();
+    const latLngByDeviceSn = new Map<
+      string,
+      { latitude: number | null; longitude: number | null }
+    >();
     for (const d of deviceRows) {
       const addr = d.address?.trim() || null;
       addressByDeviceId.set(d.id, addr);
       addressByDeviceSn.set(d.deviceSN, addr);
-      latLngByDeviceId.set(d.id, { latitude: d.latitude, longitude: d.longitude });
-      latLngByDeviceSn.set(d.deviceSN, { latitude: d.latitude, longitude: d.longitude });
+      latLngByDeviceId.set(d.id, {
+        latitude: d.latitude,
+        longitude: d.longitude,
+      });
+      latLngByDeviceSn.set(d.deviceSN, {
+        latitude: d.latitude,
+        longitude: d.longitude,
+      });
     }
 
     const synthesized: T[] = [];
     for (const dayLogs of byDay.values()) {
       const sorted = [...dayLogs].sort(
-        (a, b) => (a.punch_time?.getTime() ?? 0) - (b.punch_time?.getTime() ?? 0),
+        (a, b) =>
+          (a.punch_time?.getTime() ?? 0) - (b.punch_time?.getTime() ?? 0),
       );
       sorted.forEach((log, index) => {
         if (!log.punch_time) return;
         const checkType = index % 2 === 0 ? 'CHECK_IN' : 'CHECK_OUT';
         const address =
-          (log.device_id != null ? addressByDeviceId.get(log.device_id) : null) ??
+          (log.device_id != null
+            ? addressByDeviceId.get(log.device_id)
+            : null) ??
           (log.device_sn ? addressByDeviceSn.get(log.device_sn) : null) ??
           null;
         const coords =
-          (log.device_id != null ? latLngByDeviceId.get(log.device_id) : null) ??
+          (log.device_id != null
+            ? latLngByDeviceId.get(log.device_id)
+            : null) ??
           (log.device_sn ? latLngByDeviceSn.get(log.device_sn) : null);
         synthesized.push({
           id: -log.id,
@@ -833,13 +930,15 @@ export class EmpLocationAttendanceService {
   }
 
   /** Fill missing GPS addresses from process_att_logs + device location (same source as today-overview). */
-  async enrichAddressesFromProcessLogs<T extends {
-    checkType: string;
-    checkinTime: Date;
-    address?: string | null;
-    latitude?: number | null;
-    longitude?: number | null;
-  }>(
+  async enrichAddressesFromProcessLogs<
+    T extends {
+      checkType: string;
+      checkinTime: Date;
+      address?: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
+    },
+  >(
     employeeId: number,
     from: Date | undefined,
     to: Date | undefined,
@@ -874,29 +973,53 @@ export class EmpLocationAttendanceService {
     const deviceSnSet = new Set<string>();
     const deviceIdSet = new Set<number>();
     for (const log of logs) {
-      if (log.device_sn && log.device_sn !== 'LOCATION_APP') deviceSnSet.add(log.device_sn);
+      if (log.device_sn && log.device_sn !== 'LOCATION_APP')
+        deviceSnSet.add(log.device_sn);
       if (log.device_id != null) deviceIdSet.add(log.device_id);
     }
-    const deviceLocOr: { id?: { in: number[] }; deviceSN?: { in: string[] } }[] = [];
-    if (deviceIdSet.size > 0) deviceLocOr.push({ id: { in: [...deviceIdSet] } });
-    if (deviceSnSet.size > 0) deviceLocOr.push({ deviceSN: { in: [...deviceSnSet] } });
+    const deviceLocOr: {
+      id?: { in: number[] };
+      deviceSN?: { in: string[] };
+    }[] = [];
+    if (deviceIdSet.size > 0)
+      deviceLocOr.push({ id: { in: [...deviceIdSet] } });
+    if (deviceSnSet.size > 0)
+      deviceLocOr.push({ deviceSN: { in: [...deviceSnSet] } });
     const deviceRows =
       deviceLocOr.length > 0
         ? await this.prisma.devices.findMany({
             where: { OR: deviceLocOr },
-            select: { id: true, deviceSN: true, address: true, latitude: true, longitude: true },
+            select: {
+              id: true,
+              deviceSN: true,
+              address: true,
+              latitude: true,
+              longitude: true,
+            },
           })
         : [];
     const addressByDeviceId = new Map<number, string | null>();
     const addressByDeviceSn = new Map<string, string | null>();
-    const latLngByDeviceId = new Map<number, { latitude: number | null; longitude: number | null }>();
-    const latLngByDeviceSn = new Map<string, { latitude: number | null; longitude: number | null }>();
+    const latLngByDeviceId = new Map<
+      number,
+      { latitude: number | null; longitude: number | null }
+    >();
+    const latLngByDeviceSn = new Map<
+      string,
+      { latitude: number | null; longitude: number | null }
+    >();
     for (const d of deviceRows) {
       const addr = d.address?.trim() || null;
       addressByDeviceId.set(d.id, addr);
       addressByDeviceSn.set(d.deviceSN, addr);
-      latLngByDeviceId.set(d.id, { latitude: d.latitude, longitude: d.longitude });
-      latLngByDeviceSn.set(d.deviceSN, { latitude: d.latitude, longitude: d.longitude });
+      latLngByDeviceId.set(d.id, {
+        latitude: d.latitude,
+        longitude: d.longitude,
+      });
+      latLngByDeviceSn.set(d.deviceSN, {
+        latitude: d.latitude,
+        longitude: d.longitude,
+      });
     }
 
     type Loc = {
@@ -923,11 +1046,15 @@ export class EmpLocationAttendanceService {
         }
       } else if (!isApp) {
         address =
-          (log.device_id != null ? addressByDeviceId.get(log.device_id) : null) ??
+          (log.device_id != null
+            ? addressByDeviceId.get(log.device_id)
+            : null) ??
           (log.device_sn ? addressByDeviceSn.get(log.device_sn) : null) ??
           null;
         const coords =
-          (log.device_id != null ? latLngByDeviceId.get(log.device_id) : null) ??
+          (log.device_id != null
+            ? latLngByDeviceId.get(log.device_id)
+            : null) ??
           (log.device_sn ? latLngByDeviceSn.get(log.device_sn) : null);
         latitude = coords?.latitude ?? null;
         longitude = coords?.longitude ?? null;
@@ -986,7 +1113,11 @@ export class EmpLocationAttendanceService {
     let deviceCheckOut: { checkinTime: Date } | null = null;
     let deviceCheckedIn = false;
     if (records.length === 0) {
-      const deviceTimes = await this.todayDevicePunchTimes(employeeId, startOfDay, endOfDay);
+      const deviceTimes = await this.todayDevicePunchTimes(
+        employeeId,
+        startOfDay,
+        endOfDay,
+      );
       if (deviceTimes.length > 0) {
         deviceCheckedIn = this.devicePunchState(deviceTimes) === 'IN';
         deviceCheckIn = { checkinTime: deviceTimes[0] };
@@ -996,24 +1127,56 @@ export class EmpLocationAttendanceService {
       }
     }
 
-    const checkIn = firstIn ?? (deviceCheckIn as typeof checkIns[0] | null);
-    const checkOut = lastOut ?? (deviceCheckOut as typeof checkOuts[0] | null);
+    const checkIn = firstIn ?? (deviceCheckIn as (typeof checkIns)[0] | null);
+    const checkOut =
+      lastOut ?? (deviceCheckOut as (typeof checkOuts)[0] | null);
     const lastPunch = this.getLastPunch(records);
-    const punchState = records.length > 0
-      ? this.getPunchState(lastPunch?.checkType ?? null)
-      : (deviceCheckedIn ? 'IN' : 'OUT');
-    const { workMinutes, breakMinutes, workSeconds, breakSeconds } = this.computeMinutes(records, now);
+    const punchState =
+      records.length > 0
+        ? this.getPunchState(lastPunch?.checkType ?? null)
+        : deviceCheckedIn
+          ? 'IN'
+          : 'OUT';
+    const { workMinutes, breakMinutes, workSeconds, breakSeconds } =
+      this.computeMinutes(records, now);
 
-    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const absentDeclaration = await this.prisma.empAbsentDeclaration.findUnique({
-      where: {
-        employeeId_absentDate: { employeeId, absentDate: todayDate },
+    const todayDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const absentDeclaration = await this.prisma.empAbsentDeclaration.findUnique(
+      {
+        where: {
+          employeeId_absentDate: { employeeId, absentDate: todayDate },
+        },
       },
-    });
+    );
 
     const hasPunches = records.length > 0 || deviceCheckedIn;
     // A missed later field visit does not mark the day Absent. Only an absence declaration does.
     const isAbsentToday = !!absentDeclaration;
+
+    const getLocationLabel = (
+      punch: {
+        address?: string | null;
+        latitude?: number | null;
+        longitude?: number | null;
+      } | null,
+    ) => {
+      if (!punch) return null;
+
+      const address = punch.address?.trim();
+      if (address) return address;
+
+      if (punch.latitude != null && punch.longitude != null) {
+        return `${Number(punch.latitude).toFixed(5)}, ${Number(
+          punch.longitude,
+        ).toFixed(5)}`;
+      }
+
+      return null;
+    };
 
     return {
       isCheckedIn: punchState === 'IN' || punchState === 'ON_BREAK',
@@ -1021,8 +1184,11 @@ export class EmpLocationAttendanceService {
       isAbsentToday,
       absentDeclaration,
       punchState,
-      canCheckIn: mobileAttendanceEnabled && punchState === 'OUT' && !isAbsentToday,
-      canCheckOut: mobileAttendanceEnabled && (punchState === 'IN' || punchState === 'ON_BREAK'),
+      canCheckIn:
+        mobileAttendanceEnabled && punchState === 'OUT' && !isAbsentToday,
+      canCheckOut:
+        mobileAttendanceEnabled &&
+        (punchState === 'IN' || punchState === 'ON_BREAK'),
       mobileAttendanceEnabled,
       photoPunchEnabled,
       mobileBreakEnabled: false,
@@ -1031,6 +1197,8 @@ export class EmpLocationAttendanceService {
       canMarkAbsent: !hasPunches && !isAbsentToday && punchState === 'OUT',
       checkIn,
       checkOut,
+      checkInLocation: getLocationLabel(checkIn),
+      checkOutLocation: getLocationLabel(checkOut),
       lastPunch,
       allToday: records,
       workMinutes,
@@ -1045,20 +1213,28 @@ export class EmpLocationAttendanceService {
   async markAbsent(employeeId: number, dto: MarkAbsentDto) {
     const now = wallClockInZoneToStorageDate();
     const { startOfDay, endOfDay } = this.dayWindow(now);
-    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
 
     const existingPunches = await this.prisma.attendanceLocation.count({
       where: { employeeId, checkinTime: { gte: startOfDay, lte: endOfDay } },
     });
     if (existingPunches > 0) {
-      throw new BadRequestException('Cannot mark absent after attendance has been recorded today.');
+      throw new BadRequestException(
+        'Cannot mark absent after attendance has been recorded today.',
+      );
     }
 
     const existingAbsent = await this.prisma.empAbsentDeclaration.findUnique({
       where: { employeeId_absentDate: { employeeId, absentDate: todayDate } },
     });
     if (existingAbsent) {
-      throw new BadRequestException('You have already marked absent for today.');
+      throw new BadRequestException(
+        'You have already marked absent for today.',
+      );
     }
 
     const employee = await this.prisma.manageEmployee.findUnique({
