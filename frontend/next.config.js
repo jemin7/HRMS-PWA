@@ -1,17 +1,21 @@
 /** @type {import('next').NextConfig} */
-const withPWA = require('next-pwa')({
-  dest: 'public',
+const withPWA = require("next-pwa")({
+  dest: "public",
   // Push uses /push-sw.js only. Workbox offline SW cached stale CSS after deploys.
   disable: true,
   register: false,
   skipWaiting: true,
-  sw: 'openhrm-sw.js',
-  customWorkerDir: 'worker',
+  sw: "openhrm-sw.js",
+  customWorkerDir: "worker",
 });
+
+const backendBaseUrl = (
+  process.env.BACKEND_URL || "http://localhost:8000"
+).replace(/\/+$/, "");
 
 const nextConfig = {
   images: {
-    domains: ['localhost'],
+    domains: ["localhost"],
   },
   transpilePackages: ["@xyflow/react", "@xyflow/system"],
 
@@ -22,14 +26,14 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/backend/:path*',
-        destination: 'http://localhost:8000/:path*',
+        source: "/backend/:path*",
+        destination: `${backendBaseUrl}/:path*`,
       },
       {
-        source: '/uploads/:path*',
-        destination: 'http://localhost:8000/uploads/:path*',
+        source: "/uploads/:path*",
+        destination: `${backendBaseUrl}/uploads/:path*`,
       },
-    ]
+    ];
   },
 
   // Next.js app performance optimizations
@@ -41,107 +45,107 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/:path*',
+        source: "/:path*",
         headers: [
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
+            key: "X-Content-Type-Options",
+            value: "nosniff",
           },
           {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
           },
           {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block'
+            key: "X-XSS-Protection",
+            value: "1; mode=block",
           },
           {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
           },
           {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(self)'
-          }
-        ]
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(self)",
+          },
+        ],
       },
       {
-        source: '/openhrm-sw.js',
+        source: "/openhrm-sw.js",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate'
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate",
           },
           {
-            key: 'Service-Worker-Allowed',
-            value: '/'
-          }
-        ]
+            key: "Service-Worker-Allowed",
+            value: "/",
+          },
+        ],
       },
       {
-        source: '/sw.js',
+        source: "/sw.js",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate'
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate",
           },
           {
-            key: 'Service-Worker-Allowed',
-            value: '/'
-          }
-        ]
+            key: "Service-Worker-Allowed",
+            value: "/",
+          },
+        ],
       },
       {
-        source: '/workbox-:path*',
+        source: "/workbox-:path*",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate'
-          }
-        ]
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate",
+          },
+        ],
       },
       {
-        source: '/worker-:path*',
+        source: "/worker-:path*",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate'
-          }
-        ]
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate",
+          },
+        ],
       },
       {
-        source: '/push-sw.js',
+        source: "/push-sw.js",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate'
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate",
           },
           {
-            key: 'Service-Worker-Allowed',
-            value: '/'
-          }
-        ]
+            key: "Service-Worker-Allowed",
+            value: "/",
+          },
+        ],
       },
       {
-        source: '/push-notification-routing.js',
+        source: "/push-notification-routing.js",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate'
-          }
-        ]
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate",
+          },
+        ],
       },
       {
-        source: '/manifest.json',
+        source: "/manifest.json",
         headers: [
           {
-            key: 'Content-Type',
-            value: 'application/manifest+json'
-          }
-        ]
-      }
-    ]
-  }
+            key: "Content-Type",
+            value: "application/manifest+json",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = withPWA(nextConfig);
