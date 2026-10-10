@@ -7,11 +7,14 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ReimbursementService } from './reimbursement.service';
 import { CreateReimbursementDto } from './dto/create-reimbursement.dto';
 import { UpdateReimbursementDto } from './dto/update-reimbursement.dto';
+import { AuthGuard } from '@nestjs/passport';
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('reimbursement')
 export class ReimbursementController {
   constructor(private readonly service: ReimbursementService) {}
@@ -89,43 +92,45 @@ export class ReimbursementController {
   }
 
   @Patch(':id/payment')
-async updatePayment(
-  @Param('id') id: string,
-  @Body() paymentData: {
-    paymentMode?: string;
-    paymentType?: string;
-    paymentDate?: string;
-    paymentRemark?: string;
-    paymentProof?: string;
-    status?: string;
+  async updatePayment(
+    @Param('id') id: string,
+    @Body()
+    paymentData: {
+      paymentMode?: string;
+      paymentType?: string;
+      paymentDate?: string;
+      paymentRemark?: string;
+      paymentProof?: string;
+      status?: string;
+    },
+  ) {
+    return this.service.updatePayment(+id, paymentData);
   }
-) {
-  return this.service.updatePayment(+id, paymentData);
-}
 
-@Patch(':id/approval')
-async updateApproval(
-  @Param('id') id: string,
-  @Body() approvalData: {
-    approvalType?: string;
-    salaryPeriod?: string;
-    voucherCode?: string;
-    voucherDate?: string;
-    status?: string;
+  @Patch(':id/approval')
+  async updateApproval(
+    @Param('id') id: string,
+    @Body()
+    approvalData: {
+      approvalType?: string;
+      salaryPeriod?: string;
+      voucherCode?: string;
+      voucherDate?: string;
+      status?: string;
+    },
+  ) {
+    return this.service.updateApproval(+id, approvalData);
   }
-) {
-  return this.service.updateApproval(+id, approvalData);
-}
 
-@Get('status/:status')
-async findByStatus(@Param('status') status: string) {
-  return this.service.findByStatus(status);
-}
+  @Get('status/:status')
+  async findByStatus(@Param('status') status: string) {
+    return this.service.findByStatus(status);
+  }
 
-@Get('approval-type/:type')
-async findByApprovalType(@Param('type') type: string) {
-  return this.service.findByApprovalType(type);
-}
+  @Get('approval-type/:type')
+  async findByApprovalType(@Param('type') type: string) {
+    return this.service.findByApprovalType(type);
+  }
 
   // ❌ Delete reimbursement
   @Delete(':id')

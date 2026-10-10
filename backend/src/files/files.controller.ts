@@ -1,20 +1,32 @@
-import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
-function filenameBuilder(_: any, file: Express.Multer.File, cb: (err: any, filename: string) => void) {
+function filenameBuilder(
+  _: any,
+  file: Express.Multer.File,
+  cb: (err: any, filename: string) => void,
+) {
   const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
   cb(null, unique + extname(file.originalname)); // keep extension
 }
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('files')
 export class FilesController {
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: 'uploads',      // folder relative to project root
+        destination: 'uploads', // folder relative to project root
         filename: filenameBuilder,
       }),
       limits: { fileSize: 10 * 1024 * 1024 },

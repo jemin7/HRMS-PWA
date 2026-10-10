@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { RawListenerModule } from './raw-listener/raw-listener.module';
@@ -31,10 +33,14 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
-  app.use(bodyParser.json({
-    limit: '5mb',
-    verify: (req: any, _res, buf) => { req._raw = buf?.toString('utf8') ?? ''; },
-  }));
+  app.use(
+    bodyParser.json({
+      limit: '5mb',
+      verify: (req: any, _res, buf) => {
+        req._raw = buf?.toString('utf8') ?? '';
+      },
+    }),
+  );
   app.use(bodyParser.urlencoded({ extended: true, limit: '5mb' }));
   app.useGlobalFilters(new PrismaClientExceptionFilter());
   const port = parseInt(process.env.PORT || '8000', 10);

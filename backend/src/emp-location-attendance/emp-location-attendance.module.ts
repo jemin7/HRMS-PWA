@@ -14,7 +14,7 @@ import { JwtStrategy } from '../auth/strategies/jwt.strategy';
     PushNotificationsModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret123',
+      secret: process.env.JWT_SECRET!,
       signOptions: { expiresIn: '12h' },
     }),
   ],

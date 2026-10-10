@@ -54,7 +54,7 @@ export class EmployeePermissionsService {
     let payload: any;
     try {
       payload = this.jwt.verify(token, {
-        secret: process.env.JWT_SECRET || 'secret123',
+        secret: process.env.JWT_SECRET!,
       });
     } catch {
       throw new UnauthorizedException('Invalid token');

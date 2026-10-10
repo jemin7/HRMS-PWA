@@ -17,13 +17,16 @@ export class GenerateSalaryService {
     private readonly employeeMemoService: EmployeeMemoService,
   ) {}
 
-  private employeeDisplayName(emp?: {
-    employeeFirstName?: string | null;
-    employeeLastName?: string | null;
-    employeeID?: string | null;
-  } | null): string {
+  private employeeDisplayName(
+    emp?: {
+      employeeFirstName?: string | null;
+      employeeLastName?: string | null;
+      employeeID?: string | null;
+    } | null,
+  ): string {
     if (!emp) return 'An employee';
-    const name = `${emp.employeeFirstName ?? ''} ${emp.employeeLastName ?? ''}`.trim();
+    const name =
+      `${emp.employeeFirstName ?? ''} ${emp.employeeLastName ?? ''}`.trim();
     return name || emp.employeeID || 'An employee';
   }
 
@@ -165,8 +168,11 @@ export class GenerateSalaryService {
     return created;
   }
 
-  findAll() {
+  findAll(employeeId?: number) {
     return this.prisma.generateSalary.findMany({
+      ...(employeeId !== undefined
+        ? { where: { employeeID: employeeId } }
+        : {}),
       orderBy: { id: 'desc' },
       include: {
         serviceProvider: true,
@@ -177,9 +183,12 @@ export class GenerateSalaryService {
     });
   }
 
-  findOne(id: number) {
-    return this.prisma.generateSalary.findUnique({
-      where: { id },
+  findOne(id: number, employeeId?: number) {
+    return this.prisma.generateSalary.findFirst({
+      where: {
+        id,
+        ...(employeeId !== undefined ? { employeeID: employeeId } : {}),
+      },
       include: {
         serviceProvider: true,
         company: true,
@@ -188,7 +197,6 @@ export class GenerateSalaryService {
       },
     });
   }
-
   async update(id: number, dto: UpdateGenerateSalaryDto) {
     const existing = await this.prisma.generateSalary.findUnique({
       where: { id },
@@ -209,12 +217,12 @@ export class GenerateSalaryService {
     } = dto;
 
     const newStatus =
-      status ??
-      (paymentMode && paymentDate ? 'Paid' : undefined);
+      status ?? (paymentMode && paymentDate ? 'Paid' : undefined);
 
     const updateData: Record<string, unknown> = {};
 
-    if (serviceProviderID !== undefined) updateData.serviceProviderID = serviceProviderID;
+    if (serviceProviderID !== undefined)
+      updateData.serviceProviderID = serviceProviderID;
     if (companyID !== undefined) updateData.companyID = companyID;
     if (branchesID !== undefined) updateData.branchesID = branchesID;
     if (employeeID !== undefined) updateData.employeeID = employeeID;

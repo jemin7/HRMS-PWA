@@ -6,7 +6,7 @@ import { EmployeePermissionsService } from './employee-permissions.service';
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret123',
+      secret: process.env.JWT_SECRET!,
     }),
   ],
   controllers: [EmployeePermissionsController],
