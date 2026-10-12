@@ -18,6 +18,7 @@ import { LeaveApplicationService } from './leave-application.service';
 import { CreateLeaveApplicationDto } from './dto/create-leave-application.dto';
 import { UpdateLeaveApplicationDto } from './dto/update-leave-application.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmpManagerScopeService } from '../common/emp-manager-scope.service';
 import { assertEmployeeModuleAccess } from '../common/employee-permission.util';
 
 @Controller('leave-application')
@@ -25,6 +26,8 @@ import { assertEmployeeModuleAccess } from '../common/employee-permission.util';
 export class LeaveApplicationController {
   constructor(
     private readonly leaveApplicationService: LeaveApplicationService,
+    private readonly prisma: PrismaService,
+    private readonly managerScope: EmpManagerScopeService,
   ) {}
 
   private isEmployee(req: any): boolean {
@@ -77,24 +80,73 @@ export class LeaveApplicationController {
     @Param('empId', ParseIntPipe) empId: number,
     @Req() req: any,
   ) {
-    if (this.isEmployee(req)) {
-      const employeeId = this.getEmployeeId(req);
-
-      if (empId !== employeeId) {
-        throw new NotFoundException('Leave application not found');
-      }
-
-      const records =
-        await this.leaveApplicationService.findByEmployee(employeeId);
-
-      return records.filter(
-        (record) => Number(record.manageEmployeeID) === employeeId,
-      );
+    if (!this.isEmployee(req)) {
+      return this.leaveApplicationService.findByEmployee(empId);
     }
 
-    return this.leaveApplicationService.findByEmployee(empId);
-  }
+    const employeeId = this.getEmployeeId(req);
 
+    // Employee accounts may only request their own endpoint.
+    if (empId !== employeeId) {
+      throw new NotFoundException('Leave application not found');
+    }
+
+    const employee = await this.prisma.manageEmployee.findUnique({
+      where: { id: employeeId },
+      select: {
+        id: true,
+        companyID: true,
+        isCompanyOwner: true,
+        isDeleted: true,
+      },
+    });
+
+    if (!employee || employee.isDeleted) {
+      throw new UnauthorizedException('Employee account not found');
+    }
+
+    // A verified Company Owner can load leave requests for their company.
+    if (employee.isCompanyOwner === true) {
+      const tokenCompanyID = Number(req.user?.companyID);
+
+      if (
+        !employee.companyID ||
+        !Number.isInteger(tokenCompanyID) ||
+        tokenCompanyID !== employee.companyID
+      ) {
+        throw new ForbiddenException(
+          'Company Owner access could not be verified.',
+        );
+      }
+
+      return this.leaveApplicationService.findByCompany(employee.companyID);
+    }
+
+    // Managers receive their own records plus their reporting-tree records.
+    // Keep results within their company where a company is assigned.
+    const records =
+      await this.leaveApplicationService.findByEmployee(employeeId);
+
+    const reporteeIds =
+      await this.managerScope.getDescendantReporteeIds(employeeId);
+
+    const allowedIds = new Set([employeeId, ...reporteeIds]);
+
+    return records.filter((record) => {
+      const recordEmployeeId = Number(record.manageEmployeeID);
+
+      if (!allowedIds.has(recordEmployeeId)) return false;
+
+      // Always allow the employee to see their own records.
+      if (recordEmployeeId === employeeId) return true;
+
+      // Reportee records must belong to the manager's company.
+      return (
+        employee.companyID != null &&
+        Number(record.companyID) === employee.companyID
+      );
+    });
+  }
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     await this.assertOwnLeave(id, req);
@@ -128,15 +180,88 @@ export class LeaveApplicationController {
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateLeaveApplicationDto,
     @Req() req: any,
   ) {
-    if (this.isEmployee(req)) {
+    // Keep the existing non-employee account flow.
+    if (!this.isEmployee(req)) {
+      return this.leaveApplicationService.update(id, dto);
+    }
+
+    const actorId = this.getEmployeeId(req);
+
+    const actor = await this.prisma.manageEmployee.findUnique({
+      where: { id: actorId },
+      select: {
+        id: true,
+        companyID: true,
+        isCompanyOwner: true,
+        isDeleted: true,
+      },
+    });
+
+    if (!actor || actor.isDeleted) {
+      throw new UnauthorizedException('Employee account not found');
+    }
+
+    const leave = await this.leaveApplicationService.findOne(id);
+
+    if (!leave || !leave.manageEmployeeID) {
+      throw new NotFoundException('Leave application not found');
+    }
+
+    const target = await this.prisma.manageEmployee.findUnique({
+      where: { id: Number(leave.manageEmployeeID) },
+      select: {
+        id: true,
+        companyID: true,
+        isDeleted: true,
+      },
+    });
+
+    if (!target || target.isDeleted) {
+      throw new NotFoundException('Leave application not found');
+    }
+
+    // Both the leave and its employee must belong to the actor's company.
+    if (
+      !actor.companyID ||
+      leave.companyID !== actor.companyID ||
+      target.companyID !== actor.companyID
+    ) {
       throw new ForbiddenException(
-        'Employee accounts cannot directly update leave records',
+        'You cannot review leave requests outside your company.',
       );
+    }
+    if (Number(leave.manageEmployeeID) === actorId) {
+      throw new ForbiddenException(
+        'You cannot approve or reject your own leave request.',
+      );
+    }
+    // Company Owners can review leave requests for their verified company.
+    if (actor.isCompanyOwner === true) {
+      const tokenCompanyID = Number(req.user?.companyID);
+
+      if (
+        !Number.isInteger(tokenCompanyID) ||
+        tokenCompanyID !== actor.companyID
+      ) {
+        throw new ForbiddenException(
+          'Company Owner access could not be verified.',
+        );
+      }
+    } else {
+      // Other employee accounts can review only employees in their reporting tree.
+      const reporteeIds =
+        await this.managerScope.getDescendantReporteeIds(actorId);
+
+      if (!reporteeIds.includes(Number(leave.manageEmployeeID))) {
+        throw new ForbiddenException(
+          'You can only review leave requests from your reportees.',
+        );
+      }
     }
 
     return this.leaveApplicationService.update(id, dto);

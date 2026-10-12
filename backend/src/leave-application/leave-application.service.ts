@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLeaveApplicationDto } from './dto/create-leave-application.dto';
 import { UpdateLeaveApplicationDto } from './dto/update-leave-application.dto';
@@ -23,13 +27,16 @@ export class LeaveApplicationService {
     private employeeMemoService: EmployeeMemoService,
   ) {}
 
-  private employeeDisplayName(emp?: {
-    employeeFirstName?: string | null;
-    employeeLastName?: string | null;
-    employeeID?: string | null;
-  } | null): string {
+  private employeeDisplayName(
+    emp?: {
+      employeeFirstName?: string | null;
+      employeeLastName?: string | null;
+      employeeID?: string | null;
+    } | null,
+  ): string {
     if (!emp) return 'An employee';
-    const name = `${emp.employeeFirstName ?? ''} ${emp.employeeLastName ?? ''}`.trim();
+    const name =
+      `${emp.employeeFirstName ?? ''} ${emp.employeeLastName ?? ''}`.trim();
     return name || emp.employeeID || 'An employee';
   }
 
@@ -60,7 +67,9 @@ export class LeaveApplicationService {
         companyID: opts.companyID,
         branchesID: opts.branchesID,
         serviceProviderID: opts.serviceProviderID,
-        subjectEmployeeIDs: opts.subjectEmployeeID ? [opts.subjectEmployeeID] : [],
+        subjectEmployeeIDs: opts.subjectEmployeeID
+          ? [opts.subjectEmployeeID]
+          : [],
         description: `Leave ${opts.status}: ${opts.employeeName}${type}${datePart}`,
       })
       .catch(() => null);
@@ -78,7 +87,9 @@ export class LeaveApplicationService {
 
   async create(createLeaveApplicationDto: CreateLeaveApplicationDto) {
     const created = await this.prisma.leaveApplication.create({
-      data: this.parsePayload(createLeaveApplicationDto as Record<string, unknown>) as any,
+      data: this.parsePayload(
+        createLeaveApplicationDto as Record<string, unknown>,
+      ) as any,
       include: {
         serviceProvider: true,
         company: true,
@@ -127,6 +138,18 @@ export class LeaveApplicationService {
     });
   }
 
+  async findByCompany(companyID: number) {
+    return this.prisma.leaveApplication.findMany({
+      where: { companyID },
+      include: {
+        serviceProvider: true,
+        company: true,
+        branches: true,
+        manageEmployee: true,
+      },
+      orderBy: { id: 'desc' },
+    });
+  }
 
   findAll() {
     return this.prisma.leaveApplication.findMany({
@@ -151,42 +174,40 @@ export class LeaveApplicationService {
     });
   }
 
- async revokeLeave(id: number, revokedReason?: string) {
-  const leave = await this.prisma.leaveApplication.findUnique({ where: { id } })
-  if (!leave) throw new NotFoundException('Leave not found')
+  async revokeLeave(id: number, revokedReason?: string) {
+    const leave = await this.prisma.leaveApplication.findUnique({
+      where: { id },
+    });
+    if (!leave) throw new NotFoundException('Leave not found');
 
-  // Only approved leaves can go to revoke request
-  if (leave.status !== 'Approved') {
-    throw new BadRequestException('Only approved leaves can be revoked')
+    // Only approved leaves can go to revoke request
+    if (leave.status !== 'Approved') {
+      throw new BadRequestException('Only approved leaves can be revoked');
+    }
+
+    // === Append to old revoke history (in the same String field) ===
+    const oldReason = leave.revokedReason ? leave.revokedReason + '\n' : '';
+    const reasonLog =
+      oldReason +
+      `[${new Date().toLocaleString()}] Revoke requested: ${
+        revokedReason ?? '(no reason provided)'
+      }`;
+
+    // === Update leave record ===
+    const updated = await this.prisma.leaveApplication.update({
+      where: { id },
+      data: {
+        status: 'RevokePending', // waiting for manager approval
+        revokedReason: reasonLog, // append old + new reasons
+        revokedAt: new Date(), // store last request date/time
+      },
+    });
+
+    return {
+      message: 'Revoke request logged and waiting for approval',
+      data: updated,
+    };
   }
-
-  // === Append to old revoke history (in the same String field) ===
-  const oldReason = leave.revokedReason ? leave.revokedReason + '\n' : ''
-  const reasonLog =
-    oldReason +
-    `[${new Date().toLocaleString()}] Revoke requested: ${
-      revokedReason ?? '(no reason provided)'
-    }`
-
-  // === Update leave record ===
-  const updated = await this.prisma.leaveApplication.update({
-    where: { id },
-    data: {
-      status: 'RevokePending', // waiting for manager approval
-      revokedReason: reasonLog, // append old + new reasons
-      revokedAt: new Date(), // store last request date/time
-    },
-  })
-
-  return {
-    message: 'Revoke request logged and waiting for approval',
-    data: updated,
-  }
-}
-
-
-
-
 
   private static readonly BALANCE_LEAVE_TYPES = [
     'Sick',
@@ -206,11 +227,17 @@ export class LeaveApplicationService {
         const date = d?.date ? String(d.date).slice(0, 10) : '';
         if (!date) return null;
         const status = d?.status ? String(d.status).trim() : '';
-        const row: { date: string; status: string; dayType?: string } = { date, status };
+        const row: { date: string; status: string; dayType?: string } = {
+          date,
+          status,
+        };
         if (d?.dayType) row.dayType = String(d.dayType);
         return row;
       })
-      .filter((d): d is { date: string; status: string; dayType?: string } => d != null);
+      .filter(
+        (d): d is { date: string; status: string; dayType?: string } =>
+          d != null,
+      );
   }
 
   private async countUsedLeaveDaysByType(
@@ -221,7 +248,9 @@ export class LeaveApplicationService {
     const leaves = await this.prisma.leaveApplication.findMany({
       where: {
         manageEmployeeID,
-        status: { in: ['Approved', 'Accepted', 'Partially Approved'] as string[] },
+        status: {
+          in: ['Approved', 'Accepted', 'Partially Approved'] as string[],
+        },
         ...(excludeApplicationId ? { id: { not: excludeApplicationId } } : {}),
       },
     });
@@ -309,12 +338,17 @@ export class LeaveApplicationService {
     }
   }
 
-  async update(id: number, updateLeaveApplicationDto: UpdateLeaveApplicationDto) {
+  async update(
+    id: number,
+    updateLeaveApplicationDto: UpdateLeaveApplicationDto,
+  ) {
     const { actorRole, ...leaveData } = updateLeaveApplicationDto;
     const actorLabel = actorRole ? senderLabelFromRole(actorRole) : undefined;
 
     // Fetch the current leave record so we know the previous status
-    const current = await this.prisma.leaveApplication.findUnique({ where: { id } });
+    const current = await this.prisma.leaveApplication.findUnique({
+      where: { id },
+    });
 
     const APPROVED_STATUSES = ['Approved', 'Accepted', 'Partially Approved'];
     let nextStatus = leaveData.status ?? current?.status ?? '';
@@ -326,10 +360,18 @@ export class LeaveApplicationService {
       if (assigned > 0 && unassigned > 0) {
         nextStatus = 'Partially Approved';
         leaveData.status = 'Partially Approved';
-      } else if (assigned > 0 && unassigned === 0 && nextStatus === 'Partially Approved') {
+      } else if (
+        assigned > 0 &&
+        unassigned === 0 &&
+        nextStatus === 'Partially Approved'
+      ) {
         leaveData.status = 'Approved';
         nextStatus = 'Approved';
-      } else if (assigned > 0 && unassigned === 0 && !['Rejected', 'Pending'].includes(nextStatus)) {
+      } else if (
+        assigned > 0 &&
+        unassigned === 0 &&
+        !['Rejected', 'Pending'].includes(nextStatus)
+      ) {
         leaveData.status = leaveData.status || 'Approved';
         nextStatus = leaveData.status;
       }
@@ -348,7 +390,10 @@ export class LeaveApplicationService {
       );
     }
 
-    const prismaData = this.parsePayload({ ...leaveData } as Record<string, unknown>);
+    const prismaData = this.parsePayload({ ...leaveData } as Record<
+      string,
+      unknown
+    >);
     if (Array.isArray(ds) && ds.length > 0) {
       prismaData.dayStatuses = ds;
     }
@@ -392,7 +437,9 @@ export class LeaveApplicationService {
             );
           }
         }
-      } catch (_) { /* non-critical */ }
+      } catch (_) {
+        /* non-critical */
+      }
     }
 
     const empId = updated.manageEmployeeID;
