@@ -331,7 +331,7 @@ export class ManageEmployeeService {
     return companyID;
   }
 
-  private assertMobileAttendanceSettingsPermission(
+  private async assertMobileAttendanceSettingsPermission(
     req: Request | undefined,
     incoming: {
       mobileAttendanceEnabled?: boolean | null;
@@ -343,7 +343,7 @@ export class ManageEmployeeService {
       photoPunchEnabled?: boolean | null;
       wfhAllowed?: boolean | null;
     } | null,
-  ): void {
+  ): Promise<void> {
     const role = String((req as any)?.user?.role ?? '').toUpperCase();
 
     const allowedRoles = [
@@ -353,7 +353,33 @@ export class ManageEmployeeService {
       'MULTI_COMPANY_ADMIN',
     ];
 
-    if (allowedRoles.includes(role)) {
+    const authUser = (req as any)?.user;
+    let isVerifiedCompanyOwner = false;
+
+    if (role === 'EMPLOYEE' && authUser?.type === 'employee') {
+      const employeeId = this.toPositiveId(authUser.employeeId ?? authUser.sub);
+      const tokenCompanyID = this.toPositiveId(authUser.companyID);
+
+      if (employeeId && tokenCompanyID) {
+        const ownerRecord = await this.prisma.manageEmployee.findUnique({
+          where: { id: employeeId },
+          select: {
+            id: true,
+            companyID: true,
+            isCompanyOwner: true,
+            isDeleted: true,
+          },
+        });
+
+        isVerifiedCompanyOwner =
+          !!ownerRecord &&
+          !ownerRecord.isDeleted &&
+          ownerRecord.isCompanyOwner === true &&
+          this.toPositiveId(ownerRecord.companyID) === tokenCompanyID;
+      }
+    }
+
+    if (allowedRoles.includes(role) || isVerifiedCompanyOwner) {
       return;
     }
 
@@ -726,7 +752,7 @@ export class ManageEmployeeService {
       ...scalars
     } = dto;
 
-    this.assertMobileAttendanceSettingsPermission(
+    await this.assertMobileAttendanceSettingsPermission(
       req,
       {
         mobileAttendanceEnabled: scalars.mobileAttendanceEnabled,
@@ -2249,7 +2275,7 @@ export class ManageEmployeeService {
       throw new NotFoundException(`Employee ${id} not found`);
     }
 
-    this.assertMobileAttendanceSettingsPermission(
+    await this.assertMobileAttendanceSettingsPermission(
       req,
       {
         mobileAttendanceEnabled: scalars.mobileAttendanceEnabled,

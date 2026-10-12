@@ -712,12 +712,12 @@ export function ManageEmployeesManagement() {
   const isBranchAdmin = user?.role === "BRANCH_ADMIN";
   const isSuperAdmin = user?.role === "SUPERADMIN";
   const isEmployee = user?.role === "EMPLOYEE";
-  const canManageMobileAttendanceSettings = [
-    "SUPERADMIN",
-    "ADMIN",
-    "COMPANY_ADMIN",
-    "MULTI_COMPANY_ADMIN",
-  ].includes(String(user?.role ?? "").toUpperCase());
+const canManageMobileAttendanceSettings =
+  ["SUPERADMIN", "ADMIN", "COMPANY_ADMIN", "MULTI_COMPANY_ADMIN"].includes(
+    String(user?.role ?? "").toUpperCase(),
+  ) ||
+  user?.isCompanyOwner === true ||
+  (user as any)?.employee?.isCompanyOwner === true;
   const [credentialModalOpen, setCredentialModalOpen] = useState(false);
   const [credentialSaving, setCredentialSaving] = useState(false);
   const [credentialEmployee, setCredentialEmployee] =

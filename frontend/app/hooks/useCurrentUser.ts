@@ -4,40 +4,49 @@
 import { useEffect, useState } from 'react'
 
 export interface CurrentUser {
-  id: number
-  username: string
-  firstName?: string
-  lastName?: string
-  email?: string
-  contactNo?: string
-  role: "SUPERADMIN" | "SERVICE_PROVIDER" | "COMPANY_ADMIN" | "MULTI_COMPANY_ADMIN" | "ADMIN" | "BRANCH_ADMIN" | "EMPLOYEE"
+  id: number;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  contactNo?: string;
+  isCompanyOwner?: boolean;
+  role:
+    | "SUPERADMIN"
+    | "SERVICE_PROVIDER"
+    | "COMPANY_ADMIN"
+    | "MULTI_COMPANY_ADMIN"
+    | "ADMIN"
+    | "BRANCH_ADMIN"
+    | "EMPLOYEE";
 
-  serviceProviderID?: number
-  companyID?: number
-  activeCompanyID?: number
-  branchesID?: number
+  serviceProviderID?: number;
+  companyID?: number;
+  activeCompanyID?: number;
+  branchesID?: number;
 
   // Nested objects from API
   serviceProvider?: {
-    companyName: string
-  }
+    companyName: string;
+  };
   company?: {
-    companyName: string
-  }
+    companyName: string;
+  };
   branches?: {
-    branchName: string
-  }
+    branchName: string;
+  };
   userCompanies?: {
-    companyID: number
-    companyName: string
-  }[]
+    companyID: number;
+    companyName: string;
+  }[];
   employee?: {
-    id: number
-  }
+    id: number;
+    isCompanyOwner?: boolean;
+  };
   branch?: {
-    branchName: string
-  }
-  type?: string
+    branchName: string;
+  };
+  type?: string;
 }
 
 function readStoredUser(): CurrentUser | null {
