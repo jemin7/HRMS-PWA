@@ -937,6 +937,7 @@ model ManageEmployee {
   employeeMemo                       EmployeeMemo[]
   employeeModulePermissions          EmployeeModulePermission[]
   attendanceLocations                AttendanceLocation[]
+  attendanceLocationPoints           AttendanceLocationPoint[]
   absentDeclarations                 EmpAbsentDeclaration[]
   empLeaveBalance                    EmpLeaveBalance?
   taskAssignments                    TaskAssignment[]
@@ -1000,6 +1001,7 @@ model EmployeeDocument {
   updatedAt DateTime @updatedAt
 
   employee ManageEmployee @relation(fields: [employeeID], references: [id], onDelete: Cascade)
+  
 
   serviceProvider ServiceProvider? @relation(fields: [serviceProviderID], references: [id])
   company         Company?         @relation(fields: [companyID], references: [id])
@@ -2273,6 +2275,7 @@ model FactualRosterDay {
   @@unique([factualRosterEmployeeID, workDate])
 }
 
+
 model AttendanceLocation {
   id                Int            @id @default(autoincrement())
   employeeId        Int
@@ -2296,12 +2299,14 @@ model AttendanceLocation {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   employee          ManageEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  locationPoints    AttendanceLocationPoint[]
 
   @@index([employeeId])
   @@index([checkinTime])
   @@index([checkType])
   @@map("attendance_locations")
 }
+
 
 model EmpAbsentDeclaration {
   id                 Int            @id @default(autoincrement())
@@ -3366,4 +3371,29 @@ model GoogleApiUsage {
 
   @@index([createdAt])
   @@map("google_api_usage")
+}
+
+
+
+model AttendanceLocationPoint {
+  id                 Int      @id @default(autoincrement())
+  clientLocationId   String   @unique @db.VarChar(128)
+  sessionEventId     String   @db.VarChar(128)
+  attendanceSessionId Int
+  employeeId         Int
+  latitude            Float
+  longitude           Float
+  capturedAt          DateTime @db.Timestamp(3)
+  createdAt           DateTime @default(now())
+
+attendanceSession AttendanceLocation @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
+
+
+
+employee ManageEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+
+  @@index([attendanceSessionId, capturedAt])
+  @@index([employeeId, capturedAt])
+  @@map("attendance_location_points")
 }

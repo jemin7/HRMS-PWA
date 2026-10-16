@@ -15,12 +15,16 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import type { Request, Response } from 'express';
 import { ManageEmployeeService } from './manage-employee.service';
-import { CreateManageEmployeeDto, EmployeeCredentialsUpdateDto, EmployeeLoginDto } from './dto/create-manage-employee.dto';
+import {
+  CreateManageEmployeeDto,
+  EmployeeCredentialsUpdateDto,
+  EmployeeLoginDto,
+} from './dto/create-manage-employee.dto';
 import { UpdateManageEmployeeDto } from './dto/update-manage-employee.dto';
 
 @Controller('manage-emp')
 export class ManageEmployeeController {
-  constructor(private readonly service: ManageEmployeeService) { }
+  constructor(private readonly service: ManageEmployeeService) {}
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
@@ -29,6 +33,7 @@ export class ManageEmployeeController {
   }
 
   @Get('credentials/all')
+  @UseGuards(AuthGuard('jwt'))
   async getAllCredentials() {
     const data = await this.service.getAllCredentials();
     return data;
@@ -36,12 +41,14 @@ export class ManageEmployeeController {
 
   // 1. Get credentials by employee ID
   @Get(':id/credentials')
+  @UseGuards(AuthGuard('jwt'))
   getEmployeeCredentials(@Param('id') id: string) {
     return this.service.getEmployeeCredentials(+id);
   }
 
   // Add this to your controller
   @Get('credentials/search')
+  @UseGuards(AuthGuard('jwt'))
   searchCredentials(
     @Query('username') username?: string,
     @Query('isActive') isActive?: string,
@@ -58,9 +65,9 @@ export class ManageEmployeeController {
     });
   }
 
-
   // 2. Get credentials by username
   @Get('credentials/:username')
+  @UseGuards(AuthGuard('jwt'))
   getCredentialsByUsername(@Param('username') username: string) {
     return this.service.getCredentialsByUsername(username);
   }
@@ -74,11 +81,13 @@ export class ManageEmployeeController {
     return this.service.updateCredentials(+id, updateCredentialDto);
   }
 
-
   // 4. Employee login endpoint
   @Post('login')
   employeeLogin(@Body() loginDto: EmployeeLoginDto) {
-    return this.service.verifyEmployeeLogin(loginDto.username, loginDto.password);
+    return this.service.verifyEmployeeLogin(
+      loginDto.username,
+      loginDto.password,
+    );
   }
 
   // 5. Reset password for employee
@@ -106,7 +115,6 @@ export class ManageEmployeeController {
     return this.service.updateCredentials(+id, { isActive: body.isActive });
   }
 
-
   @Get('list')
   findAllForList(@Query('status') status?: string) {
     return this.service.findAllForList(status);
@@ -117,15 +125,14 @@ export class ManageEmployeeController {
     return this.service.findAll(status);
   }
 
-
-
   @Get(':id/joining-form')
   async downloadJoiningForm(
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
   ) {
     try {
-      const { pdf, filenameCode } = await this.service.generateJoiningFormPdf(id);
+      const { pdf, filenameCode } =
+        await this.service.generateJoiningFormPdf(id);
       res.set({
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="JoiningForm-${filenameCode}.pdf"`,
@@ -134,7 +141,9 @@ export class ManageEmployeeController {
       res.send(pdf);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : 'Failed to generate joining form PDF';
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate joining form PDF';
       res.status(500).json({ message });
     }
   }
@@ -174,7 +183,6 @@ export class ManageEmployeeController {
     return this.service.deleteEmployeeDocument(documentId, req);
   }
 
-
   @Get('workflow-search')
   workflowSearch(
     @Query('companyID', ParseIntPipe)
@@ -189,17 +197,16 @@ export class ManageEmployeeController {
     return this.service.workflowSearch({
       companyID,
       branchesID:
-        branchesID != null &&
-          branchesID.trim() !== ''
+        branchesID != null && branchesID.trim() !== ''
           ? Number(branchesID)
           : undefined,
 
-      search:
-        search?.trim() || undefined,
+      search: search?.trim() || undefined,
     });
   }
 
   @Get(':id')
+  @UseGuards(AuthGuard('jwt'))
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
   }

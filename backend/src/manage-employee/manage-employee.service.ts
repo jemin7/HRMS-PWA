@@ -15,6 +15,7 @@ import * as bcrypt from 'bcrypt';
 import { ApprovalEngineService } from '../approval-workflow/approval-engine.service';
 import { assertPasswordMeetsPolicy } from '../auth/password-policy';
 import { GoogleMapsService } from '../google-maps/google-maps.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ManageEmployeeService {
@@ -1279,10 +1280,95 @@ export class ManageEmployeeService {
   }
 
   // Fix getAllCredentials - use the same approach as test query
-  async getAllCredentials() {
+  async getAllCredentials(req?: Request) {
     try {
-      const credentials = await this.prisma.employeeCredentials.findMany({
-        include: {
+      const user = (req as any)?.user;
+
+      if (!user) {
+        throw new ForbiddenException('Authentication required.');
+      }
+
+      const role = String(user.role ?? '').toUpperCase();
+      let where: Prisma.EmployeeCredentialsWhereInput = {};
+
+      if (role === 'SUPERADMIN') {
+        // Super Admin may access all companies.
+      } else if (role === 'SERVICE_PROVIDER') {
+        const serviceProviderID = this.toPositiveId(user.serviceProviderID);
+
+        if (!serviceProviderID) {
+          throw new ForbiddenException(
+            'Service provider access could not be verified.',
+          );
+        }
+
+        where = { serviceProviderID };
+      } else if (role === 'EMPLOYEE') {
+        const employeeID = this.toPositiveId(user.employeeId ?? user.sub);
+
+        if (!employeeID) {
+          throw new ForbiddenException(
+            'Employee identity could not be verified.',
+          );
+        }
+
+        const employee = await this.prisma.manageEmployee.findUnique({
+          where: { id: employeeID },
+          select: {
+            id: true,
+            companyID: true,
+            isCompanyOwner: true,
+            isDeleted: true,
+          },
+        });
+
+        if (!employee || employee.isDeleted) {
+          throw new ForbiddenException('Employee access denied.');
+        }
+
+        if (employee.isCompanyOwner && employee.companyID != null) {
+          // A verified company owner can see their company's credentials.
+          where = { companyID: employee.companyID };
+        } else {
+          // A regular employee can retrieve their own credential record only.
+          where = { employeeID: employee.id };
+        }
+      } else {
+        // Restrict other authenticated accounts to their permitted company.
+        const companyID = await this.tenantForcedCompanyID(req);
+
+        if (!companyID) {
+          throw new ForbiddenException('Company access could not be verified.');
+        }
+
+        where = { companyID };
+
+        if (role === 'BRANCH_ADMIN') {
+          const branchesID = this.toPositiveId(user.branchesID);
+
+          if (!branchesID) {
+            throw new ForbiddenException(
+              'Branch access could not be verified.',
+            );
+          }
+
+          where = { companyID, branchesID };
+        }
+      }
+
+      return await this.prisma.employeeCredentials.findMany({
+        where,
+        select: {
+          id: true,
+          employeeID: true,
+          username: true,
+          mustChangePassword: true,
+          isActive: true,
+          serviceProviderID: true,
+          companyID: true,
+          branchesID: true,
+          createdAt: true,
+          updatedAt: true,
           employee: {
             select: {
               id: true,
@@ -1314,14 +1400,13 @@ export class ManageEmployeeService {
         },
         orderBy: { createdAt: 'desc' },
       });
-
-      // Return the data directly without wrapping in another object
-      return credentials;
     } catch (error) {
-      console.error('❌ Error in getAllCredentials:', error);
-      throw new Error(
-        `Failed to fetch credentials: ${(error as Error).message}`,
-      );
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+
+      console.error('Error fetching credentials:', error);
+      throw new Error('Failed to fetch credential records.');
     }
   }
 
@@ -1537,7 +1622,18 @@ export class ManageEmployeeService {
         ...(filters.companyID && { companyID: filters.companyID }),
         ...(filters.branchesID && { branchesID: filters.branchesID }),
       },
-      include: {
+
+      select: {
+        id: true,
+        employeeID: true,
+        username: true,
+        mustChangePassword: true,
+        isActive: true,
+        serviceProviderID: true,
+        companyID: true,
+        branchesID: true,
+        createdAt: true,
+        updatedAt: true,
         employee: {
           select: {
             id: true,
@@ -1567,6 +1663,7 @@ export class ManageEmployeeService {
           },
         },
       },
+
       orderBy: { createdAt: 'desc' },
     });
   }

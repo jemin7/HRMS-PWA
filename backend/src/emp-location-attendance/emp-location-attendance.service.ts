@@ -8,6 +8,7 @@ import { reverseGeocode } from '../common/reverse-geocode';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAttendanceLocationDto } from './dto/create-attendance-location.dto';
 import { MarkAbsentDto } from './dto/mark-absent.dto';
+import { LocationPointInputDto } from './dto/sync-location-points.dto';
 import {
   computePwaDayDurations,
   getEffectiveDisplayPunches,
@@ -57,11 +58,102 @@ type BranchFenceRow = {
 export class EmpLocationAttendanceService {
   constructor(private prisma: PrismaService) {}
 
+  async syncLocationPoints(
+    employeeId: number,
+    points: LocationPointInputDto[],
+  ) {
+    if (!Number.isSafeInteger(employeeId) || employeeId <= 0) {
+      throw new ForbiddenException('Invalid employee identity.');
+    }
+
+    if (!Array.isArray(points) || points.length === 0 || points.length > 200) {
+      throw new BadRequestException(
+        'Submit between 1 and 200 location points per request.',
+      );
+    }
+
+    const clientIds = points.map((point) => point.clientLocationId);
+
+    if (new Set(clientIds).size !== clientIds.length) {
+      throw new BadRequestException(
+        'Duplicate clientLocationId values in the same batch are not allowed.',
+      );
+    }
+
+    // Validate the input even if request-pipeline validation is not configured.
+    for (const point of points) {
+      const sessionId = Number(point.sessionEventId);
+      const capturedAt = Date.parse(point.capturedAt);
+
+      if (
+        !point.clientLocationId?.trim() ||
+        point.clientLocationId.length > 128 ||
+        !/^[1-9]\d*$/.test(point.sessionEventId) ||
+        !Number.isSafeInteger(sessionId) ||
+        !Number.isFinite(point.latitude) ||
+        point.latitude < -90 ||
+        point.latitude > 90 ||
+        !Number.isFinite(point.longitude) ||
+        point.longitude < -180 ||
+        point.longitude > 180 ||
+        !Number.isFinite(capturedAt)
+      ) {
+        throw new BadRequestException(
+          'One or more location points are invalid.',
+        );
+      }
+    }
+
+    const sessionIds = [
+      ...new Set(points.map((point) => Number(point.sessionEventId))),
+    ];
+
+    // Each referenced session must be a genuine CHECK_IN owned by this employee.
+    const sessions = await this.prisma.attendanceLocation.findMany({
+      where: {
+        id: { in: sessionIds },
+        employeeId,
+        checkType: 'CHECK_IN',
+      },
+      select: { id: true },
+    });
+
+    const verifiedSessionIds = new Set(sessions.map((session) => session.id));
+
+    if (sessionIds.some((id) => !verifiedSessionIds.has(id))) {
+      throw new ForbiddenException(
+        'Every location point must reference your own valid check-in record.',
+      );
+    }
+
+    const data = points.map((point) => ({
+      clientLocationId: point.clientLocationId,
+      sessionEventId: point.sessionEventId,
+      attendanceSessionId: Number(point.sessionEventId),
+      employeeId,
+      latitude: point.latitude,
+      longitude: point.longitude,
+      capturedAt: new Date(point.capturedAt),
+    }));
+
+    // The unique clientLocationId constraint makes retries idempotent.
+    const result = await this.prisma.attendanceLocationPoint.createMany({
+      data,
+      skipDuplicates: true,
+    });
+
+    return {
+      received: points.length,
+      inserted: result.count,
+      duplicates: points.length - result.count,
+    };
+  }
   /**
    * Day bounds in app wall-clock storage (aligned with PWA punch times).
    * @param wallClockNow Already-normalized storage time from wallClockInZoneToStorageDate().
    * Do not pass a raw UTC instant here — dayWindow reads UTC field components as wall clock.
    */
+
   private dayWindow(wallClockNow: Date = wallClockInZoneToStorageDate()) {
     const y = wallClockNow.getUTCFullYear();
     const m = wallClockNow.getUTCMonth();

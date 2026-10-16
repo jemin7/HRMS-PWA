@@ -6,6 +6,8 @@ import {
   Query,
   Req,
   UseGuards,
+  ValidationPipe,
+  UsePipes,
   UnauthorizedException,
   BadRequestException,
   ForbiddenException,
@@ -15,6 +17,7 @@ import { EmpMarkoutReminderService } from './emp-markout-reminder.service';
 import { CreateAttendanceLocationDto } from './dto/create-attendance-location.dto';
 import { MarkAbsentDto } from './dto/mark-absent.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { SyncLocationPointsDto } from './dto/sync-location-points.dto';
 
 @Controller('emp-location-attendance')
 @UseGuards(AuthGuard('jwt'))
@@ -38,6 +41,20 @@ export class EmpLocationAttendanceController {
       return String(forwarded).split(',')[0].trim();
     }
     return req.ip ?? req.connection?.remoteAddress ?? 'unknown';
+  }
+
+  @Post('sync-location-points')
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
+  syncLocationPoints(@Body() dto: SyncLocationPointsDto, @Req() req: any) {
+    const employeeId = this.getEmployeeId(req);
+
+    return this.svc.syncLocationPoints(employeeId, dto.points);
   }
 
   @Post('punch')
@@ -65,13 +82,29 @@ export class EmpLocationAttendanceController {
     let fromDate = parse(from);
     if (fromDate) {
       fromDate = new Date(
-        Date.UTC(fromDate.getUTCFullYear(), fromDate.getUTCMonth(), fromDate.getUTCDate(), 0, 0, 0, 0),
+        Date.UTC(
+          fromDate.getUTCFullYear(),
+          fromDate.getUTCMonth(),
+          fromDate.getUTCDate(),
+          0,
+          0,
+          0,
+          0,
+        ),
       );
     }
     let toDate = parse(to);
     if (toDate) {
       toDate = new Date(
-        Date.UTC(toDate.getUTCFullYear(), toDate.getUTCMonth(), toDate.getUTCDate(), 23, 59, 59, 999),
+        Date.UTC(
+          toDate.getUTCFullYear(),
+          toDate.getUTCMonth(),
+          toDate.getUTCDate(),
+          23,
+          59,
+          59,
+          999,
+        ),
       );
     }
     const employeeId = this.getEmployeeId(req);
@@ -85,7 +118,12 @@ export class EmpLocationAttendanceController {
       toDate,
       records,
     );
-    return this.svc.enrichAddressesFromProcessLogs(employeeId, fromDate, toDate, merged);
+    return this.svc.enrichAddressesFromProcessLogs(
+      employeeId,
+      fromDate,
+      toDate,
+      merged,
+    );
   }
 
   @Get('today')
@@ -95,7 +133,9 @@ export class EmpLocationAttendanceController {
 
   @Get('markout-reminder')
   getMarkoutReminder(@Req() req: any) {
-    return this.markoutReminder.evaluateMarkoutReminder(this.getEmployeeId(req));
+    return this.markoutReminder.evaluateMarkoutReminder(
+      this.getEmployeeId(req),
+    );
   }
 
   @Get('photos')
@@ -125,14 +165,21 @@ export class EmpLocationAttendanceController {
     }
     const payload = req.user || {};
     if (String(payload.role || '').toUpperCase() === 'EMPLOYEE') {
-      throw new ForbiddenException('Photo report is not available for employee logins.');
+      throw new ForbiddenException(
+        'Photo report is not available for employee logins.',
+      );
     }
-    const parsedCompany = companyID ? Number(companyID) : Number(payload.companyID || payload.activeCompanyID || 0);
+    const parsedCompany = companyID
+      ? Number(companyID)
+      : Number(payload.companyID || payload.activeCompanyID || 0);
     void branchesID;
     return this.svc.getPhotoReport({
       dateFrom: from,
       dateTo: to,
-      companyID: Number.isFinite(parsedCompany) && parsedCompany > 0 ? parsedCompany : undefined,
+      companyID:
+        Number.isFinite(parsedCompany) && parsedCompany > 0
+          ? parsedCompany
+          : undefined,
     });
   }
 
