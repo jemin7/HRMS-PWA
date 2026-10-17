@@ -1001,7 +1001,7 @@ model EmployeeDocument {
   updatedAt DateTime @updatedAt
 
   employee ManageEmployee @relation(fields: [employeeID], references: [id], onDelete: Cascade)
-  
+
 
   serviceProvider ServiceProvider? @relation(fields: [serviceProviderID], references: [id])
   company         Company?         @relation(fields: [companyID], references: [id])
@@ -3377,7 +3377,7 @@ model GoogleApiUsage {
 
 model AttendanceLocationPoint {
   id                 Int      @id @default(autoincrement())
-  clientLocationId   String   @unique @db.VarChar(128)
+  clientLocationId String @unique(map: "attendance_location_points_clientlocationid_key") @db.VarChar(128)
   sessionEventId     String   @db.VarChar(128)
   attendanceSessionId Int
   employeeId         Int
@@ -3386,14 +3386,12 @@ model AttendanceLocationPoint {
   capturedAt          DateTime @db.Timestamp(3)
   createdAt           DateTime @default(now())
 
-attendanceSession AttendanceLocation @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
+  attendanceSession AttendanceLocation @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade, map: "attendance_location_points_attendancesessionid_fkey")
 
 
+  employee ManageEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade, map: "attendance_location_points_employeeid_fkey")
 
-employee ManageEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-
-  @@index([attendanceSessionId, capturedAt])
-  @@index([employeeId, capturedAt])
+  @@index([attendanceSessionId, capturedAt], map: "attendance_location_points_attendancesessionid_capturedat_idx")
+  @@index([employeeId, capturedAt], map: "attendance_location_points_employeeid_capturedat_idx")
   @@map("attendance_location_points")
 }
