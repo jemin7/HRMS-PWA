@@ -115,7 +115,10 @@ export class EmpLocationAttendanceService {
         employeeId,
         checkType: 'CHECK_IN',
       },
-      select: { id: true },
+      select: {
+        id: true,
+        checkinTime: true,
+      },
     });
 
     const verifiedSessionIds = new Set(sessions.map((session) => session.id));
@@ -124,6 +127,83 @@ export class EmpLocationAttendanceService {
       throw new ForbiddenException(
         'Every location point must reference your own valid check-in record.',
       );
+    }
+
+    const sessionById = new Map(
+      sessions.map((session) => [session.id, session]),
+    );
+
+    const MAX_TRACKING_DURATION_MS = 9 * 60 * 60 * 1000;
+
+    const ALLOWED_FUTURE_SKEW_MS = 2 * 60 * 1000;
+
+    const serverNowMs = wallClockInZoneToStorageDate().getTime();
+
+    const earliestSessionStartMs = Math.min(
+      ...sessions.map((session) => session.checkinTime.getTime()),
+    );
+
+    const punchTimeline = await this.prisma.attendanceLocation.findMany({
+      where: {
+        employeeId,
+        checkType: { in: ['CHECK_IN', 'CHECK_OUT'] },
+        checkinTime: { gte: new Date(earliestSessionStartMs) },
+      },
+      orderBy: [{ checkinTime: 'asc' }, { id: 'asc' }],
+      select: {
+        id: true,
+        checkType: true,
+        checkinTime: true,
+      },
+    });
+
+    const sessionEndById = new Map<number, number>();
+
+    for (const session of sessions) {
+      const sessionIndex = punchTimeline.findIndex(
+        (record) => record.id === session.id,
+      );
+
+      if (sessionIndex < 0) {
+        continue;
+      }
+
+      const nextPunch = punchTimeline
+        .slice(sessionIndex + 1)
+        .find(
+          (record) =>
+            record.checkType === 'CHECK_OUT' || record.checkType === 'CHECK_IN',
+        );
+
+      if (nextPunch) {
+        sessionEndById.set(session.id, nextPunch.checkinTime.getTime());
+      }
+    }
+
+    for (const point of points) {
+      const session = sessionById.get(Number(point.sessionEventId));
+
+      if (!session) {
+        throw new ForbiddenException(
+          'Every location point must reference your own valid check-in record.',
+        );
+      }
+
+      const capturedAtMs = Date.parse(point.capturedAt);
+      const sessionStartMs = session.checkinTime.getTime();
+      const sessionExpiryMs = sessionStartMs + MAX_TRACKING_DURATION_MS;
+      const sessionEndMs = sessionEndById.get(session.id);
+
+      if (
+        capturedAtMs < sessionStartMs ||
+        capturedAtMs >= sessionExpiryMs ||
+        (sessionEndMs !== undefined && capturedAtMs >= sessionEndMs) ||
+        capturedAtMs > serverNowMs + ALLOWED_FUTURE_SKEW_MS
+      ) {
+        throw new BadRequestException(
+          'Location timestamps must fall within the attendance tracking window.',
+        );
+      }
     }
 
     const data = points.map((point) => ({

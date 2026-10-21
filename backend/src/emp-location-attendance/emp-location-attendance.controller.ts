@@ -29,10 +29,23 @@ export class EmpLocationAttendanceController {
 
   private getEmployeeId(req: any): number {
     const payload = req.user;
-    // For employees, sub == ManageEmployee.id == employeeId
-    const id = payload?.employeeId ?? payload?.sub;
-    if (!id) throw new UnauthorizedException('Employee ID not found in token');
-    return Number(id);
+
+    if (
+      payload?.type !== 'employee' ||
+      String(payload?.role).toUpperCase() !== 'EMPLOYEE'
+    ) {
+      throw new ForbiddenException(
+        'Employee login is required for this endpoint.',
+      );
+    }
+
+    const employeeId = Number(payload.employeeId);
+
+    if (!Number.isSafeInteger(employeeId) || employeeId <= 0) {
+      throw new UnauthorizedException('Valid employee ID not found in token.');
+    }
+
+    return employeeId;
   }
 
   private getIp(req: any): string {

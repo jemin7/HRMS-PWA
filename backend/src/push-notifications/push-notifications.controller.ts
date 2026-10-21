@@ -96,7 +96,10 @@ export class PushNotificationsController {
   ) {
     let employeeID: number | null = null;
     try {
-      employeeID = this.resolveEmployeeId(body?.employeeID ?? undefined, authHeader);
+      employeeID = this.resolveEmployeeId(
+        body?.employeeID ?? undefined,
+        authHeader,
+      );
     } catch {
       const n = Number(body?.employeeID);
       employeeID = Number.isFinite(n) && n > 0 ? n : null;
@@ -128,6 +131,58 @@ export class PushNotificationsController {
     this.logger.log(`Push subscribe request for employee ${employeeID}`);
     this.service.saveSubscription(employeeID, subscription!);
     return { success: true, employeeID };
+  }
+
+  @Post('mobile/register')
+  async registerMobilePushToken(
+    @Body()
+    body: {
+      expoPushToken?: string;
+      platform?: string;
+    },
+    @Headers('authorization') authHeader?: string,
+  ) {
+    const bearer = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+
+    if (!bearer) {
+      throw new UnauthorizedException('Bearer token required.');
+    }
+
+    let payload: {
+      type?: string;
+      role?: string;
+      employeeId?: number | string;
+    };
+
+    try {
+      payload = this.jwt.verify(bearer);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired bearer token.');
+    }
+
+    if (
+      payload.type !== 'employee' ||
+      String(payload.role ?? '').toUpperCase() !== 'EMPLOYEE'
+    ) {
+      throw new UnauthorizedException('Employee login is required.');
+    }
+
+    const employeeID = Number(payload.employeeId);
+
+    if (!Number.isSafeInteger(employeeID) || employeeID <= 0) {
+      throw new UnauthorizedException('Valid employee ID not found in token.');
+    }
+
+    await this.service.registerMobilePushToken(
+      employeeID,
+      typeof body?.expoPushToken === 'string' ? body.expoPushToken : '',
+      typeof body?.platform === 'string' ? body.platform : '',
+    );
+
+    return {
+      success: true,
+      employeeID,
+    };
   }
 
   @Post('test')

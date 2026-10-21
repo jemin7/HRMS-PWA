@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -21,7 +21,10 @@ const pushAgent = new https.Agent({
 
 const SUBSCRIPTIONS_DIR =
   process.env.PUSH_SUBSCRIPTIONS_DIR || path.join(process.cwd(), 'data');
-const SUBSCRIPTIONS_FILE = path.join(SUBSCRIPTIONS_DIR, 'push-subscriptions.json');
+const SUBSCRIPTIONS_FILE = path.join(
+  SUBSCRIPTIONS_DIR,
+  'push-subscriptions.json',
+);
 
 export interface PushSubscriptionRecord {
   employeeID: number;
@@ -38,7 +41,11 @@ function decodeBase64Url(value: string): Buffer {
 export function isValidPushSubscription(
   subscription: webpush.PushSubscription | null | undefined,
 ): boolean {
-  if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+  if (
+    !subscription?.endpoint ||
+    !subscription?.keys?.p256dh ||
+    !subscription?.keys?.auth
+  ) {
     return false;
   }
   try {
@@ -62,7 +69,9 @@ export class PushNotificationsService {
     if (vapidPublicKey && vapidPrivateKey) {
       webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
     } else {
-      this.logger.warn('VAPID keys not configured. Push notifications will not work.');
+      this.logger.warn(
+        'VAPID keys not configured. Push notifications will not work.',
+      );
     }
   }
 
@@ -73,7 +82,7 @@ export class PushNotificationsService {
   hasSubscription(employeeID: number): boolean {
     const empId = this.normalizeEmployeeId(employeeID);
     const records = this.readSubscriptions();
-    const record = records.find(r => Number(r.employeeID) === empId);
+    const record = records.find((r) => Number(r.employeeID) === empId);
     return !!record && isValidPushSubscription(record.subscription);
   }
 
@@ -104,16 +113,25 @@ export class PushNotificationsService {
   private writeSubscriptions(records: PushSubscriptionRecord[]): void {
     try {
       this.ensureSubscriptionsDir();
-      fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(records, null, 2), 'utf-8');
+      fs.writeFileSync(
+        SUBSCRIPTIONS_FILE,
+        JSON.stringify(records, null, 2),
+        'utf-8',
+      );
     } catch (err) {
       this.logger.error('Failed to write subscriptions file', err);
     }
   }
 
-  saveSubscription(employeeID: number, subscription: webpush.PushSubscription): void {
+  saveSubscription(
+    employeeID: number,
+    subscription: webpush.PushSubscription,
+  ): void {
     const empId = this.normalizeEmployeeId(employeeID);
     if (!isValidPushSubscription(subscription)) {
-      throw new Error('Invalid push subscription (missing endpoint or malformed keys)');
+      throw new Error(
+        'Invalid push subscription (missing endpoint or malformed keys)',
+      );
     }
     const records = this.readSubscriptions();
     // Multi-device: keep one record per (employee, endpoint). A given physical
@@ -130,6 +148,51 @@ export class PushNotificationsService {
     );
   }
 
+  async registerMobilePushToken(
+    employeeID: number,
+    expoPushToken: string,
+    platform: string,
+  ) {
+    const empId = this.normalizeEmployeeId(employeeID);
+    const token = expoPushToken?.trim();
+
+    if (
+      !token ||
+      token.length > 255 ||
+      !/^(Expo|Exponent)PushToken\[[^\]]+\]$/.test(token)
+    ) {
+      throw new BadRequestException('Invalid Expo push token.');
+    }
+
+    if (platform !== 'android' && platform !== 'ios') {
+      throw new BadRequestException('Platform must be android or ios.');
+    }
+
+    const now = new Date();
+
+    return this.prisma.mobilePushToken.upsert({
+      where: {
+        expoPushToken: token,
+      },
+      create: {
+        employeeID: empId,
+        expoPushToken: token,
+        platform,
+        lastSeenAt: now,
+      },
+      update: {
+        employeeID: empId,
+        platform,
+        lastSeenAt: now,
+      },
+      select: {
+        id: true,
+        employeeID: true,
+        platform: true,
+        lastSeenAt: true,
+      },
+    });
+  }
   /** Notify employee and their linked managers (manager copy uses team-member wording). */
   async sendToEmployeeAndManagers(
     employeeID: number,
@@ -143,10 +206,17 @@ export class PushNotificationsService {
 
     const emp = await this.prisma.manageEmployee.findUnique({
       where: { id: empId },
-      select: { employeeFirstName: true, employeeLastName: true, employeeID: true },
+      select: {
+        employeeFirstName: true,
+        employeeLastName: true,
+        employeeID: true,
+      },
     });
     const name =
-      [emp?.employeeFirstName, emp?.employeeLastName].filter(Boolean).join(' ').trim() ||
+      [emp?.employeeFirstName, emp?.employeeLastName]
+        .filter(Boolean)
+        .join(' ')
+        .trim() ||
       emp?.employeeID ||
       `Employee #${empId}`;
 
@@ -171,18 +241,121 @@ export class PushNotificationsService {
     }
   }
 
+  private async sendMobilePushToEmployee(
+    employeeID: number,
+    title: string,
+    body: string,
+    data?: Record<string, any>,
+  ): Promise<void> {
+    const tokens = await this.prisma.mobilePushToken.findMany({
+      where: { employeeID },
+      select: { expoPushToken: true },
+    });
+
+    if (tokens.length === 0) {
+      this.logger.log(`No mobile push token for employee ${employeeID}`);
+      return;
+    }
+
+    const accessToken = process.env.EXPO_ACCESS_TOKEN?.trim();
+
+    // Expo accepts at most 100 messages per request.
+    for (let start = 0; start < tokens.length; start += 100) {
+      const batch = tokens.slice(start, start + 100);
+
+      const messages = batch.map((token) => ({
+        to: token.expoPushToken,
+        sound: 'default',
+        title,
+        body,
+        data: data ?? {},
+        priority: 'high',
+        channelId: 'default',
+      }));
+
+      try {
+        const response = await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
+          body: JSON.stringify(messages),
+        });
+
+        const result = (await response.json().catch(() => null)) as {
+          data?: Array<{
+            status?: string;
+            id?: string;
+            message?: string;
+            details?: { error?: string };
+          }>;
+          errors?: unknown[];
+        } | null;
+
+        if (!response.ok || !Array.isArray(result?.data)) {
+          this.logger.error(
+            `Expo push request failed for employee ${employeeID}: HTTP ${response.status}; ${JSON.stringify(result)}`,
+          );
+          continue;
+        }
+
+        for (let index = 0; index < batch.length; index++) {
+          const ticket = result.data[index];
+          const token = batch[index].expoPushToken;
+
+          if (ticket?.status === 'ok') {
+            this.logger.log(
+              `Expo accepted push for employee ${employeeID}; ticket=${ticket.id ?? 'unknown'}`,
+            );
+            continue;
+          }
+
+          if (ticket?.details?.error === 'DeviceNotRegistered') {
+            await this.prisma.mobilePushToken.deleteMany({
+              where: { expoPushToken: token },
+            });
+
+            this.logger.warn(
+              `Removed unregistered mobile push token for employee ${employeeID}`,
+            );
+            continue;
+          }
+
+          this.logger.error(
+            `Expo rejected mobile push for employee ${employeeID}: ${ticket?.message ?? JSON.stringify(ticket)}`,
+          );
+        }
+      } catch (error) {
+        this.logger.error(
+          `Expo push request failed for employee ${employeeID}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+  }
+
   async sendToEmployee(
     employeeID: number,
     title: string,
     body: string,
     data?: Record<string, any>,
   ): Promise<void> {
+    const empId = this.normalizeEmployeeId(employeeID);
+
+    // Send to native Android/iOS devices independently of VAPID.
+    await this.sendMobilePushToEmployee(empId, title, body, data);
+
+    // Browser Web Push still uses VAPID credentials.
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      this.logger.warn('VAPID keys not configured — skipping push send');
+      this.logger.warn(
+        'VAPID keys not configured — skipping browser Web Push only',
+      );
       return;
     }
 
-    const empId = this.normalizeEmployeeId(employeeID);
     const records = this.readSubscriptions();
     // Deliver to ALL of the employee's registered devices.
     const mine = records.filter((r) => Number(r.employeeID) === empId);
@@ -277,6 +450,8 @@ export class PushNotificationsService {
   removeSubscription(employeeID: number): void {
     const empId = this.normalizeEmployeeId(employeeID);
     const records = this.readSubscriptions();
-    this.writeSubscriptions(records.filter(r => Number(r.employeeID) !== empId));
+    this.writeSubscriptions(
+      records.filter((r) => Number(r.employeeID) !== empId),
+    );
   }
 }
