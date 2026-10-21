@@ -241,6 +241,160 @@ export class PushNotificationsService {
     }
   }
 
+  async sendDailyBirthdayReminders(): Promise<{
+    date: string;
+    birthdayEmployees: number;
+    pushAttempts: number;
+    alreadyProcessed?: boolean;
+  }> {
+    const dateParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+
+    const part = (type: string) =>
+      dateParts.find((item) => item.type === type)?.value ?? '';
+
+    const year = Number(part('year'));
+    const month = Number(part('month'));
+    const day = Number(part('day'));
+    const dateKey = `${part('year')}-${part('month')}-${part('day')}`;
+    const eventKey = `birthday-push:${dateKey}`;
+
+    const previous = await this.prisma.auditLog.findFirst({
+      where: {
+        module: 'PUSH_NOTIFICATIONS',
+        action: 'DAILY_BIRTHDAY_PUSH',
+        entityName: eventKey,
+      },
+      select: { id: true },
+    });
+
+    if (previous) {
+      return {
+        date: dateKey,
+        birthdayEmployees: 0,
+        pushAttempts: 0,
+        alreadyProcessed: true,
+      };
+    }
+
+    const employees = await this.prisma.manageEmployee.findMany({
+      where: {
+        isDeleted: false,
+        lifecycleStatus: 'ACTIVE',
+        employmentStatus: { not: 'Terminated' },
+        companyID: { not: null },
+        dateOfBirth: { not: null },
+      },
+      select: {
+        id: true,
+        companyID: true,
+        employeeFirstName: true,
+        employeeLastName: true,
+        dateOfBirth: true,
+      },
+    });
+
+    const getBirthday = (dob: string | null) => {
+      if (!dob) return null;
+
+      const value = dob.trim();
+      const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+      if (iso) {
+        return { month: Number(iso[2]), day: Number(iso[3]) };
+      }
+
+      const slash = value.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
+
+      if (slash) {
+        return { month: Number(slash[2]), day: Number(slash[1]) };
+      }
+
+      return null;
+    };
+
+    const birthdays = employees.filter((employee) => {
+      const birthday = getBirthday(employee.dateOfBirth);
+      if (!birthday) return false;
+
+      // Match the existing feed's behavior for February 29 birthdays.
+      const normalized = new Date(
+        Date.UTC(year, birthday.month - 1, birthday.day),
+      );
+
+      return (
+        normalized.getUTCMonth() + 1 === month &&
+        normalized.getUTCDate() === day
+      );
+    });
+
+    const jobs: Array<() => Promise<void>> = [];
+
+    for (const birthdayEmployee of birthdays) {
+      const name =
+        [birthdayEmployee.employeeFirstName, birthdayEmployee.employeeLastName]
+          .filter(Boolean)
+          .join(' ')
+          .trim() || 'Employee';
+
+      const recipients = employees.filter(
+        (employee) => employee.companyID === birthdayEmployee.companyID,
+      );
+
+      for (const recipient of recipients) {
+        const isSelf = recipient.id === birthdayEmployee.id;
+        jobs.push(() =>
+          this.sendToEmployee(
+            recipient.id,
+            isSelf ? 'Happy Birthday!' : `${name}'s birthday today`,
+            isSelf
+              ? 'Wishing you a wonderful birthday from your company family.'
+              : `Don't forget to wish ${name} a happy birthday.`,
+            {
+              url: '/notifications',
+              kind: 'birthday',
+              event: `birthday-${dateKey}-${birthdayEmployee.id}`,
+              birthdayEmployeeId: birthdayEmployee.id,
+            },
+          ),
+        );
+      }
+    }
+
+    // Limit concurrent push operations.
+    for (let i = 0; i < jobs.length; i += 20) {
+      await Promise.allSettled(jobs.slice(i, i + 20).map((send) => send()));
+    }
+
+    await this.prisma.auditLog.create({
+      data: {
+        module: 'PUSH_NOTIFICATIONS',
+        action: 'DAILY_BIRTHDAY_PUSH',
+        entityName: eventKey,
+        entityId: dateKey,
+        success: true,
+        oldData: JSON.stringify({
+          birthdayEmployees: birthdays.length,
+          pushAttempts: jobs.length,
+          status: 'attempted',
+        }),
+      },
+    });
+
+    this.logger.log(
+      `Daily birthday push processed for ${dateKey}: ${birthdays.length} birthdays, ${jobs.length} push attempts`,
+    );
+
+    return {
+      date: dateKey,
+      birthdayEmployees: birthdays.length,
+      pushAttempts: jobs.length,
+    };
+  }
   private async sendMobilePushToEmployee(
     employeeID: number,
     title: string,

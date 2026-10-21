@@ -184,7 +184,23 @@ export class PushNotificationsController {
       employeeID,
     };
   }
+  @Post('internal/daily-birthday-reminders')
+  async runDailyBirthdayReminders(
+    @Headers('x-notification-scheduler-secret') providedSecret?: string,
+  ) {
+    const expectedSecret = process.env.NOTIFICATION_SCHEDULER_SECRET?.trim();
 
+    if (
+      !expectedSecret ||
+      !providedSecret ||
+      providedSecret !== expectedSecret
+    ) {
+      throw new UnauthorizedException('Invalid scheduler secret.');
+    }
+
+    return this.service.sendDailyBirthdayReminders();
+  }
+  
   @Post('test')
   async testPush(@Headers('authorization') authHeader?: string) {
     const employeeID = this.resolveEmployeeId(undefined, authHeader);

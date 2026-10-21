@@ -121,6 +121,31 @@ export class LeaveApplicationService {
         status: String(created.status ?? 'Pending'),
       });
     }
+
+    if (
+      created.manageEmployeeID &&
+      String(created.status ?? 'Pending') === 'Pending'
+    ) {
+      const dates = this.formatLeaveDates(created.fromDate, created.toDate);
+      const leaveType = created.appliedLeaveType?.trim();
+      const details = [leaveType, dates].filter(Boolean).join(' — ');
+
+      this.pushService
+        .sendToEmployeeAndManagers(
+          created.manageEmployeeID,
+          'Leave application submitted',
+          details
+            ? `Your leave application (${details}) is awaiting approval.`
+            : 'Your leave application is awaiting approval.',
+          {
+            url: '/empLeaveApplication',
+            kind: 'leave',
+            event: 'submitted',
+            leaveId: created.id,
+          },
+        )
+        .catch(() => null);
+    }
     return created;
   }
 
@@ -480,6 +505,20 @@ export class LeaveApplicationService {
             leavePushTitle(newStatus, actorLabel),
             'Your leave application has been approved.',
             { url: '/empLeaveApplication', kind: 'leave' },
+          )
+          .catch(() => null);
+      } else if (newStatus === 'Revoked' && prevStatus !== 'Revoked') {
+        this.pushService
+          .sendToEmployeeAndManagers(
+            empId,
+            'Leave cancelled',
+            'Your approved leave application has been revoked.',
+            {
+              url: '/empLeaveApplication',
+              kind: 'leave',
+              event: 'revoked',
+              leaveId: updated.id,
+            },
           )
           .catch(() => null);
       }

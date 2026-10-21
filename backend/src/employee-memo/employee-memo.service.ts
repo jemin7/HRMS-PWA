@@ -35,7 +35,9 @@ export class EmployeeMemoService {
 
   async findAll(employeeID?: number) {
     const identityIds =
-      employeeID != null ? await this.resolveMessagingIdentityIds(employeeID) : null;
+      employeeID != null
+        ? await this.resolveMessagingIdentityIds(employeeID)
+        : null;
 
     const where =
       identityIds != null
@@ -69,7 +71,9 @@ export class EmployeeMemoService {
    * Include inactive duplicate employee rows (same company + same name) so messages
    * sent to an EXITED duplicate still appear for the ACTIVE login identity.
    */
-  private async resolveMessagingIdentityIds(employeeID: number): Promise<number[]> {
+  private async resolveMessagingIdentityIds(
+    employeeID: number,
+  ): Promise<number[]> {
     const self = await this.prisma.manageEmployee.findUnique({
       where: { id: employeeID },
       select: {
@@ -101,7 +105,9 @@ export class EmployeeMemoService {
   }
 
   /** Prefer ACTIVE employee when a recipient id points at an EXITED duplicate. */
-  private async resolveActiveRecipientIds(employeeIDs: number[]): Promise<number[]> {
+  private async resolveActiveRecipientIds(
+    employeeIDs: number[],
+  ): Promise<number[]> {
     if (employeeIDs.length === 0) return employeeIDs;
 
     const employees = await this.prisma.manageEmployee.findMany({
@@ -148,9 +154,20 @@ export class EmployeeMemoService {
     return [...new Set(resolved)];
   }
 
-  private async attachRecipients<T extends { employeeID?: number | null; employeeIDs?: number[] }>(
+  private async attachRecipients<
+    T extends { employeeID?: number | null; employeeIDs?: number[] },
+  >(
     rows: T[],
-  ): Promise<(T & { recipients?: { id: number; employeeFirstName: string | null; employeeLastName: string | null; employeeID: string | null }[] })[]> {
+  ): Promise<
+    (T & {
+      recipients?: {
+        id: number;
+        employeeFirstName: string | null;
+        employeeLastName: string | null;
+        employeeID: string | null;
+      }[];
+    })[]
+  > {
     const idSet = new Set<number>();
     for (const row of rows) {
       if (row.employeeIDs?.length) {
@@ -234,6 +251,20 @@ export class EmployeeMemoService {
       serviceProviderID: opts.serviceProviderID,
       employeeIDs: employees.map((e) => e.id),
     });
+    await Promise.allSettled(
+      employees.map((employee) =>
+        this.pushService.sendToEmployee(
+          employee.id,
+          'Holiday announced',
+          opts.description,
+          {
+            url: '/notifications',
+            kind: 'holiday',
+            event: 'holiday-announced',
+          },
+        ),
+      ),
+    );
   }
 
   /** Leave, payroll, and named task assignment — subject + managers + owners. */
@@ -258,7 +289,8 @@ export class EmployeeMemoService {
     for (const id of subjectIds) {
       const managers = await this.managerScope.getManagerIdsForEmployee(id);
       for (const managerId of managers) {
-        if (Number.isFinite(managerId) && managerId > 0) recipientIds.add(managerId);
+        if (Number.isFinite(managerId) && managerId > 0)
+          recipientIds.add(managerId);
       }
     }
     const owners = await this.prisma.manageEmployee.findMany({
@@ -303,7 +335,8 @@ export class EmployeeMemoService {
     });
     if (viewer?.isCompanyOwner) return memos;
 
-    const reporteeIds = await this.managerScope.getDirectReporteeIds(viewerEmployeeId);
+    const reporteeIds =
+      await this.managerScope.getDirectReporteeIds(viewerEmployeeId);
     const reportees =
       reporteeIds.length > 0
         ? await this.prisma.manageEmployee.findMany({
@@ -319,10 +352,15 @@ export class EmployeeMemoService {
     return memos.filter((memo) => {
       if (!isCompanyBroadcastSubject(memo.subject)) return true;
       if (!isPersonalHrBroadcastDescription(memo.description)) return true;
-      if (viewer && personalHrDescriptionNamesViewer(memo.description, viewer)) {
+      if (
+        viewer &&
+        personalHrDescriptionNamesViewer(memo.description, viewer)
+      ) {
         return true;
       }
-      return reportees.some((r) => personalHrDescriptionNamesViewer(memo.description, r));
+      return reportees.some((r) =>
+        personalHrDescriptionNamesViewer(memo.description, r),
+      );
     });
   }
 
@@ -336,7 +374,11 @@ export class EmployeeMemoService {
     const companyID = opts.companyID;
     const description = opts.description?.trim();
     if (!description) return;
-    const employeeIDs = [...new Set(opts.employeeIDs.filter((id) => Number.isFinite(id) && id > 0))];
+    const employeeIDs = [
+      ...new Set(
+        opts.employeeIDs.filter((id) => Number.isFinite(id) && id > 0),
+      ),
+    ];
     if (employeeIDs.length === 0) return;
 
     try {
@@ -409,15 +451,13 @@ export class EmployeeMemoService {
     const memos = [memo];
 
     const memoTypeLc = (dto.memoType ?? '').toLowerCase();
-    const isWarning =
-      memoTypeLc.includes('warn') || memoTypeLc === 'warning';
+    const isWarning = memoTypeLc.includes('warn') || memoTypeLc === 'warning';
     const senderLabel = senderLabelFromRole(dto.issuedByRole);
     const issuer = dto.issuedBy?.trim() || senderLabel;
     const subject = dto.subject?.trim() || (isWarning ? 'Warning' : 'Notice');
     const pushTitle = memoPushTitle(isWarning, senderLabel);
     const pushBody =
-      dto.description?.trim()?.slice(0, 180) ||
-      `${issuer}: ${subject}`;
+      dto.description?.trim()?.slice(0, 180) || `${issuer}: ${subject}`;
 
     const notifyEmployeeIds = [...new Set(employeeIDs)];
     await Promise.all(
@@ -433,7 +473,9 @@ export class EmployeeMemoService {
             },
           })
           .catch((err) => {
-            this.logger.warn(`Memo email skipped for employee ${empId}: ${err?.message || err}`);
+            this.logger.warn(
+              `Memo email skipped for employee ${empId}: ${err?.message || err}`,
+            );
           });
 
         try {
@@ -541,8 +583,7 @@ export class EmployeeMemoService {
     const threadSubject = parent.subject?.trim() || 'Internal Message';
     const pushTitle = `IM: ${threadSubject}`;
     const pushBody =
-      dto.message.trim().slice(0, 180) ||
-      `${senderName} sent a new message`;
+      dto.message.trim().slice(0, 180) || `${senderName} sent a new message`;
     const isEmployeeReply = dto.senderEmployeeId != null;
     const pushTargets = new Set(recipientIds);
 
