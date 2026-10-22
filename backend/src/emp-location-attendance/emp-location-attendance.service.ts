@@ -986,20 +986,7 @@ export class EmpLocationAttendanceService {
           },
         });
 
-        // Create the initial tracking point as part of the check-in transaction.
-        if (checkType === 'CHECK_IN') {
-          await tx.attendanceLocationPoint.create({
-            data: {
-              clientLocationId: `checkin-${created.id}`,
-              sessionEventId: String(created.id),
-              attendanceSessionId: created.id,
-              employeeId,
-              latitude: dto.latitude,
-              longitude: dto.longitude,
-              capturedAt: created.checkinTime,
-            },
-          });
-        }
+        
 
         if (checkType === 'CHECK_IN' || checkType === 'CHECK_OUT') {
           const fullName =
