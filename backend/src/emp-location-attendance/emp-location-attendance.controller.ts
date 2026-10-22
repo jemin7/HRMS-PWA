@@ -56,6 +56,18 @@ export class EmpLocationAttendanceController {
     return req.ip ?? req.connection?.remoteAddress ?? 'unknown';
   }
 
+  @Get('server-time')
+  getServerTime() {
+    return {
+      serverUtcMs: Date.now(),
+    };
+  }
+
+  @Get('location-sync-diagnostics')
+  getLocationSyncDiagnostics(@Req() req: any) {
+    return this.svc.getLocationSyncDiagnostics(this.getEmployeeId(req));
+  }
+
   @Post('sync-location-points')
   @UsePipes(
     new ValidationPipe({

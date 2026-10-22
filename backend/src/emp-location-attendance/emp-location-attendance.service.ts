@@ -1,9 +1,13 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
-import { wallClockInZoneToStorageDate } from '../common/device-punch-time';
+import {
+  devicePunchToStorageDate,
+  wallClockInZoneToStorageDate,
+} from '../common/device-punch-time';
 import { reverseGeocode } from '../common/reverse-geocode';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAttendanceLocationDto } from './dto/create-attendance-location.dto';
@@ -57,6 +61,36 @@ type BranchFenceRow = {
 @Injectable()
 export class EmpLocationAttendanceService {
   constructor(private prisma: PrismaService) {}
+
+  async getLocationSyncDiagnostics(employeeId: number) {
+    if (!Number.isSafeInteger(employeeId) || employeeId <= 0) {
+      throw new ForbiddenException('Invalid employee identity.');
+    }
+
+    const [totalPoints, latestPoint] = await Promise.all([
+      this.prisma.attendanceLocationPoint.count({
+        where: { employeeId },
+      }),
+
+      this.prisma.attendanceLocationPoint.findFirst({
+        where: { employeeId },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: {
+          id: true,
+          sessionEventId: true,
+          attendanceSessionId: true,
+          capturedAt: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    return {
+      totalPoints,
+      latestPoint,
+      checkedAt: new Date().toISOString(),
+    };
+  }
 
   async syncLocationPoints(
     employeeId: number,
@@ -657,6 +691,40 @@ export class EmpLocationAttendanceService {
     }
 
     const checkType = dto.checkType as PunchType;
+    const hasClientEventId =
+      dto.clientEventId !== undefined && dto.clientEventId !== null;
+
+    const clientEventId =
+      typeof dto.clientEventId === 'string' ? dto.clientEventId.trim() : '';
+
+    if (hasClientEventId && (!clientEventId || clientEventId.length > 128)) {
+      throw new BadRequestException(
+        'clientEventId must be a non-empty string of at most 128 characters.',
+      );
+    }
+
+    // Return an already-recorded punch when the client retries the same event.
+    if (clientEventId) {
+      const existing = await this.prisma.attendanceLocation.findUnique({
+        where: { clientEventId },
+      });
+
+      if (existing) {
+        if (existing.employeeId !== employeeId) {
+          throw new ConflictException(
+            'This client event ID has already been used by another employee.',
+          );
+        }
+
+        if (existing.checkType !== checkType) {
+          throw new ConflictException(
+            'This client event ID is already associated with a different attendance action.',
+          );
+        }
+
+        return existing;
+      }
+    }
     const employee = await this.prisma.manageEmployee.findUnique({
       where: { id: employeeId },
       select: {
@@ -708,9 +776,101 @@ export class EmpLocationAttendanceService {
       throw new BadRequestException('A photo is required to mark IN or OUT.');
     }
 
-    const now = wallClockInZoneToStorageDate();
-    const { startOfDay, endOfDay } = this.dayWindow(now);
-    const todayKey = wallDateKey(now);
+    const serverNow = wallClockInZoneToStorageDate();
+    const suppliedPunchTime = dto.punchTime?.trim();
+
+    if (suppliedPunchTime && !clientEventId) {
+      throw new BadRequestException(
+        'punchTime requires clientEventId for offline punch sync.',
+      );
+    }
+
+    const requestedPunchTime = suppliedPunchTime
+      ? devicePunchToStorageDate(suppliedPunchTime)
+      : null;
+
+    if (
+      suppliedPunchTime &&
+      (!requestedPunchTime || !Number.isFinite(requestedPunchTime.getTime()))
+    ) {
+      throw new BadRequestException('Invalid punchTime.');
+    }
+
+    if (
+      requestedPunchTime &&
+      requestedPunchTime.getTime() > serverNow.getTime() + 2 * 60 * 1000
+    ) {
+      throw new BadRequestException(
+        'Punch time cannot be more than two minutes in the future.',
+      );
+    }
+
+    const punchTime = requestedPunchTime ?? serverNow;
+    const hasReferenceEventId =
+      dto.referenceEventId !== undefined && dto.referenceEventId !== null;
+
+    const referenceEventId =
+      typeof dto.referenceEventId === 'string'
+        ? dto.referenceEventId.trim()
+        : '';
+
+    if (
+      hasReferenceEventId &&
+      (!referenceEventId || referenceEventId.length > 128)
+    ) {
+      throw new BadRequestException(
+        'referenceEventId must be a non-empty string of at most 128 characters.',
+      );
+    }
+
+    if (referenceEventId && checkType !== 'CHECK_OUT') {
+      throw new BadRequestException(
+        'referenceEventId is only valid for checkout.',
+      );
+    }
+
+    // Offline checkout must identify the check-in it belongs to.
+    if (suppliedPunchTime && checkType === 'CHECK_OUT' && !referenceEventId) {
+      throw new BadRequestException(
+        'Offline checkout must reference its original check-in event.',
+      );
+    }
+
+    if (referenceEventId) {
+      const referencedCheckIn = await this.prisma.attendanceLocation.findUnique(
+        {
+          where: { clientEventId: referenceEventId },
+          select: {
+            employeeId: true,
+            checkType: true,
+            checkinTime: true,
+          },
+        },
+      );
+
+      if (!referencedCheckIn) {
+        throw new ConflictException(
+          'The referenced check-in has not synced yet. Sync check-in before checkout.',
+        );
+      }
+
+      if (
+        referencedCheckIn.employeeId !== employeeId ||
+        referencedCheckIn.checkType !== 'CHECK_IN'
+      ) {
+        throw new ConflictException(
+          'The referenced event is not a valid check-in for this employee.',
+        );
+      }
+
+      if (punchTime.getTime() <= referencedCheckIn.checkinTime.getTime()) {
+        throw new BadRequestException(
+          'Checkout time must be later than the referenced check-in time.',
+        );
+      }
+    }
+    const { startOfDay, endOfDay } = this.dayWindow(punchTime);
+    const todayKey = wallDateKey(punchTime);
 
     const todayPreview = await this.prisma.attendanceLocation.findMany({
       where: {
@@ -749,7 +909,15 @@ export class EmpLocationAttendanceService {
       };
     }
 
-    const address = await reverseGeocode(dto.latitude, dto.longitude);
+    const suppliedAddress =
+      typeof dto.address === 'string'
+        ? dto.address.replace(/\s+/g, ' ').trim().slice(0, 500)
+        : '';
+
+    const address =
+      suppliedAddress ||
+      (await reverseGeocode(dto.latitude, dto.longitude)) ||
+      null;
     const rawBody = JSON.stringify({
       source: 'location_attendance',
       checkType,
@@ -763,131 +931,134 @@ export class EmpLocationAttendanceService {
       fenceSiteId: sessionFence?.siteId ?? null,
     });
 
-    const record = await this.prisma.$transaction(async (tx) => {
-      const todayRecords = await tx.attendanceLocation.findMany({
-        where: {
-          employeeId,
-          checkinTime: { gte: startOfDay, lte: endOfDay },
-        },
-        orderBy: { checkinTime: 'asc' },
-      });
-
-      let effectiveLastType: string | null = null;
-      if (todayRecords.length === 0) {
-        const deviceTimes = await tx.process_att_logs.findMany({
+    try {
+      const record = await this.prisma.$transaction(async (tx) => {
+        const todayRecords = await tx.attendanceLocation.findMany({
           where: {
-            manage_employee_id: employeeId,
-            device_sn: { not: 'LOCATION_APP' },
-            punch_time: { gte: startOfDay, lte: endOfDay },
+            employeeId,
+            checkinTime: { gte: startOfDay, lte: endOfDay },
           },
-          orderBy: { punch_time: 'asc' },
-          select: { punch_time: true },
+          orderBy: { checkinTime: 'asc' },
         });
-        const times = deviceTimes
-          .filter((l) => l.punch_time != null)
-          .map((l) => l.punch_time as Date);
-        if (this.devicePunchState(times) === 'IN') {
-          effectiveLastType = 'CHECK_IN';
+
+        let effectiveLastType: string | null = null;
+        if (todayRecords.length === 0) {
+          const deviceTimes = await tx.process_att_logs.findMany({
+            where: {
+              manage_employee_id: employeeId,
+              device_sn: { not: 'LOCATION_APP' },
+              punch_time: { gte: startOfDay, lte: endOfDay },
+            },
+            orderBy: { punch_time: 'asc' },
+            select: { punch_time: true },
+          });
+          const times = deviceTimes
+            .filter((l) => l.punch_time != null)
+            .map((l) => l.punch_time as Date);
+          if (this.devicePunchState(times) === 'IN') {
+            effectiveLastType = 'CHECK_IN';
+          }
+        } else {
+          effectiveLastType =
+            this.getLastPunch(todayRecords)?.checkType ?? null;
         }
-      } else {
-        effectiveLastType = this.getLastPunch(todayRecords)?.checkType ?? null;
-      }
 
-      this.validatePunch(effectiveLastType, checkType, todayRecords);
+        this.validatePunch(effectiveLastType, checkType, todayRecords);
 
-      const created = await tx.attendanceLocation.create({
-        data: {
-          employeeId,
-          checkType,
-          latitude: dto.latitude,
-          longitude: dto.longitude,
-          accuracy: dto.accuracy ?? null,
-          address,
-          ipAddress,
-          deviceType: dto.deviceType ?? null,
-          browser: dto.browser ?? null,
-          operatingSystem: dto.operatingSystem ?? null,
-          userAgent: dto.userAgent ?? null,
-          photoUrl,
-          fenceType: sessionFence?.type ?? null,
-          fenceSiteId: sessionFence?.siteId ?? null,
-          checkinTime: now,
-        },
+        const created = await tx.attendanceLocation.create({
+          data: {
+            employeeId,
+            checkType,
+            clientEventId: clientEventId || null,
+            latitude: dto.latitude,
+            longitude: dto.longitude,
+            accuracy: dto.accuracy ?? null,
+            address,
+            ipAddress,
+            deviceType: dto.deviceType ?? null,
+            browser: dto.browser ?? null,
+            operatingSystem: dto.operatingSystem ?? null,
+            userAgent: dto.userAgent ?? null,
+            photoUrl,
+            fenceType: sessionFence?.type ?? null,
+            fenceSiteId: sessionFence?.siteId ?? null,
+            checkinTime: punchTime,
+          },
+        });
+
+        // Create the initial tracking point as part of the check-in transaction.
+        if (checkType === 'CHECK_IN') {
+          await tx.attendanceLocationPoint.create({
+            data: {
+              clientLocationId: `checkin-${created.id}`,
+              sessionEventId: String(created.id),
+              attendanceSessionId: created.id,
+              employeeId,
+              latitude: dto.latitude,
+              longitude: dto.longitude,
+              capturedAt: created.checkinTime,
+            },
+          });
+        }
+
+        if (checkType === 'CHECK_IN' || checkType === 'CHECK_OUT') {
+          const fullName =
+            [employee?.employeeFirstName, employee?.employeeLastName]
+              .filter(Boolean)
+              .join(' ') || String(employeeId);
+
+          await tx.process_att_logs.create({
+            data: {
+              device_sn: 'LOCATION_APP',
+              user_id: employee?.employeeID ?? String(employeeId),
+              username: fullName,
+              punch_time: created.checkinTime,
+              company_name: employee?.company?.companyName ?? null,
+              branch_name: employee?.branches?.branchName ?? null,
+              department_name: employee?.departments?.departmentName ?? null,
+              device_emp_code: employee?.employeeID ?? null,
+              manage_employee_id: employeeId,
+              device_id: null,
+              raw_body: rawBody,
+              status: '0',
+              device_name: 'Location Attendance App',
+              device_type: dto.deviceType ?? null,
+              auth_type: 'GPS',
+            },
+          });
+        }
+        return created;
       });
 
-      try {
-        const fullName =
-          [employee?.employeeFirstName, employee?.employeeLastName]
-            .filter(Boolean)
-            .join(' ') || String(employeeId);
-        const shouldWrite =
-          checkType !== 'BREAK_IN' && checkType !== 'BREAK_OUT';
+      return record;
+    } catch (error) {
+      const isUniqueConstraintError =
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2002';
 
-        if (shouldWrite) {
-          if (checkType === 'CHECK_OUT') {
-            await tx.process_att_logs.create({
-              data: {
-                device_sn: 'LOCATION_APP',
-                user_id: employee?.employeeID ?? String(employeeId),
-                username: fullName,
-                punch_time: created.checkinTime,
-                company_name: employee?.company?.companyName ?? null,
-                branch_name: employee?.branches?.branchName ?? null,
-                department_name: employee?.departments?.departmentName ?? null,
-                device_emp_code: employee?.employeeID ?? null,
-                manage_employee_id: employeeId,
-                device_id: null,
-                raw_body: rawBody,
-                status: '0',
-                device_name: 'Location Attendance App',
-                device_type: dto.deviceType ?? null,
-                auth_type: 'GPS',
-              },
-            });
-          } else if (checkType === 'CHECK_IN') {
-            const alreadyCheckedInToday = todayRecords.some(
-              (r) => r.checkType === 'CHECK_IN',
+      if (clientEventId && isUniqueConstraintError) {
+        const existing = await this.prisma.attendanceLocation.findUnique({
+          where: { clientEventId },
+        });
+
+        if (existing) {
+          if (
+            existing.employeeId !== employeeId ||
+            existing.checkType !== checkType
+          ) {
+            throw new ConflictException(
+              'This client event ID is already associated with another attendance event.',
             );
-            const existingInMirror = await tx.process_att_logs.count({
-              where: {
-                manage_employee_id: employeeId,
-                device_sn: 'LOCATION_APP',
-                punch_time: { gte: startOfDay, lte: endOfDay },
-              },
-            });
-
-            if (!alreadyCheckedInToday && existingInMirror === 0) {
-              await tx.process_att_logs.create({
-                data: {
-                  device_sn: 'LOCATION_APP',
-                  user_id: employee?.employeeID ?? String(employeeId),
-                  username: fullName,
-                  punch_time: created.checkinTime,
-                  company_name: employee?.company?.companyName ?? null,
-                  branch_name: employee?.branches?.branchName ?? null,
-                  department_name:
-                    employee?.departments?.departmentName ?? null,
-                  device_emp_code: employee?.employeeID ?? null,
-                  manage_employee_id: employeeId,
-                  device_id: null,
-                  raw_body: rawBody,
-                  status: '0',
-                  device_name: 'Location Attendance App',
-                  device_type: dto.deviceType ?? null,
-                  auth_type: 'GPS',
-                },
-              });
-            }
           }
+
+          return existing;
         }
-      } catch {
-        // Non-critical
       }
 
-      return created;
-    });
-
-    return record;
+      throw error;
+    }
   }
 
   async getMyRecords(

@@ -2279,6 +2279,7 @@ model FactualRosterDay {
 
 model AttendanceLocation {
   id                Int            @id @default(autoincrement())
+  clientEventId     String?        @unique(map: "attendance_locations_clienteventid_key") @db.VarChar(128)
   employeeId        Int
   checkType         String         @db.VarChar(20)
   latitude          Float

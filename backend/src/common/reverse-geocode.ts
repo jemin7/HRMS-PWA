@@ -13,9 +13,12 @@ const logger = new Logger('ReverseGeocode');
 const NOMINATIM_URL =
   process.env.NOMINATIM_URL || 'https://nominatim.openstreetmap.org/reverse';
 const NOMINATIM_SEARCH_URL =
-  process.env.NOMINATIM_SEARCH_URL || 'https://nominatim.openstreetmap.org/search';
+  process.env.NOMINATIM_SEARCH_URL ||
+  'https://nominatim.openstreetmap.org/search';
 const GEOCODE_TIMEOUT_MS = Number(process.env.GEOCODE_TIMEOUT_MS || 4000);
-const SAVE_GEOCODE_TIMEOUT_MS = Number(process.env.SAVE_GEOCODE_TIMEOUT_MS || 10000);
+const SAVE_GEOCODE_TIMEOUT_MS = Number(
+  process.env.SAVE_GEOCODE_TIMEOUT_MS || 10000,
+);
 const GEOCODE_ENABLED = process.env.GEOCODE_ENABLED !== 'false';
 
 const cache = new Map<string, string | null>();
@@ -55,12 +58,20 @@ export async function reverseGeocode(
       },
     });
     if (!res.ok) {
-      if (cache.size < MAX_CACHE) cache.set(key, null);
       return null;
     }
+
     const data: any = await res.json();
-    const address: string | null = data?.display_name || null;
-    if (cache.size >= MAX_CACHE) cache.clear();
+    const address = String(data?.display_name || '').trim();
+
+    if (!address) {
+      return null;
+    }
+
+    if (cache.size >= MAX_CACHE) {
+      cache.clear();
+    }
+
     cache.set(key, address);
     return address;
   } catch (err: any) {
@@ -82,7 +93,11 @@ export function composeAddressQuery(
   ...parts: Array<string | null | undefined>
 ): string {
   return parts
-    .map((p) => String(p || '').replace(/\s+/g, ' ').trim())
+    .map((p) =>
+      String(p || '')
+        .replace(/\s+/g, ' ')
+        .trim(),
+    )
     .filter(Boolean)
     .join(', ');
 }
@@ -97,7 +112,9 @@ export async function forwardGeocode(
   query: string | null | undefined,
   opts?: { timeoutMs?: number },
 ): Promise<{ lat: number; lng: number } | null> {
-  const q = String(query || '').replace(/\s+/g, ' ').trim();
+  const q = String(query || '')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (!GEOCODE_ENABLED || q.length < 3) return null;
 
   const key = searchCacheKey(q);
@@ -142,7 +159,8 @@ export async function geocodeAddressParts(parts: {
   country?: string | null;
 }): Promise<{ lat: number; lng: number } | null> {
   const timeoutMs = SAVE_GEOCODE_TIMEOUT_MS;
-  const pin = String(parts.pincode || '').trim() || pinFrom(String(parts.address || ''));
+  const pin =
+    String(parts.pincode || '').trim() || pinFrom(String(parts.address || ''));
   const full = composeAddressQuery(
     parts.address,
     parts.city,
