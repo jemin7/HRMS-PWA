@@ -15,7 +15,6 @@ import {
   ClipboardList,
   MessageSquare,
   UserCog,
-  Database,
   CreditCard,
   FileText,
   type LucideIcon,
@@ -28,6 +27,7 @@ import {
   isCompanyAdminLikeRole,
   moduleKeyForPath,
 } from "@/lib/companyAccess";
+import { isProductHrefAllowed } from "@/lib/productAccess";
 
 export interface NavContext {
   role: string;
@@ -243,12 +243,6 @@ export const HRMS_NAVIGATION: NavGroup[] = [
     items: [
       { label: "System Users", href: "/system-users", icon: Users, show: always },
       {
-        label: "Application Modules",
-        href: "/company-modules",
-        icon: Database,
-        show: (c) => c.isSuperAdmin || c.isServiceProvider,
-      },
-      {
         label: "Subscriptions",
         href: "/subscription",
         icon: CreditCard,
@@ -313,6 +307,7 @@ export function filterNavigation(ctx: NavContext): NavGroup[] {
 
     const items = group.items.filter((item) => {
       if (item.show && !item.show(ctx)) return false;
+      if (!isProductHrefAllowed(item.href)) return false;
       if (gateEmployeeModules) {
         const moduleKey = moduleKeyForPath(item.href);
         if (moduleKey && !canViewModule(moduleKey)) return false;

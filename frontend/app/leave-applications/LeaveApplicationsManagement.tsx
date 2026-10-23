@@ -21,6 +21,7 @@ import { formatDateShort, getDisplayLeaveStatus } from "../utils/leaveDisplay"
 import { useCurrentUser } from "../hooks/useCurrentUser"
 import { SearchSuggestInput } from "../components/SearchSuggestInput"
 import { toast } from "sonner";
+import { messageFromUnknownError, readApiErrorMessage } from "../utils/api-error";
 import { getSidebarContext } from "../utils/sidebarContext";
 import { useCompanyBranches } from "../hooks/useCompanyBranches";
 
@@ -844,7 +845,7 @@ export function LeaveApplicationsManagement() {
       const res = await fetch(`${BACKEND_URL}/manage-emp`, { cache: "no-store" })
       const data = await res.json()
       const q = query.toLowerCase()
-      const ctx = getSidebarContext();
+        const ctx = getSidebarContext();
       const companyID = formData.companyID ?? ctx?.companyID ?? user?.companyID ?? managerData?.companyID;
       const isOwner = !!(user as any)?.employee?.isCompanyOwner || !!(user as any)?.isCompanyOwner;
 
@@ -881,17 +882,17 @@ export function LeaveApplicationsManagement() {
         }
       }
 
-      return filtered
-        .filter((item: any) => {
+        return filtered
+          .filter((item: any) => {
           if (!q) return true
-          const fullName = `${item?.employeeFirstName || ""} ${item?.employeeLastName || ""}`.trim().toLowerCase()
-          const employeeId = (item?.employeeID || "").toLowerCase()
-          return fullName.includes(q) || employeeId.includes(q)
-        })
-        .map((item: any) => ({
-          ...item,
-          displayName: `${item?.employeeFirstName || ""} ${item?.employeeLastName || ""}`.trim() + (item?.employeeID ? ` (${item.employeeID})` : "")
-        }))
+            const fullName = `${item?.employeeFirstName || ""} ${item?.employeeLastName || ""}`.trim().toLowerCase()
+            const employeeId = (item?.employeeID || "").toLowerCase()
+            return fullName.includes(q) || employeeId.includes(q)
+          })
+          .map((item: any) => ({
+            ...item,
+            displayName: `${item?.employeeFirstName || ""} ${item?.employeeLastName || ""}`.trim() + (item?.employeeID ? ` (${item.employeeID})` : "")
+          }))
     } catch (error) {
       console.error("Error fetching employees:", error)
       return []
@@ -1151,7 +1152,7 @@ export function LeaveApplicationsManagement() {
     }
   }
 
-useEffect(() => {
+  useEffect(() => {
     if (user) {
       loadLeaveApplications()
       loadBranchFilterList()
@@ -1586,7 +1587,7 @@ useEffect(() => {
         body: JSON.stringify(leaveApplicationData),
       })
       if (!res.ok) {
-        throw new Error(`Failed to save leave application: ${res.status}`)
+        throw new Error(await readApiErrorMessage(res, "Failed to save. Please try again."))
       }
 
       await loadLeaveApplications()
@@ -1595,7 +1596,7 @@ useEffect(() => {
       toast.success(editingApplication ? "Updated successfully" : "Created successfully");
     } catch (error) {
       console.error("Error saving leave application:", error)
-      toast.error("Failed to save. Please try again.");
+      toast.error(messageFromUnknownError(error, "Failed to save. Please try again."));
     }
   }
 
@@ -1677,14 +1678,13 @@ useEffect(() => {
         method: "DELETE",
       })
       if (!res.ok) {
-        const errText = await res.text().catch(() => "")
-        throw new Error(`Failed to delete leave application: ${res.status} ${errText}`)
+        throw new Error(await readApiErrorMessage(res, "Failed to delete. Please try again."))
       }
       await loadLeaveApplications()
       toast.success("Deleted successfully");
     } catch (error) {
       console.error("Error deleting leave application:", error)
-      toast.error("Failed to delete. Please try again.");
+      toast.error(messageFromUnknownError(error, "Failed to delete. Please try again."));
     }
   }
 
@@ -1814,7 +1814,7 @@ useEffect(() => {
       align: "right",
       cell: (a) => {
         if (canManage) {
-          return (
+  return (
             <EntityRowActions
               onView={() => openViewModal(a)}
               onDelete={() => handleDelete(a)}
@@ -2337,8 +2337,8 @@ useEffect(() => {
                         <p>
                           Pick a <strong className="text-foreground">from</strong> and <strong className="text-foreground">to</strong> date, choose a leave type, then click Apply.
                           Unassigned days are not approved. Use <strong className="text-foreground">LoP</strong> when balance is zero.
-                        </p>
-                      </div>
+                      </p>
+                    </div>
                     </NoticeBanner>
                     {tenureWarning && (
                       <NoticeBanner variant="warning" compact>
@@ -2562,7 +2562,7 @@ useEffect(() => {
             !inlineFormOpen ? (
               <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
                 <Plus className="w-4 h-4 mr-1" /> Add Leave Application
-              </Button>
+                              </Button>
             ) : undefined
           }
         />

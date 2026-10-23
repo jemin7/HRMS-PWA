@@ -159,13 +159,20 @@ export async function fetchBellBadgeCount(
     const older = Array.isArray(data?.older) ? data.older : [];
     const items = [...recent, ...older];
     const seen = new Set<string>();
+    const now = Date.now();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const openedToday = lastViewed >= startOfToday.getTime();
     let count = 0;
     for (const item of items) {
       const id = String(item?.id || "");
       if (!id || seen.has(id)) continue;
       seen.add(id);
       const ts = item?.at ? new Date(item.at).getTime() : 0;
-      if (Number.isFinite(ts) && ts > lastViewed) count += 1;
+      if (!Number.isFinite(ts) || ts <= lastViewed) continue;
+      // Already on the feed with a later clock time (today's birthday). Opening the bell sees it.
+      if (ts > now && openedToday) continue;
+      count += 1;
     }
     return count;
   } catch {
@@ -316,7 +323,7 @@ export async function fetchEmpSidebarBadgeCounts(
   const noticeLastViewed = readTs(NOTICE_LAST_VIEWED_KEY);
 
   // Same endpoints EmpTeamApprovalsPanel uses: employee/:selfId returns scoped rows
-  const [memos, leaveRows, reimbRows, homeBell] = await Promise.all([
+  const [memos, leaveRows, reimbRows, advanceRows, homeBell] = await Promise.all([
     fetch(`${BACKEND}/employee-memo?employeeID=${employeeId}`, { headers, cache: "no-store" })
       .then((r) => (r.ok ? r.json() : []))
       .catch(() => []),
@@ -324,6 +331,9 @@ export async function fetchEmpSidebarBadgeCounts(
       .then((r) => (r.ok ? r.json() : []))
       .catch(() => []),
     fetch(`${BACKEND}/reimbursement/employee/${employeeId}`, { headers, cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : []))
+      .catch(() => []),
+    fetch(`${BACKEND}/salary-advance/employee/${employeeId}`, { headers, cache: "no-store" })
       .then((r) => (r.ok ? r.json() : []))
       .catch(() => []),
     fetchBellBadgeCount(employeeId, token),
@@ -367,6 +377,7 @@ export async function fetchEmpSidebarBadgeCounts(
 
   const leaves = Array.isArray(leaveRows) ? leaveRows : [];
   const reimbs = Array.isArray(reimbRows) ? reimbRows : [];
+  const advances = Array.isArray(advanceRows) ? advanceRows : [];
 
   // Own leave/reimb badges — only the current employee's records (role: employee portal self)
   counts.leave = leaves.filter((l) => isOwnPendingUnseenLeave(l, employeeId)).length;
@@ -376,7 +387,12 @@ export async function fetchEmpSidebarBadgeCounts(
   if (isManager && reporteeIds.size > 0) {
     const pendingLeave = leaves.filter((l) => isTeamPendingLeave(l, employeeId, reporteeIds)).length;
     const pendingReimb = reimbs.filter((r) => isTeamPendingReimb(r, employeeId, reporteeIds)).length;
-    counts.approvals = pendingLeave + pendingReimb;
+    const pendingAdvance = advances.filter((row) => {
+      const ownerId = Number(row?.manageEmployeeID);
+      if (!Number.isFinite(ownerId) || ownerId === employeeId || !reporteeIds.has(ownerId)) return false;
+      return (row?.status || "Pending") === "Pending";
+    }).length;
+    counts.approvals = pendingLeave + pendingReimb + pendingAdvance;
   } else {
     counts.approvals = 0;
   }

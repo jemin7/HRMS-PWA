@@ -25,7 +25,6 @@ import {
   Receipt,
   ScrollText,
   ClipboardList,
-  History,
   DollarSign,
   Fingerprint,
   Link2,
@@ -34,6 +33,7 @@ import {
 import type { EmpModuleId } from "./emp-portal-workspaces";
 import { EMP_SETUP_TABS_REGISTRY } from "./emp-setup-tabs-registry";
 import { canViewModule, hasCompanyAccessFlag, isCompanyOwnerFlag } from "@/lib/companyAccess";
+import { isProductHrefAllowed } from "@/lib/productAccess";
 import { TASK_MANAGEMENT_ENABLED } from "@/app/config/featureFlags";
 
 /** Paths that belong under a setup hub (Company / Policy / Payroll / Statutory). */
@@ -356,14 +356,6 @@ export const EMP_SIDEBAR_NAVIGATION: EmpSidebarNavGroup[] = [
         companyAccessOnly: true,
       },
       {
-        id: "company-branches",
-        label: "Branches",
-        href: "/my-company/company?tab=branches",
-        icon: MapPin,
-        companyAccessOnly: true,
-        show: canModule("BRANCHES"),
-      },
-      {
         id: "company-devices",
         label: "Attendance Devices",
         href: "/my-company/company?tab=devices",
@@ -377,19 +369,6 @@ export const EMP_SIDEBAR_NAVIGATION: EmpSidebarNavGroup[] = [
         href: "/my-company/company?tab=federal-domain",
         icon: Link2,
         companyAccessOnly: true,
-      },
-    ],
-  },
-  {
-    label: "Administration",
-    show: hasAnyCompanyAccess,
-    items: [
-      {
-        id: "admin-system-logs",
-        label: "System Logs",
-        href: "/audit-logs",
-        icon: History,
-        show: () => isCompanyOwnerFlag() || canViewModule("SETTINGS"),
       },
     ],
   },
@@ -430,6 +409,7 @@ export function filterEmpSidebarNavigation(isManager: boolean): EmpSidebarNavGro
       items: group.items.filter((item) => {
         if (item.companyAccessOnly && !hasAccess) return false;
         if (item.managerOnly && !isManager) return false;
+        if (!isProductHrefAllowed(item.href)) return false;
         return (item.show ?? always)();
       }),
     };

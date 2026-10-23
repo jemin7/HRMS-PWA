@@ -7,7 +7,6 @@ import { empPayoutHrefForPeriod } from '../common/payslip-period.util';
 import { MailService } from '../mail/mail.service';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 import { EmployeeMemoService } from '../employee-memo/employee-memo.service';
-
 @Injectable()
 export class GenerateSalaryService {
   constructor(
@@ -164,7 +163,6 @@ export class GenerateSalaryService {
 
     void this.notifyPayslipGenerated(created).catch(() => null);
     void this.notifyPayslipEmail(created).catch(() => null);
-    this.postPayrollCompanyBroadcast({ ...created, event: 'generated' });
     return created;
   }
 
@@ -250,7 +248,6 @@ export class GenerateSalaryService {
     if (existing?.status !== 'Paid' && updated.status === 'Paid') {
       void this.notifyPayslipPaid(updated).catch(() => null);
       void this.notifyPayslipPaidEmail(updated).catch(() => null);
-      this.postPayrollCompanyBroadcast({ ...updated, event: 'paid' });
     }
 
     return updated;

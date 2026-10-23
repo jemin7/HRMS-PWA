@@ -89,6 +89,7 @@ import {
 import { FormDrawer } from "../components/ui/form-drawer";
 import { NoticeBanner } from "../components/ui/notice-banner";
 import { toast } from "sonner";
+import { humanizeApiMessage, messageFromUnknownError } from "../utils/api-error";
 import { getSidebarContext } from "../utils/sidebarContext";
 import {
   CollapsibleFormGroup,
@@ -150,6 +151,7 @@ interface ManageEmployeeCreateResponse {
   employeeLastName?: string | null;
   onboardingApprovalStatus?: OnboardingApprovalStatus;
   initialPassword?: string | null;
+  loginEmailSent?: boolean;
   approval?: EmployeeApprovalResponse;
 }
 
@@ -480,12 +482,12 @@ async function readApiError(
     const parsed = JSON.parse(raw);
 
     if (Array.isArray(parsed?.message)) {
-      return parsed.message.join(", ");
+      return humanizeApiMessage(parsed.message) || fallback;
     }
 
-    return parsed?.message || parsed?.error || fallback;
+    return humanizeApiMessage(parsed?.message || parsed?.error, parsed?.statusCode) || fallback;
   } catch {
-    return raw || fallback;
+    return humanizeApiMessage(raw) || fallback;
   }
 }
 
@@ -833,7 +835,7 @@ const canManageMobileAttendanceSettings =
         },
       );
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await readApiError(res, "Failed to save credentials"));
 
       toast.success("Employee credentials saved");
       setCredentialModalOpen(false);
@@ -842,7 +844,7 @@ const canManageMobileAttendanceSettings =
       await fetchRows();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to save credentials");
+      toast.error(messageFromUnknownError(err, "Failed to save credentials"));
     } finally {
       setCredentialSaving(false);
     }
@@ -3763,14 +3765,11 @@ const canManageMobileAttendanceSettings =
 
     // Validation
     const validationErrors: string[] = [];
-    if (!formData.employeeFirstName?.trim())
-      validationErrors.push("Employee First Name is mandatory");
-    if (!formData.employeeLastName?.trim())
-      validationErrors.push("Employee Last Name is mandatory");
-    if (!isAdmin && !primaryMultiValue(formData.personalPhones).trim())
-      validationErrors.push("Mobile Number is mandatory");
-    if (!isAdmin && !formData.joiningDate?.trim())
-      validationErrors.push("Joining Date is mandatory");
+    if (!formData.employeeFirstName?.trim()) validationErrors.push("Employee First Name is mandatory");
+    if (!formData.employeeLastName?.trim()) validationErrors.push("Employee Last Name is mandatory");
+    if (!isAdmin && !primaryMultiValue(formData.personalPhones).trim()) validationErrors.push("Mobile Number is mandatory");
+    if (!isAdmin && !formData.joiningDate?.trim()) validationErrors.push("Joining Date is mandatory");
+    if (linkedEmployees.length === 0) validationErrors.push("Manager is mandatory");
 
     // Duplicate Employee ID check (within the same company) — only relevant when editing,
     // since new employees get an auto-generated, non-editable ID from the backend.
@@ -4303,27 +4302,50 @@ const canManageMobileAttendanceSettings =
       setEditingRow(null);
 
       if (wasEditing) {
-        toast.success("Employee updated successfully");
-      } else if (approvalRequired && approvalStatus === "PENDING") {
-        const workflowName = saveResult?.approval?.workflowName;
+        toast.success(
+          "Employee updated successfully",
+          saveResult?.initialPassword
+            ? {
+                description: saveResult?.loginEmailSent
+                  ? "Login details were emailed to the employee. They must change the temporary password on first login."
+                  : "No email is on file. Use the key icon to share the employee ID and temporary password.",
+                duration: 6000,
+              }
+            : undefined,
+        );
+      } else if (
+        approvalRequired &&
+        approvalStatus === "PENDING"
+      ) {
+        const workflowName =
+          saveResult?.approval
+            ?.workflowName;
 
         toast.success(
           workflowName
             ? `Employee created and submitted for approval through "${workflowName}"`
             : "Employee created and submitted for approval",
           {
-            description:
-              "Employee login will remain inactive until final approval.",
+            description: saveResult?.loginEmailSent
+              ? "Employee login will remain inactive until final approval. Employee created. Login details were emailed to the employee."
+              : saveResult?.initialPassword
+                ? "Employee login will remain inactive until final approval. Employee created. No email is on file. Use the key icon to share the employee ID and temporary password."
+                : "Employee login will remain inactive until final approval.",
             duration: 6000,
           },
         );
       } else {
-        toast.success("Employee created and approved successfully", {
-          description: saveResult?.initialPassword
-            ? "Employee credentials are active. The initial password is the employee mobile number."
-            : "No matching conditional approval workflow was required.",
-          duration: 6000,
-        });
+        toast.success(
+          "Employee created and approved successfully",
+          {
+            description: saveResult?.initialPassword
+              ? saveResult?.loginEmailSent
+                ? "Employee created. Login details were emailed to the employee."
+                : "Employee created. No email is on file. Use the key icon to share the employee ID and temporary password."
+              : "Employee created. No matching conditional approval workflow was required.",
+            duration: 6000,
+          },
+        );
       }
 
       dispatchAppRefresh();

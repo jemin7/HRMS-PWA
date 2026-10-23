@@ -671,10 +671,9 @@ export class TaskProjectsService {
       .filter(Boolean)
       .join(', ');
 
-    await this.employeeMemoService.createSystemStaffBroadcast({
+    await this.employeeMemoService.createSystemCompanyBroadcast({
       companyID: task.companyID,
       serviceProviderID: task.serviceProviderID,
-      subjectEmployeeIDs: manageEmployeeIDs,
       description: names
         ? `Task assigned: ${taskLabel} → ${names}`
         : `Task assigned: ${taskLabel}`,
@@ -847,9 +846,9 @@ export class TaskProjectsService {
     const andParts: Record<string, unknown>[] = [];
     if (search) {
       andParts.push({
-        OR: [
-          { taskName: { contains: search, mode: 'insensitive' } },
-          { taskCode: { contains: search, mode: 'insensitive' } },
+          OR: [
+            { taskName: { contains: search, mode: 'insensitive' } },
+            { taskCode: { contains: search, mode: 'insensitive' } },
           { customer: { is: { customerName: { contains: search, mode: 'insensitive' } } } },
           { customer: { is: { customerCode: { contains: search, mode: 'insensitive' } } } },
         ],
@@ -1809,13 +1808,13 @@ export class TaskProjectsService {
         ],
       },
       select: {
-        id: true,
-        employeeID: true,
-        employeeFirstName: true,
-        employeeLastName: true,
+      id: true,
+      employeeID: true,
+      employeeFirstName: true,
+      employeeLastName: true,
         companyID: true,
         company: { select: { companyName: true } },
-        departments: { select: { departmentName: true } },
+      departments: { select: { departmentName: true } },
       },
       orderBy: { employeeFirstName: 'asc' },
     });

@@ -21,6 +21,7 @@ function filenameBuilder(
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('files')
+@UseGuards(AuthGuard('jwt'))
 export class FilesController {
   @Post('upload')
   @UseInterceptors(

@@ -22,6 +22,7 @@ import { isWorkingActiveAssignedTask } from "../utils/taskAssignmentRequest";
 import { syncAppBadge } from "@/lib/appBadge";
 import { isCompanyOwnerFlag } from "@/lib/companyAccess";
 import { TASK_MANAGEMENT_ENABLED } from "../config/featureFlags";
+import { isProductHrefAllowed, useProductAccess } from "@/lib/productAccess";
 import { Dialog, DialogContent, DialogTitle, DialogHeader } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -29,6 +30,10 @@ import { Label } from "../components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import { isPasswordValid, PASSWORD_POLICY_MESSAGE } from "@/lib/passwordRules";
 import { PasswordRuleHints } from "@/app/components/ui/password-rule-hints";
+import {
+  clearTemporaryLoginPassword,
+  readTemporaryLoginPassword,
+} from "@/lib/tempPasswordSession";
 
 // ─── Ambient Greeting Accent ───────────────────────────────────────────────────
 const _ambientCss = `
@@ -278,6 +283,7 @@ export default function EmpDashboardPage() {
 function EmpDashboardPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  useProductAccess();
   const isPortalDesktop = useEmpPortalDesktop();
   const view = searchParams.get("view");
   const tab = searchParams.get("tab");
@@ -310,7 +316,6 @@ function EmpDashboardPageInner() {
 
   const [forcePasswordModalOpen, setForcePasswordModalOpen] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -342,7 +347,6 @@ function EmpDashboardPageInner() {
           setMustChangePassword(true);
           setForcePasswordModalOpen(true);
           setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-          setShowCurrentPassword(false);
           setShowNewPassword(false);
           setShowConfirmPassword(false);
         }
@@ -582,14 +586,25 @@ function EmpDashboardPageInner() {
     if (key === "leave") return leaveBadge;
     return 0;
   };
+  const visibleCards = menuCards.filter((card) => isProductHrefAllowed(card.href));
+  const spanLast = visibleCards.length % 2 === 1;
 
   const submitPasswordChange = async () => {
-    const currentPassword = passwordForm.currentPassword.trim();
+    const currentPassword = readTemporaryLoginPassword();
     const newPassword = passwordForm.newPassword.trim();
     const confirmPassword = passwordForm.confirmPassword.trim();
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      alert("All password fields are required");
+    if (!currentPassword) {
+      clearTemporaryLoginPassword();
+      alert("Sign in again to change your temporary password.");
+      localStorage.removeItem("token");
+      localStorage.removeItem("accessToken");
+      router.replace("/login");
+      return;
+    }
+
+    if (!newPassword || !confirmPassword) {
+      alert("New password and confirm password are required");
       return;
     }
 
@@ -652,7 +667,7 @@ function EmpDashboardPageInner() {
       
       alert("Password changed successfully! Please login again.");
       
-      // Clear tokens and redirect to login
+      clearTemporaryLoginPassword();
       localStorage.removeItem("token");
       localStorage.removeItem("accessToken");
       router.replace("/login");
@@ -705,19 +720,7 @@ function EmpDashboardPageInner() {
                 <input type="password" name="password" autoComplete="current-password" tabIndex={-1} />
               </div>
 
-              <ForcePasswordField
-                label="Old Password"
-                placeholder="Enter old password"
-                value={passwordForm.currentPassword}
-                onChange={(value) => setPasswordForm((p) => ({ ...p, currentPassword: value }))}
-                visible={showCurrentPassword}
-                onToggleVisible={() => setShowCurrentPassword((v) => !v)}
-                autoComplete="off"
-                name="hrms-force-old-password"
-                visibilityLabel="old password"
-              />
-
-              <div className="mt-4">
+              <div>
                 <ForcePasswordField
                   label="New Password"
                   placeholder="Enter new password"
@@ -833,12 +836,14 @@ function EmpDashboardPageInner() {
 
         {/* Menu grid */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          {menuCards.map((card) => {
+          {visibleCards.map((card, index) => {
             const badge = badgeFor(card.key);
+            const fullWidth = spanLast && index === visibleCards.length - 1;
             return (
               <Link
                 key={card.key}
                 href={card.href}
+                className={fullWidth ? "col-span-2" : undefined}
                 onClick={() => {
                   if (card.key === "notice") {
                     localStorage.setItem("_notice_last_viewed", Date.now().toString());
