@@ -13,10 +13,13 @@ import * as https from 'https';
 import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
 
-const LOCAL_EXPORT_URL = process.env.HRMS_EXPORT_URL || 'http://127.0.0.1:8000/hrms-export';
-const PUBLIC_EXPORT_URL = 'https://enplerp.electrohelps.in/backend/hrms-export';
+const LOCAL_EXPORT_URL =
+  process.env.HRMS_EXPORT_URL || 'http://127.0.0.1:8000/hrms-export';
+const PUBLIC_EXPORT_URL =
+  'https://enplerp.electrohelps.inhttps://hrms-api-test.onrender.com/hrms-export';
 const ERP_UPLOAD_ROOT =
-  process.env.ERP_UPLOADS_DIR || '/home/server/ENPL-ERP/backend/uploads';
+  process.env.ERP_UPLOADS_DIR ||
+  '/home/server/ENPL-ERPhttps://hrms-api-test.onrender.com/uploads';
 const HRMS_UPLOAD_ROOT = path.resolve(__dirname, '..', 'uploads');
 
 const COMPANY_NAMES = new Set([
@@ -58,20 +61,30 @@ function effectiveErpStatus(src: any): string {
   return normalizeTaskStatus(remarks[0]?.status || src.status) || 'Open';
 }
 
-function httpGetBuffer(url: string, headers: Record<string, string> = {}): Promise<{ status: number; body: Buffer }> {
+function httpGetBuffer(
+  url: string,
+  headers: Record<string, string> = {},
+): Promise<{ status: number; body: Buffer }> {
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https:') ? https : http;
     const req = client.get(url, { headers, timeout: 120000 }, (res) => {
       const chunks: Buffer[] = [];
-      res.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
-      res.on('end', () => resolve({ status: res.statusCode || 0, body: Buffer.concat(chunks) }));
+      res.on('data', (chunk) =>
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+      );
+      res.on('end', () =>
+        resolve({ status: res.statusCode || 0, body: Buffer.concat(chunks) }),
+      );
     });
     req.on('timeout', () => req.destroy(new Error(`Timeout fetching ${url}`)));
     req.on('error', reject);
   });
 }
 
-async function httpGetJson(url: string, headers: Record<string, string> = {}): Promise<any> {
+async function httpGetJson(
+  url: string,
+  headers: Record<string, string> = {},
+): Promise<any> {
   const { status, body } = await httpGetBuffer(url, headers);
   if (status < 200 || status >= 300) {
     throw new Error(`GET ${url} failed with HTTP ${status}`);
@@ -94,8 +107,12 @@ async function fetchExport(): Promise<any> {
   }
 }
 
-function assertSingleCompany<T extends { id: number; companyName: string | null }>(companies: T[]): T {
-  const matched = companies.filter((row) => COMPANY_NAMES.has((row.companyName || '').trim().toLowerCase()));
+function assertSingleCompany<
+  T extends { id: number; companyName: string | null },
+>(companies: T[]): T {
+  const matched = companies.filter((row) =>
+    COMPANY_NAMES.has((row.companyName || '').trim().toLowerCase()),
+  );
   if (matched.length === 0) {
     throw new Error(
       'No Company matched Electrohelps Networks Pvt Ltd / Electohelps / Electrohelps Networks / EHS Networks. Aborting.',
@@ -115,13 +132,21 @@ function uploadsMatch(filepath?: string | null): string | null {
   return match?.[1] || null;
 }
 
-function resolveLocalErpFile(filepath?: string | null, filename?: string | null, folder?: string): string | null {
+function resolveLocalErpFile(
+  filepath?: string | null,
+  filename?: string | null,
+  folder?: string,
+): string | null {
   if (filepath && fs.existsSync(filepath)) return filepath;
   const relative = uploadsMatch(filepath);
   if (relative) {
     const fromRoot = path.join(ERP_UPLOAD_ROOT, relative);
     if (fs.existsSync(fromRoot)) return fromRoot;
-    const fromBackend = path.join('/home/server/ENPL-ERP/backend', 'uploads', relative);
+    const fromBackend = path.join(
+      '/home/server/ENPL-ERPhttps://hrms-api-test.onrender.com',
+      'uploads',
+      relative,
+    );
     if (fs.existsSync(fromBackend)) return fromBackend;
   }
   if (filename && folder) {
@@ -140,26 +165,49 @@ async function importFile(opts: {
   filename?: string | null;
   fileUrl?: string | null;
   folder: string;
-}): Promise<{ filename: string; filepath: string; fileUrl: string; skipped: boolean } | null> {
-  const originalName = safeFilename(opts.filename || path.basename(opts.filepath || opts.fileUrl || 'file'));
+}): Promise<{
+  filename: string;
+  filepath: string;
+  fileUrl: string;
+  skipped: boolean;
+} | null> {
+  const originalName = safeFilename(
+    opts.filename || path.basename(opts.filepath || opts.fileUrl || 'file'),
+  );
   if (!originalName) return null;
   const destDir = path.join(HRMS_UPLOAD_ROOT, opts.folder);
   const destPath = path.join(destDir, originalName);
   const publicUrl = `/uploads/${opts.folder}/${originalName}`;
   fs.mkdirSync(destDir, { recursive: true });
   if (fs.existsSync(destPath)) {
-    return { filename: originalName, filepath: destPath, fileUrl: publicUrl, skipped: true };
+    return {
+      filename: originalName,
+      filepath: destPath,
+      fileUrl: publicUrl,
+      skipped: true,
+    };
   }
 
-  const localSrc = resolveLocalErpFile(opts.filepath, opts.filename, opts.folder);
+  const localSrc = resolveLocalErpFile(
+    opts.filepath,
+    opts.filename,
+    opts.folder,
+  );
   if (localSrc) {
     fs.copyFileSync(localSrc, destPath);
-    return { filename: originalName, filepath: destPath, fileUrl: publicUrl, skipped: false };
+    return {
+      filename: originalName,
+      filepath: destPath,
+      fileUrl: publicUrl,
+      skipped: false,
+    };
   }
 
   const candidates = [
     opts.fileUrl,
-    opts.filepath ? `http://127.0.0.1:8000/uploads/${uploadsMatch(opts.filepath) || `${opts.folder}/${originalName}`}` : null,
+    opts.filepath
+      ? `http://127.0.0.1:8000/uploads/${uploadsMatch(opts.filepath) || `${opts.folder}/${originalName}`}`
+      : null,
     `http://127.0.0.1:8000/uploads/${opts.folder}/${originalName}`,
   ].filter(Boolean) as string[];
 
@@ -168,14 +216,21 @@ async function importFile(opts: {
       const { status, body } = await httpGetBuffer(url);
       if (status >= 200 && status < 300 && body.length > 0) {
         fs.writeFileSync(destPath, body);
-        return { filename: originalName, filepath: destPath, fileUrl: publicUrl, skipped: false };
+        return {
+          filename: originalName,
+          filepath: destPath,
+          fileUrl: publicUrl,
+          skipped: false,
+        };
       }
     } catch {
       /* try next */
     }
   }
 
-  console.warn(`  file missing: ${originalName} (${opts.filepath || opts.fileUrl || 'no path'})`);
+  console.warn(
+    `  file missing: ${originalName} (${opts.filepath || opts.fileUrl || 'no path'})`,
+  );
   return {
     filename: originalName,
     filepath: opts.filepath || destPath,
@@ -186,7 +241,9 @@ async function importFile(opts: {
 
 async function replaceCustomerContacts(customerID: number, contacts: any[]) {
   await prisma.taskCustomerContact.deleteMany({ where: { customerID } });
-  const rows = (contacts || []).filter((c) => blank(c.contactPerson) && blank(c.contactNumber));
+  const rows = (contacts || []).filter(
+    (c) => blank(c.contactPerson) && blank(c.contactNumber),
+  );
   if (!rows.length) return;
   await prisma.taskCustomerContact.createMany({
     data: rows.map((c) => ({
@@ -199,10 +256,16 @@ async function replaceCustomerContacts(customerID: number, contacts: any[]) {
   });
 }
 
-async function replaceSiteChildren(siteID: number, contacts: any[], notes: any[]) {
+async function replaceSiteChildren(
+  siteID: number,
+  contacts: any[],
+  notes: any[],
+) {
   await prisma.taskCustomerSiteContact.deleteMany({ where: { siteID } });
   await prisma.taskCustomerSiteNote.deleteMany({ where: { siteID } });
-  const contactRows = (contacts || []).filter((c) => blank(c.contactPerson) && blank(c.contactNumber));
+  const contactRows = (contacts || []).filter(
+    (c) => blank(c.contactPerson) && blank(c.contactNumber),
+  );
   if (contactRows.length) {
     await prisma.taskCustomerSiteContact.createMany({
       data: contactRows.map((c) => ({
@@ -250,7 +313,9 @@ async function replaceTaskNested(
   await prisma.taskEngineerAssignment.deleteMany({ where: { taskID } });
   await prisma.taskAssignment.deleteMany({ where: { taskID } });
 
-  const contacts = (erp.contacts || []).filter((c: any) => blank(c.contactName) && blank(c.contactNumber));
+  const contacts = (erp.contacts || []).filter(
+    (c: any) => blank(c.contactName) && blank(c.contactNumber),
+  );
   if (contacts.length) {
     await prisma.taskProjectContact.createMany({
       data: contacts.map((c: any) => ({
@@ -268,7 +333,8 @@ async function replaceTaskNested(
     await prisma.taskWorkscopeDetail.createMany({
       data: workscope.map((row: any) => ({
         taskID,
-        workscopeCategoryID: maps.workscope.get(Number(row.workscopeCategoryId)) ?? null,
+        workscopeCategoryID:
+          maps.workscope.get(Number(row.workscopeCategoryId)) ?? null,
         workscopeDetails: blank(row.workscopeDetails),
         extraNote: blank(row.extraNote),
       })),
@@ -376,7 +442,9 @@ async function replaceTaskNested(
       fileSize: number | null;
       erpFilepath: string | null;
     }[] = [];
-    for (const att of erp.purchase.taskPurchaseAttachments || erp.purchase.attachments || []) {
+    for (const att of erp.purchase.taskPurchaseAttachments ||
+      erp.purchase.attachments ||
+      []) {
       const copied = await importFile({
         filepath: att.filepath,
         filename: att.filename,
@@ -423,16 +491,23 @@ async function replaceTaskNested(
   if (engineerRows.length) {
     await prisma.taskEngineerAssignment.createMany({
       data: engineerRows.map((row: any) => {
-        const email = blank(row.engineer?.email || row.engineerEmail)?.toLowerCase();
+        const email = blank(
+          row.engineer?.email || row.engineerEmail,
+        )?.toLowerCase();
         const fromEmail = email ? maps.employeeByEmail.get(email) : undefined;
-        const fromLookup = row.engineerId != null ? maps.engineer.get(Number(row.engineerId)) : undefined;
+        const fromLookup =
+          row.engineerId != null
+            ? maps.engineer.get(Number(row.engineerId))
+            : undefined;
         const manageEmployeeID = fromEmail ?? fromLookup ?? null;
         if (manageEmployeeID) assignedEmployeeIds.add(manageEmployeeID);
         return {
           taskID,
           manageEmployeeID,
           engineerName: blank(
-            row.engineer ? `${row.engineer.firstName || ''} ${row.engineer.lastName || ''}`.trim() : row.engineerName,
+            row.engineer
+              ? `${row.engineer.firstName || ''} ${row.engineer.lastName || ''}`.trim()
+              : row.engineerName,
           ),
           engineerEmail: blank(row.engineer?.email || row.engineerEmail),
           engineerPhone: blank(row.engineer?.phoneNumber || row.engineerPhone),
@@ -447,13 +522,18 @@ async function replaceTaskNested(
   }
   if (assignedEmployeeIds.size) {
     await prisma.taskAssignment.createMany({
-      data: [...assignedEmployeeIds].map((manageEmployeeID) => ({ taskID, manageEmployeeID })),
+      data: [...assignedEmployeeIds].map((manageEmployeeID) => ({
+        taskID,
+        manageEmployeeID,
+      })),
       skipDuplicates: true,
     });
   }
 }
 
-async function resolveUniqueRow<T extends { id: number; companyID: number | null }>(opts: {
+async function resolveUniqueRow<
+  T extends { id: number; companyID: number | null },
+>(opts: {
   companyID: number;
   erpId: number;
   baseCode: string;
@@ -466,14 +546,18 @@ async function resolveUniqueRow<T extends { id: number; companyID: number | null
   const byErp = await opts.findByErp();
   if (byErp) {
     if (byErp.companyID && byErp.companyID !== opts.companyID) {
-      throw new Error(`${opts.label} ERP ${opts.erpId} already belongs to company ${byErp.companyID}`);
+      throw new Error(
+        `${opts.label} ERP ${opts.erpId} already belongs to company ${byErp.companyID}`,
+      );
     }
     return { existing: byErp, code: opts.codeFrom(byErp) };
   }
   const byCode = await opts.findByCode(opts.baseCode);
   if (byCode) {
     if (byCode.companyID && byCode.companyID !== opts.companyID) {
-      throw new Error(`${opts.label} ${opts.baseCode} already belongs to company ${byCode.companyID}`);
+      throw new Error(
+        `${opts.label} ${opts.baseCode} already belongs to company ${byCode.companyID}`,
+      );
     }
     const ownedBy = opts.erpField(byCode);
     if (!ownedBy || ownedBy === opts.erpId) {
@@ -483,7 +567,9 @@ async function resolveUniqueRow<T extends { id: number; companyID: number | null
     const clash = await opts.findByCode(code);
     if (clash) {
       if (clash.companyID && clash.companyID !== opts.companyID) {
-        throw new Error(`${opts.label} ${code} already belongs to company ${clash.companyID}`);
+        throw new Error(
+          `${opts.label} ${code} already belongs to company ${clash.companyID}`,
+        );
       }
       return { existing: clash, code };
     }
@@ -498,7 +584,9 @@ async function main() {
   const counts = meta.counts || {};
   console.log('ERP export meta:', JSON.stringify(counts));
 
-  const companies = await prisma.company.findMany({ select: { id: true, companyName: true, serviceProviderID: true } });
+  const companies = await prisma.company.findMany({
+    select: { id: true, companyName: true, serviceProviderID: true },
+  });
   const company = assertSingleCompany(companies);
   const companyID = company.id;
   const serviceProviderID = company.serviceProviderID ?? null;
@@ -511,7 +599,8 @@ async function main() {
   const employeeByEmail = new Map<string, number>();
   for (const emp of employees) {
     for (const email of [emp.businessEmail, emp.personalEmail]) {
-      if (email?.trim()) employeeByEmail.set(email.trim().toLowerCase(), emp.id);
+      if (email?.trim())
+        employeeByEmail.set(email.trim().toLowerCase(), emp.id);
     }
   }
 
@@ -527,7 +616,10 @@ async function main() {
     const name = String(dept.departmentName || '').trim();
     if (!name) continue;
     let row = await prisma.departments.findFirst({
-      where: { companyID, departmentName: { equals: name, mode: 'insensitive' } },
+      where: {
+        companyID,
+        departmentName: { equals: name, mode: 'insensitive' },
+      },
     });
     if (!row) {
       row = await prisma.departments.create({
@@ -541,7 +633,12 @@ async function main() {
     const name = String(cat.workscopeCategoryName || '').trim();
     if (!name) continue;
     const row = await prisma.taskWorkscopeCategory.upsert({
-      where: { companyID_workscopeCategoryName: { companyID, workscopeCategoryName: name } },
+      where: {
+        companyID_workscopeCategoryName: {
+          companyID,
+          workscopeCategoryName: name,
+        },
+      },
       update: {},
       create: { companyID, workscopeCategoryName: name },
     });
@@ -554,31 +651,45 @@ async function main() {
     const row = await prisma.taskProduct.upsert({
       where: { companyID_productName: { companyID, productName: name } },
       update: { productCode: blank(product.productId) },
-      create: { companyID, productName: name, productCode: blank(product.productId) },
+      create: {
+        companyID,
+        productName: name,
+        productCode: blank(product.productId),
+      },
     });
     erpProductId.set(Number(product.id), row.id);
   }
 
   for (const engineer of payload.lookups?.engineers || []) {
     const email = blank(engineer.email)?.toLowerCase();
-    erpEngineerId.set(Number(engineer.id), email ? employeeByEmail.get(email) ?? null : null);
+    erpEngineerId.set(
+      Number(engineer.id),
+      email ? (employeeByEmail.get(email) ?? null) : null,
+    );
   }
 
-  console.log(`Lookups: ${erpDepartmentId.size} depts, ${erpWorkscopeCategoryId.size} workscope, ${erpProductId.size} products`);
+  console.log(
+    `Lookups: ${erpDepartmentId.size} depts, ${erpWorkscopeCategoryId.size} workscope, ${erpProductId.size} products`,
+  );
 
   const customers: JsonMap[] = payload.customers || [];
   for (let i = 0; i < customers.length; i++) {
     const src = customers[i];
     const customerCodeBase = String(src.addressBookID || '').trim();
-    if (!customerCodeBase) throw new Error(`Customer ${src.id} missing addressBookID`);
+    if (!customerCodeBase)
+      throw new Error(`Customer ${src.id} missing addressBookID`);
     const resolved = await resolveUniqueRow({
       companyID,
       erpId: Number(src.id),
       baseCode: customerCodeBase,
       erpField: (row) => row.erpAddressBookId,
       codeFrom: (row) => row.customerCode,
-      findByErp: () => prisma.taskCustomer.findFirst({ where: { erpAddressBookId: Number(src.id) } }),
-      findByCode: (code) => prisma.taskCustomer.findFirst({ where: { customerCode: code } }),
+      findByErp: () =>
+        prisma.taskCustomer.findFirst({
+          where: { erpAddressBookId: Number(src.id) },
+        }),
+      findByCode: (code) =>
+        prisma.taskCustomer.findFirst({ where: { customerCode: code } }),
       label: 'Customer',
     });
     const customerCode = resolved.code;
@@ -602,7 +713,10 @@ async function main() {
       isDeleted: false,
     };
     const saved = resolved.existing
-      ? await prisma.taskCustomer.update({ where: { id: resolved.existing.id }, data })
+      ? await prisma.taskCustomer.update({
+          where: { id: resolved.existing.id },
+          data,
+        })
       : await prisma.taskCustomer.create({
           data: { ...data, createdAt: asDate(src.createdAt) || undefined },
         });
@@ -620,7 +734,9 @@ async function main() {
     if (!siteCodeBase) throw new Error(`Site ${src.id} missing siteID`);
     const customerID = erpAddressBookId.get(Number(src.addressBookId));
     if (!customerID) {
-      console.warn(`Skipping site ${siteCodeBase}: parent customer ${src.addressBookId} not imported`);
+      console.warn(
+        `Skipping site ${siteCodeBase}: parent customer ${src.addressBookId} not imported`,
+      );
       continue;
     }
     const resolved = await resolveUniqueRow({
@@ -629,8 +745,12 @@ async function main() {
       baseCode: siteCodeBase,
       erpField: (row) => row.erpSiteId,
       codeFrom: (row) => row.siteCode || siteCodeBase,
-      findByErp: () => prisma.taskCustomerSite.findFirst({ where: { erpSiteId: Number(src.id) } }),
-      findByCode: (code) => prisma.taskCustomerSite.findFirst({ where: { siteCode: code } }),
+      findByErp: () =>
+        prisma.taskCustomerSite.findFirst({
+          where: { erpSiteId: Number(src.id) },
+        }),
+      findByCode: (code) =>
+        prisma.taskCustomerSite.findFirst({ where: { siteCode: code } }),
       label: 'Site',
     });
     const siteCode = resolved.code;
@@ -649,11 +769,18 @@ async function main() {
       isDeleted: false,
     };
     const saved = resolved.existing
-      ? await prisma.taskCustomerSite.update({ where: { id: resolved.existing.id }, data })
+      ? await prisma.taskCustomerSite.update({
+          where: { id: resolved.existing.id },
+          data,
+        })
       : await prisma.taskCustomerSite.create({
           data: { ...data, createdAt: asDate(src.createdAt) || undefined },
         });
-    await replaceSiteChildren(saved.id, src.contacts || [], src.siteNotes || []);
+    await replaceSiteChildren(
+      saved.id,
+      src.contacts || [],
+      src.siteNotes || [],
+    );
     erpSiteId.set(Number(src.id), saved.id);
     if ((i + 1) % 50 === 0 || i === sites.length - 1) {
       console.log(`Sites ${i + 1}/${sites.length}`);
@@ -671,15 +798,23 @@ async function main() {
       companyID,
       taskCode,
       erpTaskId: Number(src.id),
-      departmentID: src.departmentId != null ? erpDepartmentId.get(Number(src.departmentId)) ?? null : null,
+      departmentID:
+        src.departmentId != null
+          ? (erpDepartmentId.get(Number(src.departmentId)) ?? null)
+          : null,
       taskType: String(src.taskType || 'SERVICE'),
-      customerID: src.addressBookId != null ? erpAddressBookId.get(Number(src.addressBookId)) ?? null : null,
-      siteID: src.siteId != null ? erpSiteId.get(Number(src.siteId)) ?? null : null,
+      customerID:
+        src.addressBookId != null
+          ? (erpAddressBookId.get(Number(src.addressBookId)) ?? null)
+          : null,
+      siteID:
+        src.siteId != null ? (erpSiteId.get(Number(src.siteId)) ?? null) : null,
       taskName: blank(src.title) || taskCode,
       description: blank(src.description),
       attachment: blank(src.attachment),
       scheduleDateTime: asDate(firstSchedule?.proposedDateTime),
-      priority: blank(firstSchedule?.priority) || blank(src.priority) || 'Medium',
+      priority:
+        blank(firstSchedule?.priority) || blank(src.priority) || 'Medium',
       status: effectiveErpStatus(src),
       createdByName: blank(src.createdBy),
       isDeleted: false,
@@ -688,7 +823,9 @@ async function main() {
       where: { OR: [{ erpTaskId: Number(src.id) }, { taskCode }] },
     });
     if (existing && existing.companyID && existing.companyID !== companyID) {
-      throw new Error(`Task ${taskCode} already belongs to company ${existing.companyID}`);
+      throw new Error(
+        `Task ${taskCode} already belongs to company ${existing.companyID}`,
+      );
     }
     const saved = existing
       ? await prisma.taskProject.update({ where: { id: existing.id }, data })
@@ -720,34 +857,69 @@ async function main() {
     });
   }
   for (const [enpl, hrms] of erpAddressBookId) {
-    const row = await prisma.taskCustomer.findUnique({ where: { id: hrms }, select: { customerCode: true } });
+    const row = await prisma.taskCustomer.findUnique({
+      where: { id: hrms },
+      select: { customerCode: true },
+    });
     await upsertMapping('customer', hrms, enpl, row?.customerCode ?? null);
   }
   for (const [enpl, hrms] of erpSiteId) {
-    const row = await prisma.taskCustomerSite.findUnique({ where: { id: hrms }, select: { siteCode: true } });
+    const row = await prisma.taskCustomerSite.findUnique({
+      where: { id: hrms },
+      select: { siteCode: true },
+    });
     await upsertMapping('site', hrms, enpl, row?.siteCode ?? null);
   }
   for (const [enpl, hrms] of erpTaskId) {
-    const row = await prisma.taskProject.findUnique({ where: { id: hrms }, select: { taskCode: true } });
+    const row = await prisma.taskProject.findUnique({
+      where: { id: hrms },
+      select: { taskCode: true },
+    });
     await upsertMapping('task', hrms, enpl, row?.taskCode ?? null);
   }
   console.log('Wrote ENPL id ↔ HRMS id mappings');
 
   const tenant = {
-    customers: await prisma.taskCustomer.count({ where: { companyID, isDeleted: false } }),
-    sites: await prisma.taskCustomerSite.count({ where: { companyID, isDeleted: false } }),
-    tasks: await prisma.taskProject.count({ where: { companyID, isDeleted: false } }),
-    customerContacts: await prisma.taskCustomerContact.count({ where: { customer: { companyID } } }),
-    siteContacts: await prisma.taskCustomerSiteContact.count({ where: { site: { companyID } } }),
-    siteNotes: await prisma.taskCustomerSiteNote.count({ where: { site: { companyID } } }),
-    taskContacts: await prisma.taskProjectContact.count({ where: { task: { companyID } } }),
-    taskRemarks: await prisma.taskRemark.count({ where: { task: { companyID } } }),
-    taskSchedules: await prisma.taskSchedule.count({ where: { task: { companyID } } }),
-    taskWorkscopeDetails: await prisma.taskWorkscopeDetail.count({ where: { task: { companyID } } }),
-    taskEngineerAssignments: await prisma.taskEngineerAssignment.count({ where: { task: { companyID } } }),
-    taskImages: await prisma.taskImage.count({ where: { task: { companyID } } }),
+    customers: await prisma.taskCustomer.count({
+      where: { companyID, isDeleted: false },
+    }),
+    sites: await prisma.taskCustomerSite.count({
+      where: { companyID, isDeleted: false },
+    }),
+    tasks: await prisma.taskProject.count({
+      where: { companyID, isDeleted: false },
+    }),
+    customerContacts: await prisma.taskCustomerContact.count({
+      where: { customer: { companyID } },
+    }),
+    siteContacts: await prisma.taskCustomerSiteContact.count({
+      where: { site: { companyID } },
+    }),
+    siteNotes: await prisma.taskCustomerSiteNote.count({
+      where: { site: { companyID } },
+    }),
+    taskContacts: await prisma.taskProjectContact.count({
+      where: { task: { companyID } },
+    }),
+    taskRemarks: await prisma.taskRemark.count({
+      where: { task: { companyID } },
+    }),
+    taskSchedules: await prisma.taskSchedule.count({
+      where: { task: { companyID } },
+    }),
+    taskWorkscopeDetails: await prisma.taskWorkscopeDetail.count({
+      where: { task: { companyID } },
+    }),
+    taskEngineerAssignments: await prisma.taskEngineerAssignment.count({
+      where: { task: { companyID } },
+    }),
+    taskImages: await prisma.taskImage.count({
+      where: { task: { companyID } },
+    }),
     taskNotes: await prisma.taskNote.count({ where: { task: { companyID } } }),
-    taskPurchases: await prisma.taskPurchase.count({ where: { task: { companyID } } }),
+    taskPurchases: await prisma.taskPurchase.count({
+      where: { task: { companyID } },
+    }),
   };
   const leaked = {
     customers: await prisma.taskCustomer.count({
@@ -764,16 +936,24 @@ async function main() {
   console.log('HRMS tenant counts:', tenant);
   console.log('Leaked to other companies:', leaked);
   if (tenant.customers !== (counts.customers ?? customers.length)) {
-    throw new Error(`Customer count mismatch: HRMS ${tenant.customers} vs ERP ${counts.customers}`);
+    throw new Error(
+      `Customer count mismatch: HRMS ${tenant.customers} vs ERP ${counts.customers}`,
+    );
   }
   if (tenant.sites !== (counts.sites ?? sites.length)) {
-    throw new Error(`Site count mismatch: HRMS ${tenant.sites} vs ERP ${counts.sites}`);
+    throw new Error(
+      `Site count mismatch: HRMS ${tenant.sites} vs ERP ${counts.sites}`,
+    );
   }
   if (tenant.tasks !== (counts.tasks ?? tasks.length)) {
-    throw new Error(`Task count mismatch: HRMS ${tenant.tasks} vs ERP ${counts.tasks}`);
+    throw new Error(
+      `Task count mismatch: HRMS ${tenant.tasks} vs ERP ${counts.tasks}`,
+    );
   }
   if (leaked.customers || leaked.sites || leaked.tasks) {
-    throw new Error('ERP codes were written to another company. Aborting after import — inspect data.');
+    throw new Error(
+      'ERP codes were written to another company. Aborting after import — inspect data.',
+    );
   }
 }
 

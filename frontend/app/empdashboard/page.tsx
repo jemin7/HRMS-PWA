@@ -23,7 +23,12 @@ import { syncAppBadge } from "@/lib/appBadge";
 import { isCompanyOwnerFlag } from "@/lib/companyAccess";
 import { TASK_MANAGEMENT_ENABLED } from "../config/featureFlags";
 import { isProductHrefAllowed, useProductAccess } from "@/lib/productAccess";
-import { Dialog, DialogContent, DialogTitle, DialogHeader } from "../components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogHeader,
+} from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -54,7 +59,15 @@ function celestialPosition(progress: number, radius: number) {
   return { arc, centerY, bodyBottom, clipHeight };
 }
 
-function CrescentMoon({ size, bottom, left }: { size: number; bottom: number; left: number }) {
+function CrescentMoon({
+  size,
+  bottom,
+  left,
+}: {
+  size: number;
+  bottom: number;
+  left: number;
+}) {
   return (
     <svg
       aria-hidden
@@ -70,7 +83,13 @@ function CrescentMoon({ size, bottom, left }: { size: number; bottom: number; le
           <stop offset="100%" stopColor="#d97706" />
         </linearGradient>
         <filter id="moonGlow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#78350f" floodOpacity="0.45" />
+          <feDropShadow
+            dx="0"
+            dy="1"
+            stdDeviation="1.5"
+            floodColor="#78350f"
+            floodOpacity="0.45"
+          />
         </filter>
       </defs>
       <path
@@ -89,12 +108,18 @@ function CrescentMoon({ size, bottom, left }: { size: number; bottom: number; le
 
 function HorizonLine() {
   return (
-    <div style={{
-      position: "absolute", left: 8, bottom: HORIZON_BOTTOM,
-      width: SKY_W - 16, height: 1,
-      background: "linear-gradient(to right, transparent, rgba(148,163,184,0.45) 15%, rgba(148,163,184,0.45) 85%, transparent)",
-      borderRadius: 1,
-    }} />
+    <div
+      style={{
+        position: "absolute",
+        left: 8,
+        bottom: HORIZON_BOTTOM,
+        width: SKY_W - 16,
+        height: 1,
+        background:
+          "linear-gradient(to right, transparent, rgba(148,163,184,0.45) 15%, rgba(148,163,184,0.45) 85%, transparent)",
+        borderRadius: 1,
+      }}
+    />
   );
 }
 
@@ -125,42 +150,58 @@ function AmbientAccent() {
     return (
       <>
         <style>{_ambientCss}</style>
-        <div aria-hidden style={{ position: "relative", width: SKY_W, height: SKY_H, marginBottom: 2 }}>
-          <div style={{
-            position: "absolute",
-            left: SKY_W / 2 - sunClipW / 2,
-            bottom: HORIZON_BOTTOM,
-            width: sunClipW,
-            height: sun.clipHeight,
-            overflow: "hidden",
-          }}>
-            <div style={{
+        <div
+          aria-hidden
+          style={{
+            position: "relative",
+            width: SKY_W,
+            height: SKY_H,
+            marginBottom: 2,
+          }}
+        >
+          <div
+            style={{
               position: "absolute",
-              left: sunClipW / 2 - SUN_R,
-              bottom: sun.bodyBottom,
-              width: SUN_R * 2,
-              height: SUN_R * 2,
-              borderRadius: "50%",
-              background: "linear-gradient(145deg, rgba(253,224,71,0.95) 0%, rgba(251,191,36,0.75) 100%)",
-              boxShadow: "0 0 10px rgba(251,191,36,0.35)",
-            }} />
+              left: SKY_W / 2 - sunClipW / 2,
+              bottom: HORIZON_BOTTOM,
+              width: sunClipW,
+              height: sun.clipHeight,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                left: sunClipW / 2 - SUN_R,
+                bottom: sun.bodyBottom,
+                width: SUN_R * 2,
+                height: SUN_R * 2,
+                borderRadius: "50%",
+                background:
+                  "linear-gradient(145deg, rgba(253,224,71,0.95) 0%, rgba(251,191,36,0.75) 100%)",
+                boxShadow: "0 0 10px rgba(251,191,36,0.35)",
+              }}
+            />
             {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => {
               const rad = (deg * Math.PI) / 180;
               const d = SUN_R + 4;
               const rx = d * Math.cos(rad);
               const ry = d * Math.sin(rad);
               return (
-                <div key={i} style={{
-                  position: "absolute",
-                  left: sunClipW / 2 + rx - 3,
-                  bottom: sun.centerY + ry - 1,
-                  width: 6,
-                  height: 2,
-                  borderRadius: 1,
-                  background: "rgba(251,191,36,0.55)",
-                  transform: `rotate(${-deg}deg)`,
-                  opacity: sun.arc > 0.15 ? 1 : 0.35,
-                }} />
+                <div
+                  key={i}
+                  style={{
+                    position: "absolute",
+                    left: sunClipW / 2 + rx - 3,
+                    bottom: sun.centerY + ry - 1,
+                    width: 6,
+                    height: 2,
+                    borderRadius: 1,
+                    background: "rgba(251,191,36,0.55)",
+                    transform: `rotate(${-deg}deg)`,
+                    opacity: sun.arc > 0.15 ? 1 : 0.35,
+                  }}
+                />
               );
             })}
           </div>
@@ -173,15 +214,25 @@ function AmbientAccent() {
   return (
     <>
       <style>{_ambientCss}</style>
-      <div aria-hidden style={{ position: "relative", width: SKY_W, height: SKY_H, marginBottom: 2 }}>
-        <div style={{
-          position: "absolute",
-          left: SKY_W / 2 - moonClipW / 2,
-          bottom: HORIZON_BOTTOM,
-          width: moonClipW,
-          height: moon.clipHeight,
-          overflow: "hidden",
-        }}>
+      <div
+        aria-hidden
+        style={{
+          position: "relative",
+          width: SKY_W,
+          height: SKY_H,
+          marginBottom: 2,
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: SKY_W / 2 - moonClipW / 2,
+            bottom: HORIZON_BOTTOM,
+            width: moonClipW,
+            height: moon.clipHeight,
+            overflow: "hidden",
+          }}
+        >
           <CrescentMoon
             size={MOON_R * 2}
             left={moonClipW / 2 - MOON_R}
@@ -194,7 +245,8 @@ function AmbientAccent() {
   );
 }
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 function greeting() {
   const h = new Date().getHours();
@@ -205,14 +257,64 @@ function greeting() {
 }
 
 const menuCards = [
-  { key: "payroll", label: "Payroll", sub: "View pay slips", icon: "solar:document-text-bold-duotone", color: "bg-indigo-50", iconColor: "text-indigo-600", href: "/empGenerateSalary" },
+  {
+    key: "payroll",
+    label: "Payroll",
+    sub: "View pay slips",
+    icon: "solar:document-text-bold-duotone",
+    color: "bg-indigo-50",
+    iconColor: "text-indigo-600",
+    href: "/empGenerateSalary",
+  },
   ...(TASK_MANAGEMENT_ENABLED
-    ? [{ key: "tasks", label: "Tasks", sub: "Open & WIP", icon: "solar:checklist-bold-duotone", color: "bg-violet-50", iconColor: "text-violet-600", href: "/empMyTasks" }]
+    ? [
+        {
+          key: "tasks",
+          label: "Tasks",
+          sub: "Open & WIP",
+          icon: "solar:checklist-bold-duotone",
+          color: "bg-violet-50",
+          iconColor: "text-violet-600",
+          href: "/empMyTasks",
+        },
+      ]
     : []),
-  { key: "notice", label: "IM", sub: "Internal messages", icon: "solar:bell-bold-duotone", color: "bg-amber-50", iconColor: "text-amber-600", href: "/empProfile?tab=messaging" },
-  { key: "reimb", label: "Reimbursement", sub: "Pending approval", icon: "solar:wallet-bold-duotone", color: "bg-emerald-50", iconColor: "text-emerald-600", href: "/empReimbursement" },
-  { key: "holidays", label: "Holiday list", sub: "Company public holidays", icon: "solar:calendar-mark-bold-duotone", color: "bg-rose-50", iconColor: "text-rose-600", href: "/empHolidays" },
-  { key: "leave", label: "Leaves", sub: "Pending approval", icon: "solar:calendar-bold-duotone", color: "bg-blue-50", iconColor: "text-blue-600", href: "/empLeaveApplication" },
+  {
+    key: "notice",
+    label: "IM",
+    sub: "Internal messages",
+    icon: "solar:bell-bold-duotone",
+    color: "bg-amber-50",
+    iconColor: "text-amber-600",
+    href: "/empProfile?tab=messaging",
+  },
+  {
+    key: "reimb",
+    label: "Reimbursement",
+    sub: "Pending approval",
+    icon: "solar:wallet-bold-duotone",
+    color: "bg-emerald-50",
+    iconColor: "text-emerald-600",
+    href: "/empReimbursement",
+  },
+  {
+    key: "holidays",
+    label: "Holiday list",
+    sub: "Company public holidays",
+    icon: "solar:calendar-mark-bold-duotone",
+    color: "bg-rose-50",
+    iconColor: "text-rose-600",
+    href: "/empHolidays",
+  },
+  {
+    key: "leave",
+    label: "Leaves",
+    sub: "Pending approval",
+    icon: "solar:calendar-bold-duotone",
+    color: "bg-blue-50",
+    iconColor: "text-blue-600",
+    href: "/empLeaveApplication",
+  },
 ];
 
 function ForcePasswordField({
@@ -262,7 +364,9 @@ function ForcePasswordField({
           type="button"
           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           onClick={onToggleVisible}
-          aria-label={visible ? `Hide ${visibilityLabel}` : `Show ${visibilityLabel}`}
+          aria-label={
+            visible ? `Hide ${visibilityLabel}` : `Show ${visibilityLabel}`
+          }
           tabIndex={-1}
         >
           {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -288,7 +392,9 @@ function EmpDashboardPageInner() {
   const view = searchParams.get("view");
   const tab = searchParams.get("tab");
   const homeTab =
-    tab === "overview" ? "dashboard" : tab || (view === "dashboard" ? "dashboard" : null) || "dashboard";
+    tab === "overview"
+      ? "dashboard"
+      : tab || (view === "dashboard" ? "dashboard" : null) || "dashboard";
 
   useEffect(() => {
     if (!isPortalDesktop) return;
@@ -296,9 +402,16 @@ function EmpDashboardPageInner() {
       router.replace("/empdashboard");
       return;
     }
-    const legacyProfileTabs = ["profile", "approvals", "leave", "attendance", "promotions"];
+    const legacyProfileTabs = [
+      "profile",
+      "approvals",
+      "leave",
+      "attendance",
+      "promotions",
+    ];
     if (legacyProfileTabs.includes(homeTab)) {
-      const target = homeTab === "profile" ? "/empProfile" : `/empProfile?tab=${homeTab}`;
+      const target =
+        homeTab === "profile" ? "/empProfile" : `/empProfile?tab=${homeTab}`;
       router.replace(target);
     }
   }, [isPortalDesktop, homeTab, router, tab]);
@@ -307,8 +420,12 @@ function EmpDashboardPageInner() {
   const [empProfileData, setEmpProfileData] = useState<any>(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [todayStatus, setTodayStatus] = useState<TodayStatus | null>(() => getPageCache<TodayStatus>("todayAttendance"));
-  const [loadingStatus, setLoadingStatus] = useState(() => getPageCache<TodayStatus>("todayAttendance") === null);
+  const [todayStatus, setTodayStatus] = useState<TodayStatus | null>(() =>
+    getPageCache<TodayStatus>("todayAttendance"),
+  );
+  const [loadingStatus, setLoadingStatus] = useState(
+    () => getPageCache<TodayStatus>("todayAttendance") === null,
+  );
   const [taskBadge, setTaskBadge] = useState(0);
   const [noticeBadge, setNoticeBadge] = useState(0);
   const [reimbBadge, setReimbBadge] = useState(0);
@@ -346,7 +463,11 @@ function EmpDashboardPageInner() {
         if (mustChange) {
           setMustChangePassword(true);
           setForcePasswordModalOpen(true);
-          setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+          setPasswordForm({
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+          });
           setShowNewPassword(false);
           setShowConfirmPassword(false);
         }
@@ -408,7 +529,8 @@ function EmpDashboardPageInner() {
           const skipForcePassword =
             isOwner || role === "COMPANY_ADMIN" || role === "ADMIN";
           const mustChange =
-            !skipForcePassword && data?.employeeCredentials?.mustChangePassword === true;
+            !skipForcePassword &&
+            data?.employeeCredentials?.mustChangePassword === true;
 
           if (mustChange) {
             setMustChangePassword(true);
@@ -437,7 +559,10 @@ function EmpDashboardPageInner() {
       .then((r) => r.json())
       .then((memos: any[]) => {
         if (!Array.isArray(memos)) return;
-        const lastViewed = parseInt(localStorage.getItem("_notice_last_viewed") || "0", 10);
+        const lastViewed = parseInt(
+          localStorage.getItem("_notice_last_viewed") || "0",
+          10,
+        );
         const unread = memos.filter((m: any) => {
           const ts = m.createdAt ? new Date(m.createdAt).getTime() : 0;
           return ts > lastViewed && m.employeeID === eid;
@@ -448,13 +573,23 @@ function EmpDashboardPageInner() {
 
     if (TASK_MANAGEMENT_ENABLED) {
       const userForTask = empUser;
-      taskFetch<{ items: { status: string; engineerAssignments?: { manageEmployeeID?: number | null; status?: string | null }[] }[] }>("/task-projects", userForTask, undefined, {
+      taskFetch<{
+        items: {
+          status: string;
+          engineerAssignments?: {
+            manageEmployeeID?: number | null;
+            status?: string | null;
+          }[];
+        }[];
+      }>("/task-projects", userForTask, undefined, {
         limit: 100,
         assignedToMe: 1,
       })
         .then((data) => {
           const items = data.items || [];
-          setTaskBadge(items.filter((t) => isWorkingActiveAssignedTask(t, eid)).length);
+          setTaskBadge(
+            items.filter((t) => isWorkingActiveAssignedTask(t, eid)).length,
+          );
         })
         .catch(() => setTaskBadge(0));
     } else {
@@ -502,7 +637,10 @@ function EmpDashboardPageInner() {
 
   useEffect(() => {
     const total =
-      (TASK_MANAGEMENT_ENABLED ? taskBadge : 0) + noticeBadge + reimbBadge + leaveBadge;
+      (TASK_MANAGEMENT_ENABLED ? taskBadge : 0) +
+      noticeBadge +
+      reimbBadge +
+      leaveBadge;
     void syncAppBadge(total);
   }, [taskBadge, noticeBadge, reimbBadge, leaveBadge]);
 
@@ -530,7 +668,10 @@ function EmpDashboardPageInner() {
 
   const fetchAttendance = useCallback(() => {
     const token = localStorage.getItem("token");
-    if (!token) { router.replace("/login"); return; }
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
     const headers = { Authorization: `Bearer ${token}` };
 
     fetch(`${BACKEND}/emp-location-attendance/today?_=${Date.now()}`, {
@@ -539,33 +680,56 @@ function EmpDashboardPageInner() {
     })
       .then((r) => {
         if (!r.ok) {
-          if (r.status === 401) { localStorage.removeItem("token"); localStorage.removeItem("accessToken"); router.replace("/login"); }
+          if (r.status === 401) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("accessToken");
+            router.replace("/login");
+          }
           return Promise.reject(r.status);
         }
         return r.json();
       })
-      .then((d) => { setTodayStatus(d); setPageCache("todayAttendance", d); })
+      .then((d) => {
+        setTodayStatus(d);
+        setPageCache("todayAttendance", d);
+      })
       .catch(() => {})
       .finally(() => setLoadingStatus(false));
-
   }, [router]);
 
   useEffect(() => {
     fetchAttendance();
-    const onVisible = () => { if (document.visibilityState === "visible") fetchAttendance(); };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchAttendance();
+    };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [fetchAttendance]);
 
   const empName = empUser?.employee
-    ? `${empUser.employee.firstName || ""}`.trim() || empUser.username || "there"
+    ? `${empUser.employee.firstName || ""}`.trim() ||
+      empUser.username ||
+      "there"
     : empUser?.username || "there";
   const empFullName = empUser?.employee
-    ? `${empUser.employee.firstName || ""} ${empUser.employee.lastName || ""}`.trim() || empUser.username || "Employee"
+    ? `${empUser.employee.firstName || ""} ${empUser.employee.lastName || ""}`.trim() ||
+      empUser.username ||
+      "Employee"
     : empUser?.username || "Employee";
-  const empInitials = empFullName.split(" ").filter(Boolean).slice(0, 2)
-    .map((w: string) => w[0].toUpperCase()).join("") || "E";
-  const empPhoto = photoUrl || resolveEmpPhoto(empUser?.employee?.id, empUser?.employee?.employeePhotoUrl) || null;
+  const empInitials =
+    empFullName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w: string) => w[0].toUpperCase())
+      .join("") || "E";
+  const empPhoto =
+    photoUrl ||
+    resolveEmpPhoto(
+      empUser?.employee?.id,
+      empUser?.employee?.employeePhotoUrl,
+    ) ||
+    null;
   const emp = empProfileData || empUser?.employee || null;
   const designation =
     emp?.designations?.designation ||
@@ -586,7 +750,9 @@ function EmpDashboardPageInner() {
     if (key === "leave") return leaveBadge;
     return 0;
   };
-  const visibleCards = menuCards.filter((card) => isProductHrefAllowed(card.href));
+  const visibleCards = menuCards.filter((card) =>
+    isProductHrefAllowed(card.href),
+  );
   const spanLast = visibleCards.length % 2 === 1;
 
   const submitPasswordChange = async () => {
@@ -626,22 +792,26 @@ function EmpDashboardPageInner() {
     try {
       setPasswordSaving(true);
 
-      const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("accessToken");
       const empId = empUser?.employee?.id || empUser?.id;
 
       console.log("Changing password for employee ID:", empId);
 
-      const res = await fetch(`${BACKEND}/manage-emp/${empId}/change-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `${BACKEND}/manage-emp/${empId}/change-password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            oldPassword: currentPassword,
+            newPassword,
+          }),
         },
-        body: JSON.stringify({
-          oldPassword: currentPassword,
-          newPassword,
-        }),
-      });
+      );
 
       if (!res.ok) {
         const msg = await res.text();
@@ -664,14 +834,13 @@ function EmpDashboardPageInner() {
 
       // Close modal
       setForcePasswordModalOpen(false);
-      
+
       alert("Password changed successfully! Please login again.");
-      
+
       clearTemporaryLoginPassword();
       localStorage.removeItem("token");
       localStorage.removeItem("accessToken");
       router.replace("/login");
-      
     } catch (e: any) {
       alert(e?.message || "Password change failed");
     } finally {
@@ -682,8 +851,8 @@ function EmpDashboardPageInner() {
   return (
     <EmpMobileLayout>
       {/* Force Password Change Modal */}
-      <Dialog 
-        open={forcePasswordModalOpen} 
+      <Dialog
+        open={forcePasswordModalOpen}
         onOpenChange={(open) => {
           if (!open && mustChangePassword) {
             return;
@@ -699,12 +868,15 @@ function EmpDashboardPageInner() {
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Change Password Required</DialogTitle>
+            <DialogTitle className="text-xl font-bold">
+              Change Password Required
+            </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <p className="text-sm text-gray-600">
-              You must change your temporary password before using the employee portal.
+              You must change your temporary password before using the employee
+              portal.
             </p>
 
             <form
@@ -715,9 +887,22 @@ function EmpDashboardPageInner() {
               }}
             >
               {/* Absorb browser password-manager autofill (SuperAdmin creds on this origin). */}
-              <div className="absolute h-0 w-0 overflow-hidden opacity-0" aria-hidden="true">
-                <input type="text" name="username" autoComplete="username" tabIndex={-1} />
-                <input type="password" name="password" autoComplete="current-password" tabIndex={-1} />
+              <div
+                className="absolute h-0 w-0 overflow-hidden opacity-0"
+                aria-hidden="true"
+              >
+                <input
+                  type="text"
+                  name="username"
+                  autoComplete="username"
+                  tabIndex={-1}
+                />
+                <input
+                  type="password"
+                  name="password"
+                  autoComplete="current-password"
+                  tabIndex={-1}
+                />
               </div>
 
               <div>
@@ -725,7 +910,9 @@ function EmpDashboardPageInner() {
                   label="New Password"
                   placeholder="Enter new password"
                   value={passwordForm.newPassword}
-                  onChange={(value) => setPasswordForm((p) => ({ ...p, newPassword: value }))}
+                  onChange={(value) =>
+                    setPasswordForm((p) => ({ ...p, newPassword: value }))
+                  }
                   visible={showNewPassword}
                   onToggleVisible={() => setShowNewPassword((v) => !v)}
                   autoComplete="new-password"
@@ -740,7 +927,9 @@ function EmpDashboardPageInner() {
                   label="Confirm Password"
                   placeholder="Confirm new password"
                   value={passwordForm.confirmPassword}
-                  onChange={(value) => setPasswordForm((p) => ({ ...p, confirmPassword: value }))}
+                  onChange={(value) =>
+                    setPasswordForm((p) => ({ ...p, confirmPassword: value }))
+                  }
                   visible={showConfirmPassword}
                   onToggleVisible={() => setShowConfirmPassword((v) => !v)}
                   autoComplete="new-password"
@@ -761,38 +950,50 @@ function EmpDashboardPageInner() {
         </DialogContent>
       </Dialog>
 
-      <div className={isPortalDesktop ? "flex h-full min-h-0 flex-col" : "px-4 pt-4 pb-2"}>
+      <div
+        className={
+          isPortalDesktop ? "flex h-full min-h-0 flex-col" : "px-4 pt-4 pb-2"
+        }
+      >
         {!isPortalDesktop && (
-        <>
-        {/* Header — greeting block and avatar share one vertical center line */}
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <div
-              className="shrink-0 flex h-11 w-[50px] items-center justify-center overflow-hidden"
-              aria-hidden
-            >
-              <div className="origin-center scale-[0.58]">
-                <AmbientAccent />
+          <>
+            {/* Header — greeting block and avatar share one vertical center line */}
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div
+                  className="shrink-0 flex h-11 w-[50px] items-center justify-center overflow-hidden"
+                  aria-hidden
+                >
+                  <div className="origin-center scale-[0.58]">
+                    <AmbientAccent />
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-500 font-medium leading-tight">
+                    {greeting()}
+                  </p>
+                  <h1 className="text-xl font-bold text-gray-900 tracking-tight leading-tight mt-0.5">
+                    {empName}
+                  </h1>
+                </div>
               </div>
+              <Link href="/empProfile" className="shrink-0">
+                <div className="w-11 h-11 rounded-full overflow-hidden bg-[#2563eb] flex items-center justify-center shadow-md cursor-pointer">
+                  {empPhoto ? (
+                    <img
+                      src={empPhoto}
+                      alt={empFullName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-white font-bold text-base">
+                      {empInitials}
+                    </span>
+                  )}
+                </div>
+              </Link>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm text-gray-500 font-medium leading-tight">{greeting()}</p>
-              <h1 className="text-xl font-bold text-gray-900 tracking-tight leading-tight mt-0.5">
-                {empName}
-              </h1>
-            </div>
-          </div>
-          <Link href="/empProfile" className="shrink-0">
-            <div className="w-11 h-11 rounded-full overflow-hidden bg-[#2563eb] flex items-center justify-center shadow-md cursor-pointer">
-              {empPhoto ? (
-                <img src={empPhoto} alt={empFullName} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-white font-bold text-base">{empInitials}</span>
-              )}
-            </div>
-          </Link>
-        </div>
-        </>
+          </>
         )}
 
         {isPortalDesktop && homeTab === "dashboard" && (
@@ -814,68 +1015,84 @@ function EmpDashboardPageInner() {
               reimbBadge={reimbBadge}
               leaveBadge={leaveBadge}
               onNoticeClick={() => {
-                localStorage.setItem("_notice_last_viewed", Date.now().toString());
+                localStorage.setItem(
+                  "_notice_last_viewed",
+                  Date.now().toString(),
+                );
                 setNoticeBadge(0);
               }}
             />
           </div>
         )}
 
-        {isPortalDesktop && homeTab === "calendar" && <EmpDesktopWorkspaceCalendar />}
-
-        {!isPortalDesktop && (
-        <>
-        <EmpTodayStatusCard
-          todayStatus={todayStatus}
-          loading={loadingStatus}
-          onStatusUpdate={(d) => {
-            setTodayStatus(d);
-            setPageCache("todayAttendance", d);
-          }}
-        />
-
-        {/* Menu grid */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {visibleCards.map((card, index) => {
-            const badge = badgeFor(card.key);
-            const fullWidth = spanLast && index === visibleCards.length - 1;
-            return (
-              <Link
-                key={card.key}
-                href={card.href}
-                className={fullWidth ? "col-span-2" : undefined}
-                onClick={() => {
-                  if (card.key === "notice") {
-                    localStorage.setItem("_notice_last_viewed", Date.now().toString());
-                    setNoticeBadge(0);
-                  }
-                }}
-              >
-                <div className="bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_12px_rgba(15,23,42,0.06)] p-4 min-h-[100px] flex flex-col justify-between active:scale-[0.97] transition-transform relative">
-                  <div className={`w-11 h-11 rounded-2xl ${card.color} flex items-center justify-center`}>
-                    <Icon icon={card.icon} className={`w-6 h-6 ${card.iconColor}`} />
-                  </div>
-                  <div className="mt-3">
-                    <p className="text-[15px] font-bold text-gray-900">{card.label}</p>
-                    <p className="text-[11px] text-gray-500 mt-0.5">
-                      {card.key === "tasks" && badge > 0 ? `${badge} active` : card.sub}
-                    </p>
-                  </div>
-                  {badge > 0 && (
-                    <span className="absolute top-3 right-3 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                      {badge > 99 ? "99+" : badge}
-                    </span>
-                  )}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        <EmpNotificationsPanel />
-        </>
+        {isPortalDesktop && homeTab === "calendar" && (
+          <EmpDesktopWorkspaceCalendar />
         )}
 
+        {!isPortalDesktop && (
+          <>
+            <EmpTodayStatusCard
+              todayStatus={todayStatus}
+              loading={loadingStatus}
+              onStatusUpdate={(d) => {
+                setTodayStatus(d);
+                setPageCache("todayAttendance", d);
+              }}
+            />
+
+            {/* Menu grid */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {visibleCards.map((card, index) => {
+                const badge = badgeFor(card.key);
+                const fullWidth = spanLast && index === visibleCards.length - 1;
+                return (
+                  <Link
+                    key={card.key}
+                    href={card.href}
+                    className={fullWidth ? "col-span-2" : undefined}
+                    onClick={() => {
+                      if (card.key === "notice") {
+                        localStorage.setItem(
+                          "_notice_last_viewed",
+                          Date.now().toString(),
+                        );
+                        setNoticeBadge(0);
+                      }
+                    }}
+                  >
+                    <div className="bg-white rounded-[20px] border border-gray-100 shadow-[0_2px_12px_rgba(15,23,42,0.06)] p-4 min-h-[100px] flex flex-col justify-between active:scale-[0.97] transition-transform relative">
+                      <div
+                        className={`w-11 h-11 rounded-2xl ${card.color} flex items-center justify-center`}
+                      >
+                        <Icon
+                          icon={card.icon}
+                          className={`w-6 h-6 ${card.iconColor}`}
+                        />
+                      </div>
+                      <div className="mt-3">
+                        <p className="text-[15px] font-bold text-gray-900">
+                          {card.label}
+                        </p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">
+                          {card.key === "tasks" && badge > 0
+                            ? `${badge} active`
+                            : card.sub}
+                        </p>
+                      </div>
+                      {badge > 0 && (
+                        <span className="absolute top-3 right-3 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                          {badge > 99 ? "99+" : badge}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <EmpNotificationsPanel />
+          </>
+        )}
       </div>
     </EmpMobileLayout>
   );

@@ -8,7 +8,10 @@ import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
-import { getActiveCompanyId, getSidebarContext } from "@/app/utils/sidebarContext";
+import {
+  getActiveCompanyId,
+  getSidebarContext,
+} from "@/app/utils/sidebarContext";
 
 type LinkedCompany = { id: number; companyName: string | null };
 type SavedCode = {
@@ -21,13 +24,19 @@ type FederalDomainData = {
   companyName: string | null;
   codes: SavedCode[];
   availableCodes: string[];
-  linkedCompanies: { id: number; companyName: string | null; sharedCodes: string[] }[];
+  linkedCompanies: {
+    id: number;
+    companyName: string | null;
+    sharedCodes: string[];
+  }[];
 };
 
 function authHeaders(): HeadersInit {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
+      ? localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        ""
       : "";
   return token
     ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
@@ -64,24 +73,26 @@ export function FederalDomainManagement() {
     );
   }, [user?.activeCompanyID, user?.companyID]);
 
-  const load = useCallback(
-    async (id: number) => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/backend/company/${id}/federal-domain`, {
+  const load = useCallback(async (id: number) => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `https://hrms-api-test.onrender.com/company/${id}/federal-domain`,
+        {
           headers: authHeaders(),
-        });
-        if (!res.ok) throw new Error(await parseError(res));
-        setData(await res.json());
-      } catch (e: unknown) {
-        setData(null);
-        toast.error(e instanceof Error ? e.message : "Could not load Federal Domain");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
+        },
+      );
+      if (!res.ok) throw new Error(await parseError(res));
+      setData(await res.json());
+    } catch (e: unknown) {
+      setData(null);
+      toast.error(
+        e instanceof Error ? e.message : "Could not load Federal Domain",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const id = resolveCompanyId();
@@ -122,11 +133,14 @@ export function FederalDomainManagement() {
     }
     setSaving(true);
     try {
-      const res = await fetch(`/backend/company/${companyId}/federal-domain`, {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({ code: trimmed }),
-      });
+      const res = await fetch(
+        `https://hrms-api-test.onrender.com/company/${companyId}/federal-domain`,
+        {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ code: trimmed }),
+        },
+      );
       if (!res.ok) throw new Error(await parseError(res));
       setData(await res.json());
       setNewCode("");
@@ -144,7 +158,7 @@ export function FederalDomainManagement() {
     setSaving(true);
     try {
       const res = await fetch(
-        `/backend/company/${companyId}/federal-domain?code=${encodeURIComponent(code)}`,
+        `https://hrms-api-test.onrender.com/company/${companyId}/federal-domain?code=${encodeURIComponent(code)}`,
         { method: "DELETE", headers: authHeaders() },
       );
       if (!res.ok) throw new Error(await parseError(res));
@@ -180,11 +194,14 @@ export function FederalDomainManagement() {
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-6 max-w-2xl">
         <div>
           <p className="text-sm text-muted-foreground">
-            Linking is mutual. Both companies must save the same code. One unused code links nobody.
-            You can save more than one code to join multiple groups.
+            Linking is mutual. Both companies must save the same code. One
+            unused code links nobody. You can save more than one code to join
+            multiple groups.
           </p>
           {data?.companyName ? (
-            <p className="mt-2 text-sm font-medium text-foreground">{data.companyName}</p>
+            <p className="mt-2 text-sm font-medium text-foreground">
+              {data.companyName}
+            </p>
           ) : null}
         </div>
 
@@ -206,7 +223,9 @@ export function FederalDomainManagement() {
                       className="flex items-start justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
                     >
                       <div className="min-w-0">
-                        <p className="font-mono text-sm font-medium text-foreground">{row.code}</p>
+                        <p className="font-mono text-sm font-medium text-foreground">
+                          {row.code}
+                        </p>
                         {row.linkedCompanyCount > 0 ? (
                           <p className="text-xs text-emerald-700 mt-0.5">
                             Linked with{" "}
@@ -246,7 +265,8 @@ export function FederalDomainManagement() {
               </p>
             ) : (
               <p className="text-sm text-muted-foreground">
-                No mutual links yet. Task assign still shows only this company&apos;s employees.
+                No mutual links yet. Task assign still shows only this
+                company&apos;s employees.
               </p>
             )}
 
@@ -274,7 +294,9 @@ export function FederalDomainManagement() {
             </form>
 
             <div className="space-y-2">
-              <Label htmlFor="federal-domain-fetch">Fetch a code already used by another company</Label>
+              <Label htmlFor="federal-domain-fetch">
+                Fetch a code already used by another company
+              </Label>
               {data?.availableCodes?.length ? (
                 <div className="flex flex-col sm:flex-row gap-2">
                   <select
@@ -303,7 +325,8 @@ export function FederalDomainManagement() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  No other company has saved a code yet. Create one above, then save the same text in the other company.
+                  No other company has saved a code yet. Create one above, then
+                  save the same text in the other company.
                 </p>
               )}
             </div>

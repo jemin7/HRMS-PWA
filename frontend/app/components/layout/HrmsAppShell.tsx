@@ -5,10 +5,17 @@ import { usePathname, useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 import { authHeaders } from "@/lib/auth";
-import { setSidebarContext, getSidebarContext, clearActiveCompanySession } from "@/app/utils/sidebarContext";
+import {
+  setSidebarContext,
+  getSidebarContext,
+  clearActiveCompanySession,
+} from "@/app/utils/sidebarContext";
 import { getPageCache, setPageCache } from "@/app/utils/pageCache";
 import { isDesktopManagerFlagSet } from "@/lib/desktopManager";
-import { hasCompanyAccessFlag, isCompanyAdminLikeRole } from "@/lib/companyAccess";
+import {
+  hasCompanyAccessFlag,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
 import { dispatchAppRefresh } from "@/app/utils/appRefresh";
 import { ensureFetchRefreshPatch } from "@/app/utils/patchFetchForRefresh";
 import { toast } from "sonner";
@@ -17,7 +24,12 @@ import { HrmsTopbar } from "@/app/components/app/hrms-topbar";
 import { AdminPageHeaderProvider } from "@/app/components/layout/admin-page-header-context";
 import { ListToolbarActionsProvider } from "@/app/components/layout/list-toolbar-actions-context";
 import { buildNavContext } from "@/app/components/app/hrms-navigation";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/app/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/components/ui/dialog";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
@@ -95,7 +107,10 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
     setDesktopManager(isDesktopManagerFlagSet());
   }, [currentUser?.id]);
 
-  const assignedCompanyIds = useMemo(() => getUserCompanyIds(currentUser), [currentUser]);
+  const assignedCompanyIds = useMemo(
+    () => getUserCompanyIds(currentUser),
+    [currentUser],
+  );
 
   const isSuperAdmin = currentUser?.role === "SUPERADMIN";
   const isCompanyScopedSidebarUser =
@@ -111,8 +126,8 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
     const fetchData = async () => {
       try {
         const [spRes, compRes] = await Promise.all([
-          fetch("/backend/service-provider"),
-          fetch("/backend/company"),
+          fetch("https://hrms-api-test.onrender.com/service-provider"),
+          fetch("https://hrms-api-test.onrender.com/company"),
         ]);
         if (spRes.ok) {
           const data = await spRes.json();
@@ -123,7 +138,7 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
         }
         if (compRes.ok) {
           const data = await compRes.json();
-          const companies = Array.isArray(data) ? data : data?.data ?? [];
+          const companies = Array.isArray(data) ? data : (data?.data ?? []);
           setFetchedCompanies(companies);
           setPageCache("sidebarCompanies", companies);
         }
@@ -146,13 +161,22 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
 
   const displaySPs = useMemo(() => {
     if (currentUser?.serviceProvider && currentUser.serviceProviderID) {
-      return [{ id: currentUser.serviceProviderID, companyName: currentUser.serviceProvider.companyName }];
+      return [
+        {
+          id: currentUser.serviceProviderID,
+          companyName: currentUser.serviceProvider.companyName,
+        },
+      ];
     }
     return fetchedServiceProviders.map((sp) => ({
       id: sp.id,
       companyName: sp.companyName || "Service Provider",
     }));
-  }, [currentUser?.serviceProvider, currentUser?.serviceProviderID, fetchedServiceProviders]);
+  }, [
+    currentUser?.serviceProvider,
+    currentUser?.serviceProviderID,
+    fetchedServiceProviders,
+  ]);
 
   const accessibleCompanies = useMemo(() => {
     if (isCompanyScopedSidebarUser && assignedCompanyIds.length > 0) {
@@ -163,26 +187,40 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
         .filter((c) => assignedCompanyIds.includes(Number(c.id)))
         .map((company: any) => ({
           ...company,
-          serviceProviderName: spNameById.get(Number(company.serviceProviderID)) || "",
+          serviceProviderName:
+            spNameById.get(Number(company.serviceProviderID)) || "",
         }));
     }
     return displaySPs.flatMap((sp) => {
-      const companies = fetchedCompanies.filter((c) => c.serviceProviderID === sp.id);
+      const companies = fetchedCompanies.filter(
+        (c) => c.serviceProviderID === sp.id,
+      );
       return companies.map((company: any) => ({
         ...company,
         serviceProviderID: sp.id,
         serviceProviderName: sp.companyName || "",
       }));
     });
-  }, [displaySPs, fetchedCompanies, isCompanyScopedSidebarUser, assignedCompanyIds]);
+  }, [
+    displaySPs,
+    fetchedCompanies,
+    isCompanyScopedSidebarUser,
+    assignedCompanyIds,
+  ]);
 
   const activeCompany = useMemo(() => {
     const storedCompanyID = getStoredActiveCompanyID();
     return (
       accessibleCompanies.find((c: any) => Number(c.id) === storedCompanyID) ||
-      accessibleCompanies.find((c: any) => Number(c.id) === Number(sidebarCtx?.companyID)) ||
-      accessibleCompanies.find((c: any) => Number(c.id) === Number(currentUser?.activeCompanyID)) ||
-      accessibleCompanies.find((c: any) => Number(c.id) === Number(currentUser?.companyID)) ||
+      accessibleCompanies.find(
+        (c: any) => Number(c.id) === Number(sidebarCtx?.companyID),
+      ) ||
+      accessibleCompanies.find(
+        (c: any) => Number(c.id) === Number(currentUser?.activeCompanyID),
+      ) ||
+      accessibleCompanies.find(
+        (c: any) => Number(c.id) === Number(currentUser?.companyID),
+      ) ||
       accessibleCompanies[0]
     );
   }, [
@@ -218,7 +256,8 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
       dispatchAppRefresh();
 
       const targetDashboard =
-        currentUser?.role === "EMPLOYEE" || isCompanyAdminLikeRole(currentUser?.role)
+        currentUser?.role === "EMPLOYEE" ||
+        isCompanyAdminLikeRole(currentUser?.role)
           ? "/my-company"
           : "/dashboard";
       if (pathname !== targetDashboard) {
@@ -231,7 +270,12 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    if (!isCompanyScopedSidebarUser || accessibleCompanies.length === 0 || !activeCompany) return;
+    if (
+      !isCompanyScopedSidebarUser ||
+      accessibleCompanies.length === 0 ||
+      !activeCompany
+    )
+      return;
     const ctx = getSidebarContext();
     if (!ctx || Number(ctx.companyID) !== Number(activeCompany.id)) {
       setSidebarContext(
@@ -241,7 +285,12 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
         activeCompany.companyName || "",
       );
     }
-  }, [isCompanyScopedSidebarUser, accessibleCompanies.length, activeCompany?.id, activeCompany]);
+  }, [
+    isCompanyScopedSidebarUser,
+    accessibleCompanies.length,
+    activeCompany?.id,
+    activeCompany,
+  ]);
 
   const handleRefresh = () => {
     setSidebarRefreshKey((k) => k + 1);
@@ -250,12 +299,18 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
   };
 
   const handleLogout = () => {
-    const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      "";
     if (token) {
-      void fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "/backend"}/auth/logout`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => undefined);
+      void fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com"}/auth/logout`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      ).catch(() => undefined);
     }
     localStorage.removeItem("accessToken");
     localStorage.removeItem("token");
@@ -267,7 +322,8 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
       /* ignore */
     }
     clearActiveCompanySession();
-    document.cookie = "accessToken=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 UTC; samesite=lax";
+    document.cookie =
+      "accessToken=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 UTC; samesite=lax";
     router.push("/login");
   };
 
@@ -291,7 +347,10 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
     setProfileOpen(true);
     setProfileLoading(true);
     try {
-      const res = await fetch(`/backend/users/${currentUser?.id}/profile`, { headers: authHeaders() });
+      const res = await fetch(
+        `https://hrms-api-test.onrender.com/users/${currentUser?.id}/profile`,
+        { headers: authHeaders() },
+      );
       if (res.ok) {
         const data = await res.json();
         setProfileForm((prev) => ({
@@ -314,7 +373,10 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (profileForm.password && profileForm.password !== profileForm.confirmPassword) {
+    if (
+      profileForm.password &&
+      profileForm.password !== profileForm.confirmPassword
+    ) {
       toast.error("Passwords do not match");
       return;
     }
@@ -326,25 +388,31 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
     try {
       const payload: any = { username: profileForm.username };
       if (profileForm.password) payload.password = profileForm.password;
-      const res = await fetch(`/backend/users/${currentUser?.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        `https://hrms-api-test.onrender.com/users/${currentUser?.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify(payload),
+        },
+      );
       if (!res.ok) throw new Error(await res.text());
-      await fetch(`/backend/users/${currentUser?.id}/profile`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({
-          fullName: profileForm.fullName,
-          email: profileForm.email,
-          mobileNo: profileForm.mobileNo,
-          address: profileForm.address,
-          city: profileForm.city,
-          state: profileForm.state,
-          pincode: profileForm.pincode,
-        }),
-      });
+      await fetch(
+        `https://hrms-api-test.onrender.com/users/${currentUser?.id}/profile`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({
+            fullName: profileForm.fullName,
+            email: profileForm.email,
+            mobileNo: profileForm.mobileNo,
+            address: profileForm.address,
+            city: profileForm.city,
+            state: profileForm.state,
+            pincode: profileForm.pincode,
+          }),
+        },
+      );
       toast.success("Profile updated successfully");
       setProfileOpen(false);
       window.location.reload();
@@ -357,81 +425,169 @@ export function HrmsAppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminPageHeaderProvider>
-    <ListToolbarActionsProvider>
-    <div className="flex h-dvh max-h-dvh overflow-hidden bg-background">
-      <HrmsSidebar
-        collapsed={collapsed}
-        onToggle={() => setCollapsed((v) => !v)}
-        user={currentUser}
-        navContext={navContext}
-        onRefresh={handleRefresh}
-        accessibleCompanies={accessibleCompanies}
-        activeCompany={activeCompany}
-        onSwitchCompany={switchCompany}
-        showCompanySwitcher={!!isCompanyScopedSidebarUser || isSuperAdmin}
-      />
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
-        <HrmsTopbar user={currentUser} onProfileOpen={handleProfileOpen} onLogout={handleLogout} />
-        <main className="flex-1 h-0 min-h-0 overflow-y-auto overscroll-y-contain scrollbar-auto-hide p-6 lg:p-8 max-w-screen-2xl w-full mx-auto hrms-admin-content">{children}</main>
-      </div>
+      <ListToolbarActionsProvider>
+        <div className="flex h-dvh max-h-dvh overflow-hidden bg-background">
+          <HrmsSidebar
+            collapsed={collapsed}
+            onToggle={() => setCollapsed((v) => !v)}
+            user={currentUser}
+            navContext={navContext}
+            onRefresh={handleRefresh}
+            accessibleCompanies={accessibleCompanies}
+            activeCompany={activeCompany}
+            onSwitchCompany={switchCompany}
+            showCompanySwitcher={!!isCompanyScopedSidebarUser || isSuperAdmin}
+          />
+          <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+            <HrmsTopbar
+              user={currentUser}
+              onProfileOpen={handleProfileOpen}
+              onLogout={handleLogout}
+            />
+            <main className="flex-1 h-0 min-h-0 overflow-y-auto overscroll-y-contain scrollbar-auto-hide p-6 lg:p-8 max-w-screen-2xl w-full mx-auto hrms-admin-content">
+              {children}
+            </main>
+          </div>
 
-      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
-        <DialogContent className="max-w-lg rounded-xl">
-          <DialogHeader>
-            <DialogTitle>User Profile</DialogTitle>
-          </DialogHeader>
-          {profileLoading ? (
-            <div className="py-8 text-center text-muted-foreground">Loading profile…</div>
-          ) : (
-            <form onSubmit={handleProfileSubmit} className="space-y-4 mt-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Full Name</Label>
-                  <Input value={profileForm.fullName} onChange={(e) => setProfileForm((p) => ({ ...p, fullName: e.target.value }))} />
+          <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+            <DialogContent className="max-w-lg rounded-xl">
+              <DialogHeader>
+                <DialogTitle>User Profile</DialogTitle>
+              </DialogHeader>
+              {profileLoading ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  Loading profile…
                 </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" value={profileForm.email} onChange={(e) => setProfileForm((p) => ({ ...p, email: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Mobile</Label>
-                  <Input value={profileForm.mobileNo} onChange={(e) => setProfileForm((p) => ({ ...p, mobileNo: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Username</Label>
-                  <Input value={profileForm.username} onChange={(e) => setProfileForm((p) => ({ ...p, username: e.target.value }))} required />
-                </div>
-              </div>
-              <div className="border-t pt-4 space-y-4">
-                <p className="text-sm text-muted-foreground font-medium">Change password</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2 relative">
-                    <Label>New password</Label>
-                    <Input type={showNewPassword ? "text" : "password"} value={profileForm.password} onChange={(e) => setProfileForm((p) => ({ ...p, password: e.target.value }))} className="pr-10" />
-                    <button type="button" className="absolute right-3 top-8 text-muted-foreground" onClick={() => setShowNewPassword((v) => !v)}>
-                      {showNewPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
-                    <PasswordRuleHints password={profileForm.password} />
+              ) : (
+                <form onSubmit={handleProfileSubmit} className="space-y-4 mt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Full Name</Label>
+                      <Input
+                        value={profileForm.fullName}
+                        onChange={(e) =>
+                          setProfileForm((p) => ({
+                            ...p,
+                            fullName: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email</Label>
+                      <Input
+                        type="email"
+                        value={profileForm.email}
+                        onChange={(e) =>
+                          setProfileForm((p) => ({
+                            ...p,
+                            email: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Mobile</Label>
+                      <Input
+                        value={profileForm.mobileNo}
+                        onChange={(e) =>
+                          setProfileForm((p) => ({
+                            ...p,
+                            mobileNo: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Username</Label>
+                      <Input
+                        value={profileForm.username}
+                        onChange={(e) =>
+                          setProfileForm((p) => ({
+                            ...p,
+                            username: e.target.value,
+                          }))
+                        }
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2 relative">
-                    <Label>Confirm password</Label>
-                    <Input type={showConfirmPassword ? "text" : "password"} value={profileForm.confirmPassword} onChange={(e) => setProfileForm((p) => ({ ...p, confirmPassword: e.target.value }))} className="pr-10" />
-                    <button type="button" className="absolute right-3 top-8 text-muted-foreground" onClick={() => setShowConfirmPassword((v) => !v)}>
-                      {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
+                  <div className="border-t pt-4 space-y-4">
+                    <p className="text-sm text-muted-foreground font-medium">
+                      Change password
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2 relative">
+                        <Label>New password</Label>
+                        <Input
+                          type={showNewPassword ? "text" : "password"}
+                          value={profileForm.password}
+                          onChange={(e) =>
+                            setProfileForm((p) => ({
+                              ...p,
+                              password: e.target.value,
+                            }))
+                          }
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-8 text-muted-foreground"
+                          onClick={() => setShowNewPassword((v) => !v)}
+                        >
+                          {showNewPassword ? (
+                            <EyeOff className="size-4" />
+                          ) : (
+                            <Eye className="size-4" />
+                          )}
+                        </button>
+                        <PasswordRuleHints password={profileForm.password} />
+                      </div>
+                      <div className="space-y-2 relative">
+                        <Label>Confirm password</Label>
+                        <Input
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={profileForm.confirmPassword}
+                          onChange={(e) =>
+                            setProfileForm((p) => ({
+                              ...p,
+                              confirmPassword: e.target.value,
+                            }))
+                          }
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-8 text-muted-foreground"
+                          onClick={() => setShowConfirmPassword((v) => !v)}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="size-4" />
+                          ) : (
+                            <Eye className="size-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setProfileOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={profileSaving}>{profileSaving ? "Saving…" : "Update"}</Button>
-              </div>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-    </ListToolbarActionsProvider>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setProfileOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={profileSaving}>
+                      {profileSaving ? "Saving…" : "Update"}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
+      </ListToolbarActionsProvider>
     </AdminPageHeaderProvider>
   );
 }

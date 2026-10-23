@@ -23,9 +23,14 @@ import { EMP_MOBILE_PREVIEW_LIMIT } from "../../utils/empListLimit";
 import { EmpNotificationsHistoryModal } from "./EmpNotificationsHistoryModal";
 import { EmpListViewMoreButton } from "./EmpListViewMoreButton";
 
-type CachedFeed = { recent: FeedNotification[]; older: FeedNotification[]; hasMore: boolean };
+type CachedFeed = {
+  recent: FeedNotification[];
+  older: FeedNotification[];
+  hasMore: boolean;
+};
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export type FeedNotification = {
   id: string;
@@ -43,7 +48,9 @@ export type FeedNotification = {
 function authHeaders(): Record<string, string> {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
+      ? localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        ""
       : "";
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -67,7 +74,10 @@ function fmtWhen(iso: string, kind?: string) {
 
   const sameDay = dayDiff === 0;
   if (sameDay) {
-    return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
   return d.toLocaleDateString("en-IN", {
     day: "numeric",
@@ -142,8 +152,12 @@ export function EmpNotificationsPanel() {
       ? empNotifFeedCacheKey(getEmployeeIdFromStorage())
       : "empNotifFeed";
   const cached =
-    typeof window !== "undefined" ? getPageCache<CachedFeed>(feedCacheKey) : null;
-  const [recent, setRecent] = useState<FeedNotification[]>(cached?.recent ?? []);
+    typeof window !== "undefined"
+      ? getPageCache<CachedFeed>(feedCacheKey)
+      : null;
+  const [recent, setRecent] = useState<FeedNotification[]>(
+    cached?.recent ?? [],
+  );
   const [older, setOlder] = useState<FeedNotification[]>(cached?.older ?? []);
   const [stored, setStored] = useState<StoredInAppNotification[]>([]);
   const [loading, setLoading] = useState(!cached);
@@ -154,10 +168,13 @@ export function EmpNotificationsPanel() {
     setLoading((prev) => prev && true);
     setError(null);
     try {
-      const res = await fetch(`${BACKEND}/emp-notifications/feed?recentDays=7&olderDays=90`, {
-        headers: authHeaders(),
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `${BACKEND}/emp-notifications/feed?recentDays=7&olderDays=90`,
+        {
+          headers: authHeaders(),
+          cache: "no-store",
+        },
+      );
       if (!res.ok) {
         setRecent([]);
         setOlder([]);
@@ -211,7 +228,8 @@ export function EmpNotificationsPanel() {
   }, [recent, older, stored, isManagerView]);
 
   const panelList = useMemo(
-    () => fullList.filter((n) => isToday(n.at)).slice(0, EMP_MOBILE_PREVIEW_LIMIT),
+    () =>
+      fullList.filter((n) => isToday(n.at)).slice(0, EMP_MOBILE_PREVIEW_LIMIT),
     [fullList],
   );
 
@@ -231,7 +249,10 @@ export function EmpNotificationsPanel() {
 
       {loading ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-8 flex justify-center">
-          <Icon icon="solar:refresh-bold-duotone" className="w-8 h-8 text-blue-400 animate-spin" />
+          <Icon
+            icon="solar:refresh-bold-duotone"
+            className="w-8 h-8 text-blue-400 animate-spin"
+          />
         </div>
       ) : error ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center text-[13px] text-gray-500">
@@ -253,7 +274,8 @@ export function EmpNotificationsPanel() {
             const inner = (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_8px_rgba(15,23,42,0.04)] px-3.5 py-3 flex gap-3 active:scale-[0.99] transition-transform">
                 <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  {n.kind === "holiday" && /^\d{1,2} [A-Z][a-z]{2}$/.test(n.emoji) ? (
+                  {n.kind === "holiday" &&
+                  /^\d{1,2} [A-Z][a-z]{2}$/.test(n.emoji) ? (
                     <div className="flex flex-col items-center justify-center w-full h-full bg-red-50 rounded-xl border border-red-100">
                       <span className="text-[9px] font-semibold text-red-400 uppercase leading-none tracking-wide">
                         {n.emoji.split(" ")[1]}
@@ -268,10 +290,16 @@ export function EmpNotificationsPanel() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-[13px] font-bold text-gray-900 leading-snug">{copy.title}</p>
-                    <span className="text-[10px] text-gray-400 flex-shrink-0">{fmtWhen(n.at, n.kind)}</span>
+                    <p className="text-[13px] font-bold text-gray-900 leading-snug">
+                      {copy.title}
+                    </p>
+                    <span className="text-[10px] text-gray-400 flex-shrink-0">
+                      {fmtWhen(n.at, n.kind)}
+                    </span>
                   </div>
-                  <p className="text-[12px] text-gray-600 mt-0.5 leading-relaxed">{copy.body}</p>
+                  <p className="text-[12px] text-gray-600 mt-0.5 leading-relaxed">
+                    {copy.body}
+                  </p>
                 </div>
               </div>
             );

@@ -1,10 +1,15 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../components/ui/dialog"
+} from "../components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -21,62 +26,70 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../components/ui/table"
-import { Badge } from "../components/ui/badge"
-import { Icon } from "@iconify/react"
-import { Plus, Search, Edit, Trash2, Check, X } from "lucide-react"
-import { useCurrentUser } from "../hooks/useCurrentUser"
-import { toast } from "sonner"
-import { messageFromUnknownError, readApiErrorMessage } from "../utils/api-error"
-import { getSidebarContext } from "../utils/sidebarContext"
-import { getPageCache, setPageCache } from "../utils/pageCache"
+} from "../components/ui/table";
+import { Badge } from "../components/ui/badge";
+import { Icon } from "@iconify/react";
+import { Plus, Search, Edit, Trash2, Check, X } from "lucide-react";
+import { useCurrentUser } from "../hooks/useCurrentUser";
+import { toast } from "sonner";
+import {
+  messageFromUnknownError,
+  readApiErrorMessage,
+} from "../utils/api-error";
+import { getSidebarContext } from "../utils/sidebarContext";
+import { getPageCache, setPageCache } from "../utils/pageCache";
 import { isCompanyAdminLikeRole } from "@/lib/companyAccess";
 
 interface LeaveApplication {
-  id: string
-  serviceProviderID?: number
-  companyID?: number
-  branchesID?: number
-  manageEmployeeID?: number
-  serviceProvider?: string
-  companyName?: string
-  branchName?: string
-  employeeId?: string
-  employeeName?: string
-  remainingSickLeave?: number
-  remainingCasualLeave?: number
-  remainingEarnedLeave?: number
-  appliedLeaveType?: string
-  fromDate: string
-  toDate: string
-  purpose?: string
-  status?: "Pending" | "Approved" | "Rejected" | "RevokePending" | "Revoked"
-  createdAt: string
+  id: string;
+  serviceProviderID?: number;
+  companyID?: number;
+  branchesID?: number;
+  manageEmployeeID?: number;
+  serviceProvider?: string;
+  companyName?: string;
+  branchName?: string;
+  employeeId?: string;
+  employeeName?: string;
+  remainingSickLeave?: number;
+  remainingCasualLeave?: number;
+  remainingEarnedLeave?: number;
+  appliedLeaveType?: string;
+  fromDate: string;
+  toDate: string;
+  purpose?: string;
+  status?: "Pending" | "Approved" | "Rejected" | "RevokePending" | "Revoked";
+  createdAt: string;
 }
 
 interface EmployeeCredentials {
-  id: number
-  username: string
-  serviceProviderID: number
-  companyID: number
-  branchesID: number
-  employeeID: number
-  serviceProvider?: any
-  company?: any
-  branch?: any
-  employee?: any
+  id: number;
+  username: string;
+  serviceProviderID: number;
+  companyID: number;
+  branchesID: number;
+  employeeID: number;
+  serviceProvider?: any;
+  company?: any;
+  branch?: any;
+  employee?: any;
 }
 
 // Backend URL
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend"
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export function EmpLeaveApplication() {
-  const [leaveApplications, setLeaveApplications] = useState<LeaveApplication[]>(() => getPageCache<LeaveApplication[]>("empLeaveApps") ?? [])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingApplication, setEditingApplication] = useState<LeaveApplication | null>(null)
-  const [userCredentials, setUserCredentials] = useState<EmployeeCredentials | null>(null)
-  
+  const [leaveApplications, setLeaveApplications] = useState<
+    LeaveApplication[]
+  >(() => getPageCache<LeaveApplication[]>("empLeaveApps") ?? []);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingApplication, setEditingApplication] =
+    useState<LeaveApplication | null>(null);
+  const [userCredentials, setUserCredentials] =
+    useState<EmployeeCredentials | null>(null);
+
   const [formData, setFormData] = useState({
     serviceProvider: "",
     companyName: "",
@@ -92,24 +105,40 @@ export function EmpLeaveApplication() {
     companyID: undefined as number | undefined,
     branchesID: undefined as number | undefined,
     manageEmployeeID: undefined as number | undefined,
-  })
+  });
 
-  const [tenureWarning, setTenureWarning] = useState<string | null>(null)
-  const [childrenCountWarning, setChildrenCountWarning] = useState<string | null>(null)
+  const [tenureWarning, setTenureWarning] = useState<string | null>(null);
+  const [childrenCountWarning, setChildrenCountWarning] = useState<
+    string | null
+  >(null);
 
-  const user = useCurrentUser()
-  const canManage = user?.role === "SUPERADMIN" || user?.role === "SERVICE_PROVIDER" || isCompanyAdminLikeRole(user?.role) || user?.role === "BRANCH_ADMIN"
+  const user = useCurrentUser();
+  const canManage =
+    user?.role === "SUPERADMIN" ||
+    user?.role === "SERVICE_PROVIDER" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "BRANCH_ADMIN";
 
   // Leave balance state
-  const [leaveBalance, setLeaveBalance] = useState<Record<string, { used: number; total: number; remaining: number }>>({})
-  const [availableLeaveTypes, setAvailableLeaveTypes] = useState<string[]>(["ShortLeave", "LoP"])
-  const [employeeGender, setEmployeeGender] = useState<string | null>(null)
+  const [leaveBalance, setLeaveBalance] = useState<
+    Record<string, { used: number; total: number; remaining: number }>
+  >({});
+  const [availableLeaveTypes, setAvailableLeaveTypes] = useState<string[]>([
+    "ShortLeave",
+    "LoP",
+  ]);
+  const [employeeGender, setEmployeeGender] = useState<string | null>(null);
 
   const leaveTypeLabel = (type: string) => {
     const map: Record<string, string> = {
-      Sick: "Sick Leave", Casual: "Casual Leave", Privileged: "Privileged Leave",
-      ShortLeave: "Short Leave", CompOff: "Comp Off", LoP: "Loss of Pay (LoP)",
-      MtL: "Maternity Leave (MtL)", PtL: "Paternity Leave (PtL)",
+      Sick: "Sick Leave",
+      Casual: "Casual Leave",
+      Privileged: "Privileged Leave",
+      ShortLeave: "Short Leave",
+      CompOff: "Comp Off",
+      LoP: "Loss of Pay (LoP)",
+      MtL: "Maternity Leave (MtL)",
+      PtL: "Paternity Leave (PtL)",
     };
     return map[type] || type;
   };
@@ -117,25 +146,38 @@ export function EmpLeaveApplication() {
   const loadLeaveBalance = async (employeeId: number) => {
     try {
       // Run all 4 independent calls in parallel — cuts load time from ~4s to ~1s
-      const [empRes, plDataRaw, woDataRaw, balanceRecordRaw] = await Promise.all([
-        robustGet<any>(`${BACKEND_URL}/manage-emp/${employeeId}`),
-        robustGet<any[]>(`${BACKEND_URL}/privileged-leave/employee/${employeeId}`).catch(() => []),
-        robustGet<any[]>(`${BACKEND_URL}/employee-weekly-off?employeeID=${employeeId}`).catch(() => []),
-        robustGet<any>(`${BACKEND_URL}/emp-leave-balance/employee/${employeeId}`).catch(() => ({})),
-      ]);
+      const [empRes, plDataRaw, woDataRaw, balanceRecordRaw] =
+        await Promise.all([
+          robustGet<any>(`${BACKEND_URL}/manage-emp/${employeeId}`),
+          robustGet<any[]>(
+            `${BACKEND_URL}/privileged-leave/employee/${employeeId}`,
+          ).catch(() => []),
+          robustGet<any[]>(
+            `${BACKEND_URL}/employee-weekly-off?employeeID=${employeeId}`,
+          ).catch(() => []),
+          robustGet<any>(
+            `${BACKEND_URL}/emp-leave-balance/employee/${employeeId}`,
+          ).catch(() => ({})),
+        ]);
 
       const employeeGenderVal = empRes.gender ?? null;
       setEmployeeGender(employeeGenderVal);
-      const policy = empRes.leavePolicy ||
-        ([...(empRes.empLeavePolicy ?? [])].sort((a: any, b: any) =>
-          new Date(b.effectFrom || 0).getTime() - new Date(a.effectFrom || 0).getTime()
-        )[0]?.leavePolicy) ||
+      const policy =
+        empRes.leavePolicy ||
+        [...(empRes.empLeavePolicy ?? [])].sort(
+          (a: any, b: any) =>
+            new Date(b.effectFrom || 0).getTime() -
+            new Date(a.effectFrom || 0).getTime(),
+        )[0]?.leavePolicy ||
         {};
       const totalSick = Number(policy.sickLeaveCount) || 0;
       const totalCasual = Number(policy.casualLeaveCount) || 0;
 
       const totalPrivileged = Array.isArray(plDataRaw)
-        ? plDataRaw.reduce((s: number, e: any) => s + (Number(e.balanceLeaves) || 0), 0)
+        ? plDataRaw.reduce(
+            (s: number, e: any) => s + (Number(e.balanceLeaves) || 0),
+            0,
+          )
         : 0;
 
       const totalCompOff = Array.isArray(woDataRaw)
@@ -144,19 +186,26 @@ export function EmpLeaveApplication() {
 
       const balanceRecord: any = balanceRecordRaw ?? {};
       const used: Record<string, number> = {
-        Sick:       Number(balanceRecord.sickUsed)       || 0,
-        Casual:     Number(balanceRecord.casualUsed)     || 0,
+        Sick: Number(balanceRecord.sickUsed) || 0,
+        Casual: Number(balanceRecord.casualUsed) || 0,
         Privileged: Number(balanceRecord.privilegedUsed) || 0,
-        CompOff:    Number(balanceRecord.compOffUsed)    || 0,
-        MtL:        Number(balanceRecord.maternityUsed)  || 0,
-        PtL:        Number(balanceRecord.paternityUsed)  || 0,
+        CompOff: Number(balanceRecord.compOffUsed) || 0,
+        MtL: Number(balanceRecord.maternityUsed) || 0,
+        PtL: Number(balanceRecord.paternityUsed) || 0,
       };
 
       const numChildren = empRes.numberOfChildren ?? null;
       const totalMaternity = Number(policy.maternityLeaveCount) || 182;
       const totalPaternity = Number(policy.paternityLeaveCount) || 15;
-      const mk = (u: number, t: number) => ({ used: Math.min(u, t), total: t, remaining: Math.max(t - u, 0) });
-      const balance: Record<string, { used: number; total: number; remaining: number }> = {
+      const mk = (u: number, t: number) => ({
+        used: Math.min(u, t),
+        total: t,
+        remaining: Math.max(t - u, 0),
+      });
+      const balance: Record<
+        string,
+        { used: number; total: number; remaining: number }
+      > = {
         sick: mk(used.Sick, totalSick),
         casual: mk(used.Casual, totalCasual),
         privileged: mk(used.Privileged, totalPrivileged),
@@ -169,8 +218,15 @@ export function EmpLeaveApplication() {
       // Tenure warning removed per product requirement
 
       // numberOfChildren null warning
-      if (numChildren === null && (employeeGenderVal === "Female" || employeeGenderVal === "Male" || employeeGenderVal === "Others")) {
-        setChildrenCountWarning("Number of children not set in your employee profile. Maternity entitlement defaults to 182 days. Please contact HR to update.");
+      if (
+        numChildren === null &&
+        (employeeGenderVal === "Female" ||
+          employeeGenderVal === "Male" ||
+          employeeGenderVal === "Others")
+      ) {
+        setChildrenCountWarning(
+          "Number of children not set in your employee profile. Maternity entitlement defaults to 182 days. Please contact HR to update.",
+        );
       } else {
         setChildrenCountWarning(null);
       }
@@ -183,43 +239,52 @@ export function EmpLeaveApplication() {
       if (balance.compOff.remaining > 0) types.push("CompOff");
       types.push("LoP");
       // Gender-based: Maternity for Female/Transgender, Paternity for Male/Transgender
-      if (balance.maternity.remaining > 0 && (employeeGenderVal === "Female" || employeeGenderVal === "Others")) types.push("MtL");
-      if (balance.paternity.remaining > 0 && (employeeGenderVal === "Male" || employeeGenderVal === "Others")) types.push("PtL");
+      if (
+        balance.maternity.remaining > 0 &&
+        (employeeGenderVal === "Female" || employeeGenderVal === "Others")
+      )
+        types.push("MtL");
+      if (
+        balance.paternity.remaining > 0 &&
+        (employeeGenderVal === "Male" || employeeGenderVal === "Others")
+      )
+        types.push("PtL");
       setAvailableLeaveTypes(types);
     } catch (error) {
       console.error("Error loading leave balance:", error);
       setAvailableLeaveTypes(["ShortLeave", "LoP"]);
     }
   };
-  
+
   // Revoke Modal State
-  const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false)
-  const [revokeReason, setRevokeReason] = useState("")
-  const [revokeApplication, setRevokeApplication] = useState<LeaveApplication | null>(null)
+  const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
+  const [revokeReason, setRevokeReason] = useState("");
+  const [revokeApplication, setRevokeApplication] =
+    useState<LeaveApplication | null>(null);
 
   // ---------- APIs ----------
   async function robustGet<T = any>(url: string): Promise<T> {
-    const res = await fetch(url, { cache: "no-store" })
-    if (!res.ok) throw new Error(`${res.status}`)
-    return res.json()
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`${res.status}`);
+    return res.json();
   }
-  
+
   async function robustFetch(url: string, init?: RequestInit) {
-    const res = await fetch(url, init)
-    if (!res.ok) throw new Error(`${res.status}`)
-    return res.json().catch(() => ({}))
+    const res = await fetch(url, init);
+    if (!res.ok) throw new Error(`${res.status}`);
+    return res.json().catch(() => ({}));
   }
 
   // Load user credentials and auto-populate form
   useEffect(() => {
     if (user) {
-      loadUserCredentials()
+      loadUserCredentials();
     }
-  }, [user])
-  
+  }, [user]);
+
   useEffect(() => {
     if (userCredentials) {
-      loadLeaveApplications()
+      loadLeaveApplications();
 
       // Poll every 15 s so status changes (approvals) appear without needing to navigate away
       const interval = setInterval(() => {
@@ -236,162 +301,212 @@ export function EmpLeaveApplication() {
         document.removeEventListener("visibilitychange", onVisible);
       };
     }
-  }, [userCredentials])
+  }, [userCredentials]);
 
   const loadUserCredentials = async () => {
     try {
-      const creds = await robustGet<any[]>(`${BACKEND_URL}/manage-emp/credentials/all`)
-      const userCreds = creds.find(c => c.username === user?.username)
-      
+      const creds = await robustGet<any[]>(
+        `${BACKEND_URL}/manage-emp/credentials/all`,
+      );
+      const userCreds = creds.find((c) => c.username === user?.username);
+
       if (userCreds) {
-        setUserCredentials(userCreds)
-        
+        setUserCredentials(userCreds);
+
         // Auto-populate form with user's organization data
-        const serviceProvider = await robustGet<any>(`${BACKEND_URL}/service-provider/${userCreds.serviceProviderID}`).catch(() => null)
-        const company = await robustGet<any>(`${BACKEND_URL}/company/${userCreds.companyID}`).catch(() => null)
-        const branch = await robustGet<any>(`${BACKEND_URL}/branches/${userCreds.branchesID}`).catch(() => null)
-        const employee = await robustGet<any>(`${BACKEND_URL}/manage-emp/${userCreds.employeeID}`).catch(() => null)
-        
-        setFormData(prev => ({
+        const serviceProvider = await robustGet<any>(
+          `${BACKEND_URL}/service-provider/${userCreds.serviceProviderID}`,
+        ).catch(() => null);
+        const company = await robustGet<any>(
+          `${BACKEND_URL}/company/${userCreds.companyID}`,
+        ).catch(() => null);
+        const branch = await robustGet<any>(
+          `${BACKEND_URL}/branches/${userCreds.branchesID}`,
+        ).catch(() => null);
+        const employee = await robustGet<any>(
+          `${BACKEND_URL}/manage-emp/${userCreds.employeeID}`,
+        ).catch(() => null);
+
+        setFormData((prev) => ({
           ...prev,
           serviceProvider: serviceProvider?.companyName || "",
           companyName: company?.companyName || "",
           branchName: branch?.branchName || "",
-          employeeName: employee ? `${employee.employeeFirstName || ""} ${employee.employeeLastName || ""} (${employee.employeeID})` : "",
+          employeeName: employee
+            ? `${employee.employeeFirstName || ""} ${employee.employeeLastName || ""} (${employee.employeeID})`
+            : "",
           serviceProviderID: userCreds.serviceProviderID,
           companyID: userCreds.companyID,
           branchesID: userCreds.branchesID,
           manageEmployeeID: userCreds.employeeID,
-        }))
-        
+        }));
+
         // Load leave balance
-        loadLeaveBalance(userCreds.employeeID)
+        loadLeaveBalance(userCreds.employeeID);
       }
     } catch (error) {
-      console.error("Error loading user credentials:", error)
+      console.error("Error loading user credentials:", error);
     }
-  }
+  };
 
   // === REVOKE HANDLERS ===
   const openRevokeModal = (application: LeaveApplication) => {
-    setRevokeApplication(application)
-    setRevokeReason("")
-    setIsRevokeDialogOpen(true)
-  }
+    setRevokeApplication(application);
+    setRevokeReason("");
+    setIsRevokeDialogOpen(true);
+  };
 
   const handleRevokeSubmit = async () => {
-    if (!revokeApplication) return
+    if (!revokeApplication) return;
 
     try {
-      const res = await fetch(`${BACKEND_URL}/leave-application/revoke/${revokeApplication.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ revokedReason: revokeReason }),
-      })
+      const res = await fetch(
+        `${BACKEND_URL}/leave-application/revoke/${revokeApplication.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ revokedReason: revokeReason }),
+        },
+      );
 
-      if (!res.ok) throw new Error(`Failed to revoke leave application: ${res.status}`)
+      if (!res.ok)
+        throw new Error(`Failed to revoke leave application: ${res.status}`);
 
-      await loadLeaveApplications()
-      setIsRevokeDialogOpen(false)
-      alert("Revoke request submitted for approval.")
+      await loadLeaveApplications();
+      setIsRevokeDialogOpen(false);
+      alert("Revoke request submitted for approval.");
     } catch (error) {
-      console.error("Error revoking leave application:", error)
-      alert("Error submitting revoke request. Please try again.")
+      console.error("Error revoking leave application:", error);
+      alert("Error submitting revoke request. Please try again.");
     }
-  }
+  };
 
   const loadLeaveApplications = async () => {
     try {
-      const data = await robustGet<any[]>(`${BACKEND_URL}/leave-application`)
-      
-      const mapped = (Array.isArray(data) ? data : []).map((application: any) => ({
-        id: application.id.toString(),
-        serviceProviderID: application.serviceProviderID,
-        companyID: application.companyID,
-        branchesID: application.branchesID,
-        manageEmployeeID: application.manageEmployeeID,
-        serviceProvider: application.serviceProvider?.companyName || "",
-        companyName: application.company?.companyName || "",
-        branchName: application.branches?.branchName || "",
-        employeeId: application.manageEmployee?.employeeID || "",
-        employeeName: application.manageEmployee
-          ? `${application.manageEmployee.employeeFirstName || ""} ${application.manageEmployee.employeeLastName || ""}`.trim()
-          : "",
-        remainingSickLeave: application.remainingSickLeave,
-        remainingCasualLeave: application.remainingCasualLeave,
-        remainingEarnedLeave: application.remainingEarnedLeave,
-        appliedLeaveType: application.appliedLeaveType,
-        fromDate: application.fromDate ? new Date(application.fromDate).toISOString().split("T")[0] : "",
-        toDate: application.toDate ? new Date(application.toDate).toISOString().split("T")[0] : "",
-        purpose: application.purpose,
-        status: (application.status || "Pending") as "Pending" | "Approved" | "Rejected",
-        createdAt: application.createdAt ? new Date(application.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
-      }))
+      const data = await robustGet<any[]>(`${BACKEND_URL}/leave-application`);
+
+      const mapped = (Array.isArray(data) ? data : []).map(
+        (application: any) => ({
+          id: application.id.toString(),
+          serviceProviderID: application.serviceProviderID,
+          companyID: application.companyID,
+          branchesID: application.branchesID,
+          manageEmployeeID: application.manageEmployeeID,
+          serviceProvider: application.serviceProvider?.companyName || "",
+          companyName: application.company?.companyName || "",
+          branchName: application.branches?.branchName || "",
+          employeeId: application.manageEmployee?.employeeID || "",
+          employeeName: application.manageEmployee
+            ? `${application.manageEmployee.employeeFirstName || ""} ${application.manageEmployee.employeeLastName || ""}`.trim()
+            : "",
+          remainingSickLeave: application.remainingSickLeave,
+          remainingCasualLeave: application.remainingCasualLeave,
+          remainingEarnedLeave: application.remainingEarnedLeave,
+          appliedLeaveType: application.appliedLeaveType,
+          fromDate: application.fromDate
+            ? new Date(application.fromDate).toISOString().split("T")[0]
+            : "",
+          toDate: application.toDate
+            ? new Date(application.toDate).toISOString().split("T")[0]
+            : "",
+          purpose: application.purpose,
+          status: (application.status || "Pending") as
+            | "Pending"
+            | "Approved"
+            | "Rejected",
+          createdAt: application.createdAt
+            ? new Date(application.createdAt).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0],
+        }),
+      );
 
       // Role-based filtering
       if (!user) {
-        setLeaveApplications([])
-        return
+        setLeaveApplications([]);
+        return;
       }
 
       if (user.role === "SUPERADMIN") {
-        setLeaveApplications(mapped)
-        return
+        setLeaveApplications(mapped);
+        return;
       }
 
       if (user.role === "SERVICE_PROVIDER") {
-        const ctx = getSidebarContext()
+        const ctx = getSidebarContext();
         if (ctx?.companyID) {
-          setLeaveApplications(mapped.filter((a: any) => a.companyID === ctx.companyID))
-          return
+          setLeaveApplications(
+            mapped.filter((a: any) => a.companyID === ctx.companyID),
+          );
+          return;
         }
-        const usersData = await fetch(`${BACKEND_URL}/users`).then((r) => r.json())
-        const currentUser = usersData.find((u: any) => u.username === user.username)
+        const usersData = await fetch(`${BACKEND_URL}/users`).then((r) =>
+          r.json(),
+        );
+        const currentUser = usersData.find(
+          (u: any) => u.username === user.username,
+        );
         if (currentUser?.serviceProviderID) {
-          setLeaveApplications(mapped.filter((a: any) => a.serviceProviderID === currentUser.serviceProviderID))
-          return
+          setLeaveApplications(
+            mapped.filter(
+              (a: any) => a.serviceProviderID === currentUser.serviceProviderID,
+            ),
+          );
+          return;
         }
       }
 
       // For employees or others → filter by current user's employee ID
       if (userCredentials) {
         const filtered = mapped.filter(
-          (a) => a.manageEmployeeID === userCredentials.employeeID
-        )
-        setPageCache("empLeaveApps", filtered)
-        setLeaveApplications(filtered)
+          (a) => a.manageEmployeeID === userCredentials.employeeID,
+        );
+        setPageCache("empLeaveApps", filtered);
+        setLeaveApplications(filtered);
         // Refresh balance so approved leaves are immediately reflected
-        loadLeaveBalance(userCredentials.employeeID)
+        loadLeaveBalance(userCredentials.employeeID);
       } else {
-        setLeaveApplications([])
+        setLeaveApplications([]);
       }
     } catch (error) {
-      console.error("Error loading leave applications:", error)
-      setLeaveApplications([])
+      console.error("Error loading leave applications:", error);
+      setLeaveApplications([]);
     }
-  }
+  };
 
-  const filteredApplications = leaveApplications.filter(application =>
-    (application.serviceProvider || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (application.companyName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (application.branchName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (application.employeeName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (application.employeeId || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (application.appliedLeaveType || "").toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredApplications = leaveApplications.filter(
+    (application) =>
+      (application.serviceProvider || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (application.companyName || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (application.branchName || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (application.employeeName || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (application.employeeId || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (application.appliedLeaveType || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()),
+  );
 
   const calculateDays = (fromDate: string, toDate: string) => {
-    if (!fromDate || !toDate) return 0
-    const start = new Date(fromDate)
-    const end = new Date(toDate)
-    const diffTime = Math.abs(end.getTime() - start.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
-    return diffDays
-  }
+    if (!fromDate || !toDate) return 0;
+    const start = new Date(fromDate);
+    const end = new Date(toDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     try {
       const leaveApplicationData = {
         serviceProviderID: formData.serviceProviderID,
@@ -408,35 +523,39 @@ export function EmpLeaveApplication() {
         childNumber: formData.childNumber || undefined,
         birthEventDate: formData.birthEventDate || undefined,
         status: "Pending",
-      }
+      };
 
       const url = editingApplication
         ? `${BACKEND_URL}/leave-application/${editingApplication.id}`
-        : `${BACKEND_URL}/leave-application`
-      const method = editingApplication ? "PATCH" : "POST"
+        : `${BACKEND_URL}/leave-application`;
+      const method = editingApplication ? "PATCH" : "POST";
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(leaveApplicationData),
-      })
+      });
       if (!res.ok) {
-        throw new Error(await readApiErrorMessage(res, "Failed to save leave application."))
+        throw new Error(
+          await readApiErrorMessage(res, "Failed to save leave application."),
+        );
       }
 
-      await loadLeaveApplications()
-      resetForm()
-      setIsDialogOpen(false)
+      await loadLeaveApplications();
+      resetForm();
+      setIsDialogOpen(false);
     } catch (error) {
-      console.error("Error saving leave application:", error)
-      toast.error(messageFromUnknownError(error, "Failed to save leave application."))
+      console.error("Error saving leave application:", error);
+      toast.error(
+        messageFromUnknownError(error, "Failed to save leave application."),
+      );
     }
-  }
+  };
 
   const resetForm = () => {
     // Reset form but keep the auto-populated organization data
     if (userCredentials) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         leaveType: "",
         childNumber: "",
@@ -444,7 +563,7 @@ export function EmpLeaveApplication() {
         fromDate: "",
         toDate: "",
         purpose: "",
-      }))
+      }));
     } else {
       setFormData({
         serviceProvider: "",
@@ -461,10 +580,10 @@ export function EmpLeaveApplication() {
         companyID: undefined,
         branchesID: undefined,
         manageEmployeeID: undefined,
-      })
+      });
     }
-    setEditingApplication(null)
-  }
+    setEditingApplication(null);
+  };
 
   const handleEdit = (application: LeaveApplication) => {
     setFormData({
@@ -482,25 +601,25 @@ export function EmpLeaveApplication() {
       companyID: application.companyID,
       branchesID: application.branchesID,
       manageEmployeeID: application.manageEmployeeID,
-    })
-    
-    setEditingApplication(application)
-    setIsDialogOpen(true)
-  }
+    });
+
+    setEditingApplication(application);
+    setIsDialogOpen(true);
+  };
 
   const handleDelete = async (id: string) => {
     try {
       const res = await fetch(`${BACKEND_URL}/leave-application/${id}`, {
         method: "DELETE",
-      })
+      });
       if (!res.ok) {
-        throw new Error(`Failed to delete leave application: ${res.status}`)
+        throw new Error(`Failed to delete leave application: ${res.status}`);
       }
-      await loadLeaveApplications()
+      await loadLeaveApplications();
     } catch (error) {
-      console.error("Error deleting leave application:", error)
+      console.error("Error deleting leave application:", error);
     }
-  }
+  };
 
   const handleApprove = async (id: string) => {
     try {
@@ -508,15 +627,15 @@ export function EmpLeaveApplication() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "Approved" }),
-      })
+      });
       if (!res.ok) {
-        throw new Error(`Failed to approve leave application: ${res.status}`)
+        throw new Error(`Failed to approve leave application: ${res.status}`);
       }
-      await loadLeaveApplications()
+      await loadLeaveApplications();
     } catch (error) {
-      console.error("Error approving leave application:", error)
+      console.error("Error approving leave application:", error);
     }
-  }
+  };
 
   const handleReject = async (id: string) => {
     try {
@@ -524,15 +643,15 @@ export function EmpLeaveApplication() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "Rejected" }),
-      })
+      });
       if (!res.ok) {
-        throw new Error(`Failed to reject leave application: ${res.status}`)
+        throw new Error(`Failed to reject leave application: ${res.status}`);
       }
-      await loadLeaveApplications()
+      await loadLeaveApplications();
     } catch (error) {
-      console.error("Error rejecting leave application:", error)
+      console.error("Error rejecting leave application:", error);
     }
-  }
+  };
 
   // --- helpers for the date picker display ---
   const formatDateParts = (dateStr: string) => {
@@ -546,14 +665,14 @@ export function EmpLeaveApplication() {
 
   const leaveTypeIcon = (type: string) => {
     const icons: Record<string, string> = {
-      Sick:       "solar:heart-pulse-linear",
-      Casual:     "solar:calendar-linear",
+      Sick: "solar:heart-pulse-linear",
+      Casual: "solar:calendar-linear",
       Privileged: "solar:star-shine-linear",
       ShortLeave: "solar:clock-circle-linear",
-      CompOff:    "solar:transfer-horizontal-linear",
-      LoP:        "solar:document-remove-linear",
-      MtL:        "mdi:baby-face-outline",
-      PtL:        "mdi:human-male",
+      CompOff: "solar:transfer-horizontal-linear",
+      LoP: "solar:document-remove-linear",
+      MtL: "mdi:baby-face-outline",
+      PtL: "mdi:human-male",
     };
     return icons[type] || "solar:calendar-linear";
   };
@@ -565,25 +684,47 @@ export function EmpLeaveApplication() {
 
       {/* Leave Balance Cards — monochrome bordered */}
       {Object.keys(leaveBalance).length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
-          {([
-            { key: "sick",       label: "SICK"      },
-            { key: "casual",     label: "CASUAL"    },
-            { key: "privileged", label: "PRIVILEGED"},
-            { key: "compOff",    label: "COMP OFF"  },
-            { key: "maternity",  label: "MATERNITY", genderReq: "Female" },
-            { key: "paternity",  label: "PATERNITY", genderReq: "Male"   },
-          ] as { key: string; label: string; genderReq?: string }[])
+        <div
+          className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {(
+            [
+              { key: "sick", label: "SICK" },
+              { key: "casual", label: "CASUAL" },
+              { key: "privileged", label: "PRIVILEGED" },
+              { key: "compOff", label: "COMP OFF" },
+              { key: "maternity", label: "MATERNITY", genderReq: "Female" },
+              { key: "paternity", label: "PATERNITY", genderReq: "Male" },
+            ] as { key: string; label: string; genderReq?: string }[]
+          )
             .filter(({ key, genderReq }) => {
               if (!leaveBalance[key]) return false;
-              if (genderReq === "Female" && employeeGender !== "Female" && employeeGender !== "Others") return false;
-              if (genderReq === "Male"   && employeeGender !== "Male"   && employeeGender !== "Others") return false;
+              if (
+                genderReq === "Female" &&
+                employeeGender !== "Female" &&
+                employeeGender !== "Others"
+              )
+                return false;
+              if (
+                genderReq === "Male" &&
+                employeeGender !== "Male" &&
+                employeeGender !== "Others"
+              )
+                return false;
               return true;
             })
             .map(({ key, label }) => (
-              <div key={key} className="shrink-0 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 flex flex-col items-center min-w-[68px]">
-                <span className="text-[22px] font-bold text-gray-900 leading-none">{leaveBalance[key].remaining}</span>
-                <span className="text-[9px] font-semibold text-gray-400 mt-1.5 uppercase tracking-widest whitespace-nowrap">{label}</span>
+              <div
+                key={key}
+                className="shrink-0 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 flex flex-col items-center min-w-[68px]"
+              >
+                <span className="text-[22px] font-bold text-gray-900 leading-none">
+                  {leaveBalance[key].remaining}
+                </span>
+                <span className="text-[9px] font-semibold text-gray-400 mt-1.5 uppercase tracking-widest whitespace-nowrap">
+                  {label}
+                </span>
               </div>
             ))}
         </div>
@@ -593,19 +734,24 @@ export function EmpLeaveApplication() {
       <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-5">
         {/* Leave Type */}
         <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2.5">Leave Type</p>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2.5">
+            Leave Type
+          </p>
           <div className="flex flex-wrap gap-2">
             {availableLeaveTypes.map((type) => (
               <button
                 key={type}
-                onClick={() => setFormData(p => ({ ...p, leaveType: type }))}
+                onClick={() => setFormData((p) => ({ ...p, leaveType: type }))}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold border transition-all active:scale-[0.97] ${
                   formData.leaveType === type
                     ? "bg-[#2563eb] text-white border-[#2563eb]"
                     : "bg-white text-gray-700 border-gray-200"
                 }`}
               >
-                <Icon icon={leaveTypeIcon(type)} className="w-[15px] h-[15px] shrink-0" />
+                <Icon
+                  icon={leaveTypeIcon(type)}
+                  className="w-[15px] h-[15px] shrink-0"
+                />
                 {leaveTypeLabel(type)}
               </button>
             ))}
@@ -616,10 +762,14 @@ export function EmpLeaveApplication() {
         {(formData.leaveType === "MtL" || formData.leaveType === "PtL") && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Child Event</p>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
+                Child Event
+              </p>
               <select
                 value={formData.childNumber}
-                onChange={(e) => setFormData(p => ({ ...p, childNumber: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, childNumber: e.target.value }))
+                }
                 className="w-full px-3 py-2.5 text-[13px] rounded-xl border border-gray-200 bg-white focus:outline-none"
               >
                 <option value="">Select…</option>
@@ -631,12 +781,16 @@ export function EmpLeaveApplication() {
             </div>
             <div>
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
-                {formData.leaveType === "MtL" ? "Expected Delivery" : "Birth Date"}
+                {formData.leaveType === "MtL"
+                  ? "Expected Delivery"
+                  : "Birth Date"}
               </p>
               <input
                 type="date"
                 value={formData.birthEventDate}
-                onChange={(e) => setFormData(p => ({ ...p, birthEventDate: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, birthEventDate: e.target.value }))
+                }
                 className="w-full px-3 py-2.5 text-[13px] rounded-xl border border-gray-200 bg-white focus:outline-none"
               />
             </div>
@@ -650,31 +804,46 @@ export function EmpLeaveApplication() {
             const parts = formatDateParts(formData[key]);
             return (
               <div key={key} className="min-w-0">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">{label}</p>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
+                  {label}
+                </p>
                 <div className="relative flex items-center justify-between border border-gray-200 rounded-xl bg-white px-1.5 py-2.5 min-w-0">
                   {/* Transparent native date input — covers entire box for tap-to-pick */}
                   <input
                     type="date"
                     value={formData[key]}
-                    onChange={(e) => setFormData(p => ({ ...p, [key]: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, [key]: e.target.value }))
+                    }
                     className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-0"
                   />
                   {/* Left arrow — above the transparent input */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      const d = formData[key] ? new Date(formData[key] + "T00:00:00") : new Date();
+                      const d = formData[key]
+                        ? new Date(formData[key] + "T00:00:00")
+                        : new Date();
                       d.setDate(d.getDate() - 1);
-                      setFormData(p => ({ ...p, [key]: d.toISOString().split("T")[0] }));
+                      setFormData((p) => ({
+                        ...p,
+                        [key]: d.toISOString().split("T")[0],
+                      }));
                     }}
                     className="relative z-10 w-6 h-7 flex items-center justify-center text-gray-400 text-[16px] font-light shrink-0 active:scale-[0.85]"
-                  >‹</button>
+                  >
+                    ‹
+                  </button>
                   {/* Stacked date display */}
                   <div className="relative z-10 flex flex-col items-center flex-1 min-w-0 pointer-events-none select-none px-1">
                     {formData[key] ? (
                       <>
-                        <span className="text-[13px] font-bold text-gray-900 leading-tight truncate max-w-full">{parts.top}</span>
-                        <span className="text-[11px] font-medium text-gray-500 leading-tight truncate max-w-full">{parts.bottom}</span>
+                        <span className="text-[13px] font-bold text-gray-900 leading-tight truncate max-w-full">
+                          {parts.top}
+                        </span>
+                        <span className="text-[11px] font-medium text-gray-500 leading-tight truncate max-w-full">
+                          {parts.bottom}
+                        </span>
                       </>
                     ) : (
                       <span className="text-[12px] text-gray-400">Select</span>
@@ -684,12 +853,19 @@ export function EmpLeaveApplication() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      const d = formData[key] ? new Date(formData[key] + "T00:00:00") : new Date();
+                      const d = formData[key]
+                        ? new Date(formData[key] + "T00:00:00")
+                        : new Date();
                       d.setDate(d.getDate() + 1);
-                      setFormData(p => ({ ...p, [key]: d.toISOString().split("T")[0] }));
+                      setFormData((p) => ({
+                        ...p,
+                        [key]: d.toISOString().split("T")[0],
+                      }));
                     }}
                     className="relative z-10 w-6 h-7 flex items-center justify-center text-gray-400 text-[16px] font-light shrink-0 active:scale-[0.85]"
-                  >›</button>
+                  >
+                    ›
+                  </button>
                 </div>
               </div>
             );
@@ -697,16 +873,21 @@ export function EmpLeaveApplication() {
         </div>
         {formData.fromDate && formData.toDate && (
           <p className="text-[12px] text-center text-[#2563eb] font-semibold -mt-3">
-            {calculateDays(formData.fromDate, formData.toDate)} day{calculateDays(formData.fromDate, formData.toDate) !== 1 ? "s" : ""}
+            {calculateDays(formData.fromDate, formData.toDate)} day
+            {calculateDays(formData.fromDate, formData.toDate) !== 1 ? "s" : ""}
           </p>
         )}
 
         {/* Reason */}
         <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Reason</p>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
+            Reason
+          </p>
           <textarea
             value={formData.purpose}
-            onChange={(e) => setFormData(p => ({ ...p, purpose: e.target.value }))}
+            onChange={(e) =>
+              setFormData((p) => ({ ...p, purpose: e.target.value }))
+            }
             placeholder="Describe your reason…"
             rows={3}
             className="w-full px-3 py-2.5 text-[13px] rounded-xl border border-gray-200 bg-gray-50 focus:outline-none resize-none"
@@ -749,7 +930,11 @@ export function EmpLeaveApplication() {
               if (!res.ok) throw new Error(await res.text());
               await loadLeaveApplications();
               resetForm();
-              alert(editingApplication ? "Leave updated!" : "Leave request submitted!");
+              alert(
+                editingApplication
+                  ? "Leave updated!"
+                  : "Leave request submitted!",
+              );
             } catch (e: any) {
               alert("Error: " + (e.message || "Failed to submit"));
             }
@@ -759,7 +944,10 @@ export function EmpLeaveApplication() {
           {editingApplication ? "Update Request" : "Submit Request"}
         </button>
         {editingApplication && (
-          <button onClick={resetForm} className="w-full py-2.5 text-[13px] font-semibold text-gray-500 rounded-xl bg-white border border-gray-200 active:scale-[0.98]">
+          <button
+            onClick={resetForm}
+            className="w-full py-2.5 text-[13px] font-semibold text-gray-500 rounded-xl bg-white border border-gray-200 active:scale-[0.98]"
+          >
             Cancel Edit
           </button>
         )}
@@ -768,7 +956,9 @@ export function EmpLeaveApplication() {
       {/* Recent Requests */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[16px] font-bold text-gray-900">Recent Requests</h2>
+          <h2 className="text-[16px] font-bold text-gray-900">
+            Recent Requests
+          </h2>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
             <input
@@ -783,62 +973,103 @@ export function EmpLeaveApplication() {
         {/* Manager actions */}
         {canManage && (
           <div className="mb-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-            <p className="text-[12px] font-semibold text-blue-700">Manager View — swipe cards to approve / reject</p>
+            <p className="text-[12px] font-semibold text-blue-700">
+              Manager View — swipe cards to approve / reject
+            </p>
           </div>
         )}
 
         <div className="space-y-3">
           {filteredApplications.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center gap-3">
-              <Icon icon="solar:calendar-bold-duotone" className="w-12 h-12 text-gray-200" />
-              <p className="text-[14px] font-semibold text-gray-400">No leave requests yet</p>
+              <Icon
+                icon="solar:calendar-bold-duotone"
+                className="w-12 h-12 text-gray-200"
+              />
+              <p className="text-[14px] font-semibold text-gray-400">
+                No leave requests yet
+              </p>
             </div>
           ) : (
             filteredApplications.map((application) => (
-              <div key={application.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <div
+                key={application.id}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"
+              >
                 <div className="flex items-start justify-between gap-2 mb-1.5">
                   <div>
-                    <p className="text-[14px] font-bold text-gray-900">{leaveTypeLabel(application.appliedLeaveType || "")}</p>
+                    <p className="text-[14px] font-bold text-gray-900">
+                      {leaveTypeLabel(application.appliedLeaveType || "")}
+                    </p>
                     {application.employeeName && (
-                      <p className="text-[12px] text-gray-400">{application.employeeName}</p>
+                      <p className="text-[12px] text-gray-400">
+                        {application.employeeName}
+                      </p>
                     )}
                   </div>
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                    application.status === "Approved" ? "bg-green-100 text-green-700"
-                    : application.status === "Rejected" ? "bg-red-100 text-red-600"
-                    : application.status === "RevokePending" ? "bg-amber-100 text-amber-700"
-                    : "bg-gray-100 text-gray-600"
-                  }`}>
-                    {application.status === "RevokePending" ? "Revoke Pending" : application.status}
+                  <span
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                      application.status === "Approved"
+                        ? "bg-green-100 text-green-700"
+                        : application.status === "Rejected"
+                          ? "bg-red-100 text-red-600"
+                          : application.status === "RevokePending"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {application.status === "RevokePending"
+                      ? "Revoke Pending"
+                      : application.status}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[12px] text-gray-500 mb-1.5">
-                  <Icon icon="solar:calendar-linear" className="w-3.5 h-3.5 shrink-0" />
+                  <Icon
+                    icon="solar:calendar-linear"
+                    className="w-3.5 h-3.5 shrink-0"
+                  />
                   <span>{application.fromDate}</span>
                   <span className="text-gray-300">→</span>
                   <span>{application.toDate}</span>
-                  <span className="ml-1 font-bold text-gray-700">{calculateDays(application.fromDate, application.toDate)}d</span>
+                  <span className="ml-1 font-bold text-gray-700">
+                    {calculateDays(application.fromDate, application.toDate)}d
+                  </span>
                 </div>
                 {application.purpose && (
-                  <p className="text-[12px] text-gray-500 line-clamp-2 mb-2">{application.purpose}</p>
+                  <p className="text-[12px] text-gray-500 line-clamp-2 mb-2">
+                    {application.purpose}
+                  </p>
                 )}
                 <div className="flex items-center justify-end gap-1 pt-2 border-t border-gray-50">
                   {canManage ? (
                     <>
-                      {(application.status === "Pending" || application.status === "RevokePending") && (
+                      {(application.status === "Pending" ||
+                        application.status === "RevokePending") && (
                         <>
-                          <button onClick={() => handleApprove(application.id)} className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 border border-emerald-100 bg-emerald-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]">
+                          <button
+                            onClick={() => handleApprove(application.id)}
+                            className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 border border-emerald-100 bg-emerald-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]"
+                          >
                             <Check className="w-3 h-3" /> Approve
                           </button>
-                          <button onClick={() => handleReject(application.id)} className="flex items-center gap-1 text-[11px] font-bold text-red-500 border border-red-100 bg-red-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]">
+                          <button
+                            onClick={() => handleReject(application.id)}
+                            className="flex items-center gap-1 text-[11px] font-bold text-red-500 border border-red-100 bg-red-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]"
+                          >
                             <X className="w-3 h-3" /> Reject
                           </button>
                         </>
                       )}
-                      <button onClick={() => handleEdit(application)} className="flex items-center gap-1 text-[11px] font-bold text-gray-600 border border-gray-100 bg-gray-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]">
+                      <button
+                        onClick={() => handleEdit(application)}
+                        className="flex items-center gap-1 text-[11px] font-bold text-gray-600 border border-gray-100 bg-gray-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]"
+                      >
                         <Edit className="w-3 h-3" /> Edit
                       </button>
-                      <button onClick={() => handleDelete(application.id)} className="flex items-center gap-1 text-[11px] font-bold text-red-500 border border-red-100 bg-red-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]">
+                      <button
+                        onClick={() => handleDelete(application.id)}
+                        className="flex items-center gap-1 text-[11px] font-bold text-red-500 border border-red-100 bg-red-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]"
+                      >
                         <Trash2 className="w-3 h-3" /> Delete
                       </button>
                     </>
@@ -846,17 +1077,27 @@ export function EmpLeaveApplication() {
                     <>
                       {application.status === "Pending" && (
                         <>
-                          <button onClick={() => handleEdit(application)} className="flex items-center gap-1 text-[11px] font-bold text-gray-600 border border-gray-100 bg-gray-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]">
+                          <button
+                            onClick={() => handleEdit(application)}
+                            className="flex items-center gap-1 text-[11px] font-bold text-gray-600 border border-gray-100 bg-gray-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]"
+                          >
                             <Edit className="w-3 h-3" /> Edit
                           </button>
-                          <button onClick={() => handleDelete(application.id)} className="flex items-center gap-1 text-[11px] font-bold text-red-500 border border-red-100 bg-red-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]">
+                          <button
+                            onClick={() => handleDelete(application.id)}
+                            className="flex items-center gap-1 text-[11px] font-bold text-red-500 border border-red-100 bg-red-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]"
+                          >
                             <Trash2 className="w-3 h-3" /> Delete
                           </button>
                         </>
                       )}
                       {application.status === "Approved" && (
-                        <button onClick={() => openRevokeModal(application)} className="flex items-center gap-1 text-[11px] font-bold text-amber-600 border border-amber-100 bg-amber-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]">
-                          <Icon icon="mdi:rotate-left" className="w-3 h-3" /> Revoke
+                        <button
+                          onClick={() => openRevokeModal(application)}
+                          className="flex items-center gap-1 text-[11px] font-bold text-amber-600 border border-amber-100 bg-amber-50 rounded-lg px-2.5 py-1.5 active:scale-[0.97]"
+                        >
+                          <Icon icon="mdi:rotate-left" className="w-3 h-3" />{" "}
+                          Revoke
                         </button>
                       )}
                     </>
@@ -873,25 +1114,44 @@ export function EmpLeaveApplication() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Revoke Leave Application</DialogTitle>
-            <DialogDescription>Please provide a reason for revoking this leave.</DialogDescription>
+            <DialogDescription>
+              Please provide a reason for revoking this leave.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div>
               <Label htmlFor="revokedReason">Revoked Reason</Label>
-              <Input id="revokedReason" type="text" placeholder="Enter reason" value={revokeReason} onChange={(e) => setRevokeReason(e.target.value)} />
+              <Input
+                id="revokedReason"
+                type="text"
+                placeholder="Enter reason"
+                value={revokeReason}
+                onChange={(e) => setRevokeReason(e.target.value)}
+              />
             </div>
             <div>
               <Label>Request Date</Label>
-              <div className="border rounded-md px-3 py-2 bg-gray-50 text-gray-700">{new Date().toLocaleString()}</div>
+              <div className="border rounded-md px-3 py-2 bg-gray-50 text-gray-700">
+                {new Date().toLocaleString()}
+              </div>
             </div>
           </div>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setIsRevokeDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleRevokeSubmit} className="bg-yellow-600 hover:bg-yellow-700 text-white">Submit Revoke Request</Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsRevokeDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRevokeSubmit}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white"
+            >
+              Submit Revoke Request
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
-

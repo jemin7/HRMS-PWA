@@ -7,9 +7,13 @@ import { toast } from "sonner";
 import EmpMobileLayout from "../../../components/layout/EmpMobileLayout";
 import { useCurrentUser } from "../../../hooks/useCurrentUser";
 import { taskFetch } from "../../../utils/taskApi";
-import { formatPayslipMonthYear, type EmpPayslipRow } from "../../../utils/empPayslipApi";
+import {
+  formatPayslipMonthYear,
+  type EmpPayslipRow,
+} from "../../../utils/empPayslipApi";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export default function EmpPayoutQueryPage() {
   const params = useParams();
@@ -22,7 +26,10 @@ export default function EmpPayoutQueryPage() {
   const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
-    const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      "";
     if (!token) {
       router.replace("/login");
       return;
@@ -90,7 +97,9 @@ export default function EmpPayoutQueryPage() {
           Back
         </button>
 
-        <h1 className="text-[20px] font-bold text-gray-900 mb-1">Raise Query</h1>
+        <h1 className="text-[20px] font-bold text-gray-900 mb-1">
+          Raise Query
+        </h1>
         {row && (
           <p className="text-[12px] text-gray-500 mb-5">
             Payslip: {formatPayslipMonthYear(row.monthPeriod)}
@@ -99,7 +108,9 @@ export default function EmpPayoutQueryPage() {
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-4">
           <label className="block">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Date</span>
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+              Date
+            </span>
             <input
               type="date"
               value={today}
@@ -108,7 +119,9 @@ export default function EmpPayoutQueryPage() {
             />
           </label>
           <label className="block">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Remark</span>
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+              Remark
+            </span>
             <textarea
               value={remark}
               onChange={(e) => setRemark(e.target.value)}

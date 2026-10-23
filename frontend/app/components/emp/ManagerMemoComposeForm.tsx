@@ -4,7 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
-import { reporteeDisplayName, type EmpManagerReportee } from "../../utils/empManagerDisplay";
+import {
+  reporteeDisplayName,
+  type EmpManagerReportee,
+} from "../../utils/empManagerDisplay";
 import { uploadAttachmentFile } from "../../utils/uploadFile";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
@@ -12,7 +15,8 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { cn } from "@/app/utils/cn";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 const MIN_SEARCH_CHARS = 1;
 const DEBOUNCE_MS = 300;
 
@@ -21,7 +25,9 @@ type EmployeeOption = EmpManagerReportee;
 function authHeaders(): Record<string, string> {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
+      ? localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        ""
       : "";
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -30,7 +36,10 @@ function employeeLabel(employee: EmployeeOption): string {
   return reporteeDisplayName(employee);
 }
 
-function matchesEmployeePrefix(employee: EmployeeOption, query: string): boolean {
+function matchesEmployeePrefix(
+  employee: EmployeeOption,
+  query: string,
+): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return false;
 
@@ -81,7 +90,10 @@ function EmployeeRecipientPicker({
 
     const data = await res.json();
     const list = (Array.isArray(data) ? data : [])
-      .filter((row: { companyID?: number; id?: number }) => Number(row.companyID) === Number(companyId))
+      .filter(
+        (row: { companyID?: number; id?: number }) =>
+          Number(row.companyID) === Number(companyId),
+      )
       .filter((row: { id?: number }) => row.id !== excludeEmployeeId)
       .map((row: EmployeeOption) => ({
         id: Number(row.id),
@@ -191,7 +203,11 @@ function EmployeeRecipientPicker({
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
-          placeholder={selected.length === 0 ? "Search employee name or ID…" : "Add another employee…"}
+          placeholder={
+            selected.length === 0
+              ? "Search employee name or ID…"
+              : "Add another employee…"
+          }
           autoComplete="off"
           className="min-w-[140px] flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
@@ -200,9 +216,13 @@ function EmployeeRecipientPicker({
       {open && query.trim().length >= MIN_SEARCH_CHARS ? (
         <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
           {searching ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">Searching…</p>
+            <p className="px-3 py-2 text-sm text-muted-foreground">
+              Searching…
+            </p>
           ) : suggestions.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">No matching employees</p>
+            <p className="px-3 py-2 text-sm text-muted-foreground">
+              No matching employees
+            </p>
           ) : (
             suggestions.map((employee) => (
               <button
@@ -212,9 +232,13 @@ function EmployeeRecipientPicker({
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => addRecipient(employee)}
               >
-                <span className="font-medium text-foreground">{employeeLabel(employee)}</span>
+                <span className="font-medium text-foreground">
+                  {employeeLabel(employee)}
+                </span>
                 {employee.employeeID ? (
-                  <span className="text-xs text-muted-foreground">{employee.employeeID}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {employee.employeeID}
+                  </span>
                 ) : null}
               </button>
             ))
@@ -234,9 +258,13 @@ export function ManagerMemoComposeForm({
   onCancel?: () => void;
 }) {
   const user = useCurrentUser();
-  const [selectedRecipients, setSelectedRecipients] = useState<EmployeeOption[]>([]);
+  const [selectedRecipients, setSelectedRecipients] = useState<
+    EmployeeOption[]
+  >([]);
   const [companyId, setCompanyId] = useState<number | null>(null);
-  const [currentEmployeeId, setCurrentEmployeeId] = useState<number | null>(null);
+  const [currentEmployeeId, setCurrentEmployeeId] = useState<number | null>(
+    null,
+  );
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [sending, setSending] = useState(false);
@@ -244,10 +272,13 @@ export function ManagerMemoComposeForm({
 
   useEffect(() => {
     if (!user?.username) return;
-    fetch(`${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`, {
-      headers: authHeaders(),
-      cache: "no-store",
-    })
+    fetch(
+      `${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`,
+      {
+        headers: authHeaders(),
+        cache: "no-store",
+      },
+    )
       .then((r) => (r.ok ? r.json() : null))
       .then((creds) => {
         setCompanyId(creds?.companyID ?? null);

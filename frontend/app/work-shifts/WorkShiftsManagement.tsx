@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { hasModuleWriteAccess, isCompanyAdminLikeRole } from "@/lib/companyAccess";
+import {
+  hasModuleWriteAccess,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -18,7 +21,10 @@ import { SearchSuggestInput } from "../components/SearchSuggestInput";
 import { CompanyBranchField } from "../components/app/company-branch-field";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { toast } from "sonner";
-import { messageFromUnknownError, readApiErrorMessage } from "../utils/api-error";
+import {
+  messageFromUnknownError,
+  readApiErrorMessage,
+} from "../utils/api-error";
 import { getWorkShiftTypeLabel } from "../utils/workShiftLabels";
 import { getSidebarContext } from "../utils/sidebarContext";
 import {
@@ -83,7 +89,7 @@ export function WorkShiftsManagement() {
   const [branchFilterList, setBranchFilterList] = useState<any[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingWorkShift, setEditingWorkShift] = useState<WorkShift | null>(
-    null
+    null,
   );
   const user = useCurrentUser();
   const canManage =
@@ -94,7 +100,6 @@ export function WorkShiftsManagement() {
     canDesktopManagerManage(user) ||
     hasModuleWriteAccess("WORK_SHIFTS");
   const [currentUserMapping, setCurrentUserMapping] = useState<any>(null);
-
 
   const [formData, setFormData] = useState({
     serviceProvider: "",
@@ -110,7 +115,12 @@ export function WorkShiftsManagement() {
     weeklySchedule: DAYS_OF_WEEK.map((day) => ({
       day,
       isWeeklyOff: false,
-      work: { startTime: "10:00", endTime: "19:00", breakStart: "14:00", breakEnd: "15:00" },
+      work: {
+        startTime: "10:00",
+        endTime: "19:00",
+        breakStart: "14:00",
+        breakEnd: "15:00",
+      },
       ot: { startTime: "", endTime: "", breakStart: "", breakEnd: "" },
     })),
   });
@@ -134,16 +144,16 @@ export function WorkShiftsManagement() {
 
   // API functions for search and suggest
   const BACKEND_URL =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
-
+    process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
   // Load mapping for MANAGER
   useEffect(() => {
-    if (user?.role !== "SERVICE_PROVIDER" && user?.role !== "BRANCH_ADMIN") return;
+    if (user?.role !== "SERVICE_PROVIDER" && user?.role !== "BRANCH_ADMIN")
+      return;
 
     if (user?.role === "SERVICE_PROVIDER") {
       (async () => {
-        const res = await fetch("/backend/users");
+        const res = await fetch("https://hrms-api-test.onrender.com/users");
         const list = await res.json();
         const me = list.find((u: any) => u.username === user.username);
         setCurrentUserMapping(me || null);
@@ -158,7 +168,8 @@ export function WorkShiftsManagement() {
     if (user?.role === "SERVICE_PROVIDER" && currentUserMapping) {
       const ctx = getSidebarContext();
       const companyID = ctx?.companyID ?? currentUserMapping.companyID;
-      const sameCompany = Number(companyID) === Number(currentUserMapping.companyID);
+      const sameCompany =
+        Number(companyID) === Number(currentUserMapping.companyID);
       setFormData((p) => ({
         ...p,
         serviceProviderID: currentUserMapping.serviceProviderID,
@@ -184,8 +195,8 @@ export function WorkShiftsManagement() {
       const q = query.toLowerCase();
       return Array.isArray(data)
         ? data.filter((item: any) =>
-          (item?.companyName || "").toLowerCase().includes(q)
-        )
+            (item?.companyName || "").toLowerCase().includes(q),
+          )
         : [];
     } catch (error) {
       console.error("Error fetching service providers:", error);
@@ -209,10 +220,10 @@ export function WorkShiftsManagement() {
 
       return Array.isArray(data)
         ? data.filter(
-          (item: any) =>
-            item.serviceProviderID === spID &&
-            (item.companyName || "").toLowerCase().includes(q)
-        )
+            (item: any) =>
+              item.serviceProviderID === spID &&
+              (item.companyName || "").toLowerCase().includes(q),
+          )
         : [];
     } catch (error) {
       console.error("Error fetching companies:", error);
@@ -221,52 +232,54 @@ export function WorkShiftsManagement() {
     }
   };
 
+  const fetchBranches = async (query: string) => {
+    try {
+      const activeCompanyID =
+        resolveScopedCompanyId(user) ??
+        formData.companyID ??
+        currentUserMapping?.companyID ??
+        user?.companyID ??
+        null;
 
- const fetchBranches = async (query: string) => {
-  try {
-    const activeCompanyID =
-      resolveScopedCompanyId(user) ??
-      formData.companyID ??
-      currentUserMapping?.companyID ??
-      user?.companyID ??
-      null;
+      if (!activeCompanyID) return [];
 
-    if (!activeCompanyID) return [];
+      const res = await fetch(`${BACKEND_URL}/branches`, { cache: "no-store" });
+      const data = await res.json();
+      const q = query.toLowerCase();
 
-    const res = await fetch(`${BACKEND_URL}/branches`, { cache: "no-store" });
-    const data = await res.json();
-    const q = query.toLowerCase();
+      let filtered = Array.isArray(data) ? data : [];
 
-    let filtered = Array.isArray(data) ? data : [];
+      filtered = filtered.filter(
+        (item: any) => Number(item.companyID) === Number(activeCompanyID),
+      );
 
-    filtered = filtered.filter(
-      (item: any) => Number(item.companyID) === Number(activeCompanyID)
-    );
+      if (user?.role === "BRANCH_ADMIN") {
+        const branchID = currentUserMapping?.branchesID ?? user?.branchesID;
 
-    if (user?.role === "BRANCH_ADMIN") {
-      const branchID = currentUserMapping?.branchesID ?? user?.branchesID;
-
-      if (branchID) {
-        filtered = filtered.filter(
-          (item: any) => Number(item.id) === Number(branchID)
-        );
+        if (branchID) {
+          filtered = filtered.filter(
+            (item: any) => Number(item.id) === Number(branchID),
+          );
+        }
       }
-    }
 
-    return filtered.filter((item: any) =>
-      (item.branchName || "").toLowerCase().includes(q)
-    ).reduce((acc: any[], item: any) => {
-      const id = Number(item.id);
-      if (!Number.isFinite(id) || acc.some((x) => Number(x.id) === id)) return acc;
-      acc.push(item);
-      return acc;
-    }, []);
-  } catch (error) {
-    console.error("Error fetching branches:", error);
-    toast.error("Failed to load data.");
-    return [];
-  }
-};
+      return filtered
+        .filter((item: any) =>
+          (item.branchName || "").toLowerCase().includes(q),
+        )
+        .reduce((acc: any[], item: any) => {
+          const id = Number(item.id);
+          if (!Number.isFinite(id) || acc.some((x) => Number(x.id) === id))
+            return acc;
+          acc.push(item);
+          return acc;
+        }, []);
+    } catch (error) {
+      console.error("Error fetching branches:", error);
+      toast.error("Failed to load data.");
+      return [];
+    }
+  };
 
   // Load work shifts on component mount
   useEffect(() => {
@@ -277,84 +290,93 @@ export function WorkShiftsManagement() {
   }, [user]);
 
   useEffect(() => {
-const handler = () => {
-  setBranchFilter(user?.role === "BRANCH_ADMIN" ? String(user?.branchesID ?? "ALL") : "ALL");
-  setFormData((p) => ({
-    ...p,
-    branchName: "",
-    branchesID: undefined,
-  }));
+    const handler = () => {
+      setBranchFilter(
+        user?.role === "BRANCH_ADMIN"
+          ? String(user?.branchesID ?? "ALL")
+          : "ALL",
+      );
+      setFormData((p) => ({
+        ...p,
+        branchName: "",
+        branchesID: undefined,
+      }));
 
-  if (user) {
-    loadWorkShifts();
-    loadBranchFilterList();
-  }
-};
+      if (user) {
+        loadWorkShifts();
+        loadBranchFilterList();
+      }
+    };
 
-  const sidebarPageClickHandler = (e: any) => {
-    if (e.detail?.path === "/work-shifts") {
-      closeWorkShiftPagePanels();
-      if (user) loadWorkShifts();
-    }
-  };
+    const sidebarPageClickHandler = (e: any) => {
+      if (e.detail?.path === "/work-shifts") {
+        closeWorkShiftPagePanels();
+        if (user) loadWorkShifts();
+      }
+    };
 
-  window.addEventListener("sidebar-context-changed", handler);
-  window.addEventListener("app-data-refresh", handler);
-  window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler);
+    window.addEventListener("sidebar-context-changed", handler);
+    window.addEventListener("app-data-refresh", handler);
+    window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler);
 
-  return () => {
-    window.removeEventListener("sidebar-context-changed", handler);
-    window.removeEventListener("app-data-refresh", handler);
-    window.removeEventListener("sidebar-main-page-click", sidebarPageClickHandler);
-  };
-}, [user]);
+    return () => {
+      window.removeEventListener("sidebar-context-changed", handler);
+      window.removeEventListener("app-data-refresh", handler);
+      window.removeEventListener(
+        "sidebar-main-page-click",
+        sidebarPageClickHandler,
+      );
+    };
+  }, [user]);
 
   const loadBranchFilterList = async () => {
-  try {
-    const res = await fetch(`${BACKEND_URL}/branches`, { cache: "no-store" });
-    const data = await res.json();
+    try {
+      const res = await fetch(`${BACKEND_URL}/branches`, { cache: "no-store" });
+      const data = await res.json();
 
-    const mapping = await resolveScopeUserMapping(user!);
-    if (mapping) setCurrentUserMapping(mapping);
+      const mapping = await resolveScopeUserMapping(user!);
+      if (mapping) setCurrentUserMapping(mapping);
 
-    const activeCompanyID =
-      resolveScopedCompanyId(user) ??
-      mapping?.companyID ??
-      user?.companyID ??
-      null;
+      const activeCompanyID =
+        resolveScopedCompanyId(user) ??
+        mapping?.companyID ??
+        user?.companyID ??
+        null;
 
-    let filtered = Array.isArray(data) ? data : [];
+      let filtered = Array.isArray(data) ? data : [];
 
-    if (activeCompanyID) {
-      filtered = filtered.filter(
-        (b: any) => Number(b.companyID) === Number(activeCompanyID)
-      );
-    }
-
-    if (user?.role === "BRANCH_ADMIN") {
-      const branchID = mapping?.branchesID ?? user?.branchesID;
-
-      if (branchID) {
+      if (activeCompanyID) {
         filtered = filtered.filter(
-          (b: any) => Number(b.id) === Number(branchID)
+          (b: any) => Number(b.companyID) === Number(activeCompanyID),
         );
-        setBranchFilter(String(branchID));
       }
-    }
 
-    setBranchFilterList(filtered);
-  } catch (e) {
-    console.error(e);
-    setBranchFilterList([]);
-  }
-};
+      if (user?.role === "BRANCH_ADMIN") {
+        const branchID = mapping?.branchesID ?? user?.branchesID;
+
+        if (branchID) {
+          filtered = filtered.filter(
+            (b: any) => Number(b.id) === Number(branchID),
+          );
+          setBranchFilter(String(branchID));
+        }
+      }
+
+      setBranchFilterList(filtered);
+    } catch (e) {
+      console.error(e);
+      setBranchFilterList([]);
+    }
+  };
 
   const loadWorkShifts = async () => {
     setListLoading(true);
     try {
       const scopedId = resolveScopedCompanyId(user);
       const q = scopedId ? `?companyID=${scopedId}` : "";
-      const res = await fetch(`${BACKEND_URL}/work-shift${q}`, { cache: "no-store" });
+      const res = await fetch(`${BACKEND_URL}/work-shift${q}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       const all = Array.isArray(data) ? data : [];
 
@@ -366,7 +388,12 @@ const handler = () => {
           dayMap[d] = {
             day: d,
             isWeeklyOff: false,
-            work: { startTime: "10:00", endTime: "19:00", breakStart: "14:00", breakEnd: "15:00" },
+            work: {
+              startTime: "10:00",
+              endTime: "19:00",
+              breakStart: "14:00",
+              breakEnd: "15:00",
+            },
             ot: { startTime: "", endTime: "", breakStart: "", breakEnd: "" },
           };
         });
@@ -381,9 +408,19 @@ const handler = () => {
           const type = rec.shiftType || "WORK";
 
           if (type === "OT") {
-            dayMap[day].ot = { startTime: st, endTime: et, breakStart: bs, breakEnd: be };
+            dayMap[day].ot = {
+              startTime: st,
+              endTime: et,
+              breakStart: bs,
+              breakEnd: be,
+            };
           } else {
-            dayMap[day].work = { startTime: st, endTime: et, breakStart: bs, breakEnd: be };
+            dayMap[day].work = {
+              startTime: st,
+              endTime: et,
+              breakStart: bs,
+              breakEnd: be,
+            };
             dayMap[day].isWeeklyOff = rec.weeklyOff || false;
           }
         });
@@ -408,23 +445,22 @@ const handler = () => {
         };
       });
 
- const mapping = await resolveScopeUserMapping(user!);
-if (mapping) setCurrentUserMapping(mapping);
+      const mapping = await resolveScopeUserMapping(user!);
+      if (mapping) setCurrentUserMapping(mapping);
 
-let filtered = await filterCompanyScopedRecords(mapped, user);
+      let filtered = await filterCompanyScopedRecords(mapped, user);
 
-if (user?.role === "BRANCH_ADMIN") {
-  const branchID = mapping?.branchesID ?? user?.branchesID;
+      if (user?.role === "BRANCH_ADMIN") {
+        const branchID = mapping?.branchesID ?? user?.branchesID;
 
-  if (branchID) {
-    filtered = filtered.filter(
-      (w: any) => Number(w.branchesID) === Number(branchID)
-    );
-  }
-}
+        if (branchID) {
+          filtered = filtered.filter(
+            (w: any) => Number(w.branchesID) === Number(branchID),
+          );
+        }
+      }
 
-setWorkShifts(filtered);
-
+      setWorkShifts(filtered);
     } catch (error) {
       console.error("Error loading work shifts:", error);
       toast.error("Failed to load data.");
@@ -434,14 +470,13 @@ setWorkShifts(filtered);
     }
   };
 
-
-
   const filteredWorkShifts = useMemo(() => {
     const q = table.search.trim().toLowerCase();
 
     let list = workShifts.filter((workShift) => {
       const matchesBranch =
-        branchFilter === "ALL" || branchFilter === String(workShift.branchesID ?? "");
+        branchFilter === "ALL" ||
+        branchFilter === String(workShift.branchesID ?? "");
 
       const matchesSearch =
         !q ||
@@ -469,7 +504,10 @@ setWorkShifts(filtered);
         return getWorkShiftTypeLabel(ws.isFlexible, ws.isRotating);
       }
       if (key === "weeklyOff") {
-        return ws.weeklySchedule.filter((d) => d.isWeeklyOff).map((d) => d.day).join(", ");
+        return ws.weeklySchedule
+          .filter((d) => d.isWeeklyOff)
+          .map((d) => d.day)
+          .join(", ");
       }
       if (key === "createdAt") return ws.createdAt ?? "";
       return "";
@@ -491,7 +529,7 @@ setWorkShifts(filtered);
     if (!start || !end) return 0;
     const [sh, sm] = start.split(":").map(Number);
     const [eh, em] = end.split(":").map(Number);
-    let diff = (eh * 60 + em) - (sh * 60 + sm);
+    let diff = eh * 60 + em - (sh * 60 + sm);
     if (diff < 0) diff += 24 * 60; // handle cross-midnight (e.g. 23:00 → 00:00)
     return diff;
   };
@@ -503,7 +541,8 @@ setWorkShifts(filtered);
     return `${h}h ${m}m`;
   };
 
-  const getBreakMin = (row: ShiftRow): number => calcMinutes(row.breakStart, row.breakEnd);
+  const getBreakMin = (row: ShiftRow): number =>
+    calcMinutes(row.breakStart, row.breakEnd);
   const getWorkMin = (row: ShiftRow): number => {
     const span = calcMinutes(row.startTime, row.endTime);
     const brk = getBreakMin(row);
@@ -535,12 +574,12 @@ setWorkShifts(filtered);
   };
 
   const handleIsRotatingChange = (checked: boolean) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       isRotating: checked,
-      weeklySchedule: checked 
-        ? prev.weeklySchedule.map(day => ({ ...day, isWeeklyOff: false }))
-        : prev.weeklySchedule
+      weeklySchedule: checked
+        ? prev.weeklySchedule.map((day) => ({ ...day, isWeeklyOff: false }))
+        : prev.weeklySchedule,
     }));
   };
 
@@ -549,9 +588,10 @@ setWorkShifts(filtered);
 
     // Validation
     const validationErrors: string[] = [];
-    if (!formData.workShiftName?.trim()) validationErrors.push("Work Shift Name is required");
+    if (!formData.workShiftName?.trim())
+      validationErrors.push("Work Shift Name is required");
     if (validationErrors.length > 0) {
-      validationErrors.forEach(msg => toast.error(msg));
+      validationErrors.forEach((msg) => toast.error(msg));
       return;
     }
 
@@ -586,31 +626,34 @@ setWorkShifts(filtered);
 
       const ctx = getSidebarContext();
 
-const finalServiceProviderID =
-  ctx?.serviceProviderID ??
-  formData.serviceProviderID ??
-  currentUserMapping?.serviceProviderID ??
-  user?.serviceProviderID ??
-  null;
+      const finalServiceProviderID =
+        ctx?.serviceProviderID ??
+        formData.serviceProviderID ??
+        currentUserMapping?.serviceProviderID ??
+        user?.serviceProviderID ??
+        null;
 
-const finalCompanyID =
-  resolveScopedCompanyId(user) ??
-  formData.companyID ??
-  currentUserMapping?.companyID ??
-  user?.companyID ??
-  null;
+      const finalCompanyID =
+        resolveScopedCompanyId(user) ??
+        formData.companyID ??
+        currentUserMapping?.companyID ??
+        user?.companyID ??
+        null;
 
-const finalBranchesID =
-  user?.role === "BRANCH_ADMIN"
-    ? formData.branchesID ?? currentUserMapping?.branchesID ?? user?.branchesID ?? null
-    : formData.branchesID ?? null;
+      const finalBranchesID =
+        user?.role === "BRANCH_ADMIN"
+          ? (formData.branchesID ??
+            currentUserMapping?.branchesID ??
+            user?.branchesID ??
+            null)
+          : (formData.branchesID ?? null);
 
-const workShiftData = {
-  serviceProviderID: finalServiceProviderID,
-  companyID: finalCompanyID,
-  branchesID: finalBranchesID,
-  
-  workShiftName: formData.workShiftName,
+      const workShiftData = {
+        serviceProviderID: finalServiceProviderID,
+        companyID: finalCompanyID,
+        branchesID: finalBranchesID,
+
+        workShiftName: formData.workShiftName,
         isFlexible: formData.isFlexible === true,
         isRotating: formData.isRotating === true,
         workShiftType: formData.workShiftType,
@@ -630,20 +673,25 @@ const workShiftData = {
         body: JSON.stringify(workShiftData),
       });
       if (!res.ok) {
-        throw new Error(await readApiErrorMessage(res, "Failed to save. Please try again."));
+        throw new Error(
+          await readApiErrorMessage(res, "Failed to save. Please try again."),
+        );
       }
 
-await loadWorkShifts();
-await loadBranchFilterList();
+      await loadWorkShifts();
+      await loadBranchFilterList();
       resetForm();
       setIsDialogOpen(false);
-      toast.success(editingWorkShift ? "Updated successfully" : "Created successfully");
+      toast.success(
+        editingWorkShift ? "Updated successfully" : "Created successfully",
+      );
     } catch (error) {
       console.error("Error saving work shift:", error);
-      toast.error(messageFromUnknownError(error, "Failed to save. Please try again."));
+      toast.error(
+        messageFromUnknownError(error, "Failed to save. Please try again."),
+      );
     }
   };
-
 
   const resetForm = () => {
     const ctx = getSidebarContext();
@@ -661,7 +709,12 @@ await loadBranchFilterList();
       weeklySchedule: DAYS_OF_WEEK.map((day) => ({
         day,
         isWeeklyOff: false,
-        work: { startTime: "10:00", endTime: "19:00", breakStart: "14:00", breakEnd: "15:00" },
+        work: {
+          startTime: "10:00",
+          endTime: "19:00",
+          breakStart: "14:00",
+          breakEnd: "15:00",
+        },
         ot: { startTime: "", endTime: "", breakStart: "", breakEnd: "" },
       })),
     });
@@ -669,14 +722,14 @@ await loadBranchFilterList();
   };
 
   const closeWorkShiftPagePanels = () => {
-  resetForm();
+    resetForm();
 
-  setIsDialogOpen(false);
-  setEditingWorkShift(null);
-};
+    setIsDialogOpen(false);
+    setEditingWorkShift(null);
+  };
 
   const handleServiceProviderSelect = (selected: SelectedItem) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       serviceProvider: selected.display,
       serviceProviderID: selected.value,
@@ -688,7 +741,7 @@ await loadBranchFilterList();
   };
 
   const handleCompanySelect = (selected: SelectedItem) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       companyName: selected.display,
       companyID: selected.value,
@@ -729,58 +782,82 @@ await loadBranchFilterList();
         method: "DELETE",
       });
       if (!res.ok) {
-        throw new Error(await readApiErrorMessage(res, "Failed to delete. Please try again."));
+        throw new Error(
+          await readApiErrorMessage(res, "Failed to delete. Please try again."),
+        );
       }
       await loadWorkShifts();
       toast.success("Deleted successfully");
     } catch (error) {
       console.error("Error deleting work shift:", error);
-      toast.error(messageFromUnknownError(error, "Failed to delete. Please try again."));
+      toast.error(
+        messageFromUnknownError(error, "Failed to delete. Please try again."),
+      );
     }
   };
 
-  const workShiftColumns = useMemo((): DataTableColumn<WorkShift>[] => [
-    {
-      key: "workShiftName",
-      header: "Name",
-      sortable: true,
-      colSpan: 3,
-      cell: (ws) => <span className="font-medium">{ws.workShiftName || "—"}</span>,
-    },
-    { key: "branchName", header: "Branch", sortable: true, colSpan: 2, cell: (ws) => ws.branchName || "—" },
-    {
-      key: "shiftType",
-      header: "Shift Type",
-      sortable: true,
-      colSpan: 2,
-      cell: (ws) => (
-        <Badge variant="outline">
-          {getWorkShiftTypeLabel(ws.isFlexible, ws.isRotating)}
-        </Badge>
-      ),
-    },
-    {
-      key: "weeklyOff",
-      header: "Weekly Off",
-      sortable: true,
-      colSpan: 3,
-      cell: (ws) =>
-        ws.weeklySchedule.filter((d) => d.isWeeklyOff).map((d) => d.day).join(", ") || "—",
-    },
-    { key: "createdAt", header: "Created", sortable: true, colSpan: 2, cell: (ws) => ws.createdAt || "—" },
-    {
-      key: "actions",
-      header: "Actions",
-      colSpan: 2,
-      align: "right",
-      cell: (ws) => (
-        <EntityRowActions
-          onEdit={canManage ? () => handleEdit(ws) : undefined}
-          onDelete={canManage ? () => handleDelete(ws.id) : undefined}
-        />
-      ),
-    },
-  ], [canManage]);
+  const workShiftColumns = useMemo(
+    (): DataTableColumn<WorkShift>[] => [
+      {
+        key: "workShiftName",
+        header: "Name",
+        sortable: true,
+        colSpan: 3,
+        cell: (ws) => (
+          <span className="font-medium">{ws.workShiftName || "—"}</span>
+        ),
+      },
+      {
+        key: "branchName",
+        header: "Branch",
+        sortable: true,
+        colSpan: 2,
+        cell: (ws) => ws.branchName || "—",
+      },
+      {
+        key: "shiftType",
+        header: "Shift Type",
+        sortable: true,
+        colSpan: 2,
+        cell: (ws) => (
+          <Badge variant="outline">
+            {getWorkShiftTypeLabel(ws.isFlexible, ws.isRotating)}
+          </Badge>
+        ),
+      },
+      {
+        key: "weeklyOff",
+        header: "Weekly Off",
+        sortable: true,
+        colSpan: 3,
+        cell: (ws) =>
+          ws.weeklySchedule
+            .filter((d) => d.isWeeklyOff)
+            .map((d) => d.day)
+            .join(", ") || "—",
+      },
+      {
+        key: "createdAt",
+        header: "Created",
+        sortable: true,
+        colSpan: 2,
+        cell: (ws) => ws.createdAt || "—",
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        colSpan: 2,
+        align: "right",
+        cell: (ws) => (
+          <EntityRowActions
+            onEdit={canManage ? () => handleEdit(ws) : undefined}
+            onDelete={canManage ? () => handleDelete(ws.id) : undefined}
+          />
+        ),
+      },
+    ],
+    [canManage],
+  );
 
   return (
     <div className="space-y-6 w-full max-w-none animate-fade-in page-content-enter">
@@ -790,7 +867,12 @@ await loadBranchFilterList();
         description="Manage work shifts and schedules"
         actions={
           canManage && !isDialogOpen ? (
-            <Button onClick={() => { closeWorkShiftPagePanels(); setIsDialogOpen(true); }}>
+            <Button
+              onClick={() => {
+                closeWorkShiftPagePanels();
+                setIsDialogOpen(true);
+              }}
+            >
               <Plus className="w-4 h-4 mr-1" />
               Add Work Shift
             </Button>
@@ -802,358 +884,555 @@ await loadBranchFilterList();
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         title={editingWorkShift ? "Edit Work Shift" : "Add New Work Shift"}
-        description={editingWorkShift
-                  ? "Update the work shift information below."
-                  : "Fill in the details to add a new work shift."}
+        description={
+          editingWorkShift
+            ? "Update the work shift information below."
+            : "Fill in the details to add a new work shift."
+        }
       >
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSubmit(e);
-              }}
-              className="space-y-6"
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* SP + Company auto-filled from sidebar context */}
-                {false && (
-                  <>
-                    <SearchSuggestInput
-                      label="Service Provider"
-                      placeholder="Select Service Provider"
-                      value={formData.serviceProvider}
-                      onChange={(value) =>
-                        setFormData((prev) => ({ ...prev, serviceProvider: value }))
-                      }
-                      onSelect={handleServiceProviderSelect}
-                      fetchData={fetchServiceProviders}
-                      displayField="companyName"
-                      valueField="id"
-                      required
-                    />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit(e);
+          }}
+          className="space-y-6"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* SP + Company auto-filled from sidebar context */}
+            {false && (
+              <>
+                <SearchSuggestInput
+                  label="Service Provider"
+                  placeholder="Select Service Provider"
+                  value={formData.serviceProvider}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, serviceProvider: value }))
+                  }
+                  onSelect={handleServiceProviderSelect}
+                  fetchData={fetchServiceProviders}
+                  displayField="companyName"
+                  valueField="id"
+                  required
+                />
 
-                    <SearchSuggestInput
-                      label="Company Name"
-                      placeholder="Select Company"
-                      value={formData.companyName}
-                      onChange={(value) =>
-                        setFormData((prev) => ({ ...prev, companyName: value }))
-                      }
-                      onSelect={handleCompanySelect}
-                      fetchData={fetchCompanies}
-                      displayField="companyName"
-                      valueField="id"
-                      required
-                    />
-                  </>
-                )}
+                <SearchSuggestInput
+                  label="Company Name"
+                  placeholder="Select Company"
+                  value={formData.companyName}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, companyName: value }))
+                  }
+                  onSelect={handleCompanySelect}
+                  fetchData={fetchCompanies}
+                  displayField="companyName"
+                  valueField="id"
+                  required
+                />
+              </>
+            )}
 
-                {/* MANAGER → Only Branch input */}
-{(user?.role === "SERVICE_PROVIDER" ||
-  isCompanyAdminLikeRole(user?.role) ||
-  user?.role === "BRANCH_ADMIN") && (
-                  <CompanyBranchField
-                    label="Branch Name"
-                    placeholder="Select Branch"
-                    value={formData.branchName}
-                    onChange={(value) =>
-                      setFormData((prev) => ({ ...prev, branchName: value }))
-                    }
-                    onSelect={(selected) =>
-                      setFormData((p) => ({
-                        ...p,
-                        branchName: selected.display,
-                        branchesID: selected.value,
-                      }))
-                    }
-               fetchData={fetchBranches}
-                    displayField="branchName"
-                    valueField="id"
-                    companyID={formData.companyID ?? resolveScopedCompanyId(user) ?? currentUserMapping?.companyID ?? user?.companyID}
-                    required
-                  />
-                )}
+            {/* MANAGER → Only Branch input */}
+            {(user?.role === "SERVICE_PROVIDER" ||
+              isCompanyAdminLikeRole(user?.role) ||
+              user?.role === "BRANCH_ADMIN") && (
+              <CompanyBranchField
+                label="Branch Name"
+                placeholder="Select Branch"
+                value={formData.branchName}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, branchName: value }))
+                }
+                onSelect={(selected) =>
+                  setFormData((p) => ({
+                    ...p,
+                    branchName: selected.display,
+                    branchesID: selected.value,
+                  }))
+                }
+                fetchData={fetchBranches}
+                displayField="branchName"
+                valueField="id"
+                companyID={
+                  formData.companyID ??
+                  resolveScopedCompanyId(user) ??
+                  currentUserMapping?.companyID ??
+                  user?.companyID
+                }
+                required
+              />
+            )}
 
-                {/* SUPERADMIN → Branch input */}
-                {user?.role === "SUPERADMIN" && (
-                  <CompanyBranchField
-  label="Branch Name"
-  placeholder="Select Branch"
-  value={formData.branchName}
-  onChange={(value) =>
-    setFormData((prev) => ({ ...prev, branchName: value }))
-  }
-  onSelect={(selected) =>
-    setFormData((p) => ({
-      ...p,
-      branchName: selected.display,
-      branchesID: selected.value,
-    }))
-  }
-  fetchData={fetchBranches}
-  displayField="branchName"
-  valueField="id"
-  companyID={formData.companyID}
-  required
-/>
-                )}
-              </div>
+            {/* SUPERADMIN → Branch input */}
+            {user?.role === "SUPERADMIN" && (
+              <CompanyBranchField
+                label="Branch Name"
+                placeholder="Select Branch"
+                value={formData.branchName}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, branchName: value }))
+                }
+                onSelect={(selected) =>
+                  setFormData((p) => ({
+                    ...p,
+                    branchName: selected.display,
+                    branchesID: selected.value,
+                  }))
+                }
+                fetchData={fetchBranches}
+                displayField="branchName"
+                valueField="id"
+                companyID={formData.companyID}
+                required
+              />
+            )}
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="workShiftName">Work Shift Name *</Label>
-                <Input
-                  id="workShiftName"
-                  value={formData.workShiftName}
+          <div className="space-y-2">
+            <Label htmlFor="workShiftName">Work Shift Name *</Label>
+            <Input
+              id="workShiftName"
+              value={formData.workShiftName}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  workShiftName: e.target.value,
+                }))
+              }
+              placeholder="Enter work shift name"
+              required
+            />
+          </div>
+
+          {/* New Checkboxes Section */}
+          <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
+            <h3 className="text-md font-semibold">Shift Configuration</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="isFlexible"
+                  checked={formData.isFlexible}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      workShiftName: e.target.value,
+                      isFlexible: e.target.checked,
                     }))
                   }
-                  placeholder="Enter work shift name"
-                  required
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                 />
+                <Label htmlFor="isFlexible" className="text-sm font-normal">
+                  Flexible Shift
+                </Label>
               </div>
-
-              {/* New Checkboxes Section */}
-              <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
-                <h3 className="text-md font-semibold">Shift Configuration</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="isFlexible"
-                      checked={formData.isFlexible}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          isFlexible: e.target.checked,
-                        }))
-                      }
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <Label htmlFor="isFlexible" className="text-sm font-normal">
-                      Flexible Shift
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="isRotating"
-                      checked={formData.isRotating}
-                      onChange={(e) => handleIsRotatingChange(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <Label htmlFor="isRotating" className="text-sm font-normal">
-                      Rotating Shift
-                    </Label>
-                  </div>
-                </div>
-                {formData.isFlexible && (
-                  <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                    ⚠️ Flexible shifts count total working hours. Latemarks and shift timing are not bound to the employee.
-                  </p>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="isRotating"
+                  checked={formData.isRotating}
+                  onChange={(e) => handleIsRotatingChange(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <Label htmlFor="isRotating" className="text-sm font-normal">
+                  Rotating Shift
+                </Label>
+              </div>
+            </div>
+            {formData.isFlexible && (
+              <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                ⚠️ Flexible shifts count total working hours. Latemarks and
+                shift timing are not bound to the employee.
+              </p>
+            )}
+            {formData.isRotating && (
+              <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                ⚠️ Rotating shifts cannot have weekly off days. Weekly off
+                checkboxes are disabled.
+              </p>
+            )}
+            <p className="text-xs text-gray-600 bg-white border border-gray-200 rounded px-2 py-1.5">
+              Type:{" "}
+              <span className="font-semibold text-gray-900">
+                {getWorkShiftTypeLabel(
+                  formData.isFlexible,
+                  formData.isRotating,
                 )}
-                {formData.isRotating && (
-                  <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                    ⚠️ Rotating shifts cannot have weekly off days. Weekly off checkboxes are disabled.
-                  </p>
-                )}
-                <p className="text-xs text-gray-600 bg-white border border-gray-200 rounded px-2 py-1.5">
-                  Type:{" "}
-                  <span className="font-semibold text-gray-900">
-                    {getWorkShiftTypeLabel(formData.isFlexible, formData.isRotating)}
-                  </span>
-                </p>
-              </div>
+              </span>
+            </p>
+          </div>
 
-              {/* Weekly Schedule */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Default Working Hours</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-gray-300 text-sm">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="border border-gray-300 px-2 py-2 text-left font-medium w-[90px]">Day</th>
-                        <th className="border border-gray-300 px-2 py-2 text-left font-medium w-[70px]">Type</th>
-                        <th className="border border-gray-300 px-2 py-2 text-left font-medium">Start Time</th>
-                        <th className="border border-gray-300 px-2 py-2 text-left font-medium">End Time</th>
-                        <th className="border border-gray-300 px-2 py-2 text-left font-medium">Break Start Time</th>
-                        <th className="border border-gray-300 px-2 py-2 text-left font-medium">Break End Time</th>
-                        <th className="border border-gray-300 px-2 py-2 text-center font-medium w-[80px]">Total Break Time</th>
-                        <th className="border border-gray-300 px-2 py-2 text-center font-medium w-[80px]">Total Work Time</th>
-                        <th className="border border-gray-300 px-2 py-2 text-center font-medium w-[70px]">Weekly Off</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {formData.weeklySchedule.map((daySchedule, index) => {
-                        const isOff = daySchedule.isWeeklyOff;
-                        const disabled = false;
-                        return (
-                          <>
-                            {/* WORK row */}
-                            <tr key={`${daySchedule.day}-work`} className={isOff ? "bg-amber-50 border-l-4 border-l-amber-400" : ""}>
-                              <td className="border border-gray-300 px-2 py-1.5 font-medium" rowSpan={2}>
-                                <div className="flex flex-col gap-0.5">
-                                  <span>{daySchedule.day}</span>
-                                  {isOff && <span className="text-[10px] font-semibold text-amber-700 bg-amber-200 rounded px-1 py-0 leading-4 self-start">Off</span>}
-                                </div>
-                              </td>
-                              <td className="border border-gray-300 px-2 py-1.5">
-                                <Badge variant="outline" className="text-xs">Work</Badge>
-                              </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <Input type="time" value={daySchedule.work.startTime} onChange={(e) => handleShiftRowChange(index, "work", "startTime", e.target.value)} disabled={disabled} className="h-8 text-xs" />
-                              </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <Input type="time" value={daySchedule.work.endTime} onChange={(e) => handleShiftRowChange(index, "work", "endTime", e.target.value)} disabled={disabled} className="h-8 text-xs" />
-                              </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <Input type="time" value={daySchedule.work.breakStart} onChange={(e) => handleShiftRowChange(index, "work", "breakStart", e.target.value)} disabled={disabled} className="h-8 text-xs" />
-                              </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <Input type="time" value={daySchedule.work.breakEnd} onChange={(e) => handleShiftRowChange(index, "work", "breakEnd", e.target.value)} disabled={disabled} className="h-8 text-xs" />
-                              </td>
-                              <td className="border border-gray-300 px-2 py-1.5 text-center text-xs font-medium">
-                                {isOff ? "—" : `${formatHrMin(getBreakMin(daySchedule.work))} (${getBreakMin(daySchedule.work)} mins)`}
-                              </td>
-                              <td className="border border-gray-300 px-2 py-1.5 text-center text-xs font-medium">
-                                {isOff ? "—" : `${formatHrMin(getWorkMin(daySchedule.work))} (${getWorkMin(daySchedule.work)} mins)`}
-                              </td>
-                              <td className="border border-gray-300 px-2 py-1.5 text-center" rowSpan={2}>
-                                <input
-                                  type="checkbox"
-                                  checked={daySchedule.isWeeklyOff}
-                                  onChange={(e) => handleWeeklyOffChange(index, e.target.checked)}
-                                  disabled={formData.isRotating}
-                                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
-                              </td>
-                            </tr>
-                            {/* OT row */}
-                            <tr key={`${daySchedule.day}-ot`} className={isOff ? "bg-amber-50/60 border-l-4 border-l-amber-400" : "bg-orange-50/30"}>
-                              <td className="border border-gray-300 px-2 py-1.5">
-                                <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-300">OT</Badge>
-                              </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <Input type="time" value={daySchedule.ot.startTime} onChange={(e) => handleShiftRowChange(index, "ot", "startTime", e.target.value)} disabled={disabled} className="h-8 text-xs" />
-                              </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <Input type="time" value={daySchedule.ot.endTime} onChange={(e) => handleShiftRowChange(index, "ot", "endTime", e.target.value)} disabled={disabled} className="h-8 text-xs" />
-                              </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <Input type="time" value={daySchedule.ot.breakStart} onChange={(e) => handleShiftRowChange(index, "ot", "breakStart", e.target.value)} disabled={disabled} className="h-8 text-xs" />
-                              </td>
-                              <td className="border border-gray-300 px-1 py-1">
-                                <Input type="time" value={daySchedule.ot.breakEnd} onChange={(e) => handleShiftRowChange(index, "ot", "breakEnd", e.target.value)} disabled={disabled} className="h-8 text-xs" />
-                              </td>
-                              <td className="border border-gray-300 px-2 py-1.5 text-center text-xs font-medium">
-                                {(isOff || !daySchedule.ot.startTime || !daySchedule.ot.endTime) ? "—" : `${formatHrMin(getBreakMin(daySchedule.ot))} (${getBreakMin(daySchedule.ot)} mins)`}
-                              </td>
-                              <td className="border border-gray-300 px-2 py-1.5 text-center text-xs font-medium">
-                                {(isOff || !daySchedule.ot.startTime || !daySchedule.ot.endTime) ? "—" : `${formatHrMin(getWorkMin(daySchedule.ot))} (${getWorkMin(daySchedule.ot)} mins)`}
-                              </td>
-                            </tr>
-                          </>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-gray-100 font-semibold">
-                        <td colSpan={7} className="border border-gray-300 px-2 py-2 text-right text-sm">
-                          Total Working Hours
-                        </td>
-                        <td className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-green-700">
-                          {(() => {
-                            const totalWorkMin = formData.weeklySchedule
-                              .filter((d) => !d.isWeeklyOff)
-                              .reduce((sum, d) => sum + getWorkMin(d.work), 0);
-                            const hours = Math.floor(totalWorkMin / 60);
-                            const mins = totalWorkMin % 60;
-                            return `${hours}h ${mins}m (${totalWorkMin} mins)`;
-                          })()}
-                        </td>
-                        <td className="border border-gray-300 px-2 py-2 text-center text-xs text-gray-500">
-                          {/* Weekly Off indicator */}
-                        </td>
-                      </tr>
-                      <tr className="bg-orange-50 font-semibold">
-                        <td colSpan={7} className="border border-gray-300 px-2 py-2 text-right text-sm text-orange-700">
-                          Total OT Working Hours
-                        </td>
-                        <td className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-orange-700">
-                          {(() => {
-                            const totalOTMin = formData.weeklySchedule
-                              .filter((d) => !d.isWeeklyOff && d.ot.startTime && d.ot.endTime)
-                              .reduce((sum, d) => sum + getWorkMin(d.ot), 0);
-                            const hours = Math.floor(totalOTMin / 60);
-                            const mins = totalOTMin % 60;
-                            return totalOTMin > 0 ? `${hours}h ${mins}m (${totalOTMin} mins)` : "0h 0m (0 mins)";
-                          })()}
-                        </td>
-                        <td className="border border-gray-300 px-2 py-2 text-center text-xs text-gray-500">
-                          {/* OT indicator */}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
+          {/* Weekly Schedule */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Default Working Hours</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300 text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border border-gray-300 px-2 py-2 text-left font-medium w-[90px]">
+                      Day
+                    </th>
+                    <th className="border border-gray-300 px-2 py-2 text-left font-medium w-[70px]">
+                      Type
+                    </th>
+                    <th className="border border-gray-300 px-2 py-2 text-left font-medium">
+                      Start Time
+                    </th>
+                    <th className="border border-gray-300 px-2 py-2 text-left font-medium">
+                      End Time
+                    </th>
+                    <th className="border border-gray-300 px-2 py-2 text-left font-medium">
+                      Break Start Time
+                    </th>
+                    <th className="border border-gray-300 px-2 py-2 text-left font-medium">
+                      Break End Time
+                    </th>
+                    <th className="border border-gray-300 px-2 py-2 text-center font-medium w-[80px]">
+                      Total Break Time
+                    </th>
+                    <th className="border border-gray-300 px-2 py-2 text-center font-medium w-[80px]">
+                      Total Work Time
+                    </th>
+                    <th className="border border-gray-300 px-2 py-2 text-center font-medium w-[70px]">
+                      Weekly Off
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {formData.weeklySchedule.map((daySchedule, index) => {
+                    const isOff = daySchedule.isWeeklyOff;
+                    const disabled = false;
+                    return (
+                      <>
+                        {/* WORK row */}
+                        <tr
+                          key={`${daySchedule.day}-work`}
+                          className={
+                            isOff
+                              ? "bg-amber-50 border-l-4 border-l-amber-400"
+                              : ""
+                          }
+                        >
+                          <td
+                            className="border border-gray-300 px-2 py-1.5 font-medium"
+                            rowSpan={2}
+                          >
+                            <div className="flex flex-col gap-0.5">
+                              <span>{daySchedule.day}</span>
+                              {isOff && (
+                                <span className="text-[10px] font-semibold text-amber-700 bg-amber-200 rounded px-1 py-0 leading-4 self-start">
+                                  Off
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="border border-gray-300 px-2 py-1.5">
+                            <Badge variant="outline" className="text-xs">
+                              Work
+                            </Badge>
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1">
+                            <Input
+                              type="time"
+                              value={daySchedule.work.startTime}
+                              onChange={(e) =>
+                                handleShiftRowChange(
+                                  index,
+                                  "work",
+                                  "startTime",
+                                  e.target.value,
+                                )
+                              }
+                              disabled={disabled}
+                              className="h-8 text-xs"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1">
+                            <Input
+                              type="time"
+                              value={daySchedule.work.endTime}
+                              onChange={(e) =>
+                                handleShiftRowChange(
+                                  index,
+                                  "work",
+                                  "endTime",
+                                  e.target.value,
+                                )
+                              }
+                              disabled={disabled}
+                              className="h-8 text-xs"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1">
+                            <Input
+                              type="time"
+                              value={daySchedule.work.breakStart}
+                              onChange={(e) =>
+                                handleShiftRowChange(
+                                  index,
+                                  "work",
+                                  "breakStart",
+                                  e.target.value,
+                                )
+                              }
+                              disabled={disabled}
+                              className="h-8 text-xs"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1">
+                            <Input
+                              type="time"
+                              value={daySchedule.work.breakEnd}
+                              onChange={(e) =>
+                                handleShiftRowChange(
+                                  index,
+                                  "work",
+                                  "breakEnd",
+                                  e.target.value,
+                                )
+                              }
+                              disabled={disabled}
+                              className="h-8 text-xs"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-2 py-1.5 text-center text-xs font-medium">
+                            {isOff
+                              ? "—"
+                              : `${formatHrMin(getBreakMin(daySchedule.work))} (${getBreakMin(daySchedule.work)} mins)`}
+                          </td>
+                          <td className="border border-gray-300 px-2 py-1.5 text-center text-xs font-medium">
+                            {isOff
+                              ? "—"
+                              : `${formatHrMin(getWorkMin(daySchedule.work))} (${getWorkMin(daySchedule.work)} mins)`}
+                          </td>
+                          <td
+                            className="border border-gray-300 px-2 py-1.5 text-center"
+                            rowSpan={2}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={daySchedule.isWeeklyOff}
+                              onChange={(e) =>
+                                handleWeeklyOffChange(index, e.target.checked)
+                              }
+                              disabled={formData.isRotating}
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                          </td>
+                        </tr>
+                        {/* OT row */}
+                        <tr
+                          key={`${daySchedule.day}-ot`}
+                          className={
+                            isOff
+                              ? "bg-amber-50/60 border-l-4 border-l-amber-400"
+                              : "bg-orange-50/30"
+                          }
+                        >
+                          <td className="border border-gray-300 px-2 py-1.5">
+                            <Badge
+                              variant="outline"
+                              className="text-xs bg-orange-50 text-orange-700 border-orange-300"
+                            >
+                              OT
+                            </Badge>
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1">
+                            <Input
+                              type="time"
+                              value={daySchedule.ot.startTime}
+                              onChange={(e) =>
+                                handleShiftRowChange(
+                                  index,
+                                  "ot",
+                                  "startTime",
+                                  e.target.value,
+                                )
+                              }
+                              disabled={disabled}
+                              className="h-8 text-xs"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1">
+                            <Input
+                              type="time"
+                              value={daySchedule.ot.endTime}
+                              onChange={(e) =>
+                                handleShiftRowChange(
+                                  index,
+                                  "ot",
+                                  "endTime",
+                                  e.target.value,
+                                )
+                              }
+                              disabled={disabled}
+                              className="h-8 text-xs"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1">
+                            <Input
+                              type="time"
+                              value={daySchedule.ot.breakStart}
+                              onChange={(e) =>
+                                handleShiftRowChange(
+                                  index,
+                                  "ot",
+                                  "breakStart",
+                                  e.target.value,
+                                )
+                              }
+                              disabled={disabled}
+                              className="h-8 text-xs"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1">
+                            <Input
+                              type="time"
+                              value={daySchedule.ot.breakEnd}
+                              onChange={(e) =>
+                                handleShiftRowChange(
+                                  index,
+                                  "ot",
+                                  "breakEnd",
+                                  e.target.value,
+                                )
+                              }
+                              disabled={disabled}
+                              className="h-8 text-xs"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-2 py-1.5 text-center text-xs font-medium">
+                            {isOff ||
+                            !daySchedule.ot.startTime ||
+                            !daySchedule.ot.endTime
+                              ? "—"
+                              : `${formatHrMin(getBreakMin(daySchedule.ot))} (${getBreakMin(daySchedule.ot)} mins)`}
+                          </td>
+                          <td className="border border-gray-300 px-2 py-1.5 text-center text-xs font-medium">
+                            {isOff ||
+                            !daySchedule.ot.startTime ||
+                            !daySchedule.ot.endTime
+                              ? "—"
+                              : `${formatHrMin(getWorkMin(daySchedule.ot))} (${getWorkMin(daySchedule.ot)} mins)`}
+                          </td>
+                        </tr>
+                      </>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-gray-100 font-semibold">
+                    <td
+                      colSpan={7}
+                      className="border border-gray-300 px-2 py-2 text-right text-sm"
+                    >
+                      Total Working Hours
+                    </td>
+                    <td className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-green-700">
+                      {(() => {
+                        const totalWorkMin = formData.weeklySchedule
+                          .filter((d) => !d.isWeeklyOff)
+                          .reduce((sum, d) => sum + getWorkMin(d.work), 0);
+                        const hours = Math.floor(totalWorkMin / 60);
+                        const mins = totalWorkMin % 60;
+                        return `${hours}h ${mins}m (${totalWorkMin} mins)`;
+                      })()}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-2 text-center text-xs text-gray-500">
+                      {/* Weekly Off indicator */}
+                    </td>
+                  </tr>
+                  <tr className="bg-orange-50 font-semibold">
+                    <td
+                      colSpan={7}
+                      className="border border-gray-300 px-2 py-2 text-right text-sm text-orange-700"
+                    >
+                      Total OT Working Hours
+                    </td>
+                    <td className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-orange-700">
+                      {(() => {
+                        const totalOTMin = formData.weeklySchedule
+                          .filter(
+                            (d) =>
+                              !d.isWeeklyOff && d.ot.startTime && d.ot.endTime,
+                          )
+                          .reduce((sum, d) => sum + getWorkMin(d.ot), 0);
+                        const hours = Math.floor(totalOTMin / 60);
+                        const mins = totalOTMin % 60;
+                        return totalOTMin > 0
+                          ? `${hours}h ${mins}m (${totalOTMin} mins)`
+                          : "0h 0m (0 mins)";
+                      })()}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-2 text-center text-xs text-gray-500">
+                      {/* OT indicator */}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
 
-              <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-onClick={closeWorkShiftPagePanels}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="">
-                  {editingWorkShift ? "Update Work Shift" : "Add Work Shift"}
-                </Button>
-              </div>
-            </form>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeWorkShiftPagePanels}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" className="">
+              {editingWorkShift ? "Update Work Shift" : "Add Work Shift"}
+            </Button>
+          </div>
+        </form>
       </FormDrawer>
 
-      {!isDialogOpen && (<>
-        <FilterBar
-          search={{
-            value: table.search,
-            onChange: table.setSearch,
-            placeholder: "Search code or name…",
-          }}
-          filters={
-            <FilterSelect
-              id="work-shifts-branch"
-              value={branchFilter}
-              onChange={setBranchFilter}
-              options={branchFilterOptions}
-              width="w-56"
-              ariaLabel="Filter by branch"
-            />
-          }
-        />
+      {!isDialogOpen && (
+        <>
+          <FilterBar
+            search={{
+              value: table.search,
+              onChange: table.setSearch,
+              placeholder: "Search code or name…",
+            }}
+            filters={
+              <FilterSelect
+                id="work-shifts-branch"
+                value={branchFilter}
+                onChange={setBranchFilter}
+                options={branchFilterOptions}
+                width="w-56"
+                ariaLabel="Filter by branch"
+              />
+            }
+          />
 
-        <EntityListShell
-          title="All work shifts"
-          columns={workShiftColumns}
-          rows={filteredWorkShifts}
-          rowKey={(ws) => String(ws.id)}
-          isLoading={listLoading}
-          sortBy={table.sortBy}
-          sortDir={table.sortDir}
-          onSort={table.setSort}
-          emptyIcon={CalendarCheck2}
-          emptyTitle="No work shifts yet"
-          emptyDescription="Create your first work shift to define default schedules."
-          emptyAction={
-            canManage ? (
-              <Button onClick={() => { closeWorkShiftPagePanels(); setIsDialogOpen(true); }}>
-                <Plus className="w-4 h-4 mr-1" /> Add Work Shift
-              </Button>
-            ) : undefined
-          }
-        />
-      </>)}
+          <EntityListShell
+            title="All work shifts"
+            columns={workShiftColumns}
+            rows={filteredWorkShifts}
+            rowKey={(ws) => String(ws.id)}
+            isLoading={listLoading}
+            sortBy={table.sortBy}
+            sortDir={table.sortDir}
+            onSort={table.setSort}
+            emptyIcon={CalendarCheck2}
+            emptyTitle="No work shifts yet"
+            emptyDescription="Create your first work shift to define default schedules."
+            emptyAction={
+              canManage ? (
+                <Button
+                  onClick={() => {
+                    closeWorkShiftPagePanels();
+                    setIsDialogOpen(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add Work Shift
+                </Button>
+              ) : undefined
+            }
+          />
+        </>
+      )}
     </div>
   );
 }

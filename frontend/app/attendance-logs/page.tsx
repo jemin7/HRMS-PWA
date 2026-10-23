@@ -19,7 +19,8 @@ import { TableBodySkeleton } from "@/app/components/ui/TableBodySkeleton";
 import { EmpDesktopPage } from "../components/emp/desktop/EmpDesktopPage";
 import { isCompanyAdminLikeRole } from "@/lib/companyAccess";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 interface OverviewEmployee {
   id: number;
@@ -102,7 +103,9 @@ export default function AttendanceLogsPage() {
     if (p === "absent" || p === "present" || p === "all") return p;
     return "present";
   })();
-  const [presenceFilter, setPresenceFilter] = useState<"present" | "absent" | "all">(initialPresence);
+  const [presenceFilter, setPresenceFilter] = useState<
+    "present" | "absent" | "all"
+  >(initialPresence);
 
   useEffect(() => {
     const p = searchParams.get("presence");
@@ -153,7 +156,9 @@ export default function AttendanceLogsPage() {
       fetch(`${BACKEND}/users`, { cache: "no-store" })
         .then((r) => (r.ok ? r.json() : []))
         .then((users) => {
-          const me = users.find((u: { username?: string }) => u.username === user.username);
+          const me = users.find(
+            (u: { username?: string }) => u.username === user.username,
+          );
           setCurrentUserMapping(me || null);
         })
         .catch(() => setCurrentUserMapping(null));
@@ -188,9 +193,12 @@ export default function AttendanceLogsPage() {
 
     setLoading(true);
     Promise.all([
-      fetch(`${BACKEND}/dashboard-overview/today-overview${params.toString() ? `?${params}` : ""}`, {
-        cache: "no-store",
-      }),
+      fetch(
+        `${BACKEND}/dashboard-overview/today-overview${params.toString() ? `?${params}` : ""}`,
+        {
+          cache: "no-store",
+        },
+      ),
       fetch(`${BACKEND}/branches`, { cache: "no-store" }),
       fetch(`${BACKEND}/departments`, { cache: "no-store" }),
     ])
@@ -204,13 +212,19 @@ export default function AttendanceLogsPage() {
         const companyId =
           user.role === "BRANCH_ADMIN" || desktopManager
             ? user.companyID
-            : switchedCompanyId ?? currentUserMapping?.companyID ?? ctx?.companyID;
+            : (switchedCompanyId ??
+              currentUserMapping?.companyID ??
+              ctx?.companyID);
 
-        const scopedBranches = (Array.isArray(branchJson) ? branchJson : []).filter(
-          (b: Branch) => !companyId || Number(b.companyID) === Number(companyId),
+        const scopedBranches = (
+          Array.isArray(branchJson) ? branchJson : []
+        ).filter(
+          (b: Branch) =>
+            !companyId || Number(b.companyID) === Number(companyId),
         );
         const scopedDepts = (Array.isArray(deptJson) ? deptJson : []).filter(
-          (d: Department) => !companyId || Number(d.companyID) === Number(companyId),
+          (d: Department) =>
+            !companyId || Number(d.companyID) === Number(companyId),
         );
         setBranches(scopedBranches);
         setDepartments(scopedDepts);
@@ -233,7 +247,8 @@ export default function AttendanceLogsPage() {
       if (presenceFilter === "present" && !isPresentToday(e)) return false;
       if (presenceFilter === "absent" && isPresentToday(e)) return false;
       if (branchFilter && String(e.branchesID) !== branchFilter) return false;
-      if (departmentFilter && String(e.departmentNameID) !== departmentFilter) return false;
+      if (departmentFilter && String(e.departmentNameID) !== departmentFilter)
+        return false;
       return true;
     });
   }, [allRows, presenceFilter, branchFilter, departmentFilter]);
@@ -250,141 +265,161 @@ export default function AttendanceLogsPage() {
       description={`Employee punch logs${todayDate ? ` · ${todayDate}` : ""}`}
       icon={Clock}
       actions={
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={presenceFilter}
+            onChange={(e) =>
+              setPresenceFilter(e.target.value as "present" | "absent" | "all")
+            }
+            className="rounded-full border border-[#e5e7eb] bg-white px-3 py-1.5 text-xs font-medium text-gray-700 min-w-[120px]"
+          >
+            <option value="present">Present</option>
+            <option value="absent">Absent</option>
+            <option value="all">All</option>
+          </select>
+          {user?.role !== "BRANCH_ADMIN" && (
             <select
-              value={presenceFilter}
-              onChange={(e) =>
-                setPresenceFilter(e.target.value as "present" | "absent" | "all")
-              }
-              className="rounded-full border border-[#e5e7eb] bg-white px-3 py-1.5 text-xs font-medium text-gray-700 min-w-[120px]"
-            >
-              <option value="present">Present</option>
-              <option value="absent">Absent</option>
-              <option value="all">All</option>
-            </select>
-            {user?.role !== "BRANCH_ADMIN" && (
-              <select
-                value={branchFilter}
-                onChange={(e) => {
-                  setBranchFilter(e.target.value);
-                  setDepartmentFilter("");
-                }}
-                className="rounded-full border border-[#e5e7eb] bg-white px-3 py-1.5 text-xs font-medium text-gray-700 min-w-[140px]"
-              >
-                <option value="">All branches</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={String(b.id)}>
-                    {b.branchName || `Branch ${b.id}`}
-                  </option>
-                ))}
-              </select>
-            )}
-            <select
-              value={departmentFilter}
-              onChange={(e) => setDepartmentFilter(e.target.value)}
+              value={branchFilter}
+              onChange={(e) => {
+                setBranchFilter(e.target.value);
+                setDepartmentFilter("");
+              }}
               className="rounded-full border border-[#e5e7eb] bg-white px-3 py-1.5 text-xs font-medium text-gray-700 min-w-[140px]"
             >
-              <option value="">All departments</option>
-              {filterDepartments.map((d) => (
-                <option key={d.id} value={String(d.id)}>
-                  {d.departmentName || `Department ${d.id}`}
+              <option value="">All branches</option>
+              {branches.map((b) => (
+                <option key={b.id} value={String(b.id)}>
+                  {b.branchName || `Branch ${b.id}`}
                 </option>
               ))}
             </select>
-          </div>
+          )}
+          <select
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+            className="rounded-full border border-[#e5e7eb] bg-white px-3 py-1.5 text-xs font-medium text-gray-700 min-w-[140px]"
+          >
+            <option value="">All departments</option>
+            {filterDepartments.map((d) => (
+              <option key={d.id} value={String(d.id)}>
+                {d.departmentName || `Department ${d.id}`}
+              </option>
+            ))}
+          </select>
+        </div>
       }
     >
-        <div className="rounded-xl border border-[#e5e7eb] bg-white shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-800">{countLabel}</span>
-          </div>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-[#fafafa]/80 hover:bg-[#fafafa]/80 border-0">
-                  <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider w-12">
-                    #
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                    Name
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                    Department
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                    Designation
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                    In time &amp; Location
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                    Out time &amp; Location
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                    Status
-                  </TableHead>
+      <div className="rounded-xl border border-[#e5e7eb] bg-white shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <span className="text-sm font-semibold text-gray-800">
+            {countLabel}
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-[#fafafa]/80 hover:bg-[#fafafa]/80 border-0">
+                <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider w-12">
+                  #
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Name
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Department
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Designation
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                  In time &amp; Location
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Out time &amp; Location
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Status
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableBodySkeleton cols={7} />
+              ) : rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-12 text-sm text-gray-400"
+                  >
+                    No employees match the selected filters
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableBodySkeleton cols={7} />
-                ) : rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-sm text-gray-400">
-                      No employees match the selected filters
+              ) : (
+                rows.map((e, i) => (
+                  <TableRow
+                    key={e.id}
+                    className="hover:bg-[#fafafa]/80 border-[#f5f5f5]"
+                  >
+                    <TableCell className="text-sm text-gray-500 font-medium">
+                      {i + 1}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                          {e.employeeFirstName?.charAt(0)?.toUpperCase() || "?"}
+                        </div>
+                        <span className="text-[13px] font-semibold text-gray-800">
+                          {e.employeeFirstName} {e.employeeLastName}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {e.departmentName || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {e.designationName || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      <div className="font-mono tabular-nums">
+                        {e.inTime || "—"}
+                      </div>
+                      {e.inLocation && (
+                        <div
+                          className="text-[11px] text-gray-500 mt-0.5 line-clamp-2"
+                          title={e.inLocation}
+                        >
+                          {e.inLocation}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      <div className="font-mono tabular-nums">
+                        {e.outTime || "—"}
+                      </div>
+                      {e.outLocation && (
+                        <div
+                          className="text-[11px] text-gray-500 mt-0.5 line-clamp-2"
+                          title={e.outLocation}
+                        >
+                          {e.outLocation}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${statusBadgeClass(e.statusType)}`}
+                        title={e.statusLabel}
+                      >
+                        {e.statusDisplay}
+                      </span>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  rows.map((e, i) => (
-                    <TableRow key={e.id} className="hover:bg-[#fafafa]/80 border-[#f5f5f5]">
-                      <TableCell className="text-sm text-gray-500 font-medium">{i + 1}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                            {e.employeeFirstName?.charAt(0)?.toUpperCase() || "?"}
-                          </div>
-                          <span className="text-[13px] font-semibold text-gray-800">
-                            {e.employeeFirstName} {e.employeeLastName}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {e.departmentName || "—"}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {e.designationName || "—"}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        <div className="font-mono tabular-nums">{e.inTime || "—"}</div>
-                        {e.inLocation && (
-                          <div className="text-[11px] text-gray-500 mt-0.5 line-clamp-2" title={e.inLocation}>
-                            {e.inLocation}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        <div className="font-mono tabular-nums">{e.outTime || "—"}</div>
-                        {e.outLocation && (
-                          <div className="text-[11px] text-gray-500 mt-0.5 line-clamp-2" title={e.outLocation}>
-                            {e.outLocation}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${statusBadgeClass(e.statusType)}`}
-                          title={e.statusLabel}
-                        >
-                          {e.statusDisplay}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
+      </div>
     </EmpDesktopPage>
   );
 }

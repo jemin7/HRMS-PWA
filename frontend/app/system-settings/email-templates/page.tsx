@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
@@ -11,7 +16,8 @@ import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 // One unified template is used for every email type (leave, reimbursement,
 // offboarding, notice board, warning). It is stored under the "ALL" event type.
@@ -52,10 +58,12 @@ export default function EmailTemplatesSettingsPage() {
     setLoading(true);
     try {
       const qs = cid != null ? `?companyID=${cid}` : "";
-      const res = await fetch(`${BACKEND_URL}/email-template${qs}`, { cache: "no-store" });
+      const res = await fetch(`${BACKEND_URL}/email-template${qs}`, {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
-      const list: Template[] = Array.isArray(data) ? data : data?.data ?? [];
+      const list: Template[] = Array.isArray(data) ? data : (data?.data ?? []);
       const match =
         list.find((t) => t.eventType === SINGLE_EVENT && t.companyID === cid) ??
         list.find((t) => t.eventType === SINGLE_EVENT && t.companyID == null);
@@ -83,7 +91,9 @@ export default function EmailTemplatesSettingsPage() {
       } else if (user.role !== "SUPERADMIN") {
         const res = await fetch(`${BACKEND_URL}/users`, { cache: "no-store" });
         const users = await res.json();
-        const me = users.find((u: { username?: string }) => u.username === user.username);
+        const me = users.find(
+          (u: { username?: string }) => u.username === user.username,
+        );
         cid = me?.companyID ?? null;
       }
       setCompanyID(cid);
@@ -92,7 +102,11 @@ export default function EmailTemplatesSettingsPage() {
   }, [user, load]);
 
   const resetDefaults = () => {
-    setTpl((p) => ({ ...p, subject: DEFAULT_TEMPLATE.subject, bodyHtml: DEFAULT_TEMPLATE.bodyHtml }));
+    setTpl((p) => ({
+      ...p,
+      subject: DEFAULT_TEMPLATE.subject,
+      bodyHtml: DEFAULT_TEMPLATE.bodyHtml,
+    }));
     toast.message("Reverted to default — click Save template to apply.");
   };
 
@@ -140,7 +154,9 @@ export default function EmailTemplatesSettingsPage() {
                   <input
                     type="checkbox"
                     checked={tpl.enabled}
-                    onChange={(e) => setTpl((p) => ({ ...p, enabled: e.target.checked }))}
+                    onChange={(e) =>
+                      setTpl((p) => ({ ...p, enabled: e.target.checked }))
+                    }
                   />
                   Enabled
                 </label>
@@ -151,7 +167,9 @@ export default function EmailTemplatesSettingsPage() {
                 <Label>Subject</Label>
                 <Input
                   value={tpl.subject}
-                  onChange={(e) => setTpl((p) => ({ ...p, subject: e.target.value }))}
+                  onChange={(e) =>
+                    setTpl((p) => ({ ...p, subject: e.target.value }))
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -159,7 +177,9 @@ export default function EmailTemplatesSettingsPage() {
                 <Textarea
                   rows={9}
                   value={tpl.bodyHtml}
-                  onChange={(e) => setTpl((p) => ({ ...p, bodyHtml: e.target.value }))}
+                  onChange={(e) =>
+                    setTpl((p) => ({ ...p, bodyHtml: e.target.value }))
+                  }
                 />
               </div>
               <Button type="button" size="sm" onClick={save}>

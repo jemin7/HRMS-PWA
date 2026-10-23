@@ -6,9 +6,13 @@ import { Icon } from "@iconify/react";
 import EmpMobileLayout from "../../../components/layout/EmpMobileLayout";
 import { toast } from "sonner";
 import { downloadPayslipForSalaryRow } from "../../../empGenerateSalary/EmpGenerateSalaryPage";
-import { formatPayslipMonthYear, type EmpPayslipRow } from "../../../utils/empPayslipApi";
+import {
+  formatPayslipMonthYear,
+  type EmpPayslipRow,
+} from "../../../utils/empPayslipApi";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export default function EmpPayoutViewPage() {
   const params = useParams();
@@ -19,7 +23,10 @@ export default function EmpPayoutViewPage() {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      "";
     if (!token) {
       router.replace("/login");
       return;
@@ -47,20 +54,27 @@ export default function EmpPayoutViewPage() {
 
         {loading ? (
           <div className="py-16 flex justify-center">
-            <Icon icon="solar:refresh-bold-duotone" className="w-8 h-8 text-blue-400 animate-spin" />
+            <Icon
+              icon="solar:refresh-bold-duotone"
+              className="w-8 h-8 text-blue-400 animate-spin"
+            />
           </div>
         ) : !row ? (
           <p className="text-[13px] text-gray-500">Payslip not found</p>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
             <div className="text-center border-b border-gray-100 pb-4">
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Salary Slip</p>
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                Salary Slip
+              </p>
               <h1 className="text-[20px] font-bold text-gray-900 mt-1">
                 {formatPayslipMonthYear(row.monthPeriod)}
               </h1>
               <p className="text-[12px] text-gray-500 mt-1">
                 {row.company?.companyName}
-                {row.branches?.branchName ? ` · ${row.branches.branchName}` : ""}
+                {row.branches?.branchName
+                  ? ` · ${row.branches.branchName}`
+                  : ""}
               </p>
             </div>
 
@@ -69,7 +83,9 @@ export default function EmpPayoutViewPage() {
                 <dt className="text-gray-500">Status</dt>
                 <dd
                   className={`font-bold ${
-                    row.status === "Paid" ? "text-emerald-700" : "text-amber-700"
+                    row.status === "Paid"
+                      ? "text-emerald-700"
+                      : "text-amber-700"
                   }`}
                 >
                   {row.status || "Pending"}
@@ -78,31 +94,40 @@ export default function EmpPayoutViewPage() {
               {row.paymentDate && (
                 <div className="flex justify-between gap-4">
                   <dt className="text-gray-500">Payment date</dt>
-                  <dd className="font-semibold text-gray-900">{row.paymentDate}</dd>
+                  <dd className="font-semibold text-gray-900">
+                    {row.paymentDate}
+                  </dd>
                 </div>
               )}
               {row.paymentMode && (
                 <div className="flex justify-between gap-4">
                   <dt className="text-gray-500">Payment mode</dt>
-                  <dd className="font-semibold text-gray-900">{row.paymentMode}</dd>
+                  <dd className="font-semibold text-gray-900">
+                    {row.paymentMode}
+                  </dd>
                 </div>
               )}
               {row.paymentType && (
                 <div className="flex justify-between gap-4">
                   <dt className="text-gray-500">Payment type</dt>
-                  <dd className="font-semibold text-gray-900">{row.paymentType}</dd>
+                  <dd className="font-semibold text-gray-900">
+                    {row.paymentType}
+                  </dd>
                 </div>
               )}
               {row.paymentRemark && (
                 <div>
                   <dt className="text-gray-500 mb-1">Remark</dt>
-                  <dd className="font-medium text-gray-800">{row.paymentRemark}</dd>
+                  <dd className="font-medium text-gray-800">
+                    {row.paymentRemark}
+                  </dd>
                 </div>
               )}
             </dl>
 
             <p className="text-[12px] text-gray-400 leading-relaxed">
-              For earnings, deductions, and net pay breakdown, download the full PDF payslip.
+              For earnings, deductions, and net pay breakdown, download the full
+              PDF payslip.
             </p>
 
             <button
@@ -111,11 +136,15 @@ export default function EmpPayoutViewPage() {
               onClick={async () => {
                 setDownloading(true);
                 try {
-                  await downloadPayslipForSalaryRow(row as Parameters<typeof downloadPayslipForSalaryRow>[0]);
+                  await downloadPayslipForSalaryRow(
+                    row as Parameters<typeof downloadPayslipForSalaryRow>[0],
+                  );
                   toast.success("Payslip downloaded");
                 } catch (err) {
                   console.error("Payslip download failed:", err);
-                  toast.error("Download failed. Check attendance/shift setup and try again.");
+                  toast.error(
+                    "Download failed. Check attendance/shift setup and try again.",
+                  );
                 } finally {
                   setDownloading(false);
                 }

@@ -8,7 +8,9 @@ import { execSync } from 'child_process';
 import { computeDayStatus } from '../src/dashboard-overview/attendance-status.engine';
 
 const MARKER = '__HRMS_SECTION_TEST__';
-const API = process.env.HRMS_API_URL || 'http://127.0.0.1:3001/backend';
+const API =
+  process.env.HRMS_API_URL ||
+  'http://127.0.0.1:3001https://hrms-api-test.onrender.com';
 const prisma = new PrismaClient();
 
 type Result = {
@@ -86,7 +88,11 @@ async function crudSection(
 ) {
   const listRes = await api('GET', `/${base}`, token);
   if (listRes.status !== 200) {
-    record({ section, list: 'fail', detail: `GET ${listRes.status}: ${listRes.text}` });
+    record({
+      section,
+      list: 'fail',
+      detail: `GET ${listRes.status}: ${listRes.text}`,
+    });
     return;
   }
 
@@ -103,7 +109,14 @@ async function crudSection(
 
   const id = createRes.data?.id ?? createRes.data?.data?.id;
   if (!id) {
-    record({ section, list: 'pass', create: 'pass', update: 'skip', delete: 'skip', detail: 'created but no id returned' });
+    record({
+      section,
+      list: 'pass',
+      create: 'pass',
+      update: 'skip',
+      delete: 'skip',
+      detail: 'created but no id returned',
+    });
     return;
   }
 
@@ -117,13 +130,19 @@ async function crudSection(
     update: patchRes.status === 200 ? 'pass' : 'fail',
     delete: delRes.status === 200 || delRes.status === 204 ? 'pass' : 'fail',
     detail:
-      patchRes.status === 200 && (delRes.status === 200 || delRes.status === 204)
+      patchRes.status === 200 &&
+      (delRes.status === 200 || delRes.status === 204)
         ? 'CRUD ok'
         : `PATCH ${patchRes.status}, DELETE ${delRes.status}`,
   });
 }
 
-async function listOnly(section: string, path: string, token: string, expectOk = true) {
+async function listOnly(
+  section: string,
+  path: string,
+  token: string,
+  expectOk = true,
+) {
   const res = await api('GET', path, token);
   const ok = expectOk ? res.status === 200 : res.status < 500;
   record({
@@ -141,7 +160,15 @@ function pastDateIso(daysAgo = 7): string {
 }
 
 function weekdayName(isoDate: string): string {
-  const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const names = [
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+  ];
   return names[new Date(`${isoDate}T12:00:00`).getDay()];
 }
 
@@ -158,7 +185,11 @@ async function findTestEmployee(companyId: number) {
       orderBy: { id: 'asc' },
     })) ||
     (await prisma.manageEmployee.findFirst({
-      where: { isDeleted: false, companyID: companyId, leavePolicyID: { not: null } },
+      where: {
+        isDeleted: false,
+        companyID: companyId,
+        leavePolicyID: { not: null },
+      },
       orderBy: { id: 'asc' },
     })) ||
     (await prisma.manageEmployee.findFirst({
@@ -181,7 +212,11 @@ async function testRegularisationFlow(
 
   const listRes = await api('GET', '/emp-attendance-regularise', token);
   if (listRes.status !== 200) {
-    record({ section, list: 'fail', detail: `GET ${listRes.status}: ${listRes.text}` });
+    record({
+      section,
+      list: 'fail',
+      detail: `GET ${listRes.status}: ${listRes.text}`,
+    });
     return;
   }
 
@@ -224,7 +259,12 @@ async function testRegularisationFlow(
     status: 'Pending',
   };
 
-  const createRes = await api('POST', '/emp-attendance-regularise', token, createBody);
+  const createRes = await api(
+    'POST',
+    '/emp-attendance-regularise',
+    token,
+    createBody,
+  );
   if (createRes.status !== 201 && createRes.status !== 200) {
     record({
       section,
@@ -237,16 +277,31 @@ async function testRegularisationFlow(
 
   const id = createRes.data?.id;
   if (!id) {
-    record({ section, list: 'pass', create: 'pass', detail: 'created but no id' });
+    record({
+      section,
+      list: 'pass',
+      create: 'pass',
+      detail: 'created but no id',
+    });
     return;
   }
 
-  const patchRes = await api('PATCH', `/emp-attendance-regularise/${id}`, token, {
-    remarks: `${MARKER} updated`,
-  });
-  const approveRes = await api('PATCH', `/emp-attendance-regularise/${id}`, token, {
-    status: 'Approved',
-  });
+  const patchRes = await api(
+    'PATCH',
+    `/emp-attendance-regularise/${id}`,
+    token,
+    {
+      remarks: `${MARKER} updated`,
+    },
+  );
+  const approveRes = await api(
+    'PATCH',
+    `/emp-attendance-regularise/${id}`,
+    token,
+    {
+      status: 'Approved',
+    },
+  );
   const afterApprove = await api(
     'GET',
     `/emp-attendance-regularise/fetch-status?employeeId=${employeeId}&date=${attendanceDate}`,
@@ -285,7 +340,11 @@ async function testLeaveApplicationFlow(
 
   const listRes = await api('GET', '/leave-application', token);
   if (listRes.status !== 200) {
-    record({ section, list: 'fail', detail: `GET ${listRes.status}: ${listRes.text}` });
+    record({
+      section,
+      list: 'fail',
+      detail: `GET ${listRes.status}: ${listRes.text}`,
+    });
     return;
   }
 
@@ -320,7 +379,12 @@ async function testLeaveApplicationFlow(
 
   const id = createRes.data?.id;
   if (!id) {
-    record({ section, list: 'pass', create: 'pass', detail: 'created but no id' });
+    record({
+      section,
+      list: 'pass',
+      create: 'pass',
+      detail: 'created but no id',
+    });
     return;
   }
 
@@ -339,7 +403,8 @@ async function testLeaveApplicationFlow(
 
   const approved =
     approveRes.status === 200 &&
-    (approveRes.data?.status === 'Approved' || getOne.data?.status === 'Approved');
+    (approveRes.data?.status === 'Approved' ||
+      getOne.data?.status === 'Approved');
 
   record({
     section,
@@ -366,7 +431,11 @@ async function testRunPayrollGenerateFlow(
 
   const listRes = await api('GET', '/generate-salary', token);
   if (listRes.status !== 200) {
-    record({ section, list: 'fail', detail: `GET ${listRes.status}: ${listRes.text}` });
+    record({
+      section,
+      list: 'fail',
+      detail: `GET ${listRes.status}: ${listRes.text}`,
+    });
     return;
   }
 
@@ -395,7 +464,12 @@ async function testRunPayrollGenerateFlow(
 
   const id = createRes.data?.id;
   if (!id) {
-    record({ section, list: 'pass', create: 'pass', detail: 'created but no id' });
+    record({
+      section,
+      list: 'pass',
+      create: 'pass',
+      detail: 'created but no id',
+    });
     return;
   }
 
@@ -408,7 +482,8 @@ async function testRunPayrollGenerateFlow(
 
   const generated =
     patchRes.status === 200 &&
-    (patchRes.data?.status === 'Generated' || getOne.data?.status === 'Generated');
+    (patchRes.data?.status === 'Generated' ||
+      getOne.data?.status === 'Generated');
 
   record({
     section,
@@ -459,7 +534,11 @@ async function testHolidayInAttendanceEngine() {
   });
   record({
     section: 'policy:holiday-attendance',
-    list: onHoliday.type === 'HOLIDAY' || onHoliday.label?.toLowerCase().includes('holiday') ? 'pass' : 'fail',
+    list:
+      onHoliday.type === 'HOLIDAY' ||
+      onHoliday.label?.toLowerCase().includes('holiday')
+        ? 'pass'
+        : 'fail',
     detail: `holiday status=${onHoliday.type} label=${onHoliday.label}`,
   });
 }
@@ -468,10 +547,16 @@ async function main() {
   console.log('\n=== HRMS Full Section Integration Test ===\n');
   console.log(`API: ${API}\n`);
 
-  const superadmin = await prisma.user.findFirst({ where: { role: 'SUPERADMIN', isActive: true } });
+  const superadmin = await prisma.user.findFirst({
+    where: { role: 'SUPERADMIN', isActive: true },
+  });
   const companyAdmin =
-    (await prisma.user.findFirst({ where: { username: 'companyadmin', isActive: true } })) ||
-    (await prisma.user.findFirst({ where: { role: 'COMPANY_ADMIN', isActive: true } }));
+    (await prisma.user.findFirst({
+      where: { username: 'companyadmin', isActive: true },
+    })) ||
+    (await prisma.user.findFirst({
+      where: { role: 'COMPANY_ADMIN', isActive: true },
+    }));
 
   if (!superadmin || !companyAdmin) {
     console.error('Missing test users (SUPERADMIN / COMPANY_ADMIN).');
@@ -487,11 +572,14 @@ async function main() {
   const branch = company
     ? await prisma.branches.findFirst({ where: { companyID: company.id } })
     : null;
-  const spId = company?.serviceProviderID ?? companyAdmin.serviceProviderID ?? 1;
+  const spId =
+    company?.serviceProviderID ?? companyAdmin.serviceProviderID ?? 1;
   const companyId = company?.id ?? companyAdmin.companyID ?? 1;
   const branchId = branch?.id ?? companyAdmin.branchesID ?? undefined;
 
-  console.log(`Superadmin: ${superadmin.username} | Company admin: ${companyAdmin.username} | companyId=${companyId}\n`);
+  console.log(
+    `Superadmin: ${superadmin.username} | Company admin: ${companyAdmin.username} | companyId=${companyId}\n`,
+  );
 
   // --- Superadmin sections ---
   await listOnly('service-providers', '/service-provider', superToken);
@@ -505,14 +593,22 @@ async function main() {
     'departments',
     'departments',
     companyToken,
-    { departmentName: `${MARKER} Dept`, companyID: companyId, branchesID: branchId },
+    {
+      departmentName: `${MARKER} Dept`,
+      companyID: companyId,
+      branchesID: branchId,
+    },
     { departmentName: `${MARKER} Dept Updated` },
   );
   await crudSection(
     'designations',
     'designations',
     companyToken,
-    { designation: `${MARKER} Role`, companyID: companyId, branchesID: branchId },
+    {
+      designation: `${MARKER} Role`,
+      companyID: companyId,
+      branchesID: branchId,
+    },
     { designation: `${MARKER} Role Updated` },
   );
   await listOnly('branches', '/branches', companyToken);
@@ -586,9 +682,19 @@ async function main() {
 
   const testEmp = await findTestEmployee(companyId);
   if (testEmp) {
-    await testRegularisationFlow(companyToken, companyId, spId, branchId, testEmp.id);
+    await testRegularisationFlow(
+      companyToken,
+      companyId,
+      spId,
+      branchId,
+      testEmp.id,
+    );
   } else {
-    record({ section: 'regularisation', list: 'skip', detail: 'no employee for regularisation test' });
+    record({
+      section: 'regularisation',
+      list: 'skip',
+      detail: 'no employee for regularisation test',
+    });
   }
 
   // --- Payroll policy ---
@@ -632,23 +738,52 @@ async function main() {
   await listOnly('reimbursement', '/reimbursement', companyToken);
 
   if (testEmp) {
-    await testRunPayrollGenerateFlow(companyToken, companyId, spId, branchId, testEmp.id);
-    await testLeaveApplicationFlow(companyToken, companyId, spId, branchId, testEmp.id);
+    await testRunPayrollGenerateFlow(
+      companyToken,
+      companyId,
+      spId,
+      branchId,
+      testEmp.id,
+    );
+    await testLeaveApplicationFlow(
+      companyToken,
+      companyId,
+      spId,
+      branchId,
+      testEmp.id,
+    );
   } else {
-    record({ section: 'run-payroll', list: 'skip', detail: 'no employee for payroll test' });
-    record({ section: 'leave-applications', list: 'skip', detail: 'no employee for leave test' });
+    record({
+      section: 'run-payroll',
+      list: 'skip',
+      detail: 'no employee for payroll test',
+    });
+    record({
+      section: 'leave-applications',
+      list: 'skip',
+      detail: 'no employee for leave test',
+    });
   }
 
   const emp = testEmp;
   if (emp?.leavePolicyID) {
-    const plBalance = await api('GET', `/privileged-leave/balance/${emp.id}`, companyToken);
-    const plCalc = await api('POST', `/privileged-leave/calculate-from-attendance`, companyToken, {
-      employeeID: emp.id,
-      leavePolicyID: emp.leavePolicyID,
-      fromDate: '2099-01-01',
-      toDate: '2099-01-31',
-      dryRun: true,
-    });
+    const plBalance = await api(
+      'GET',
+      `/privileged-leave/balance/${emp.id}`,
+      companyToken,
+    );
+    const plCalc = await api(
+      'POST',
+      `/privileged-leave/calculate-from-attendance`,
+      companyToken,
+      {
+        employeeID: emp.id,
+        leavePolicyID: emp.leavePolicyID,
+        fromDate: '2099-01-01',
+        toDate: '2099-01-31',
+        dryRun: true,
+      },
+    );
     record({
       section: 'privileged-leave',
       list: plBalance.status === 200 ? 'pass' : 'fail',
@@ -656,7 +791,11 @@ async function main() {
       detail: `balance=${plBalance.status} calc=${plCalc.status}`,
     });
   } else {
-    record({ section: 'privileged-leave', list: 'skip', detail: 'no employee with leave policy' });
+    record({
+      section: 'privileged-leave',
+      list: 'skip',
+      detail: 'no employee with leave policy',
+    });
   }
 
   // --- Messaging & reports ---
@@ -669,23 +808,48 @@ async function main() {
   // --- Policy integration (attendance, leave balance, PL) ---
   console.log('\n--- Policy deep integration (Prisma) ---\n');
   try {
-    execSync('npx ts-node -r dotenv/config scripts/test-policy-integration.ts', {
-      cwd: process.cwd(),
-      stdio: 'inherit',
+    execSync(
+      'npx ts-node -r dotenv/config scripts/test-policy-integration.ts',
+      {
+        cwd: process.cwd(),
+        stdio: 'inherit',
+      },
+    );
+    record({
+      section: 'policy-integration',
+      list: 'pass',
+      detail: 'all policy checks passed',
     });
-    record({ section: 'policy-integration', list: 'pass', detail: 'all policy checks passed' });
   } catch {
-    record({ section: 'policy-integration', list: 'fail', detail: 'see policy test output above' });
+    record({
+      section: 'policy-integration',
+      list: 'fail',
+      detail: 'see policy test output above',
+    });
   }
 
   // Cleanup any stray test rows by name marker
-  await prisma.departments.deleteMany({ where: { departmentName: { contains: MARKER } } }).catch(() => undefined);
-  await prisma.designations.deleteMany({ where: { designation: { contains: MARKER } } }).catch(() => undefined);
-  await prisma.leavePolicy.deleteMany({ where: { leavePolicyName: { contains: MARKER } } }).catch(() => undefined);
-  await prisma.attendancePolicy.deleteMany({ where: { attendancePolicyName: { contains: MARKER } } }).catch(() => undefined);
-  await prisma.manageHoliday.deleteMany({ where: { holidayName: { contains: MARKER } } }).catch(() => undefined);
-  await prisma.salaryAllowance.deleteMany({ where: { salaryAllowanceName: { contains: MARKER } } }).catch(() => undefined);
-  await prisma.salaryDeduction.deleteMany({ where: { salaryDeductionName: { contains: MARKER } } }).catch(() => undefined);
+  await prisma.departments
+    .deleteMany({ where: { departmentName: { contains: MARKER } } })
+    .catch(() => undefined);
+  await prisma.designations
+    .deleteMany({ where: { designation: { contains: MARKER } } })
+    .catch(() => undefined);
+  await prisma.leavePolicy
+    .deleteMany({ where: { leavePolicyName: { contains: MARKER } } })
+    .catch(() => undefined);
+  await prisma.attendancePolicy
+    .deleteMany({ where: { attendancePolicyName: { contains: MARKER } } })
+    .catch(() => undefined);
+  await prisma.manageHoliday
+    .deleteMany({ where: { holidayName: { contains: MARKER } } })
+    .catch(() => undefined);
+  await prisma.salaryAllowance
+    .deleteMany({ where: { salaryAllowanceName: { contains: MARKER } } })
+    .catch(() => undefined);
+  await prisma.salaryDeduction
+    .deleteMany({ where: { salaryDeductionName: { contains: MARKER } } })
+    .catch(() => undefined);
   await prisma.empAttendanceRegularise
     .deleteMany({ where: { reason: { contains: MARKER } } })
     .catch(() => undefined);

@@ -1,4 +1,4 @@
-/** Scalar fields accepted by POST/PATCH /backend/company */
+/** Scalar fields accepted by POST/PATCH https://hrms-api-test.onrender.com/company */
 export const COMPANY_SCALAR_FIELDS = [
   "serviceProviderID",
   "companyName",
@@ -17,11 +17,11 @@ export const COMPANY_SCALAR_FIELDS = [
   "panNo",
   "esiNo",
   "linNo",
-    "gstNo",
-    "gstCertUrl",
-    "website",
-    "gstRegistrationType",
-    "businessTradeName",
+  "gstNo",
+  "gstCertUrl",
+  "website",
+  "gstRegistrationType",
+  "businessTradeName",
   "shopRegNo",
   "shopRegCertHistory",
   "financialYearStart",
@@ -38,7 +38,9 @@ export type CompanyScalarField = (typeof COMPANY_SCALAR_FIELDS)[number];
 
 export const FINANCIAL_YEAR_EMPTY = "__fy_empty__";
 
-export function mapCompanyToFormData(company: Record<string, unknown> | object) {
+export function mapCompanyToFormData(
+  company: Record<string, unknown> | object,
+) {
   const row = company as Record<string, unknown>;
   const history = row.shopRegCertHistory;
   return {
@@ -46,8 +48,10 @@ export function mapCompanyToFormData(company: Record<string, unknown> | object) 
     companyType: (row.companyType as string) ?? "",
     legalEntityType: (row.legalEntityType as string) ?? "",
     defaultOwnerTitle: (row.defaultOwnerTitle as string) ?? "",
-    noticePeriodDaysForResignation: (row.noticePeriodDaysForResignation as string) ?? "",
-    noticePeriodDaysForTermination: (row.noticePeriodDaysForTermination as string) ?? "",
+    noticePeriodDaysForResignation:
+      (row.noticePeriodDaysForResignation as string) ?? "",
+    noticePeriodDaysForTermination:
+      (row.noticePeriodDaysForTermination as string) ?? "",
     address: (row.address as string) ?? "",
     country: (row.country as string) ?? "",
     state: (row.state as string) ?? "",
@@ -79,11 +83,15 @@ export function mapCompanyToFormData(company: Record<string, unknown> | object) 
     emailAdd: (row.emailAdd as string) ?? "",
     companyLogoUrl: (row.companyLogoUrl as string) ?? "",
     SignatureUrl: (row.SignatureUrl as string) ?? "",
-    serviceProviderID: (row.serviceProviderID as number | null | undefined) ?? undefined,
+    serviceProviderID:
+      (row.serviceProviderID as number | null | undefined) ?? undefined,
     autocompleteName:
-      (row.serviceProvider as { companyName?: string } | undefined)?.companyName ?? "",
+      (row.serviceProvider as { companyName?: string } | undefined)
+        ?.companyName ?? "",
     pwaShowLeaveBalance:
-      typeof row.pwaShowLeaveBalance === "boolean" ? row.pwaShowLeaveBalance : undefined,
+      typeof row.pwaShowLeaveBalance === "boolean"
+        ? row.pwaShowLeaveBalance
+        : undefined,
   };
 }
 

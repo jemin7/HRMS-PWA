@@ -9,7 +9,8 @@ import { cn } from "@/app/utils/cn";
 import { todayPunchDateKey } from "@/app/utils/attendanceDuration";
 import { authHeaders } from "@/lib/auth";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 type TeamMember = { id: number; statusLabel?: string };
 
@@ -36,12 +37,17 @@ export function EmpTeamWeeklyAttendancePanel() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const teamRes = await fetch(`${BACKEND}/emp-manager-scope/team-today-status?scope=team`, {
-        headers: authHeaders(),
-        cache: "no-store",
-      });
+      const teamRes = await fetch(
+        `${BACKEND}/emp-manager-scope/team-today-status?scope=team`,
+        {
+          headers: authHeaders(),
+          cache: "no-store",
+        },
+      );
       const teamData = teamRes.ok ? await teamRes.json() : { members: [] };
-      const teamMembers: TeamMember[] = Array.isArray(teamData.members) ? teamData.members : [];
+      const teamMembers: TeamMember[] = Array.isArray(teamData.members)
+        ? teamData.members
+        : [];
       setMembers(teamMembers);
 
       if (teamMembers.length === 0) {
@@ -56,7 +62,16 @@ export function EmpTeamWeeklyAttendancePanel() {
             `${BACKEND}/emp-manager-scope/member/${m.id}/attendance-history?from=${dayKeys[0]}&to=${dayKeys[dayKeys.length - 1]}`,
             { headers: authHeaders(), cache: "no-store" },
           );
-          if (!res.ok) return { memberId: m.id, days: [] as { date?: string; inTime?: string; outTime?: string; status?: string }[] };
+          if (!res.ok)
+            return {
+              memberId: m.id,
+              days: [] as {
+                date?: string;
+                inTime?: string;
+                outTime?: string;
+                status?: string;
+              }[],
+            };
           const data = await res.json();
           return {
             memberId: m.id,
@@ -77,7 +92,9 @@ export function EmpTeamWeeklyAttendancePanel() {
       }
 
       const todayKey = todayPunchDateKey();
-      const liveToday = teamMembers.filter((m) => isPresentStatus(m.statusLabel)).length;
+      const liveToday = teamMembers.filter((m) =>
+        isPresentStatus(m.statusLabel),
+      ).length;
       if (liveToday > 0) {
         counts[todayKey] = Math.max(counts[todayKey] || 0, liveToday);
       }
@@ -110,14 +127,21 @@ export function EmpTeamWeeklyAttendancePanel() {
     [dayKeys, presentByDay],
   );
 
-  const presentToday = members.filter((m) => m.statusLabel === "Checked in").length;
-  const totalMemberDays = dayKeys.reduce((sum, key) => sum + (presentByDay[key] || 0), 0);
+  const presentToday = members.filter(
+    (m) => m.statusLabel === "Checked in",
+  ).length;
+  const totalMemberDays = dayKeys.reduce(
+    (sum, key) => sum + (presentByDay[key] || 0),
+    0,
+  );
 
   return (
     <section className={cn(cardShell, "p-5")}>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div>
-          <h3 className="font-display text-base font-semibold text-foreground">Weekly attendance</h3>
+          <h3 className="font-display text-base font-semibold text-foreground">
+            Weekly attendance
+          </h3>
           <p className="text-sm text-muted-foreground mt-0.5">
             Team members present over the last 7 days
           </p>
@@ -151,7 +175,10 @@ export function EmpTeamWeeklyAttendancePanel() {
       )}
 
       <div className="mt-2 flex justify-end">
-        <Link href="/empTeam/my-team" className="text-xs font-medium text-primary hover:underline">
+        <Link
+          href="/empTeam/my-team"
+          className="text-xs font-medium text-primary hover:underline"
+        >
           View team
         </Link>
       </div>

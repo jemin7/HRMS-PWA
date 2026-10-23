@@ -1,19 +1,22 @@
 "use client";
 
 import { dispatchAppRefresh } from "./appRefresh";
+import { getAccessToken } from "@/lib/auth";
 
 let patched = false;
 let redirectingForExpiredSubscription = false;
 
 function handleSubscriptionBlocked(message: string) {
-  if (redirectingForExpiredSubscription || typeof window === "undefined") return;
+  if (redirectingForExpiredSubscription || typeof window === "undefined")
+    return;
   redirectingForExpiredSubscription = true;
   try {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("openhrmProductAccess");
-    document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie =
+      "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
   } catch {
     /* ignore */
   }
@@ -27,7 +30,10 @@ export function ensureFetchRefreshPatch(): void {
 
   const originalFetch = window.fetch.bind(window);
 
-  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  window.fetch = async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> => {
     let nextInit = init;
     try {
       const url =
@@ -37,16 +43,25 @@ export function ensureFetchRefreshPatch(): void {
             ? input.href
             : input.url;
       if (url.includes("/backend/")) {
-        const activeCompanyID = Number(sessionStorage.getItem("activeCompanyID") || 0);
-        if (Number.isFinite(activeCompanyID) && activeCompanyID > 0) {
-          const headers = new Headers(
-            init?.headers || (input instanceof Request ? input.headers : undefined),
-          );
-          if (!headers.has("X-Active-Company-ID")) {
-            headers.set("X-Active-Company-ID", String(activeCompanyID));
-          }
-          nextInit = { ...(init || {}), headers };
+        const headers = new Headers(
+          init?.headers ||
+            (input instanceof Request ? input.headers : undefined),
+        );
+        if (!headers.has("Authorization")) {
+          const token = getAccessToken();
+          if (token) headers.set("Authorization", `Bearer ${token}`);
         }
+        const activeCompanyID = Number(
+          sessionStorage.getItem("activeCompanyID") || 0,
+        );
+        if (
+          Number.isFinite(activeCompanyID) &&
+          activeCompanyID > 0 &&
+          !headers.has("X-Active-Company-ID")
+        ) {
+          headers.set("X-Active-Company-ID", String(activeCompanyID));
+        }
+        nextInit = { ...(init || {}), headers };
       }
     } catch {
       /* ignore */
@@ -78,7 +93,14 @@ export function ensureFetchRefreshPatch(): void {
               handleSubscriptionBlocked(
                 "No subscription added or assigned. Contact the application's administrator.",
               );
-            } else if (body?.message === "MODULE_NOT_SUBSCRIBED" || body?.message === "MODULE_ACCESS_DENIED") {
+            } else if (body?.message === "ACCOUNT_DISABLED") {
+              handleSubscriptionBlocked(
+                "This account is disabled. Contact your administrator.",
+              );
+            } else if (
+              body?.message === "MODULE_NOT_SUBSCRIBED" ||
+              body?.message === "MODULE_ACCESS_DENIED"
+            ) {
               window.dispatchEvent(new Event("openhrm-product-access-stale"));
             }
           })
@@ -96,4 +118,8 @@ export function ensureFetchRefreshPatch(): void {
     }
     return res;
   };
+}
+
+if (typeof window !== "undefined") {
+  ensureFetchRefreshPatch();
 }

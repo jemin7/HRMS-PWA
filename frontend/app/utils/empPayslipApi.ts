@@ -1,4 +1,5 @@
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 /** Payslips employees may view (generated or paid — not hidden while pending). */
 export const EMP_PAYSLIP_VISIBLE_STATUSES = ["Pending", "Paid"] as const;
@@ -28,7 +29,9 @@ export interface EmpPayslipRow {
 function authHeaders(): Record<string, string> {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
+      ? localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        ""
       : "";
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -40,9 +43,17 @@ export function isPayslipVisibleToEmployee(status?: string | null): boolean {
 
 export async function fetchEmployeePayslips(): Promise<EmpPayslipRow[]> {
   const [salaryRes, credsRes, userRaw] = await Promise.all([
-    fetch(`${BACKEND}/generate-salary`, { headers: authHeaders(), cache: "no-store" }),
-    fetch(`${BACKEND}/manage-emp/credentials/all`, { headers: authHeaders(), cache: "no-store" }),
-    Promise.resolve(typeof window !== "undefined" ? localStorage.getItem("user") : null),
+    fetch(`${BACKEND}/generate-salary`, {
+      headers: authHeaders(),
+      cache: "no-store",
+    }),
+    fetch(`${BACKEND}/manage-emp/credentials/all`, {
+      headers: authHeaders(),
+      cache: "no-store",
+    }),
+    Promise.resolve(
+      typeof window !== "undefined" ? localStorage.getItem("user") : null,
+    ),
   ]);
 
   if (!salaryRes.ok) return [];
@@ -56,11 +67,17 @@ export async function fetchEmployeePayslips(): Promise<EmpPayslipRow[]> {
     /* ignore */
   }
 
-  let emp: { companyID?: number; branchesID?: number; employeeID?: number } | null = null;
+  let emp: {
+    companyID?: number;
+    branchesID?: number;
+    employeeID?: number;
+  } | null = null;
   if (credsRes.ok) {
     const creds = await credsRes.json();
     if (Array.isArray(creds) && username) {
-      emp = creds.find((c: { username?: string }) => c.username === username) ?? null;
+      emp =
+        creds.find((c: { username?: string }) => c.username === username) ??
+        null;
     }
   }
 
@@ -99,7 +116,9 @@ export async function fetchEmployeePayslips(): Promise<EmpPayslipRow[]> {
 /** @deprecated Use fetchEmployeePayslips */
 export const fetchEmployeePaidPayslips = fetchEmployeePayslips;
 
-export async function fetchEmployeePayslipById(id: number): Promise<EmpPayslipRow | null> {
+export async function fetchEmployeePayslipById(
+  id: number,
+): Promise<EmpPayslipRow | null> {
   const res = await fetch(`${BACKEND}/generate-salary/${id}`, {
     headers: authHeaders(),
     cache: "no-store",
@@ -108,10 +127,22 @@ export async function fetchEmployeePayslipById(id: number): Promise<EmpPayslipRo
   return res.json();
 }
 
-function parseMonthYearFromSegment(segment: string): { month: number; year: number; label: string } | null {
+function parseMonthYearFromSegment(
+  segment: string,
+): { month: number; year: number; label: string } | null {
   const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
   for (let i = 0; i < months.length; i++) {
     if (segment.includes(months[i])) {
@@ -124,7 +155,9 @@ function parseMonthYearFromSegment(segment: string): { month: number; year: numb
 }
 
 /** Month/year for Payout filter — uses cycle end date when period is a range (e.g. "1 Apr … to 20 May 2026" → May 2026). */
-export function parseMonthYearFromPeriod(period: string): { month: number; year: number; label: string } | null {
+export function parseMonthYearFromPeriod(
+  period: string,
+): { month: number; year: number; label: string } | null {
   if (!period?.trim()) return null;
   if (period.includes(" to ")) {
     const endPart = period.split(" to ").pop()?.trim() ?? period;

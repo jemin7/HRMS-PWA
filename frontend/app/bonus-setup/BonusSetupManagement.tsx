@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { hasModuleWriteAccess, isCompanyAdminLikeRole } from "@/lib/companyAccess";
+import {
+  hasModuleWriteAccess,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -25,13 +28,12 @@ import {
   resolveScopeUserMapping,
 } from "../utils/scopeContext";
 
-
 /* ---------------- API endpoints ---------------- */
 const API = {
-  bonus: "/backend/bonus-setup",
-  serviceProviders: "/backend/service-provider",
-  companies: "/backend/company",
-  branches: "/backend/branches",
+  bonus: "https://hrms-api-test.onrender.com/bonus-setup",
+  serviceProviders: "https://hrms-api-test.onrender.com/service-provider",
+  companies: "https://hrms-api-test.onrender.com/company",
+  branches: "https://hrms-api-test.onrender.com/branches",
 };
 
 const MIN_CHARS = 0;
@@ -63,7 +65,7 @@ type ApiBonus = {
   bonusName: string | null;
   bonusType: string | null;
   bonusDescription: string | null;
-  bonusBasedOn: string | null;   // "Basic" | "Gross" (stored as string)
+  bonusBasedOn: string | null; // "Basic" | "Gross" (stored as string)
   bonusPercentage: string | null; // stored as string in DB
   bonusFixed: string | null;
   createdAt?: string;
@@ -73,8 +75,17 @@ type ApiBonus = {
 };
 
 type SP = { id: number; companyName?: string | null };
-type CO = { id: number; companyName?: string | null; serviceProviderID: number | null };
-type BR = { id: number; branchName?: string | null; companyID: number | null; branchesID: number | null };
+type CO = {
+  id: number;
+  companyName?: string | null;
+  serviceProviderID: number | null;
+};
+type BR = {
+  id: number;
+  branchName?: string | null;
+  companyID: number | null;
+  branchesID: number | null;
+};
 
 /* ---------------- Component ---------------- */
 export function BonusSetupManagement() {
@@ -87,7 +98,13 @@ export function BonusSetupManagement() {
   const [editingBonus, setEditingBonus] = useState<BonusSetupUI | null>(null);
 
   const user = useCurrentUser();
-  const canManage = user?.role === "SUPERADMIN" || user?.role === "SERVICE_PROVIDER" || isCompanyAdminLikeRole(user?.role) || user?.role === "BRANCH_ADMIN" || canDesktopManagerManage(user) || hasModuleWriteAccess("PAYROLL");
+  const canManage =
+    user?.role === "SUPERADMIN" ||
+    user?.role === "SERVICE_PROVIDER" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "BRANCH_ADMIN" ||
+    canDesktopManagerManage(user) ||
+    hasModuleWriteAccess("PAYROLL");
   const isEmployee = user?.role === "EMPLOYEE";
 
   const [currentUserMapping, setCurrentUserMapping] = useState<any>(null);
@@ -98,7 +115,7 @@ export function BonusSetupManagement() {
 
     (async () => {
       try {
-        const res = await fetch("/backend/users");
+        const res = await fetch("https://hrms-api-test.onrender.com/users");
         const list = await res.json();
         const me = list.find((u: any) => u.username === user.username);
         setCurrentUserMapping(me || null);
@@ -148,15 +165,14 @@ export function BonusSetupManagement() {
   });
 
   const resolvedServiceProviderID =
-  user?.role === "SERVICE_PROVIDER"
-    ? currentUserMapping?.serviceProviderID
-    : formData.serviceProviderID;
+    user?.role === "SERVICE_PROVIDER"
+      ? currentUserMapping?.serviceProviderID
+      : formData.serviceProviderID;
 
-const resolvedCompanyID =
-  user?.role === "SERVICE_PROVIDER"
-    ? currentUserMapping?.companyID
-    : formData.companyID;
-
+  const resolvedCompanyID =
+    user?.role === "SERVICE_PROVIDER"
+      ? currentUserMapping?.companyID
+      : formData.companyID;
 
   /* -------- click outside to close suggestion popovers -------- */
   useEffect(() => {
@@ -171,7 +187,7 @@ const resolvedCompanyID =
   }, []);
 
   /* ---------------- initial load ---------------- */
-useEffect(() => {
+  useEffect(() => {
     if (user) {
       loadBonuses();
       loadBranchFilterList();
@@ -179,13 +195,13 @@ useEffect(() => {
   }, [user]);
 
   useEffect(() => {
-const handler = () => {
+    const handler = () => {
       if (user) {
         loadBonuses();
         loadBranchFilterList();
       }
     };
-        window.addEventListener("sidebar-context-changed", handler);
+    window.addEventListener("sidebar-context-changed", handler);
     window.addEventListener("app-data-refresh", handler);
     return () => {
       window.removeEventListener("sidebar-context-changed", handler);
@@ -194,61 +210,72 @@ const handler = () => {
   }, [user]);
 
   const loadBranchFilterList = async () => {
-  try {
-    const res = await fetch(API.branches, { cache: "no-store" });
-    const data = await res.json();
+    try {
+      const res = await fetch(API.branches, { cache: "no-store" });
+      const data = await res.json();
 
-    const ctx = getSidebarContext();
+      const ctx = getSidebarContext();
 
-    const activeCompanyID =
-      ctx?.companyID ??
-      user?.companyID ??
-      currentUserMapping?.companyID ??
-      formData.companyID ??
-      null;
+      const activeCompanyID =
+        ctx?.companyID ??
+        user?.companyID ??
+        currentUserMapping?.companyID ??
+        formData.companyID ??
+        null;
 
-    let branches = Array.isArray(data) ? data : [];
+      let branches = Array.isArray(data) ? data : [];
 
-    if (user?.role !== "SUPERADMIN" && activeCompanyID) {
-      branches = branches.filter(
-        (b: any) => Number(b.companyID) === Number(activeCompanyID)
-      );
-    }
-
-    if (user?.role === "SUPERADMIN" && ctx?.companyID) {
-      branches = branches.filter(
-        (b: any) => Number(b.companyID) === Number(ctx.companyID)
-      );
-    }
-
-    if (user?.role === "BRANCH_ADMIN") {
-      const branchID = currentUserMapping?.branchesID ?? user?.branchesID;
-
-      if (branchID) {
-        branches = branches.filter((b: any) => Number(b.id) === Number(branchID));
-        setBranchFilter(String(branchID));
+      if (user?.role !== "SUPERADMIN" && activeCompanyID) {
+        branches = branches.filter(
+          (b: any) => Number(b.companyID) === Number(activeCompanyID),
+        );
       }
-    }
 
-    setBranchFilterList(branches);
-  } catch (e) {
-    console.error("Failed to load branch filter list:", e);
-    setBranchFilterList([]);
-  }
-};
+      if (user?.role === "SUPERADMIN" && ctx?.companyID) {
+        branches = branches.filter(
+          (b: any) => Number(b.companyID) === Number(ctx.companyID),
+        );
+      }
+
+      if (user?.role === "BRANCH_ADMIN") {
+        const branchID = currentUserMapping?.branchesID ?? user?.branchesID;
+
+        if (branchID) {
+          branches = branches.filter(
+            (b: any) => Number(b.id) === Number(branchID),
+          );
+          setBranchFilter(String(branchID));
+        }
+      }
+
+      setBranchFilterList(branches);
+    } catch (e) {
+      console.error("Failed to load branch filter list:", e);
+      setBranchFilterList([]);
+    }
+  };
 
   const loadBonuses = async () => {
     setListLoading(true);
     try {
       // Build URL with filters for MANAGER role
       let bonusUrl = API.bonus;
-      
+
       if (user?.role === "SERVICE_PROVIDER" && currentUserMapping) {
         const params = new URLSearchParams();
-        if (currentUserMapping.companyID) params.append('companyID', currentUserMapping.companyID.toString());
-        if (currentUserMapping.branchesID) params.append('branchesID', currentUserMapping.branchesID.toString());
-        if (!currentUserMapping.companyID && currentUserMapping.serviceProviderID) params.append('serviceProviderID', currentUserMapping.serviceProviderID.toString());
-        
+        if (currentUserMapping.companyID)
+          params.append("companyID", currentUserMapping.companyID.toString());
+        if (currentUserMapping.branchesID)
+          params.append("branchesID", currentUserMapping.branchesID.toString());
+        if (
+          !currentUserMapping.companyID &&
+          currentUserMapping.serviceProviderID
+        )
+          params.append(
+            "serviceProviderID",
+            currentUserMapping.serviceProviderID.toString(),
+          );
+
         const queryString = params.toString();
         if (queryString) {
           bonusUrl += `?${queryString}`;
@@ -257,19 +284,26 @@ const handler = () => {
 
       const res = await fetch(bonusUrl);
       const data: ApiBonus[] = await res.json();
-      
+
       // Additional client-side filtering for MANAGER role
       let filteredData = data;
       if (user?.role === "SERVICE_PROVIDER" && currentUserMapping) {
         if (currentUserMapping.companyID && currentUserMapping.branchesID) {
-          filteredData = data.filter(bonus => {
-            return bonus.companyID === currentUserMapping.companyID && 
-                   bonus.branchesID === currentUserMapping.branchesID;
+          filteredData = data.filter((bonus) => {
+            return (
+              bonus.companyID === currentUserMapping.companyID &&
+              bonus.branchesID === currentUserMapping.branchesID
+            );
           });
         } else if (currentUserMapping.companyID) {
-          filteredData = data.filter(bonus => bonus.companyID === currentUserMapping.companyID);
+          filteredData = data.filter(
+            (bonus) => bonus.companyID === currentUserMapping.companyID,
+          );
         } else if (currentUserMapping.serviceProviderID) {
-          filteredData = data.filter((bonus: any) => bonus.serviceProviderID === currentUserMapping.serviceProviderID);
+          filteredData = data.filter(
+            (bonus: any) =>
+              bonus.serviceProviderID === currentUserMapping.serviceProviderID,
+          );
         } else {
           filteredData = [];
         }
@@ -279,7 +313,6 @@ const handler = () => {
       const mapping = await resolveScopeUserMapping(user);
       if (mapping) setCurrentUserMapping(mapping);
       setBonuses(await filterCompanyScopedRecords(all as BonusSetupUI[], user));
-
     } catch (e) {
       console.error("Failed to load bonuses", e);
       setBonuses([]);
@@ -287,7 +320,6 @@ const handler = () => {
       setListLoading(false);
     }
   };
-
 
   /* ---------------- helpers ---------------- */
   function safeNum(v: string | null | undefined, d = 0) {
@@ -307,10 +339,14 @@ const handler = () => {
       bonusName: x.bonusName ?? "-",
       bonusType: x.bonusType ?? "-",
       description: x.bonusDescription ?? "",
-      bonusBasedOn: (x.bonusBasedOn === "Gross" ? "Gross" : "Basic") as "Basic" | "Gross",
+      bonusBasedOn: (x.bonusBasedOn === "Gross" ? "Gross" : "Basic") as
+        | "Basic"
+        | "Gross",
       percentageOfBonus: safeNum(x.bonusPercentage, 0),
       bonusFixed: x.bonusFixed ?? "",
-      createdAt: x.createdAt ? x.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+      createdAt: x.createdAt
+        ? x.createdAt.split("T")[0]
+        : new Date().toISOString().split("T")[0],
     };
   }
 
@@ -323,7 +359,8 @@ const handler = () => {
       bonusType: fd.bonusType,
       bonusDescription: fd.description,
       bonusBasedOn: fd.bonusType === "Percentage" ? fd.bonusBasedOn : null,
-      bonusPercentage: fd.bonusType === "Percentage" ? String(fd.percentageOfBonus) : null,
+      bonusPercentage:
+        fd.bonusType === "Percentage" ? String(fd.percentageOfBonus) : null,
       bonusFixed: fd.bonusType === "Fixed" ? fd.bonusFixed : null,
     };
   }
@@ -346,7 +383,9 @@ const handler = () => {
     setSpLoading(true);
     try {
       const list: SP[] = await robustGet(API.serviceProviders, val);
-      const filtered = list.filter((x) => (x.companyName ?? "").toLowerCase().includes(val.toLowerCase()));
+      const filtered = list.filter((x) =>
+        (x.companyName ?? "").toLowerCase().includes(val.toLowerCase()),
+      );
       setSpList(filtered.slice(0, 50));
     } catch (e) {
       console.error("SP fetch error", e);
@@ -356,67 +395,71 @@ const handler = () => {
     }
   }, 250);
 
- const runFetchCO = debounce(async (val: string) => {
-  if (!val || val.length < MIN_CHARS) return setCoList([]);
+  const runFetchCO = debounce(async (val: string) => {
+    if (!val || val.length < MIN_CHARS) return setCoList([]);
 
-  // ❗ must know Service Provider
-  if (!resolvedServiceProviderID) {
-    setCoList([]);
-    return;
-  }
+    // ❗ must know Service Provider
+    if (!resolvedServiceProviderID) {
+      setCoList([]);
+      return;
+    }
 
-  setCoLoading(true);
-  try {
-    const list: CO[] = await robustGet(API.companies, val);
+    setCoLoading(true);
+    try {
+      const list: CO[] = await robustGet(API.companies, val);
 
-    const filtered = list.filter(
-      (c) =>
-        c.serviceProviderID === resolvedServiceProviderID &&
-        (c.companyName ?? "").toLowerCase().includes(val.toLowerCase())
-    );
+      const filtered = list.filter(
+        (c) =>
+          c.serviceProviderID === resolvedServiceProviderID &&
+          (c.companyName ?? "").toLowerCase().includes(val.toLowerCase()),
+      );
 
-    setCoList(filtered.slice(0, 50));
-  } catch (e) {
-    console.error("CO fetch error", e);
-    setCoList([]);
-  } finally {
-    setCoLoading(false);
-  }
-}, 250);
+      setCoList(filtered.slice(0, 50));
+    } catch (e) {
+      console.error("CO fetch error", e);
+      setCoList([]);
+    } finally {
+      setCoLoading(false);
+    }
+  }, 250);
 
+  const runFetchBR = debounce(async (val: string) => {
+    if (!val || val.length < MIN_CHARS) return setBrList([]);
 
-const runFetchBR = debounce(async (val: string) => {
-  if (!val || val.length < MIN_CHARS) return setBrList([]);
+    // ❗ must know Company
+    if (!resolvedCompanyID) {
+      setBrList([]);
+      return;
+    }
 
-  // ❗ must know Company
-  if (!resolvedCompanyID) {
-    setBrList([]);
-    return;
-  }
+    setBrLoading(true);
+    try {
+      const list: BR[] = await robustGet(API.branches, val);
 
-  setBrLoading(true);
-  try {
-    const list: BR[] = await robustGet(API.branches, val);
+      const seen = new Set<number>();
+      const filtered = list.filter((b) => {
+        const id = Number(b.id);
+        if (!Number.isFinite(id) || seen.has(id)) return false;
+        if (Number(b.companyID) !== Number(resolvedCompanyID)) return false;
+        if (
+          user?.role === "BRANCH_ADMIN" &&
+          Number(b.id) !== Number(user?.branchesID)
+        )
+          return false;
+        if (!(b.branchName ?? "").toLowerCase().includes(val.toLowerCase()))
+          return false;
+        seen.add(id);
+        return true;
+      });
 
-    const seen = new Set<number>();
-    const filtered = list.filter((b) => {
-      const id = Number(b.id);
-      if (!Number.isFinite(id) || seen.has(id)) return false;
-      if (Number(b.companyID) !== Number(resolvedCompanyID)) return false;
-      if (user?.role === "BRANCH_ADMIN" && Number(b.id) !== Number(user?.branchesID)) return false;
-      if (!(b.branchName ?? "").toLowerCase().includes(val.toLowerCase())) return false;
-      seen.add(id);
-      return true;
-    });
-
-    setBrList(filtered.slice(0, 50));
-  } catch (e) {
-    console.error("BR fetch error:", e);
-    setBrList([]);
-  } finally {
-    setBrLoading(false);
-  }
-}, 250);
+      setBrList(filtered.slice(0, 50));
+    } catch (e) {
+      console.error("BR fetch error:", e);
+      setBrList([]);
+    } finally {
+      setBrLoading(false);
+    }
+  }, 250);
 
   /* ---------------- CRUD ---------------- */
   const handleSubmit = async (e: React.FormEvent) => {
@@ -424,9 +467,10 @@ const runFetchBR = debounce(async (val: string) => {
 
     // Validation
     const validationErrors: string[] = [];
-    if (!formData.bonusName?.trim()) validationErrors.push("Bonus Name is required");
+    if (!formData.bonusName?.trim())
+      validationErrors.push("Bonus Name is required");
     if (validationErrors.length > 0) {
-      validationErrors.forEach(msg => toast.error(msg));
+      validationErrors.forEach((msg) => toast.error(msg));
       return;
     }
 
@@ -439,7 +483,11 @@ const runFetchBR = debounce(async (val: string) => {
           body: JSON.stringify(payload),
         });
         const updated: ApiBonus = await res.json();
-        setBonuses((prev) => prev.map((b) => (b.id === String(updated.id) ? mapApiToUi(updated) : b)));
+        setBonuses((prev) =>
+          prev.map((b) =>
+            b.id === String(updated.id) ? mapApiToUi(updated) : b,
+          ),
+        );
       } else {
         const res = await fetch(API.bonus, {
           method: "POST",
@@ -505,7 +553,9 @@ const runFetchBR = debounce(async (val: string) => {
       bonusFixed: "",
     });
     setEditingBonus(null);
-    setSpList([]); setCoList([]); setBrList([]);
+    setSpList([]);
+    setCoList([]);
+    setBrList([]);
   };
 
   const filteredBonuses = useMemo(() => {
@@ -549,69 +599,72 @@ const runFetchBR = debounce(async (val: string) => {
     [branchFilterList],
   );
 
-  const bonusColumns = useMemo((): DataTableColumn<BonusSetupUI>[] => [
-    {
-      key: "branch",
-      header: "Branch",
-      sortable: true,
-      colSpan: 2,
-      cell: (b) => b.branchName || "—",
-    },
-    {
-      key: "bonusName",
-      header: "Bonus Name",
-      sortable: true,
-      colSpan: 2,
-      cell: (b) => <span className="font-medium">{b.bonusName || "—"}</span>,
-    },
-    {
-      key: "description",
-      header: "Description",
-      colSpan: 3,
-      cell: (b) => (
-        <span className="truncate max-w-[200px] block" title={b.description}>
-          {b.description || "—"}
-        </span>
-      ),
-    },
-    {
-      key: "bonusBasedOn",
-      header: "Based On",
-      sortable: true,
-      colSpan: 1,
-      cell: (b) => (
-        <Badge variant={b.bonusBasedOn === "Basic" ? "default" : "secondary"}>
-          {b.bonusBasedOn}
-        </Badge>
-      ),
-    },
-    {
-      key: "percentageOfBonus",
-      header: "Percentage",
-      sortable: true,
-      colSpan: 1,
-      cell: (b) => `${b.percentageOfBonus}%`,
-    },
-    {
-      key: "createdAt",
-      header: "Created",
-      sortable: true,
-      colSpan: 1,
-      cell: (b) => b.createdAt || "—",
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      colSpan: 2,
-      align: "right",
-      cell: (b) => (
-        <EntityRowActions
-          onEdit={canManage ? () => handleEdit(b) : undefined}
-          onDelete={canManage ? () => handleDelete(b.id) : undefined}
-        />
-      ),
-    },
-  ], [canManage]);
+  const bonusColumns = useMemo(
+    (): DataTableColumn<BonusSetupUI>[] => [
+      {
+        key: "branch",
+        header: "Branch",
+        sortable: true,
+        colSpan: 2,
+        cell: (b) => b.branchName || "—",
+      },
+      {
+        key: "bonusName",
+        header: "Bonus Name",
+        sortable: true,
+        colSpan: 2,
+        cell: (b) => <span className="font-medium">{b.bonusName || "—"}</span>,
+      },
+      {
+        key: "description",
+        header: "Description",
+        colSpan: 3,
+        cell: (b) => (
+          <span className="truncate max-w-[200px] block" title={b.description}>
+            {b.description || "—"}
+          </span>
+        ),
+      },
+      {
+        key: "bonusBasedOn",
+        header: "Based On",
+        sortable: true,
+        colSpan: 1,
+        cell: (b) => (
+          <Badge variant={b.bonusBasedOn === "Basic" ? "default" : "secondary"}>
+            {b.bonusBasedOn}
+          </Badge>
+        ),
+      },
+      {
+        key: "percentageOfBonus",
+        header: "Percentage",
+        sortable: true,
+        colSpan: 1,
+        cell: (b) => `${b.percentageOfBonus}%`,
+      },
+      {
+        key: "createdAt",
+        header: "Created",
+        sortable: true,
+        colSpan: 1,
+        cell: (b) => b.createdAt || "—",
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        colSpan: 2,
+        align: "right",
+        cell: (b) => (
+          <EntityRowActions
+            onEdit={canManage ? () => handleEdit(b) : undefined}
+            onDelete={canManage ? () => handleDelete(b.id) : undefined}
+          />
+        ),
+      },
+    ],
+    [canManage],
+  );
 
   // Determine which fields to show based on bonus type
   const showFixedBonus = formData.bonusType === "Fixed";
@@ -626,7 +679,12 @@ const runFetchBR = debounce(async (val: string) => {
         description="Manage bonus configurations and calculations"
         actions={
           !isDialogOpen && canManage ? (
-            <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+            <Button
+              onClick={() => {
+                resetForm();
+                setIsDialogOpen(true);
+              }}
+            >
               <Plus className="w-4 h-4 mr-1" />
               Add Bonus Rule
             </Button>
@@ -636,286 +694,353 @@ const runFetchBR = debounce(async (val: string) => {
       {/* FormDrawer for Add/Edit */}
       <FormDrawer
         open={isDialogOpen}
-        onOpenChange={(o) => { setIsDialogOpen(o); if (!o) resetForm(); }}
+        onOpenChange={(o) => {
+          setIsDialogOpen(o);
+          if (!o) resetForm();
+        }}
         title={editingBonus ? "Edit Bonus Setup" : "Add New Bonus Setup"}
-        description={editingBonus ? "Update the bonus setup information below." : "Fill in the details to add a new bonus setup."}
+        description={
+          editingBonus
+            ? "Update the bonus setup information below."
+            : "Fill in the details to add a new bonus setup."
+        }
       >
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Basic Information WITH AUTOCOMPLETE */}
-              {/* SP/Company auto-filled from sidebar, Branch always visible */}
-                <div className="grid grid-cols-1 gap-4">
-                  {/* Service Provider - auto-filled from sidebar */}
-                  <div ref={spRef} className="space-y-2 relative hidden">
-                    <Label>Service Provider *</Label>
-                    <Input
-                      value={formData.spAutocomplete}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFormData((p) => ({ ...p, spAutocomplete: val, serviceProviderID: null }));
-                        runFetchSP(val);
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information WITH AUTOCOMPLETE */}
+          {/* SP/Company auto-filled from sidebar, Branch always visible */}
+          <div className="grid grid-cols-1 gap-4">
+            {/* Service Provider - auto-filled from sidebar */}
+            <div ref={spRef} className="space-y-2 relative hidden">
+              <Label>Service Provider *</Label>
+              <Input
+                value={formData.spAutocomplete}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData((p) => ({
+                    ...p,
+                    spAutocomplete: val,
+                    serviceProviderID: null,
+                  }));
+                  runFetchSP(val);
+                }}
+                onFocus={(e) => {
+                  const val = e.target.value;
+                  if (val.length >= MIN_CHARS) runFetchSP(val);
+                }}
+                placeholder="Start typing service provider…"
+                autoComplete="off"
+                required
+              />
+              {spList.length > 0 && (
+                <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
+                  {spLoading && (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      Loading…
+                    </div>
+                  )}
+                  {spList.map((sp) => (
+                    <div
+                      key={sp.id}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setFormData((p) => ({
+                          ...p,
+                          serviceProviderID: sp.id,
+                          spAutocomplete: sp.companyName ?? "",
+                        }));
+                        setSpList([]);
                       }}
-                      onFocus={(e) => {
-                        const val = e.target.value;
-                        if (val.length >= MIN_CHARS) runFetchSP(val);
-                      }}
-                      placeholder="Start typing service provider…"
-                      autoComplete="off"
-                      required
-                    />
-                    {spList.length > 0 && (
-                      <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
-                        {spLoading && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
-                        {spList.map((sp) => (
-                          <div
-                            key={sp.id}
-                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => {
-                              setFormData((p) => ({
-                                ...p,
-                                serviceProviderID: sp.id,
-                                spAutocomplete: sp.companyName ?? "",
-                              }));
-                              setSpList([]);
-                            }}
-                          >
-                            {sp.companyName}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Company - auto-filled from sidebar */}
-                  <div ref={coRef} className="space-y-2 relative hidden">
-                    <Label>Company *</Label>
-                    <Input
-                      value={formData.coAutocomplete}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFormData((p) => ({ ...p, coAutocomplete: val, companyID: null }));
-                        runFetchCO(val);
-                      }}
-                      onFocus={(e) => {
-                        const val = e.target.value;
-                        if (val.length >= MIN_CHARS) runFetchCO(val);
-                      }}
-                      placeholder="Start typing company…"
-                      autoComplete="off"
-                      required
-                    />
-                    {coList.length > 0 && (
-                      <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
-                        {coLoading && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
-                        {coList.map((co) => (
-                          <div
-                            key={co.id}
-                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => {
-                              setFormData((p) => ({
-                                ...p,
-                                companyID: co.id,
-                                coAutocomplete: co.companyName ?? "",
-                              }));
-                              setCoList([]);
-                            }}
-                          >
-                            {co.companyName}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Branch */}
-                  <AutocompleteBranchField
-                    label="Branch *"
-                    placeholder="Start typing branch…"
-                    value={formData.brAutocomplete}
-                    branchId={formData.branchesID}
-                    companyID={formData.companyID ?? resolvedCompanyID ?? currentUserMapping?.companyID}
-                    onInputChange={(display) =>
-                      setFormData((p) => ({ ...p, brAutocomplete: display, branchesID: null }))
-                    }
-                    onBranchSelect={({ id, branchName }) => {
-                      setFormData((p) => ({
-                        ...p,
-                        branchesID: id,
-                        brAutocomplete: branchName,
-                      }));
-                      setBrList([]);
-                    }}
-                    onFetch={(q) => runFetchBR(q)}
-                    options={brList}
-                    optionsLoading={brLoading}
-                  />
+                    >
+                      {sp.companyName}
+                    </div>
+                  ))}
                 </div>
+              )}
+            </div>
 
-              {/* MANAGER → Only Branch input - disabled, Branch now always visible above */}
-              {false && (
-                <div className="grid grid-cols-1 gap-4">
-                  <div ref={brRef} className="space-y-2 relative">
-                    <Label>Branch *</Label>
-                    <Input
-                      value={formData.brAutocomplete}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFormData((p) => ({ ...p, brAutocomplete: val, branchesID: null }));
-                        runFetchBR(val);
+            {/* Company - auto-filled from sidebar */}
+            <div ref={coRef} className="space-y-2 relative hidden">
+              <Label>Company *</Label>
+              <Input
+                value={formData.coAutocomplete}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData((p) => ({
+                    ...p,
+                    coAutocomplete: val,
+                    companyID: null,
+                  }));
+                  runFetchCO(val);
+                }}
+                onFocus={(e) => {
+                  const val = e.target.value;
+                  if (val.length >= MIN_CHARS) runFetchCO(val);
+                }}
+                placeholder="Start typing company…"
+                autoComplete="off"
+                required
+              />
+              {coList.length > 0 && (
+                <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
+                  {coLoading && (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      Loading…
+                    </div>
+                  )}
+                  {coList.map((co) => (
+                    <div
+                      key={co.id}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setFormData((p) => ({
+                          ...p,
+                          companyID: co.id,
+                          coAutocomplete: co.companyName ?? "",
+                        }));
+                        setCoList([]);
                       }}
-                      onFocus={(e) => {
-                        const val = e.target.value;
-                        if (val.length >= MIN_CHARS) runFetchBR(val);
-                      }}
-                      placeholder="Start typing branch…"
-                      autoComplete="off"
-                      required
-                    />
-                    {brList.length > 0 && (
-                      <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
-                        {brLoading && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
-                        {brList.map((br) => (
-                          <div
-                            key={br.id}
-                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => {
-                              setFormData((p) => ({
-                                ...p,
-                                branchesID: br.id,
-                                brAutocomplete: br.branchName ?? "",
-                              }));
-                              setBrList([]);
-                            }}
-                          >
-                            {br.branchName}
-                          </div>
-                        ))}
+                    >
+                      {co.companyName}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Branch */}
+            <AutocompleteBranchField
+              label="Branch *"
+              placeholder="Start typing branch…"
+              value={formData.brAutocomplete}
+              branchId={formData.branchesID}
+              companyID={
+                formData.companyID ??
+                resolvedCompanyID ??
+                currentUserMapping?.companyID
+              }
+              onInputChange={(display) =>
+                setFormData((p) => ({
+                  ...p,
+                  brAutocomplete: display,
+                  branchesID: null,
+                }))
+              }
+              onBranchSelect={({ id, branchName }) => {
+                setFormData((p) => ({
+                  ...p,
+                  branchesID: id,
+                  brAutocomplete: branchName,
+                }));
+                setBrList([]);
+              }}
+              onFetch={(q) => runFetchBR(q)}
+              options={brList}
+              optionsLoading={brLoading}
+            />
+          </div>
+
+          {/* MANAGER → Only Branch input - disabled, Branch now always visible above */}
+          {false && (
+            <div className="grid grid-cols-1 gap-4">
+              <div ref={brRef} className="space-y-2 relative">
+                <Label>Branch *</Label>
+                <Input
+                  value={formData.brAutocomplete}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData((p) => ({
+                      ...p,
+                      brAutocomplete: val,
+                      branchesID: null,
+                    }));
+                    runFetchBR(val);
+                  }}
+                  onFocus={(e) => {
+                    const val = e.target.value;
+                    if (val.length >= MIN_CHARS) runFetchBR(val);
+                  }}
+                  placeholder="Start typing branch…"
+                  autoComplete="off"
+                  required
+                />
+                {brList.length > 0 && (
+                  <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
+                    {brLoading && (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        Loading…
                       </div>
                     )}
+                    {brList.map((br) => (
+                      <div
+                        key={br.id}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setFormData((p) => ({
+                            ...p,
+                            branchesID: br.id,
+                            brAutocomplete: br.branchName ?? "",
+                          }));
+                          setBrList([]);
+                        }}
+                      >
+                        {br.branchName}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Bonus Name */}
+          <div className="space-y-2">
+            <Label htmlFor="bonusName">Bonus Name *</Label>
+            <Input
+              id="bonusName"
+              value={formData.bonusName}
+              onChange={(e) =>
+                setFormData((p) => ({ ...p, bonusName: e.target.value }))
+              }
+              placeholder="Enter bonus name"
+              required
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description *</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData((p) => ({ ...p, description: e.target.value }))
+              }
+              placeholder="Enter bonus description"
+              rows={3}
+              required
+            />
+          </div>
+
+          {/* Bonus Configuration */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Bonus Configuration</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Bonus Type */}
+              <div className="space-y-2">
+                <Label htmlFor="bonusType">Bonus Type *</Label>
+                <select
+                  id="bonusType"
+                  value={formData.bonusType}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, bonusType: e.target.value }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm border-[#d0d0d0] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/15 focus-visible:border-[#b0b0b0]"
+                  required
+                >
+                  <option value="">Select bonus type</option>
+                  <option value="Fixed">Fixed</option>
+                  <option value="Percentage">Percentage</option>
+                </select>
+              </div>
+
+              {/* Fixed Bonus Value - Only show when Bonus Type is Fixed */}
+              {showFixedBonus && (
+                <div className="space-y-2">
+                  <Label htmlFor="bonusFixed">Fixed Bonus Value *</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="bonusFixed"
+                      type="text"
+                      value={formData.bonusFixed}
+                      onChange={(e) =>
+                        setFormData((p) => ({
+                          ...p,
+                          bonusFixed: e.target.value,
+                        }))
+                      }
+                      placeholder="0"
+                      required={showFixedBonus}
+                    />
+                    <span className="text-sm text-gray-500">₹</span>
                   </div>
                 </div>
               )}
 
-              {/* Bonus Name */}
-              <div className="space-y-2">
-                <Label htmlFor="bonusName">Bonus Name *</Label>
-                <Input
-                  id="bonusName"
-                  value={formData.bonusName}
-                  onChange={(e) => setFormData((p) => ({ ...p, bonusName: e.target.value }))}
-                  placeholder="Enter bonus name"
-                  required
-                />
-              </div>
-
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description">Description *</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))}
-                  placeholder="Enter bonus description"
-                  rows={3}
-                  required
-                />
-              </div>
-
-              {/* Bonus Configuration */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Bonus Configuration</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Bonus Type */}
-                  <div className="space-y-2">
-                    <Label htmlFor="bonusType">Bonus Type *</Label>
-                    <select
-                      id="bonusType"
-                      value={formData.bonusType}
-                      onChange={(e) => setFormData((p) => ({ ...p, bonusType: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-sm border-[#d0d0d0] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/15 focus-visible:border-[#b0b0b0]"
-                      required
-                    >
-                      <option value="">Select bonus type</option>
-                      <option value="Fixed">Fixed</option>
-                      <option value="Percentage">Percentage</option>
-                    </select>
-                  </div>
-
-                  {/* Fixed Bonus Value - Only show when Bonus Type is Fixed */}
-                  {showFixedBonus && (
-                    <div className="space-y-2">
-                      <Label htmlFor="bonusFixed">Fixed Bonus Value *</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          id="bonusFixed"
-                          type="text"
-                          value={formData.bonusFixed}
-                          onChange={(e) => setFormData((p) => ({ ...p, bonusFixed: e.target.value }))}
-                          placeholder="0"
-                          required={showFixedBonus}
-                        />
-                        <span className="text-sm text-gray-500">₹</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Bonus Based On - Only show when Bonus Type is Percentage */}
-                  {showPercentageFields && (
-                    <div className="space-y-2">
-                      <Label htmlFor="bonusBasedOn">Bonus Based On *</Label>
-                      <select
-                        id="bonusBasedOn"
-                        value={formData.bonusBasedOn}
-                        onChange={(e) => setFormData((p) => ({ ...p, bonusBasedOn: e.target.value as "Basic" | "Gross" }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-sm border-[#d0d0d0] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/15 focus-visible:border-[#b0b0b0]"
-                        required={showPercentageFields}
-                      >
-                        <option value="Basic">Basic</option>
-                        <option value="Gross">Gross</option>
-                      </select>
-                      <p className="text-xs text-gray-500">
-                        Whether bonus is calculated on Basic salary or Gross salary
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Percentage of Bonus - Only show when Bonus Type is Percentage */}
-                  {showPercentageFields && (
-                    <div className="space-y-2">
-                      <Label htmlFor="percentageOfBonus">Percentage of Bonus *</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          id="percentageOfBonus"
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.01"
-                          value={formData.percentageOfBonus}
-                          onChange={(e) => setFormData((p) => ({ ...p, percentageOfBonus: parseFloat(e.target.value) || 0 }))}
-                          placeholder="0"
-                          required={showPercentageFields}
-                        />
-                        <span className="text-sm text-gray-500">%</span>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        Percentage of {formData.bonusBasedOn.toLowerCase()} salary for bonus
-                      </p>
-                    </div>
-                  )}
+              {/* Bonus Based On - Only show when Bonus Type is Percentage */}
+              {showPercentageFields && (
+                <div className="space-y-2">
+                  <Label htmlFor="bonusBasedOn">Bonus Based On *</Label>
+                  <select
+                    id="bonusBasedOn"
+                    value={formData.bonusBasedOn}
+                    onChange={(e) =>
+                      setFormData((p) => ({
+                        ...p,
+                        bonusBasedOn: e.target.value as "Basic" | "Gross",
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm border-[#d0d0d0] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/15 focus-visible:border-[#b0b0b0]"
+                    required={showPercentageFields}
+                  >
+                    <option value="Basic">Basic</option>
+                    <option value="Gross">Gross</option>
+                  </select>
+                  <p className="text-xs text-gray-500">
+                    Whether bonus is calculated on Basic salary or Gross salary
+                  </p>
                 </div>
-              </div>
+              )}
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingBonus ? "Update Bonus Rule" : "Add Bonus Rule"}
-                </Button>
-              </div>
-            </form>
+              {/* Percentage of Bonus - Only show when Bonus Type is Percentage */}
+              {showPercentageFields && (
+                <div className="space-y-2">
+                  <Label htmlFor="percentageOfBonus">
+                    Percentage of Bonus *
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="percentageOfBonus"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={formData.percentageOfBonus}
+                      onChange={(e) =>
+                        setFormData((p) => ({
+                          ...p,
+                          percentageOfBonus: parseFloat(e.target.value) || 0,
+                        }))
+                      }
+                      placeholder="0"
+                      required={showPercentageFields}
+                    />
+                    <span className="text-sm text-gray-500">%</span>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Percentage of {formData.bonusBasedOn.toLowerCase()} salary
+                    for bonus
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit">
+              {editingBonus ? "Update Bonus Rule" : "Add Bonus Rule"}
+            </Button>
+          </div>
+        </form>
       </FormDrawer>
 
       {!isDialogOpen && (
@@ -952,7 +1077,12 @@ const runFetchBR = debounce(async (val: string) => {
             emptyDescription="Try adjusting your search or branch filter."
             emptyAction={
               canManage ? (
-                <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+                <Button
+                  onClick={() => {
+                    resetForm();
+                    setIsDialogOpen(true);
+                  }}
+                >
                   <Plus className="w-4 h-4 mr-1" /> Add Bonus Rule
                 </Button>
               ) : undefined

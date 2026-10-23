@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pencil, Save, AlertTriangle, Building2, Users, PlusCircle, MapPin, Plus, Trash2 } from "lucide-react";
+import {
+  Pencil,
+  Save,
+  AlertTriangle,
+  Building2,
+  Users,
+  PlusCircle,
+  MapPin,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { getSidebarContext } from "../utils/sidebarContext";
 import { Button } from "../components/ui/button";
@@ -56,43 +66,46 @@ const MONTHS = [
   { value: 9, label: "Sep" },
   { value: 10, label: "Oct" },
   { value: 11, label: "Nov" },
-  { value: 12, label: "Dec" }
+  { value: 12, label: "Dec" },
 ];
 
 const DEFAULT_SLABS: PTSlab[] = [
-  { 
-    slabName: "Slab 1", 
-    monthlyGrossFrom: 0, 
-    monthlyGrossTo: 7500, 
-    amount: 0, 
-    applicableMonths: [1,2,3,4,5,6,7,8,9,10,11,12] 
+  {
+    slabName: "Slab 1",
+    monthlyGrossFrom: 0,
+    monthlyGrossTo: 7500,
+    amount: 0,
+    applicableMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   },
-  { 
-    slabName: "Slab 2", 
-    monthlyGrossFrom: 7501, 
-    monthlyGrossTo: 10000, 
+  {
+    slabName: "Slab 2",
+    monthlyGrossFrom: 7501,
+    monthlyGrossTo: 10000,
     amount: 175,
-    applicableMonths: [1,2,3,4,5,6,7,8,9,10,11,12]
+    applicableMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   },
-  { 
-    slabName: "Slab 3", 
-    monthlyGrossFrom: 10001, 
-    monthlyGrossTo: 15000, 
+  {
+    slabName: "Slab 3",
+    monthlyGrossFrom: 10001,
+    monthlyGrossTo: 15000,
     amount: 300,
-    applicableMonths: [1,2,3,4,5,6,7,8,9,10,11,12]
+    applicableMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   },
-  { 
-    slabName: "Slab 4", 
-    monthlyGrossFrom: 15001, 
-    monthlyGrossTo: 999999, 
+  {
+    slabName: "Slab 4",
+    monthlyGrossFrom: 15001,
+    monthlyGrossTo: 999999,
     amount: 300,
-    applicableMonths: [1,2,3,4,5,6,7,8,9,10,11,12]
+    applicableMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   },
 ];
 
-const DEFAULT_COMPLIANCE: Omit<PTCompliance, 'companyID' | 'branchID' | 'ptslab'> = {
+const DEFAULT_COMPLIANCE: Omit<
+  PTCompliance,
+  "companyID" | "branchID" | "ptslab"
+> = {
   ptApplicable: false,
-  state: 'Maharashtra',
+  state: "Maharashtra",
   maxPTPersonPerYear: 2500,
   monthlyDueDate: 15,
   quarterlyDueDate: 15,
@@ -101,9 +114,10 @@ const DEFAULT_COMPLIANCE: Omit<PTCompliance, 'companyID' | 'branchID' | 'ptslab'
 };
 
 export default function PTCompliancePage() {
-  const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+  const BACKEND =
+    process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
   const currentUser = useCurrentUser();
- const router = useRouter();
+  const router = useRouter();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -117,8 +131,6 @@ export default function PTCompliancePage() {
   const [slabs, setSlabs] = useState<PTSlab[]>(DEFAULT_SLABS);
   const [isInitialized, setIsInitialized] = useState(false);
 
-
-
   useEffect(() => {
     if (currentUser?.role === "SUPERADMIN") {
       fetchCompanies();
@@ -128,7 +140,7 @@ export default function PTCompliancePage() {
         if (ctx?.companyID) {
           const managerCompany: Company = {
             id: ctx.companyID,
-            companyName: currentUser.company?.companyName || "Company"
+            companyName: currentUser.company?.companyName || "Company",
           };
           setSelectedCompany(managerCompany);
           fetchBranches(ctx.companyID).then(() => {
@@ -151,10 +163,9 @@ export default function PTCompliancePage() {
     }
   }, [selectedBranch]);
 
-    const handleBack = () => {
-    router.push('/branches');
+  const handleBack = () => {
+    router.push("/branches");
   };
-
 
   const fetchCompanies = async () => {
     try {
@@ -173,7 +184,7 @@ export default function PTCompliancePage() {
       const res = await fetch(`${BACKEND}/branches?companyID=${companyID}`);
       if (res.ok) {
         const data = await res.json();
-        const companyBranches = Array.isArray(data) 
+        const companyBranches = Array.isArray(data)
           ? data.filter((b: Branch) => b.companyID === companyID)
           : [];
         setBranches(companyBranches);
@@ -182,7 +193,9 @@ export default function PTCompliancePage() {
         const allBranchesRes = await fetch(`${BACKEND}/branches`);
         if (allBranchesRes.ok) {
           const allBranches = await allBranchesRes.json();
-          const filteredBranches = allBranches.filter((b: Branch) => b.companyID === companyID);
+          const filteredBranches = allBranches.filter(
+            (b: Branch) => b.companyID === companyID,
+          );
           setBranches(filteredBranches);
           return filteredBranches;
         }
@@ -199,12 +212,12 @@ export default function PTCompliancePage() {
       const res = await fetch(`${BACKEND}/manage-emp?companyID=${companyID}`);
       if (res.ok) {
         const employees = await res.json();
-        
+
         const eligibleEmployees = employees.filter((emp: any) => {
           if (!emp.contractors) return true;
           return emp.contractors.contractorType !== "MSP";
         });
-        
+
         setEmployeeCount(eligibleEmployees.length || 0);
       } else {
         setEmployeeCount(0);
@@ -218,7 +231,9 @@ export default function PTCompliancePage() {
   const fetchCompliance = async (companyID: number, branchID: number) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${BACKEND}/pt-compliance/${companyID}/${branchID}`);
+      const res = await fetch(
+        `${BACKEND}/pt-compliance/${companyID}/${branchID}`,
+      );
       if (res.status === 404) {
         setData(null);
         setSlabs(DEFAULT_SLABS);
@@ -243,21 +258,21 @@ export default function PTCompliancePage() {
   };
 
   const handleCompanyChange = (id: string) => {
-    const company = companies.find(c => c.id === Number(id)) || null;
+    const company = companies.find((c) => c.id === Number(id)) || null;
     setSelectedCompany(company);
     setSelectedBranch(null);
     setBranches([]);
     setData(null);
     setSlabs(DEFAULT_SLABS);
     setShowWarning(false);
-    
+
     if (company) {
       fetchBranches(company.id);
     }
   };
 
   const handleBranchChange = (id: string) => {
-    const branch = branches.find(b => b.id === Number(id)) || null;
+    const branch = branches.find((b) => b.id === Number(id)) || null;
     setSelectedBranch(branch);
   };
 
@@ -268,7 +283,7 @@ export default function PTCompliancePage() {
         branchID: selectedBranch.id,
         ...DEFAULT_COMPLIANCE,
         ptslab: slabs,
-        [field]: value
+        [field]: value,
       });
     } else if (data) {
       setData({ ...data, [field]: value });
@@ -284,19 +299,23 @@ export default function PTCompliancePage() {
   const handleMonthToggle = (slabIndex: number, month: number) => {
     const updatedSlabs = [...slabs];
     const slab = updatedSlabs[slabIndex];
-    
+
     if (slab.applicableMonths.includes(month)) {
-      slab.applicableMonths = slab.applicableMonths.filter(m => m !== month);
+      slab.applicableMonths = slab.applicableMonths.filter((m) => m !== month);
     } else {
-      slab.applicableMonths = [...slab.applicableMonths, month].sort((a, b) => a - b);
+      slab.applicableMonths = [...slab.applicableMonths, month].sort(
+        (a, b) => a - b,
+      );
     }
-    
+
     setSlabs(updatedSlabs);
   };
 
   const handleSelectAllMonths = (slabIndex: number) => {
     const updatedSlabs = [...slabs];
-    updatedSlabs[slabIndex].applicableMonths = [1,2,3,4,5,6,7,8,9,10,11,12];
+    updatedSlabs[slabIndex].applicableMonths = [
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+    ];
     setSlabs(updatedSlabs);
   };
 
@@ -312,7 +331,7 @@ export default function PTCompliancePage() {
       monthlyGrossFrom: 0,
       monthlyGrossTo: 0,
       amount: 0,
-      applicableMonths: [1,2,3,4,5,6,7,8,9,10,11,12],
+      applicableMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     };
     setSlabs([...slabs, newSlab]);
   };
@@ -326,30 +345,37 @@ export default function PTCompliancePage() {
 
     try {
       setIsLoading(true);
-      
+
       const complianceData = {
         companyID: selectedCompany.id,
         branchID: selectedBranch.id,
         ptApplicable: data?.ptApplicable ?? DEFAULT_COMPLIANCE.ptApplicable,
         state: data?.state ?? DEFAULT_COMPLIANCE.state,
-        maxPTPersonPerYear: data?.maxPTPersonPerYear ?? DEFAULT_COMPLIANCE.maxPTPersonPerYear,
-        monthlyDueDate: data?.monthlyDueDate ?? DEFAULT_COMPLIANCE.monthlyDueDate,
-        quarterlyDueDate: data?.quarterlyDueDate ?? DEFAULT_COMPLIANCE.quarterlyDueDate,
-        monthlyReturnThreshold: data?.monthlyReturnThreshold ?? DEFAULT_COMPLIANCE.monthlyReturnThreshold,
-        quarterlyReturnThreshold: data?.quarterlyReturnThreshold ?? DEFAULT_COMPLIANCE.quarterlyReturnThreshold,
-        ptslab: slabs.map(slab => ({
+        maxPTPersonPerYear:
+          data?.maxPTPersonPerYear ?? DEFAULT_COMPLIANCE.maxPTPersonPerYear,
+        monthlyDueDate:
+          data?.monthlyDueDate ?? DEFAULT_COMPLIANCE.monthlyDueDate,
+        quarterlyDueDate:
+          data?.quarterlyDueDate ?? DEFAULT_COMPLIANCE.quarterlyDueDate,
+        monthlyReturnThreshold:
+          data?.monthlyReturnThreshold ??
+          DEFAULT_COMPLIANCE.monthlyReturnThreshold,
+        quarterlyReturnThreshold:
+          data?.quarterlyReturnThreshold ??
+          DEFAULT_COMPLIANCE.quarterlyReturnThreshold,
+        ptslab: slabs.map((slab) => ({
           slabName: slab.slabName,
           monthlyGrossFrom: slab.monthlyGrossFrom,
           monthlyGrossTo: slab.monthlyGrossTo,
           amount: slab.amount,
-          applicableMonths: slab.applicableMonths
-        }))
+          applicableMonths: slab.applicableMonths,
+        })),
       };
 
       console.log("Saving data:", complianceData);
 
       let response;
-      
+
       if (isNewRecord || !data) {
         response = await fetch(`${BACKEND}/pt-compliance`, {
           method: "POST",
@@ -357,11 +383,14 @@ export default function PTCompliancePage() {
           body: JSON.stringify(complianceData),
         });
       } else {
-        response = await fetch(`${BACKEND}/pt-compliance/${data.companyID}/${data.branchID}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(complianceData),
-        });
+        response = await fetch(
+          `${BACKEND}/pt-compliance/${data.companyID}/${data.branchID}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(complianceData),
+          },
+        );
       }
 
       if (response.ok) {
@@ -400,13 +429,21 @@ export default function PTCompliancePage() {
   };
 
   // Check if user is authorized
-  if (!currentUser || (currentUser.role !== "SUPERADMIN" && currentUser.role !== "SERVICE_PROVIDER")) {
+  if (
+    !currentUser ||
+    (currentUser.role !== "SUPERADMIN" &&
+      currentUser.role !== "SERVICE_PROVIDER")
+  ) {
     return (
       <div className="p-8 max-w-7xl mx-auto">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <h2 className="text-xl font-semibold text-red-800 mb-2">Access Denied</h2>
-          <p className="text-red-600">{"You don't have permission to view this page."}</p>
+          <h2 className="text-xl font-semibold text-red-800 mb-2">
+            Access Denied
+          </h2>
+          <p className="text-red-600">
+            {"You don't have permission to view this page."}
+          </p>
         </div>
       </div>
     );
@@ -414,8 +451,7 @@ export default function PTCompliancePage() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
-
-    {/* Back Button */}
+      {/* Back Button */}
       <Button
         variant="ghost"
         onClick={handleBack}
@@ -423,7 +459,7 @@ export default function PTCompliancePage() {
       >
         <ArrowLeft className="w-4 h-4 mr-1" /> Back to Branches
       </Button>
-  
+
       {/* Header Section */}
       <div className="flex items-center justify-end flex-wrap gap-4">
         <div className="flex items-center gap-4">
@@ -436,7 +472,7 @@ export default function PTCompliancePage() {
                 onChange={(e) => handleCompanyChange(e.target.value)}
               >
                 <option value="">Select Company</option>
-                {companies.map(c => (
+                {companies.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.companyName}
                   </option>
@@ -448,9 +484,13 @@ export default function PTCompliancePage() {
           {currentUser?.role === "SERVICE_PROVIDER" && selectedCompany && (
             <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg">
               <Building2 size={18} className="text-blue-600" />
-              <span className="font-medium text-blue-800">{selectedCompany.companyName}</span>
+              <span className="font-medium text-blue-800">
+                {selectedCompany.companyName}
+              </span>
               {currentUser.company?.companyName && (
-                <span className="text-xs text-blue-600 ml-2">(Auto-selected)</span>
+                <span className="text-xs text-blue-600 ml-2">
+                  (Auto-selected)
+                </span>
               )}
             </div>
           )}
@@ -463,15 +503,18 @@ export default function PTCompliancePage() {
               disabled={branches.length === 0}
             >
               <option value="">Select Branch</option>
-              {branches.map(b => (
+              {branches.map((b) => (
                 <option key={b.id} value={b.id}>
-                  {b.branchName} {b.state ? `(${b.state})` : ''}
-                  {currentUser?.role === "SERVICE_PROVIDER" && currentUser.branchesID === b.id ? ' (Your Branch)' : ''}
+                  {b.branchName} {b.state ? `(${b.state})` : ""}
+                  {currentUser?.role === "SERVICE_PROVIDER" &&
+                  currentUser.branchesID === b.id
+                    ? " (Your Branch)"
+                    : ""}
                 </option>
               ))}
             </select>
           )}
-          
+
           {selectedCompany && selectedBranch && isNewRecord && !isLoading && (
             <span className="text-blue-600 text-sm flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full">
               <PlusCircle size={16} />
@@ -494,7 +537,9 @@ export default function PTCompliancePage() {
                 </div>
               </div>
               <div className="p-6">
-                <p className="font-medium text-gray-900 text-lg">{selectedCompany.companyName}</p>
+                <p className="font-medium text-gray-900 text-lg">
+                  {selectedCompany.companyName}
+                </p>
                 {currentUser?.role === "SERVICE_PROVIDER" && (
                   <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                     <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
@@ -513,16 +558,21 @@ export default function PTCompliancePage() {
                 </div>
               </div>
               <div className="p-6">
-                <p className="font-medium text-gray-900">{selectedBranch.branchName}</p>
+                <p className="font-medium text-gray-900">
+                  {selectedBranch.branchName}
+                </p>
                 {selectedBranch.state && (
-                  <p className="text-sm text-gray-600 mt-1">State: {selectedBranch.state}</p>
-                )}
-                {currentUser?.role === "SERVICE_PROVIDER" && currentUser.branchesID === selectedBranch.id && (
-                  <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
-                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
-                    Your assigned branch
+                  <p className="text-sm text-gray-600 mt-1">
+                    State: {selectedBranch.state}
                   </p>
                 )}
+                {currentUser?.role === "SERVICE_PROVIDER" &&
+                  currentUser.branchesID === selectedBranch.id && (
+                    <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                      <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
+                      Your assigned branch
+                    </p>
+                  )}
               </div>
             </div>
 
@@ -531,12 +581,16 @@ export default function PTCompliancePage() {
               <div className="bg-gray-50 px-6 py-4 border-b">
                 <div className="flex items-center gap-2">
                   <Users size={18} className="text-green-600" />
-                  <h2 className="font-semibold text-gray-800">Employee Statistics</h2>
+                  <h2 className="font-semibold text-gray-800">
+                    Employee Statistics
+                  </h2>
                 </div>
               </div>
               <div className="p-6">
                 <div>
-                  <label className="text-xs text-gray-500 uppercase">Total Employee Count</label>
+                  <label className="text-xs text-gray-500 uppercase">
+                    Total Employee Count
+                  </label>
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-bold text-gray-900">
                       {employeeCount ?? 0}
@@ -544,16 +598,20 @@ export default function PTCompliancePage() {
                     <span className="text-sm text-gray-500">(Auto fetch)</span>
                   </div>
                 </div>
-                
+
                 <div className="mt-6 pt-4 border-t">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">PT Applicable:</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      data?.ptApplicable 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {data?.ptApplicable ? 'Yes' : 'No'}
+                    <span className="text-sm font-medium text-gray-700">
+                      PT Applicable:
+                    </span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        data?.ptApplicable
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {data?.ptApplicable ? "Yes" : "No"}
                     </span>
                   </div>
                 </div>
@@ -566,7 +624,9 @@ export default function PTCompliancePage() {
             {/* Header with Edit/Save/Cancel */}
             <div className="flex items-center justify-between bg-white p-4 rounded-lg border shadow-sm">
               <div>
-                <h2 className="text-xl font-semibold text-gray-800">PT Compliance Settings</h2>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  PT Compliance Settings
+                </h2>
                 {isNewRecord && (
                   <p className="text-sm text-blue-600 mt-1">
                     No existing configuration found. Please configure and save.
@@ -596,8 +656,12 @@ export default function PTCompliancePage() {
                       disabled={isLoading}
                       className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2.5 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
                     >
-                      <Save size={18} /> 
-                      {isLoading ? 'Saving...' : isNewRecord ? 'Create Settings' : 'Save Changes'}
+                      <Save size={18} />
+                      {isLoading
+                        ? "Saving..."
+                        : isNewRecord
+                          ? "Create Settings"
+                          : "Save Changes"}
                     </button>
                   </>
                 )}
@@ -614,7 +678,9 @@ export default function PTCompliancePage() {
                 {/* PT Applicability */}
                 <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
                   <div className="bg-gray-50 px-6 py-4 border-b">
-                    <h3 className="font-semibold text-gray-800">PT Applicability</h3>
+                    <h3 className="font-semibold text-gray-800">
+                      PT Applicability
+                    </h3>
                   </div>
                   <div className="p-6">
                     <div className="flex items-center gap-4">
@@ -624,12 +690,19 @@ export default function PTCompliancePage() {
                       <div className="flex items-center gap-3">
                         <input
                           type="checkbox"
-                          checked={data?.ptApplicable ?? DEFAULT_COMPLIANCE.ptApplicable}
+                          checked={
+                            data?.ptApplicable ??
+                            DEFAULT_COMPLIANCE.ptApplicable
+                          }
                           disabled={!editMode}
-                          onChange={(e) => handleChange("ptApplicable", e.target.checked)}
+                          onChange={(e) =>
+                            handleChange("ptApplicable", e.target.checked)
+                          }
                           className="w-5 h-5 rounded border-gray-300 text-blue-600"
                         />
-                        <span className="text-sm text-gray-600">✓ PT is state-specific</span>
+                        <span className="text-sm text-gray-600">
+                          ✓ PT is state-specific
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -652,12 +725,26 @@ export default function PTCompliancePage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-gray-50">
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Slab</th>
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Monthly Gross From (₹)</th>
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Monthly Gross To (₹)</th>
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Amount (₹)</th>
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Applicable Months</th>
-                          {editMode && <th className="px-4 py-2 text-left font-medium text-gray-600">Action</th>}
+                          <th className="px-4 py-2 text-left font-medium text-gray-600">
+                            Slab
+                          </th>
+                          <th className="px-4 py-2 text-left font-medium text-gray-600">
+                            Monthly Gross From (₹)
+                          </th>
+                          <th className="px-4 py-2 text-left font-medium text-gray-600">
+                            Monthly Gross To (₹)
+                          </th>
+                          <th className="px-4 py-2 text-left font-medium text-gray-600">
+                            Amount (₹)
+                          </th>
+                          <th className="px-4 py-2 text-left font-medium text-gray-600">
+                            Applicable Months
+                          </th>
+                          {editMode && (
+                            <th className="px-4 py-2 text-left font-medium text-gray-600">
+                              Action
+                            </th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
@@ -668,7 +755,13 @@ export default function PTCompliancePage() {
                                 type="text"
                                 value={slab.slabName}
                                 disabled={!editMode}
-                                onChange={(e) => handleSlabChange(index, "slabName", e.target.value)}
+                                onChange={(e) =>
+                                  handleSlabChange(
+                                    index,
+                                    "slabName",
+                                    e.target.value,
+                                  )
+                                }
                                 className="w-full border rounded px-2 py-1 disabled:bg-gray-50"
                               />
                             </td>
@@ -677,7 +770,13 @@ export default function PTCompliancePage() {
                                 type="number"
                                 value={slab.monthlyGrossFrom}
                                 disabled={!editMode}
-                                onChange={(e) => handleSlabChange(index, "monthlyGrossFrom", Number(e.target.value))}
+                                onChange={(e) =>
+                                  handleSlabChange(
+                                    index,
+                                    "monthlyGrossFrom",
+                                    Number(e.target.value),
+                                  )
+                                }
                                 className="w-full border rounded px-2 py-1 disabled:bg-gray-50"
                               />
                             </td>
@@ -686,7 +785,13 @@ export default function PTCompliancePage() {
                                 type="number"
                                 value={slab.monthlyGrossTo}
                                 disabled={!editMode}
-                                onChange={(e) => handleSlabChange(index, "monthlyGrossTo", Number(e.target.value))}
+                                onChange={(e) =>
+                                  handleSlabChange(
+                                    index,
+                                    "monthlyGrossTo",
+                                    Number(e.target.value),
+                                  )
+                                }
                                 className="w-full border rounded px-2 py-1 disabled:bg-gray-50"
                               />
                             </td>
@@ -695,7 +800,13 @@ export default function PTCompliancePage() {
                                 type="number"
                                 value={slab.amount}
                                 disabled={!editMode}
-                                onChange={(e) => handleSlabChange(index, "amount", Number(e.target.value))}
+                                onChange={(e) =>
+                                  handleSlabChange(
+                                    index,
+                                    "amount",
+                                    Number(e.target.value),
+                                  )
+                                }
                                 className="w-full border rounded px-2 py-1 disabled:bg-gray-50"
                               />
                             </td>
@@ -705,26 +816,40 @@ export default function PTCompliancePage() {
                                   <div className="flex gap-2 mb-2">
                                     <button
                                       type="button"
-                                      onClick={() => handleSelectAllMonths(index)}
+                                      onClick={() =>
+                                        handleSelectAllMonths(index)
+                                      }
                                       className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
                                     >
                                       All
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => handleClearAllMonths(index)}
+                                      onClick={() =>
+                                        handleClearAllMonths(index)
+                                      }
                                       className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200"
                                     >
                                       Clear
                                     </button>
                                   </div>
                                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
-                                    {MONTHS.map(month => (
-                                      <label key={month.value} className="flex items-center gap-1 text-xs">
+                                    {MONTHS.map((month) => (
+                                      <label
+                                        key={month.value}
+                                        className="flex items-center gap-1 text-xs"
+                                      >
                                         <input
                                           type="checkbox"
-                                          checked={slab.applicableMonths.includes(month.value)}
-                                          onChange={() => handleMonthToggle(index, month.value)}
+                                          checked={slab.applicableMonths.includes(
+                                            month.value,
+                                          )}
+                                          onChange={() =>
+                                            handleMonthToggle(
+                                              index,
+                                              month.value,
+                                            )
+                                          }
                                           className="rounded border-gray-300 text-blue-600 w-3 h-3"
                                         />
                                         <span>{month.label}</span>
@@ -734,13 +859,15 @@ export default function PTCompliancePage() {
                                 </div>
                               ) : (
                                 <div className="flex flex-wrap gap-1">
-                                  {MONTHS.map(month => (
+                                  {MONTHS.map((month) => (
                                     <span
                                       key={month.value}
                                       className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs ${
-                                        slab.applicableMonths.includes(month.value)
-                                          ? 'bg-blue-100 text-blue-800'
-                                          : 'bg-gray-100 text-gray-400'
+                                        slab.applicableMonths.includes(
+                                          month.value,
+                                        )
+                                          ? "bg-blue-100 text-blue-800"
+                                          : "bg-gray-100 text-gray-400"
                                       }`}
                                     >
                                       {month.label}
@@ -775,7 +902,9 @@ export default function PTCompliancePage() {
                 {/* Due Dates & Thresholds */}
                 <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
                   <div className="bg-gray-50 px-6 py-4 border-b">
-                    <h3 className="font-semibold text-gray-800">Due Dates & Filing</h3>
+                    <h3 className="font-semibold text-gray-800">
+                      Due Dates & Filing
+                    </h3>
                   </div>
                   <div className="p-6 space-y-6">
                     {/* Due Dates */}
@@ -787,21 +916,39 @@ export default function PTCompliancePage() {
                         <span className="text-gray-600">Monthly:</span>
                         <input
                           type="number"
-                          value={data?.monthlyDueDate ?? DEFAULT_COMPLIANCE.monthlyDueDate}
+                          value={
+                            data?.monthlyDueDate ??
+                            DEFAULT_COMPLIANCE.monthlyDueDate
+                          }
                           disabled={!editMode}
-                          onChange={(e) => handleChange("monthlyDueDate", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleChange(
+                              "monthlyDueDate",
+                              Number(e.target.value),
+                            )
+                          }
                           className="border rounded-lg px-4 py-2.5 w-24 disabled:bg-gray-50"
                         />
                         <span className="text-gray-600">th</span>
                         <span className="text-gray-600 ml-4">Quarterly:</span>
                         <input
                           type="number"
-                          value={data?.quarterlyDueDate ?? DEFAULT_COMPLIANCE.quarterlyDueDate}
+                          value={
+                            data?.quarterlyDueDate ??
+                            DEFAULT_COMPLIANCE.quarterlyDueDate
+                          }
                           disabled={!editMode}
-                          onChange={(e) => handleChange("quarterlyDueDate", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleChange(
+                              "quarterlyDueDate",
+                              Number(e.target.value),
+                            )
+                          }
                           className="border rounded-lg px-4 py-2.5 w-24 disabled:bg-gray-50"
                         />
-                        <span className="text-gray-600">th of next month after quarter</span>
+                        <span className="text-gray-600">
+                          th of next month after quarter
+                        </span>
                       </div>
                     </div>
 
@@ -814,9 +961,17 @@ export default function PTCompliancePage() {
                         <span className="text-gray-600">₹</span>
                         <input
                           type="number"
-                          value={data?.maxPTPersonPerYear ?? DEFAULT_COMPLIANCE.maxPTPersonPerYear}
+                          value={
+                            data?.maxPTPersonPerYear ??
+                            DEFAULT_COMPLIANCE.maxPTPersonPerYear
+                          }
                           disabled={!editMode}
-                          onChange={(e) => handleChange("maxPTPersonPerYear", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleChange(
+                              "maxPTPersonPerYear",
+                              Number(e.target.value),
+                            )
+                          }
                           className="border rounded-lg px-4 py-2.5 w-32 disabled:bg-gray-50"
                         />
                       </div>
@@ -830,9 +985,17 @@ export default function PTCompliancePage() {
                       <div className="flex items-center gap-3">
                         <input
                           type="number"
-                          value={data?.monthlyReturnThreshold ?? DEFAULT_COMPLIANCE.monthlyReturnThreshold}
+                          value={
+                            data?.monthlyReturnThreshold ??
+                            DEFAULT_COMPLIANCE.monthlyReturnThreshold
+                          }
                           disabled={!editMode}
-                          onChange={(e) => handleChange("monthlyReturnThreshold", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleChange(
+                              "monthlyReturnThreshold",
+                              Number(e.target.value),
+                            )
+                          }
                           className="border rounded-lg px-4 py-2.5 w-24 disabled:bg-gray-50"
                         />
                         <span className="text-sm text-gray-500">employees</span>
@@ -846,9 +1009,17 @@ export default function PTCompliancePage() {
                       <div className="flex items-center gap-3">
                         <input
                           type="number"
-                          value={data?.quarterlyReturnThreshold ?? DEFAULT_COMPLIANCE.quarterlyReturnThreshold}
+                          value={
+                            data?.quarterlyReturnThreshold ??
+                            DEFAULT_COMPLIANCE.quarterlyReturnThreshold
+                          }
                           disabled={!editMode}
-                          onChange={(e) => handleChange("quarterlyReturnThreshold", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleChange(
+                              "quarterlyReturnThreshold",
+                              Number(e.target.value),
+                            )
+                          }
                           className="border rounded-lg px-4 py-2.5 w-24 disabled:bg-gray-50"
                         />
                         <span className="text-sm text-gray-500">employees</span>
@@ -859,9 +1030,13 @@ export default function PTCompliancePage() {
 
                 {/* Info Box */}
                 <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
-                  <h4 className="font-semibold text-blue-800 mb-2">PT Rules Summary</h4>
+                  <h4 className="font-semibold text-blue-800 mb-2">
+                    PT Rules Summary
+                  </h4>
                   <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
-                    <li>PT is state-specific - separate registration per state</li>
+                    <li>
+                      PT is state-specific - separate registration per state
+                    </li>
                     <li>Slab-based (not percentage)</li>
                     <li>Max ₹2,500/year per person</li>
                     <li>Must deduct monthly</li>

@@ -27,7 +27,8 @@ import { cn } from "@/app/utils/cn";
 import { useRouter } from "next/navigation";
 import { canViewProductModule, useProductAccess } from "@/lib/productAccess";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 type FilterType = "all" | "leave" | "reimbursement" | "advance";
 
@@ -123,26 +124,39 @@ export function EmpTeamApprovalsPanel({
     setLoading(true);
     try {
       const [leaveRes, reimbRes, advanceRes] = await Promise.all([
-        fetch(`${BACKEND}/leave-application/employee/${empId}`, { headers: authHeaders(), cache: "no-store" }),
-        fetch(`${BACKEND}/reimbursement/employee/${empId}`, { headers: authHeaders(), cache: "no-store" }),
-        fetch(`${BACKEND}/salary-advance/employee/${empId}`, { headers: authHeaders(), cache: "no-store" }),
+        fetch(`${BACKEND}/leave-application/employee/${empId}`, {
+          headers: authHeaders(),
+          cache: "no-store",
+        }),
+        fetch(`${BACKEND}/reimbursement/employee/${empId}`, {
+          headers: authHeaders(),
+          cache: "no-store",
+        }),
+        fetch(`${BACKEND}/salary-advance/employee/${empId}`, {
+          headers: authHeaders(),
+          cache: "no-store",
+        }),
       ]);
       const leaveData = leaveRes.ok ? await leaveRes.json() : [];
       const reimbData = reimbRes.ok ? await reimbRes.json() : [];
       const advanceData = advanceRes.ok ? await advanceRes.json() : [];
 
-      const mappedLeave = (Array.isArray(leaveData) ? leaveData : []).map((a: any) => ({
-        id: String(a.id),
-        manageEmployeeID: a.manageEmployeeID,
-        manageEmployee: a.manageEmployee,
-        fromDate: a.fromDate ? new Date(a.fromDate).toISOString().slice(0, 10) : "",
-        toDate: a.toDate ? new Date(a.toDate).toISOString().slice(0, 10) : "",
-        purpose: a.purpose,
-        status: a.status || "Pending",
-        appliedLeaveType: a.appliedLeaveType,
-        dayStatuses: a.dayStatuses,
-        createdAt: a.createdAt || new Date().toISOString(),
-      }));
+      const mappedLeave = (Array.isArray(leaveData) ? leaveData : []).map(
+        (a: any) => ({
+          id: String(a.id),
+          manageEmployeeID: a.manageEmployeeID,
+          manageEmployee: a.manageEmployee,
+          fromDate: a.fromDate
+            ? new Date(a.fromDate).toISOString().slice(0, 10)
+            : "",
+          toDate: a.toDate ? new Date(a.toDate).toISOString().slice(0, 10) : "",
+          purpose: a.purpose,
+          status: a.status || "Pending",
+          appliedLeaveType: a.appliedLeaveType,
+          dayStatuses: a.dayStatuses,
+          createdAt: a.createdAt || new Date().toISOString(),
+        }),
+      );
       if (canViewProductModule("LEAVE_MODULE")) {
         setPageCache("empLeaveApps", mappedLeave);
         setLeaveApps(mappedLeave);
@@ -150,28 +164,33 @@ export function EmpTeamApprovalsPanel({
         setLeaveApps([]);
       }
 
-      const mappedReimb = (Array.isArray(reimbData) ? reimbData : []).map((r: any) => {
-        const items =
-          Array.isArray(r.items) && r.items.length > 0
-            ? r.items.map((i: any) => ({
-                id: i.id,
-                reimbursementType: i.reimbursementType,
-                amount: i.amount,
-                description: i.description,
-                status: i.status || "Pending",
-              }))
-            : [];
-        return {
-          id: String(r.id),
-          date: r.date || "",
-          taskProjectID: r.taskProjectID ?? null,
-          amount: items.reduce((s: number, i: any) => s + parseFloat(i.amount || "0"), 0),
-          status: r.status || "Pending",
-          items,
-          manageEmployeeID: r.manageEmployeeID,
-          manageEmployee: r.manageEmployee,
-        };
-      });
+      const mappedReimb = (Array.isArray(reimbData) ? reimbData : []).map(
+        (r: any) => {
+          const items =
+            Array.isArray(r.items) && r.items.length > 0
+              ? r.items.map((i: any) => ({
+                  id: i.id,
+                  reimbursementType: i.reimbursementType,
+                  amount: i.amount,
+                  description: i.description,
+                  status: i.status || "Pending",
+                }))
+              : [];
+          return {
+            id: String(r.id),
+            date: r.date || "",
+            taskProjectID: r.taskProjectID ?? null,
+            amount: items.reduce(
+              (s: number, i: any) => s + parseFloat(i.amount || "0"),
+              0,
+            ),
+            status: r.status || "Pending",
+            items,
+            manageEmployeeID: r.manageEmployeeID,
+            manageEmployee: r.manageEmployee,
+          };
+        },
+      );
       if (canViewProductModule("REIMBURSEMENT_MODULE")) {
         setPageCache("empReimbursements", mappedReimb);
         setReimbRows(mappedReimb);
@@ -179,14 +198,16 @@ export function EmpTeamApprovalsPanel({
         setReimbRows([]);
       }
 
-      const mappedAdvance = (Array.isArray(advanceData) ? advanceData : []).map((row: any) => ({
-        id: String(row.id),
-        manageEmployeeID: row.manageEmployeeID,
-        manageEmployee: row.manageEmployee,
-        advanceAmount: row.advanceAmount,
-        reason: row.reason,
-        status: row.status || "Pending",
-      }));
+      const mappedAdvance = (Array.isArray(advanceData) ? advanceData : []).map(
+        (row: any) => ({
+          id: String(row.id),
+          manageEmployeeID: row.manageEmployeeID,
+          manageEmployee: row.manageEmployee,
+          advanceAmount: row.advanceAmount,
+          reason: row.reason,
+          status: row.status || "Pending",
+        }),
+      );
       if (canViewProductModule("LOAN_ADVANCE_MODULE")) {
         setAdvanceRows(mappedAdvance);
       } else {
@@ -229,18 +250,18 @@ export function EmpTeamApprovalsPanel({
     return nameForEmployeeId(scope, manageEmployeeID) || "Team member";
   };
 
-const pendingLeave = useMemo(
-  () =>
-    leaveApps.filter(
-      (a) =>
-        (isCompanyOwner
-          ? Number(a.manageEmployeeID) > 0 &&
-            Number(a.manageEmployeeID) !== employeeId
-          : isTeamMemberId(scope, a.manageEmployeeID)) &&
-        getDisplayLeaveStatus(a.status, a.dayStatuses) === "Approval Pending",
-    ),
-  [leaveApps, scope, isCompanyOwner, employeeId],
-);
+  const pendingLeave = useMemo(
+    () =>
+      leaveApps.filter(
+        (a) =>
+          (isCompanyOwner
+            ? Number(a.manageEmployeeID) > 0 &&
+              Number(a.manageEmployeeID) !== employeeId
+            : isTeamMemberId(scope, a.manageEmployeeID)) &&
+          getDisplayLeaveStatus(a.status, a.dayStatuses) === "Approval Pending",
+      ),
+    [leaveApps, scope, isCompanyOwner, employeeId],
+  );
 
   const pendingOwnLeave = useMemo(
     () =>
@@ -272,7 +293,8 @@ const pendingLeave = useMemo(
     () =>
       advanceRows.filter(
         (row) =>
-          isTeamMemberId(scope, row.manageEmployeeID) && (row.status || "Pending") === "Pending",
+          isTeamMemberId(scope, row.manageEmployeeID) &&
+          (row.status || "Pending") === "Pending",
       ),
     [advanceRows, scope],
   );
@@ -308,23 +330,29 @@ const pendingLeave = useMemo(
   const showOwnSubmissions = includeOwnSubmissions || !canReviewTeam;
 
   const unified: UnifiedRow[] = useMemo(() => {
-    const leaveRows: UnifiedRow[] = (canReviewTeam ? pendingLeave : []).map((l) => ({
-      kind: "leave",
-      id: `leave-${l.id}`,
-      employeeName: employeeName(l.manageEmployeeID, l.manageEmployee),
-      subtitle: `${l.fromDate} → ${l.toDate}${l.purpose ? ` · ${l.purpose}` : ""}`,
-      leave: l,
-      isOwn: false,
-    }));
-    const reimbUnified: UnifiedRow[] = (canReviewTeam ? pendingReimb : []).map((r) => ({
-      kind: "reimbursement",
-      id: `reimb-${r.id}`,
-      employeeName: employeeName(r.manageEmployeeID, r.manageEmployee),
-      subtitle: `${r.date || "—"} · ₹${totalAmount(r).toFixed(2)}`,
-      reimb: r,
-      isOwn: false,
-    }));
-    const advanceUnified: UnifiedRow[] = (canReviewTeam ? pendingAdvance : []).map((row) => ({
+    const leaveRows: UnifiedRow[] = (canReviewTeam ? pendingLeave : []).map(
+      (l) => ({
+        kind: "leave",
+        id: `leave-${l.id}`,
+        employeeName: employeeName(l.manageEmployeeID, l.manageEmployee),
+        subtitle: `${l.fromDate} → ${l.toDate}${l.purpose ? ` · ${l.purpose}` : ""}`,
+        leave: l,
+        isOwn: false,
+      }),
+    );
+    const reimbUnified: UnifiedRow[] = (canReviewTeam ? pendingReimb : []).map(
+      (r) => ({
+        kind: "reimbursement",
+        id: `reimb-${r.id}`,
+        employeeName: employeeName(r.manageEmployeeID, r.manageEmployee),
+        subtitle: `${r.date || "—"} · ₹${totalAmount(r).toFixed(2)}`,
+        reimb: r,
+        isOwn: false,
+      }),
+    );
+    const advanceUnified: UnifiedRow[] = (
+      canReviewTeam ? pendingAdvance : []
+    ).map((row) => ({
       kind: "advance",
       id: `advance-${row.id}`,
       employeeName: employeeName(row.manageEmployeeID, row.manageEmployee),
@@ -332,7 +360,9 @@ const pendingLeave = useMemo(
       advance: row,
       isOwn: false,
     }));
-    const ownLeaveRows: UnifiedRow[] = (showOwnSubmissions ? pendingOwnLeave : []).map((l) => ({
+    const ownLeaveRows: UnifiedRow[] = (
+      showOwnSubmissions ? pendingOwnLeave : []
+    ).map((l) => ({
       kind: "leave",
       id: `own-leave-${l.id}`,
       employeeName: "You",
@@ -350,7 +380,9 @@ const pendingLeave = useMemo(
       reimb: r,
       isOwn: true,
     }));
-    const ownAdvanceRows: UnifiedRow[] = (showOwnSubmissions ? pendingOwnAdvance : []).map((row) => ({
+    const ownAdvanceRows: UnifiedRow[] = (
+      showOwnSubmissions ? pendingOwnAdvance : []
+    ).map((row) => ({
       kind: "advance",
       id: `own-advance-${row.id}`,
       employeeName: "You",
@@ -358,9 +390,14 @@ const pendingLeave = useMemo(
       advance: row,
       isOwn: true,
     }));
-    return [...leaveRows, ...reimbUnified, ...advanceUnified, ...ownLeaveRows, ...ownReimbRows, ...ownAdvanceRows].sort(
-      (a, b) => a.employeeName.localeCompare(b.employeeName),
-    );
+    return [
+      ...leaveRows,
+      ...reimbUnified,
+      ...advanceUnified,
+      ...ownLeaveRows,
+      ...ownReimbRows,
+      ...ownAdvanceRows,
+    ].sort((a, b) => a.employeeName.localeCompare(b.employeeName));
   }, [
     canReviewTeam,
     pendingLeave,
@@ -418,26 +455,32 @@ const pendingLeave = useMemo(
   ) : (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-       <div className="flex flex-wrap items-center gap-2">
-  {(["all", "leave", "reimbursement", "advance"] as FilterType[])
-    .filter(
-      (f) =>
-        f === "all" ||
-        (f === "leave" && leaveEnabled) ||
-        (f === "reimbursement" && reimbEnabled) ||
-        (f === "advance" && advanceEnabled),
-    )
-    .map((f) => (
-    <Button
-      key={f}
-      type="button"
-      size="sm"
-      variant={filter === f ? "default" : "outline"}
-      onClick={() => setFilter(f)}
-    >
-      {f === "all" ? "All" : f === "leave" ? "Leave" : f === "reimbursement" ? "Reimbursement" : "Loan advance"}
-    </Button>
-  ))}
+        <div className="flex flex-wrap items-center gap-2">
+          {(["all", "leave", "reimbursement", "advance"] as FilterType[])
+            .filter(
+              (f) =>
+                f === "all" ||
+                (f === "leave" && leaveEnabled) ||
+                (f === "reimbursement" && reimbEnabled) ||
+                (f === "advance" && advanceEnabled),
+            )
+            .map((f) => (
+              <Button
+                key={f}
+                type="button"
+                size="sm"
+                variant={filter === f ? "default" : "outline"}
+                onClick={() => setFilter(f)}
+              >
+                {f === "all"
+                  ? "All"
+                  : f === "leave"
+                    ? "Leave"
+                    : f === "reimbursement"
+                      ? "Reimbursement"
+                      : "Loan advance"}
+              </Button>
+            ))}
 
           <Button
             type="button"
@@ -499,7 +542,11 @@ const pendingLeave = useMemo(
                 </span>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-primary">
-                    {row.kind === "leave" ? "Leave" : row.kind === "advance" ? "Loan advance" : "Reimbursement"}
+                    {row.kind === "leave"
+                      ? "Leave"
+                      : row.kind === "advance"
+                        ? "Loan advance"
+                        : "Reimbursement"}
                     {row.isOwn ? " · Your request" : ""}
                   </p>
                   <p className="font-semibold text-foreground truncate">
@@ -511,13 +558,28 @@ const pendingLeave = useMemo(
                 </div>
               </div>
               {row.isOwn ? (
-                <span className="text-xs font-medium text-amber-600 shrink-0">Awaiting approval</span>
+                <span className="text-xs font-medium text-amber-600 shrink-0">
+                  Awaiting approval
+                </span>
               ) : row.kind === "advance" ? (
                 <div className="flex gap-2 shrink-0">
-                  <Button type="button" size="sm" variant="outline" onClick={() => void decideAdvance(row.advance.id, "Rejected")}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      void decideAdvance(row.advance.id, "Rejected")
+                    }
+                  >
                     Reject
                   </Button>
-                  <Button type="button" size="sm" onClick={() => void decideAdvance(row.advance.id, "Approved")}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() =>
+                      void decideAdvance(row.advance.id, "Approved")
+                    }
+                  >
                     Approve
                   </Button>
                 </div>

@@ -5,9 +5,14 @@ import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { getSidebarContext } from "../../utils/sidebarContext";
 import { NoticeBanner } from "../../components/ui/notice-banner";
 import { toast } from "sonner";
-import { isCompanyOwnerFlag, canViewModule, isCompanyAdminLikeRole } from "@/lib/companyAccess";
+import {
+  isCompanyOwnerFlag,
+  canViewModule,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export default function GeneralSettingsPage() {
   const user = useCurrentUser();
@@ -19,7 +24,8 @@ export default function GeneralSettingsPage() {
   const canAccess =
     user?.role === "SUPERADMIN" ||
     isCompanyAdminLikeRole(user?.role) ||
-    (user?.role === "EMPLOYEE" && (isCompanyOwnerFlag() || canViewModule("SETTINGS")));
+    (user?.role === "EMPLOYEE" &&
+      (isCompanyOwnerFlag() || canViewModule("SETTINGS")));
 
   const resolveCompanyId = useCallback(async () => {
     const ctx = getSidebarContext();
@@ -33,7 +39,9 @@ export default function GeneralSettingsPage() {
       const res = await fetch(`${BACKEND}/users`, { cache: "no-store" });
       if (!res.ok) return null;
       const users = await res.json();
-      const me = users.find((u: { username?: string }) => u.username === user?.username);
+      const me = users.find(
+        (u: { username?: string }) => u.username === user?.username,
+      );
       return me?.companyID ?? null;
     }
     return null;
@@ -54,7 +62,9 @@ export default function GeneralSettingsPage() {
           return;
         }
         setCompanyId(id);
-        const res = await fetch(`${BACKEND}/company/${id}`, { cache: "no-store" });
+        const res = await fetch(`${BACKEND}/company/${id}`, {
+          cache: "no-store",
+        });
         if (!res.ok) throw new Error("Failed to load company");
         const company = await res.json();
         setCompanyName(company.companyName ?? "");
@@ -100,47 +110,53 @@ export default function GeneralSettingsPage() {
 
   return (
     <div className="max-w-xl p-6 sm:p-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">General settings</h1>
-        <p className="text-sm text-gray-500 mb-6">
-          Company name is used in employee birthday notifications, joining forms, and other
-          employee-facing messages instead of the software product name.
-        </p>
+      <h1 className="text-2xl font-bold text-gray-900 mb-1">
+        General settings
+      </h1>
+      <p className="text-sm text-gray-500 mb-6">
+        Company name is used in employee birthday notifications, joining forms,
+        and other employee-facing messages instead of the software product name.
+      </p>
 
-        {loading ? (
-          <p className="text-sm text-gray-400">Loading…</p>
-        ) : !companyId ? (
-          <NoticeBanner variant="warning" compact>
-            Select a company in the sidebar, then return to this page.
-          </NoticeBanner>
-        ) : (
-          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4 shadow-sm">
-            <div>
-              <label htmlFor="companyName" className="block text-sm font-semibold text-gray-900 mb-1">
-                Company name
-              </label>
-              <input
-                id="companyName"
-                type="text"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="e.g. Karbonsteel Engineering Ltd."
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/30 focus:border-[#4f46e5]"
-              />
-              <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-                Birthday message example: &quot;Wishing you a wonderful birthday from your{" "}
-                <strong>{companyName.trim() || "Company"}</strong> family.&quot;
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => void save()}
-              disabled={saving}
-              className="inline-flex items-center justify-center rounded-lg bg-[#4f46e5] text-white text-sm font-semibold px-4 py-2.5 disabled:opacity-60"
+      {loading ? (
+        <p className="text-sm text-gray-400">Loading…</p>
+      ) : !companyId ? (
+        <NoticeBanner variant="warning" compact>
+          Select a company in the sidebar, then return to this page.
+        </NoticeBanner>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4 shadow-sm">
+          <div>
+            <label
+              htmlFor="companyName"
+              className="block text-sm font-semibold text-gray-900 mb-1"
             >
-              {saving ? "Saving…" : "Save settings"}
-            </button>
+              Company name
+            </label>
+            <input
+              id="companyName"
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="e.g. Karbonsteel Engineering Ltd."
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/30 focus:border-[#4f46e5]"
+            />
+            <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+              Birthday message example: &quot;Wishing you a wonderful birthday
+              from your <strong>{companyName.trim() || "Company"}</strong>{" "}
+              family.&quot;
+            </p>
           </div>
-        )}
-      </div>
+          <button
+            type="button"
+            onClick={() => void save()}
+            disabled={saving}
+            className="inline-flex items-center justify-center rounded-lg bg-[#4f46e5] text-white text-sm font-semibold px-4 py-2.5 disabled:opacity-60"
+          >
+            {saving ? "Saving…" : "Save settings"}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

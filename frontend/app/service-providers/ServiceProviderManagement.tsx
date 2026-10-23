@@ -1,15 +1,23 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
-import { PageHeader } from "../components/app/page-header"
-import { Textarea } from "../components/ui/textarea"
-import { FormDrawer } from "../components/ui/form-drawer"
-import { DetailCard } from "../components/app/detail-card"
-import { EntityDetailHero, EntityDetailLayout } from "../components/app/entity-detail-layout"
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { PageHeader } from "../components/app/page-header";
+import { Textarea } from "../components/ui/textarea";
+import { FormDrawer } from "../components/ui/form-drawer";
+import { DetailCard } from "../components/app/detail-card";
+import {
+  EntityDetailHero,
+  EntityDetailLayout,
+} from "../components/app/entity-detail-layout";
 import {
   Table,
   TableBody,
@@ -17,48 +25,67 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../components/ui/table"
-import { Badge } from "../components/ui/badge"
-import { Icon } from "@iconify/react"
-import { Plus, Search, Edit, Trash2, Eye, ArrowLeft, EyeOff, UserPlus, Building2 } from "lucide-react"
-import { toast } from "sonner"
-import { LocationFields } from "../components/ui/location-fields"
-import { clearSidebarContext, getSidebarContext } from "../utils/sidebarContext"
+} from "../components/ui/table";
+import { Badge } from "../components/ui/badge";
+import { Icon } from "@iconify/react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  ArrowLeft,
+  EyeOff,
+  UserPlus,
+  Building2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { LocationFields } from "../components/ui/location-fields";
+import {
+  clearSidebarContext,
+  getSidebarContext,
+} from "../utils/sidebarContext";
 
 interface ServiceProvider {
-  id: number
-  companyName: string
-  companyAddress: string
-  country: string
-  state: string
-  city: string
-  pincode: string
-  countryCode: string
-  gstNo: string
-  contactNo: string
-  emailAdd: string
-  website: string
-  companyLogoUrl: string
-  createdAt: string
+  id: number;
+  companyName: string;
+  companyAddress: string;
+  country: string;
+  state: string;
+  city: string;
+  pincode: string;
+  countryCode: string;
+  gstNo: string;
+  contactNo: string;
+  emailAdd: string;
+  website: string;
+  companyLogoUrl: string;
+  createdAt: string;
 }
 
 export function ServiceProviderManagement() {
-  const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [editingProvider, setEditingProvider] = useState<ServiceProvider | null>(null)
-  const [viewProvider, setViewProvider] = useState<ServiceProvider | null>(null)
+  const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>(
+    [],
+  );
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [editingProvider, setEditingProvider] =
+    useState<ServiceProvider | null>(null);
+  const [viewProvider, setViewProvider] = useState<ServiceProvider | null>(
+    null,
+  );
 
-  const [isUserDrawerOpen, setIsUserDrawerOpen] = useState(false)
-  const [selectedProviderForUser, setSelectedProviderForUser] = useState<ServiceProvider | null>(null)
-  const [savingUser, setSavingUser] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [spUsers, setSpUsers] = useState<any[]>([])
-  const [loadingSpUsers, setLoadingSpUsers] = useState(false)
-  const [showCreateUserForm, setShowCreateUserForm] = useState(false)
-const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false)
-const [editingSpUser, setEditingSpUser] = useState<any | null>(null)
+  const [isUserDrawerOpen, setIsUserDrawerOpen] = useState(false);
+  const [selectedProviderForUser, setSelectedProviderForUser] =
+    useState<ServiceProvider | null>(null);
+  const [savingUser, setSavingUser] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [spUsers, setSpUsers] = useState<any[]>([]);
+  const [loadingSpUsers, setLoadingSpUsers] = useState(false);
+  const [showCreateUserForm, setShowCreateUserForm] = useState(false);
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const [editingSpUser, setEditingSpUser] = useState<any | null>(null);
 
   const [userForm, setUserForm] = useState({
     firstName: "",
@@ -70,7 +97,7 @@ const [editingSpUser, setEditingSpUser] = useState<any | null>(null)
     companyID: "",
     branchesID: "",
     isActive: true,
-  })
+  });
 
   const [formData, setFormData] = useState({
     companyName: "",
@@ -85,38 +112,40 @@ const [editingSpUser, setEditingSpUser] = useState<any | null>(null)
     emailAdd: "",
     website: "",
     companyLogoUrl: "",
-  })
+  });
 
   // 🔹 Fetch providers on load
   useEffect(() => {
-    fetchProviders()
-  }, [])
+    fetchProviders();
+  }, []);
 
   const fetchProviders = async () => {
     try {
-      const res = await fetch("/backend/service-provider")
-      const data = await res.json()
-      setServiceProviders(Array.isArray(data) ? data : [])
+      const res = await fetch(
+        "https://hrms-api-test.onrender.com/service-provider",
+      );
+      const data = await res.json();
+      setServiceProviders(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Error fetching service providers:", error)
+      console.error("Error fetching service providers:", error);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // Validation
-    const validationErrors: string[] = []
-    if (!formData.companyName?.trim()) validationErrors.push("Company Name is required")
-    if (!formData.country?.trim()) validationErrors.push("Country is required")
-    if (!formData.state?.trim()) validationErrors.push("State is required")
+    const validationErrors: string[] = [];
+    if (!formData.companyName?.trim())
+      validationErrors.push("Company Name is required");
+    if (!formData.country?.trim()) validationErrors.push("Country is required");
+    if (!formData.state?.trim()) validationErrors.push("State is required");
     if (validationErrors.length > 0) {
-      validationErrors.forEach(msg => toast.error(msg))
-      return
+      validationErrors.forEach((msg) => toast.error(msg));
+      return;
     }
 
     try {
-
       const {
         companyName,
         companyAddress,
@@ -130,7 +159,7 @@ const [editingSpUser, setEditingSpUser] = useState<any | null>(null)
         emailAdd,
         website,
         companyLogoUrl,
-      } = formData as typeof formData & { currency?: string }
+      } = formData as typeof formData & { currency?: string };
 
       const payload = {
         companyName,
@@ -145,71 +174,76 @@ const [editingSpUser, setEditingSpUser] = useState<any | null>(null)
         emailAdd,
         website,
         companyLogoUrl,
-      }
+      };
 
-      let res
+      let res;
       if (editingProvider) {
-        res = await fetch(`/backend/service-provider/${editingProvider.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        })
+        res = await fetch(
+          `https://hrms-api-test.onrender.com/service-provider/${editingProvider.id}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
       } else {
-        res = await fetch("/backend/service-provider", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        })
+        res = await fetch(
+          "https://hrms-api-test.onrender.com/service-provider",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
       }
 
       if (!res.ok) {
-        const errText = await res.text()
-        throw new Error(`Request failed: ${res.status} - ${errText}`)
+        const errText = await res.text();
+        throw new Error(`Request failed: ${res.status} - ${errText}`);
       }
 
-      await fetchProviders()
-      resetForm()
-      setIsDialogOpen(false)
-      toast.success("Service provider saved successfully")
-      window.dispatchEvent(new Event("sidebar-refresh"))
+      await fetchProviders();
+      resetForm();
+      setIsDialogOpen(false);
+      toast.success("Service provider saved successfully");
+      window.dispatchEvent(new Event("sidebar-refresh"));
     } catch (error) {
-      console.error("Error saving service provider:", error)
-      toast.error((error as any)?.message || "Failed to save service provider")
+      console.error("Error saving service provider:", error);
+      toast.error((error as any)?.message || "Failed to save service provider");
     }
-  }
-
+  };
 
   const fetchServiceProviderUsers = async (providerId: number) => {
     try {
-      setLoadingSpUsers(true)
+      setLoadingSpUsers(true);
 
-      const res = await fetch("/backend/users")
-      if (!res.ok) throw new Error("Failed to load users")
+      const res = await fetch("https://hrms-api-test.onrender.com/users");
+      if (!res.ok) throw new Error("Failed to load users");
 
-      const data = await res.json()
-      const rows = Array.isArray(data) ? data : []
+      const data = await res.json();
+      const rows = Array.isArray(data) ? data : [];
 
       setSpUsers(
         rows.filter(
           (u) =>
             Number(u.serviceProviderID) === Number(providerId) &&
-            String(u.role || "").toUpperCase() === "SERVICE_PROVIDER"
-        )
-      )
+            String(u.role || "").toUpperCase() === "SERVICE_PROVIDER",
+        ),
+      );
     } catch (error) {
-      console.error("Error loading service provider users:", error)
-      toast.error("Failed to load service provider users")
-      setSpUsers([])
+      console.error("Error loading service provider users:", error);
+      toast.error("Failed to load service provider users");
+      setSpUsers([]);
     } finally {
-      setLoadingSpUsers(false)
+      setLoadingSpUsers(false);
     }
-  }
+  };
 
   const openCreateUserDrawer = async (provider: ServiceProvider) => {
-    setSelectedProviderForUser(provider)
-    setIsUserDrawerOpen(true)
-setIsCreateUserModalOpen(false)
-setEditingSpUser(null)
+    setSelectedProviderForUser(provider);
+    setIsUserDrawerOpen(true);
+    setIsCreateUserModalOpen(false);
+    setEditingSpUser(null);
 
     setUserForm({
       firstName: "",
@@ -221,22 +255,22 @@ setEditingSpUser(null)
       companyID: "",
       branchesID: "",
       isActive: true,
-    })
+    });
 
-    setShowPassword(false)
-    setShowCreateUserForm(false)
+    setShowPassword(false);
+    setShowCreateUserForm(false);
 
-    await fetchServiceProviderUsers(provider.id)
-  }
+    await fetchServiceProviderUsers(provider.id);
+  };
 
   const closeCreateUserDrawer = () => {
-    setIsUserDrawerOpen(false)
-    setSelectedProviderForUser(null)
-    setShowPassword(false)
-    setShowCreateUserForm(false)
-setIsCreateUserModalOpen(false)
-setEditingSpUser(null)
-    setSpUsers([])
+    setIsUserDrawerOpen(false);
+    setSelectedProviderForUser(null);
+    setShowPassword(false);
+    setShowCreateUserForm(false);
+    setIsCreateUserModalOpen(false);
+    setEditingSpUser(null);
+    setSpUsers([]);
 
     setUserForm({
       firstName: "",
@@ -248,102 +282,113 @@ setEditingSpUser(null)
       companyID: "",
       branchesID: "",
       isActive: true,
-    })
-  }
+    });
+  };
 
   const closeServiceProviderUserPanel = () => {
-    closeCreateUserDrawer()
-  }
+    closeCreateUserDrawer();
+  };
 
   const handleEditServiceProviderUser = (u: any) => {
-  setEditingSpUser(u)
-  setUserForm({
-    firstName: u.firstName || "",
-    lastName: u.lastName || "",
-    username: u.username || "",
-    password: "",
-    role: "SERVICE_PROVIDER",
-    serviceProviderID: u.serviceProviderID || selectedProviderForUser?.id || "",
-    companyID: "",
-    branchesID: "",
-    isActive: !!u.isActive,
-  })
-  setShowPassword(false)
-  setIsCreateUserModalOpen(true)
-}
+    setEditingSpUser(u);
+    setUserForm({
+      firstName: u.firstName || "",
+      lastName: u.lastName || "",
+      username: u.username || "",
+      password: "",
+      role: "SERVICE_PROVIDER",
+      serviceProviderID:
+        u.serviceProviderID || selectedProviderForUser?.id || "",
+      companyID: "",
+      branchesID: "",
+      isActive: !!u.isActive,
+    });
+    setShowPassword(false);
+    setIsCreateUserModalOpen(true);
+  };
 
-const handleDeleteServiceProviderUser = async (userId: number) => {
-  if (!confirm("Are you sure you want to delete this service provider user?")) return
+  const handleDeleteServiceProviderUser = async (userId: number) => {
+    if (!confirm("Are you sure you want to delete this service provider user?"))
+      return;
 
-  try {
-    const res = await fetch(`/backend/users/${userId}`, {
-      method: "DELETE",
-    })
+    try {
+      const res = await fetch(
+        `https://hrms-api-test.onrender.com/users/${userId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
-    if (!res.ok) {
-      const errText = await res.text()
-      throw new Error(errText || "Failed to delete user")
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || "Failed to delete user");
+      }
+
+      toast.success("User deleted successfully");
+
+      if (selectedProviderForUser) {
+        await fetchServiceProviderUsers(selectedProviderForUser.id);
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to delete user");
     }
-
-    toast.success("User deleted successfully")
-
-    if (selectedProviderForUser) {
-      await fetchServiceProviderUsers(selectedProviderForUser.id)
-    }
-  } catch (error: any) {
-    toast.error(error?.message || "Failed to delete user")
-  }
-}
+  };
 
   const handleCreateServiceProviderUser = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!selectedProviderForUser?.id) {
-      toast.error("Service provider is not selected")
-      return
+      toast.error("Service provider is not selected");
+      return;
     }
 
     if (!userForm.username.trim()) {
-      toast.error("Username is required")
-      return
+      toast.error("Username is required");
+      return;
     }
 
- if (!editingSpUser && !userForm.password.trim()) {
-  toast.error("Password is required")
-  return
-}
+    if (!editingSpUser && !userForm.password.trim()) {
+      toast.error("Password is required");
+      return;
+    }
 
-    setSavingUser(true)
+    setSavingUser(true);
 
     try {
- const payload: any = {
-  firstName: userForm.firstName?.trim() || null,
-  lastName: userForm.lastName?.trim() || null,
-  username: userForm.username.trim(),
-  role: "SERVICE_PROVIDER",
-  serviceProviderID: Number(selectedProviderForUser?.id),
-  isActive: userForm.isActive,
-}
+      const payload: any = {
+        firstName: userForm.firstName?.trim() || null,
+        lastName: userForm.lastName?.trim() || null,
+        username: userForm.username.trim(),
+        role: "SERVICE_PROVIDER",
+        serviceProviderID: Number(selectedProviderForUser?.id),
+        isActive: userForm.isActive,
+      };
 
-if (userForm.password.trim()) {
-  payload.password = userForm.password
-}
-
-const res = await fetch(
-  editingSpUser ? `/backend/users/${editingSpUser.id}` : "/backend/users",
-  {
-    method: editingSpUser ? "PATCH" : "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  }
-)
-
-      if (!res.ok) {
-        const errText = await res.text()
-        throw new Error(errText || "Failed to create service provider user")
+      if (userForm.password.trim()) {
+        payload.password = userForm.password;
       }
 
-toast.success(editingSpUser ? "Service provider user updated successfully" : "Service provider user created successfully")
+      const res = await fetch(
+        editingSpUser
+          ? `https://hrms-api-test.onrender.com/users/${editingSpUser.id}`
+          : "https://hrms-api-test.onrender.com/users",
+        {
+          method: editingSpUser ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || "Failed to create service provider user");
+      }
+
+      toast.success(
+        editingSpUser
+          ? "Service provider user updated successfully"
+          : "Service provider user created successfully",
+      );
 
       setUserForm({
         firstName: "",
@@ -355,47 +400,52 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
         companyID: "",
         branchesID: "",
         isActive: true,
-      })
+      });
 
-      setShowPassword(false)
-      setShowCreateUserForm(false)
-      setIsCreateUserModalOpen(false)
-      setEditingSpUser(null)
+      setShowPassword(false);
+      setShowCreateUserForm(false);
+      setIsCreateUserModalOpen(false);
+      setEditingSpUser(null);
 
       if (selectedProviderForUser) {
-        await fetchServiceProviderUsers(selectedProviderForUser.id)
+        await fetchServiceProviderUsers(selectedProviderForUser.id);
       }
     } catch (error: any) {
-      console.error("Error creating service provider user:", error)
-      toast.error(error?.message || "Failed to create service provider user")
+      console.error("Error creating service provider user:", error);
+      toast.error(error?.message || "Failed to create service provider user");
     } finally {
-      setSavingUser(false)
+      setSavingUser(false);
     }
-  }
+  };
 
   const handleDelete = async (id: number) => {
     if (confirm("Are you sure you want to delete this service provider?")) {
       try {
-        const res = await fetch(`/backend/service-provider/${id}`, {
-          method: "DELETE",
-        })
+        const res = await fetch(
+          `https://hrms-api-test.onrender.com/service-provider/${id}`,
+          {
+            method: "DELETE",
+          },
+        );
         if (!res.ok) {
-          const errText = await res.text()
-          throw new Error(errText || "Failed to delete service provider")
+          const errText = await res.text();
+          throw new Error(errText || "Failed to delete service provider");
         }
-        const ctx = getSidebarContext()
+        const ctx = getSidebarContext();
         if (ctx && Number(ctx.serviceProviderID) === Number(id)) {
-          clearSidebarContext()
+          clearSidebarContext();
         }
-        await fetchProviders()
-        toast.success("Service provider deleted successfully")
-        window.dispatchEvent(new Event("sidebar-refresh"))
+        await fetchProviders();
+        toast.success("Service provider deleted successfully");
+        window.dispatchEvent(new Event("sidebar-refresh"));
       } catch (error) {
-        console.error("Error deleting service provider:", error)
-        toast.error((error as any)?.message || "Failed to delete service provider")
+        console.error("Error deleting service provider:", error);
+        toast.error(
+          (error as any)?.message || "Failed to delete service provider",
+        );
       }
     }
-  }
+  };
 
   const handleEdit = (provider: ServiceProvider) => {
     setFormData({
@@ -411,15 +461,15 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
       emailAdd: provider.emailAdd,
       website: provider.website,
       companyLogoUrl: provider.companyLogoUrl,
-    })
-    setEditingProvider(provider)
-    setIsDialogOpen(true)
-  }
+    });
+    setEditingProvider(provider);
+    setIsDialogOpen(true);
+  };
 
   const handleView = (provider: ServiceProvider) => {
-    setViewProvider(provider)
-    setIsViewDialogOpen(true)
-  }
+    setViewProvider(provider);
+    setIsViewDialogOpen(true);
+  };
 
   const resetForm = () => {
     setFormData({
@@ -435,16 +485,16 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
       emailAdd: "",
       website: "",
       companyLogoUrl: "",
-    })
-    setEditingProvider(null)
-  }
+    });
+    setEditingProvider(null);
+  };
 
   const filteredProviders = serviceProviders.filter(
     (provider) =>
       provider.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       provider.emailAdd.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      provider.country.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+      provider.country.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -453,8 +503,15 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
         title="Service Providers"
         description="Manage your service provider relationships"
         actions={
-  !isDialogOpen && !isUserDrawerOpen && serviceProviders.length === 0 ? (
-            <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+          !isDialogOpen &&
+          !isUserDrawerOpen &&
+          serviceProviders.length === 0 ? (
+            <Button
+              onClick={() => {
+                resetForm();
+                setIsDialogOpen(true);
+              }}
+            >
               <Plus className="w-4 h-4 mr-1" />
               Add Service Provider
             </Button>
@@ -466,10 +523,14 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
       <FormDrawer
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        title={editingProvider ? "Edit Service Provider" : "Add New Service Provider"}
-        description={editingProvider
-          ? "Update the service provider information below."
-          : "Fill in the details to add a new service provider."}
+        title={
+          editingProvider ? "Edit Service Provider" : "Add New Service Provider"
+        }
+        description={
+          editingProvider
+            ? "Update the service provider information below."
+            : "Fill in the details to add a new service provider."
+        }
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -477,8 +538,12 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
             <Input
               id="companyName"
               value={formData.companyName}
-
-              onChange={(e) => setFormData((prev) => ({ ...prev, companyName: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  companyName: e.target.value,
+                }))
+              }
               required
             />
           </div>
@@ -487,7 +552,12 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
             <Textarea
               id="companyAddress"
               value={formData.companyAddress}
-              onChange={(e) => setFormData((prev) => ({ ...prev, companyAddress: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  companyAddress: e.target.value,
+                }))
+              }
               rows={3}
               required
             />
@@ -512,7 +582,9 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
             <Input
               id="gstNo"
               value={formData.gstNo}
-              onChange={(e) => setFormData((prev) => ({ ...prev, gstNo: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, gstNo: e.target.value }))
+              }
               required
             />
           </div>
@@ -523,14 +595,24 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
                 <Input
                   id="countryCode"
                   value={formData.countryCode}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, countryCode: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      countryCode: e.target.value,
+                    }))
+                  }
                   placeholder="+91"
                   className="w-20 shrink-0"
                 />
                 <Input
                   id="contactNo"
                   value={formData.contactNo}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, contactNo: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      contactNo: e.target.value,
+                    }))
+                  }
                   required
                   className="flex-1"
                 />
@@ -542,7 +624,9 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
                 id="emailAdd"
                 type="email"
                 value={formData.emailAdd}
-                onChange={(e) => setFormData((prev) => ({ ...prev, emailAdd: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, emailAdd: e.target.value }))
+                }
                 required
               />
             </div>
@@ -552,11 +636,12 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
             <Input
               id="website"
               value={formData.website}
-              onChange={(e) => setFormData((prev) => ({ ...prev, website: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, website: e.target.value }))
+              }
             />
           </div>
           <div className="flex justify-end gap-3 pt-4">
-
             <Button type="submit">
               {editingProvider ? "Update Provider" : "Add Provider"}
             </Button>
@@ -577,7 +662,12 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
             hero={
               <EntityDetailHero
                 title={viewProvider.companyName}
-                subtitle={<span>{viewProvider.city || viewProvider.state}, {viewProvider.country}</span>}
+                subtitle={
+                  <span>
+                    {viewProvider.city || viewProvider.state},{" "}
+                    {viewProvider.country}
+                  </span>
+                }
               />
             }
           >
@@ -617,8 +707,6 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
         )}
       </FormDrawer>
 
-
-
       {isUserDrawerOpen && selectedProviderForUser && (
         <>
           {!isCreateUserModalOpen && (
@@ -636,37 +724,37 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
                   </div>
 
                   <div className="flex gap-2">
-<Button
-  type="button"
-  onClick={() => {
-    setEditingSpUser(null)
-    setUserForm({
-      firstName: "",
-      lastName: "",
-      username: "",
-      password: "",
-      role: "SERVICE_PROVIDER",
-      serviceProviderID: selectedProviderForUser?.id ?? "",
-      companyID: "",
-      branchesID: "",
-      isActive: true,
-    })
-    setShowPassword(false)
-    setIsCreateUserModalOpen(true)
-  }}
->
-                        <Plus className="w-4 h-4 mr-2" />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setEditingSpUser(null);
+                        setUserForm({
+                          firstName: "",
+                          lastName: "",
+                          username: "",
+                          password: "",
+                          role: "SERVICE_PROVIDER",
+                          serviceProviderID: selectedProviderForUser?.id ?? "",
+                          companyID: "",
+                          branchesID: "",
+                          isActive: true,
+                        });
+                        setShowPassword(false);
+                        setIsCreateUserModalOpen(true);
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
                       Add User
                     </Button>
-
-                    
                   </div>
                 </div>
               </CardHeader>
 
               <CardContent className="p-6 space-y-6">
                 <div className="rounded-xl border bg-indigo-50/60 px-4 py-3">
-                  <p className="text-sm text-gray-500">Selected Service Provider</p>
+                  <p className="text-sm text-gray-500">
+                    Selected Service Provider
+                  </p>
                   <p className="text-base font-semibold text-gray-900">
                     {selectedProviderForUser?.companyName || "—"}
                   </p>
@@ -678,7 +766,8 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
                       Existing Service Provider Users
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Only SERVICE_PROVIDER users for this service provider are listed here.
+                      Only SERVICE_PROVIDER users for this service provider are
+                      listed here.
                     </p>
                   </div>
 
@@ -687,62 +776,78 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
                       <TableRow>
                         <TableHead>Username</TableHead>
                         <TableHead>Role</TableHead>
-<TableHead>Status</TableHead>
-<TableHead className="text-right">Actions</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
 
                     <TableBody>
                       {loadingSpUsers ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                          <TableCell
+                            colSpan={4}
+                            className="text-center py-8 text-gray-500"
+                          >
                             Loading users...
                           </TableCell>
                         </TableRow>
                       ) : spUsers.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                          <TableCell
+                            colSpan={4}
+                            className="text-center py-8 text-gray-500"
+                          >
                             No service provider users found
                           </TableCell>
                         </TableRow>
                       ) : (
                         spUsers.map((u) => (
                           <TableRow key={u.id}>
-                            <TableCell className="font-medium">{u.username}</TableCell>
-                            <TableCell>
-                              <Badge variant="secondary">{u.role || "SERVICE_PROVIDER"}</Badge>
+                            <TableCell className="font-medium">
+                              {u.username}
                             </TableCell>
                             <TableCell>
-  <Badge variant={u.isActive ? "default" : "destructive"}>
-    {u.isActive ? "Active" : "Inactive"}
-  </Badge>
-</TableCell>
+                              <Badge variant="secondary">
+                                {u.role || "SERVICE_PROVIDER"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={u.isActive ? "default" : "destructive"}
+                              >
+                                {u.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
 
-<TableCell className="text-right">
-  <div className="flex items-center justify-end gap-1">
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={() => handleEditServiceProviderUser(u)}
-      className="h-7 w-7 p-0"
-      title="Edit user"
-    >
-      <Edit className="w-3 h-3" />
-    </Button>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleEditServiceProviderUser(u)
+                                  }
+                                  className="h-7 w-7 p-0"
+                                  title="Edit user"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </Button>
 
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={() => handleDeleteServiceProviderUser(u.id)}
-      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-      title="Delete user"
-    >
-      <Trash2 className="w-3 h-3" />
-    </Button>
-  </div>
-</TableCell>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleDeleteServiceProviderUser(u.id)
+                                  }
+                                  className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  title="Delete user"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
                         ))
                       )}
@@ -755,17 +860,25 @@ toast.success(editingSpUser ? "Service provider user updated successfully" : "Se
           <FormDrawer
             open={isCreateUserModalOpen}
             onOpenChange={setIsCreateUserModalOpen}
-title={editingSpUser ? "Update Service Provider User" : "Create Service Provider User"}
+            title={
+              editingSpUser
+                ? "Update Service Provider User"
+                : "Create Service Provider User"
+            }
             description="This user will get SERVICE_PROVIDER role for this service provider only."
           >
-            <form onSubmit={handleCreateServiceProviderUser} className="space-y-5">
+            <form
+              onSubmit={handleCreateServiceProviderUser}
+              className="space-y-5"
+            >
               <div className="rounded-xl border bg-indigo-50/60 px-4 py-3">
-                <p className="text-sm text-gray-500">Selected Service Provider</p>
+                <p className="text-sm text-gray-500">
+                  Selected Service Provider
+                </p>
                 <p className="text-base font-semibold text-gray-900">
                   {selectedProviderForUser?.companyName || "—"}
                 </p>
               </div>
-
 
               <div className="space-y-2">
                 <Label>First Name *</Label>
@@ -773,7 +886,9 @@ title={editingSpUser ? "Update Service Provider User" : "Create Service Provider
                   autoComplete="first-name"
                   name="new-sp-user-first-name"
                   value={userForm.firstName}
-                  onChange={(e) => setUserForm((p) => ({ ...p, firstName: e.target.value }))}
+                  onChange={(e) =>
+                    setUserForm((p) => ({ ...p, firstName: e.target.value }))
+                  }
                   placeholder="Enter first name"
                   required
                 />
@@ -785,7 +900,9 @@ title={editingSpUser ? "Update Service Provider User" : "Create Service Provider
                   autoComplete="last-name"
                   name="new-sp-user-last-name"
                   value={userForm.lastName}
-                  onChange={(e) => setUserForm((p) => ({ ...p, lastName: e.target.value }))}
+                  onChange={(e) =>
+                    setUserForm((p) => ({ ...p, lastName: e.target.value }))
+                  }
                   placeholder="Enter last name"
                   required
                 />
@@ -797,7 +914,9 @@ title={editingSpUser ? "Update Service Provider User" : "Create Service Provider
                   autoComplete="username"
                   name="new-sp-user-username"
                   value={userForm.username}
-                  onChange={(e) => setUserForm((p) => ({ ...p, username: e.target.value }))}
+                  onChange={(e) =>
+                    setUserForm((p) => ({ ...p, username: e.target.value }))
+                  }
                   placeholder="Enter username"
                   required
                 />
@@ -811,7 +930,9 @@ title={editingSpUser ? "Update Service Provider User" : "Create Service Provider
                     name="new-sp-user-password"
                     type={showPassword ? "text" : "password"}
                     value={userForm.password}
-                    onChange={(e) => setUserForm((p) => ({ ...p, password: e.target.value }))}
+                    onChange={(e) =>
+                      setUserForm((p) => ({ ...p, password: e.target.value }))
+                    }
                     placeholder="Minimum 6 characters"
                     className="pr-10"
                   />
@@ -820,7 +941,11 @@ title={editingSpUser ? "Update Service Provider User" : "Create Service Provider
                     onClick={() => setShowPassword((p) => !p)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -831,146 +956,182 @@ title={editingSpUser ? "Update Service Provider User" : "Create Service Provider
                   <input
                     type="checkbox"
                     checked={userForm.isActive}
-                    onChange={(e) => setUserForm((p) => ({ ...p, isActive: e.target.checked }))}
+                    onChange={(e) =>
+                      setUserForm((p) => ({ ...p, isActive: e.target.checked }))
+                    }
                   />
                   Active
                 </label>
               </div>
 
               <div>
-               < Label htmlFor="permissions">Permissions</Label>
+                <Label htmlFor="permissions">Permissions</Label>
                 <div className="mt-1 text-sm text-gray-500"></div>
                 <p>Permissions Coming Soon</p>
-                </div>
+              </div>
 
               <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsCreateUserModalOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateUserModalOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={savingUser}>
-{savingUser ? (editingSpUser ? "Updating..." : "Creating...") : (editingSpUser ? "Update User" : "Create User")}
+                  {savingUser
+                    ? editingSpUser
+                      ? "Updating..."
+                      : "Creating..."
+                    : editingSpUser
+                      ? "Update User"
+                      : "Create User"}
                 </Button>
               </div>
             </form>
           </FormDrawer>
         </>
       )}
-      {!isDialogOpen && !isViewDialogOpen && !isUserDrawerOpen && (<>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="relative flex-1 min-w-0">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Search service providers..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full bg-muted/40 border-transparent focus-visible:bg-background"
-                />
+      {!isDialogOpen && !isViewDialogOpen && !isUserDrawerOpen && (
+        <>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="relative flex-1 min-w-0">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Search service providers..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 w-full bg-muted/40 border-transparent focus-visible:bg-background"
+                  />
+                </div>
+                <Badge variant="secondary" className="px-3 py-1 flex-shrink-0">
+                  {filteredProviders.length} total service providers
+                </Badge>
               </div>
-              <Badge variant="secondary" className="px-3 py-1 flex-shrink-0">
-                {filteredProviders.length} total service providers
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Table */}
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Building2 className="size-5 text-primary" />
-              Service Providers List
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 w-full">
-            <div className="overflow-x-auto w-full">
-              <Table className="w-full">
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Company Name</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Address</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Country</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">State</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">GST No</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Contact</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Email</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold text-center">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProviders.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-gray-500">
-                        <div className="flex flex-col items-center gap-2">
-                          <Icon icon="mdi:account-search" className="w-12 h-12 text-gray-300" />
-                          <p>No service providers found</p>
-                          <p className="text-sm">Try adjusting your search criteria</p>
-                        </div>
-                      </TableCell>
+          {/* Table */}
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Building2 className="size-5 text-primary" />
+                Service Providers List
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 w-full">
+              <div className="overflow-x-auto w-full">
+                <Table className="w-full">
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        Company Name
+                      </TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        Address
+                      </TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        Country
+                      </TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        State
+                      </TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        GST No
+                      </TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        Contact
+                      </TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        Email
+                      </TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold text-center">
+                        Actions
+                      </TableHead>
                     </TableRow>
-                  ) : (
-                    filteredProviders.map((provider) => (
-                      <TableRow key={provider.id}>
-                        <TableCell>{provider.companyName}</TableCell>
-                        <TableCell>{provider.companyAddress}</TableCell>
-                        <TableCell>{provider.country}</TableCell>
-                        <TableCell>{provider.state}</TableCell>
-                        <TableCell>{provider.gstNo}</TableCell>
-                        <TableCell>{provider.contactNo}</TableCell>
-                        <TableCell>{provider.emailAdd}</TableCell>
-                        <TableCell className="text-right">
-
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openCreateUserDrawer(provider)}
-                              className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                              title="Create service provider user"
-                            >
-                              <UserPlus className="w-3 h-3" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleView(provider)}
-                              className="h-7 w-7 p-0"
-                              title="View service provider"
-                            >
-                              <Eye className="w-3 h-3" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(provider)}
-                              className="h-7 w-7 p-0"
-                            >
-                              <Edit className="w-3 h-3" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(provider.id)}
-                              className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-
+                  </TableHeader>
+                  <TableBody>
+                    {filteredProviders.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={10}
+                          className="text-center py-8 text-gray-500"
+                        >
+                          <div className="flex flex-col items-center gap-2">
+                            <Icon
+                              icon="mdi:account-search"
+                              className="w-12 h-12 text-gray-300"
+                            />
+                            <p>No service providers found</p>
+                            <p className="text-sm">
+                              Try adjusting your search criteria
+                            </p>
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      </>)}
+                    ) : (
+                      filteredProviders.map((provider) => (
+                        <TableRow key={provider.id}>
+                          <TableCell>{provider.companyName}</TableCell>
+                          <TableCell>{provider.companyAddress}</TableCell>
+                          <TableCell>{provider.country}</TableCell>
+                          <TableCell>{provider.state}</TableCell>
+                          <TableCell>{provider.gstNo}</TableCell>
+                          <TableCell>{provider.contactNo}</TableCell>
+                          <TableCell>{provider.emailAdd}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openCreateUserDrawer(provider)}
+                                className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                title="Create service provider user"
+                              >
+                                <UserPlus className="w-3 h-3" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleView(provider)}
+                                className="h-7 w-7 p-0"
+                                title="View service provider"
+                              >
+                                <Eye className="w-3 h-3" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(provider)}
+                                className="h-7 w-7 p-0"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(provider.id)}
+                                className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
-  )
+  );
 }

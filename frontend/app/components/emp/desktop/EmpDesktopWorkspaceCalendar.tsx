@@ -25,7 +25,10 @@ import {
   resolveCalendarDayDisplay,
   type CalendarDayKind,
 } from "../../../utils/empCalendarDayStatus";
-import { buildWeekOffDayNames, type WorkShiftDayRow } from "../../../utils/empWorkShiftWeekOff";
+import {
+  buildWeekOffDayNames,
+  type WorkShiftDayRow,
+} from "../../../utils/empWorkShiftWeekOff";
 import type { EmpHolidayRow } from "../EmpHolidayListMobile";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 import { taskFetch } from "@/app/utils/taskApi";
@@ -33,7 +36,8 @@ import { cn } from "@/app/utils/cn";
 import { todoTextsByDate } from "@/app/utils/empCalendarTodos";
 import { canViewProductModule, useProductAccess } from "@/lib/productAccess";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 type CalendarViewMode = "month" | "week" | "day";
@@ -107,13 +111,21 @@ function buildMonthCells(year: number, month: number) {
   const firstDow = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const prevMonthDays = new Date(Date.UTC(year, month - 1, 0)).getUTCDate();
-  const cells: { dateKey: string | null; day: number | null; outside?: boolean }[] = [];
+  const cells: {
+    dateKey: string | null;
+    day: number | null;
+    outside?: boolean;
+  }[] = [];
 
   for (let i = firstDow - 1; i >= 0; i--) {
     const day = prevMonthDays - i;
     const pm = month === 1 ? 12 : month - 1;
     const py = month === 1 ? year - 1 : year;
-    cells.push({ dateKey: `${py}-${pad2(pm)}-${pad2(day)}`, day, outside: true });
+    cells.push({
+      dateKey: `${py}-${pad2(pm)}-${pad2(day)}`,
+      day,
+      outside: true,
+    });
   }
 
   for (let d = 1; d <= daysInMonth; d++) {
@@ -124,7 +136,11 @@ function buildMonthCells(year: number, month: number) {
   for (let d = 1; d <= trailing; d++) {
     const nm = month === 12 ? 1 : month + 1;
     const ny = month === 12 ? year + 1 : year;
-    cells.push({ dateKey: `${ny}-${pad2(nm)}-${pad2(d)}`, day: d, outside: true });
+    cells.push({
+      dateKey: `${ny}-${pad2(nm)}-${pad2(d)}`,
+      day: d,
+      outside: true,
+    });
   }
 
   return cells;
@@ -151,7 +167,9 @@ function buildWeekCells(anchorKey: string) {
 function authHeaders(): Record<string, string> {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
+      ? localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        ""
       : "";
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -171,7 +189,8 @@ export function EmpDesktopWorkspaceCalendar() {
   const user = useCurrentUser();
   useProductAccess();
   const showTaskSections =
-    canViewProductModule("TASK_MODULE") || canViewProductModule("ONFIELD_TASK_MODULE");
+    canViewProductModule("TASK_MODULE") ||
+    canViewProductModule("ONFIELD_TASK_MODULE");
   const dayDetailTabs = DAY_DETAIL_TABS.filter(
     (tab) => showTaskSections || (tab.id !== "sites" && tab.id !== "tasks"),
   );
@@ -185,18 +204,32 @@ export function EmpDesktopWorkspaceCalendar() {
   const [weekOffDays, setWeekOffDays] = useState<Set<string>>(new Set());
   const [holidayMap, setHolidayMap] = useState<Map<string, string>>(new Map());
   const [leaves, setLeaves] = useState<
-    { fromDate?: string; toDate?: string; status?: string; appliedLeaveType?: string; dayStatuses?: unknown }[]
+    {
+      fromDate?: string;
+      toDate?: string;
+      status?: string;
+      appliedLeaveType?: string;
+      dayStatuses?: unknown;
+    }[]
   >([]);
-  const [tasksByDate, setTasksByDate] = useState<Map<string, string[]>>(new Map());
-  const [todosByDate, setTodosByDate] = useState<Map<string, string[]>>(new Map());
+  const [tasksByDate, setTasksByDate] = useState<Map<string, string[]>>(
+    new Map(),
+  );
+  const [todosByDate, setTodosByDate] = useState<Map<string, string[]>>(
+    new Map(),
+  );
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
-  const [dayDetailSection, setDayDetailSection] = useState<Exclude<CalendarDayDetailSection, "all">>("punches");
+  const [dayDetailSection, setDayDetailSection] =
+    useState<Exclude<CalendarDayDetailSection, "all">>("punches");
   const monthInputRef = useRef<HTMLInputElement>(null);
 
   const todayKey = todayPunchDateKey();
 
   useEffect(() => {
-    if (!showTaskSections && (dayDetailSection === "sites" || dayDetailSection === "tasks")) {
+    if (
+      !showTaskSections &&
+      (dayDetailSection === "sites" || dayDetailSection === "tasks")
+    ) {
       setDayDetailSection("punches");
     }
   }, [dayDetailSection, showTaskSections]);
@@ -210,7 +243,8 @@ export function EmpDesktopWorkspaceCalendar() {
     refreshTodosByDate();
     const onChange = () => refreshTodosByDate();
     window.addEventListener("emp-calendar-todos-changed", onChange);
-    return () => window.removeEventListener("emp-calendar-todos-changed", onChange);
+    return () =>
+      window.removeEventListener("emp-calendar-todos-changed", onChange);
   }, [refreshTodosByDate]);
 
   const loadMonth = useCallback(
@@ -218,38 +252,52 @@ export function EmpDesktopWorkspaceCalendar() {
       setLoading(true);
       const { from, to } = monthRange(year, month);
       try {
-        const userRaw = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+        const userRaw =
+          typeof window !== "undefined" ? localStorage.getItem("user") : null;
         const parsedUser = userRaw ? JSON.parse(userRaw) : null;
         const empId = parsedUser?.employee?.id;
 
-        const [attendanceData, holidaysData, leaveData, empData] = await Promise.all([
-          fetch(`${BACKEND}/emp-location-attendance/my?from=${from}&to=${to}`, {
-            headers: authHeaders(),
-            cache: "no-store",
-          }).then((r) => (r.ok ? r.json() : [])),
-          fetch(`${BACKEND}/emp-notifications/holidays`, { headers: authHeaders(), cache: "no-store" }).then((r) =>
-            r.ok ? r.json() : [],
-          ),
-          empId != null
-            ? fetch(`${BACKEND}/leave-application/employee/${empId}`, { headers: authHeaders(), cache: "no-store" }).then(
-                (r) => (r.ok ? r.json() : []),
-              )
-            : Promise.resolve([]),
-          empId != null
-            ? fetch(`${BACKEND}/manage-emp/${empId}`, { headers: authHeaders(), cache: "no-store" }).then((r) =>
-                r.ok ? r.json() : null,
-              )
-            : Promise.resolve(null),
-        ]);
+        const [attendanceData, holidaysData, leaveData, empData] =
+          await Promise.all([
+            fetch(
+              `${BACKEND}/emp-location-attendance/my?from=${from}&to=${to}`,
+              {
+                headers: authHeaders(),
+                cache: "no-store",
+              },
+            ).then((r) => (r.ok ? r.json() : [])),
+            fetch(`${BACKEND}/emp-notifications/holidays`, {
+              headers: authHeaders(),
+              cache: "no-store",
+            }).then((r) => (r.ok ? r.json() : [])),
+            empId != null
+              ? fetch(`${BACKEND}/leave-application/employee/${empId}`, {
+                  headers: authHeaders(),
+                  cache: "no-store",
+                }).then((r) => (r.ok ? r.json() : []))
+              : Promise.resolve([]),
+            empId != null
+              ? fetch(`${BACKEND}/manage-emp/${empId}`, {
+                  headers: authHeaders(),
+                  cache: "no-store",
+                }).then((r) => (r.ok ? r.json() : null))
+              : Promise.resolve(null),
+          ]);
 
-        setDays(groupAttendanceByDay(Array.isArray(attendanceData) ? attendanceData : []));
+        setDays(
+          groupAttendanceByDay(
+            Array.isArray(attendanceData) ? attendanceData : [],
+          ),
+        );
         setHolidayMap(
           expandHolidayDateMap(
-            (Array.isArray(holidaysData) ? holidaysData : []).map((h: EmpHolidayRow) => ({
-              name: h.name,
-              startDate: h.startDate,
-              endDate: h.endDate,
-            })),
+            (Array.isArray(holidaysData) ? holidaysData : []).map(
+              (h: EmpHolidayRow) => ({
+                name: h.name,
+                startDate: h.startDate,
+                endDate: h.endDate,
+              }),
+            ),
           ),
         );
         setLeaves(Array.isArray(leaveData) ? leaveData : []);
@@ -262,7 +310,11 @@ export function EmpDesktopWorkspaceCalendar() {
           });
           if (shiftRes.ok) {
             const shift = await shiftRes.json();
-            const shiftDays: WorkShiftDayRow[] = Array.isArray(shift?.workShiftDay) ? shift.workShiftDay : [];
+            const shiftDays: WorkShiftDayRow[] = Array.isArray(
+              shift?.workShiftDay,
+            )
+              ? shift.workShiftDay
+              : [];
             setWeekOffDays(buildWeekOffDayNames(shiftDays));
           } else {
             setWeekOffDays(new Set());
@@ -274,8 +326,14 @@ export function EmpDesktopWorkspaceCalendar() {
         if (user) {
           try {
             const taskData = await taskFetch<{
-              items: { scheduleDateTime?: string | null; taskName?: string | null }[];
-            }>("/task-projects", user, undefined, { limit: 200, assignedToMe: 1 });
+              items: {
+                scheduleDateTime?: string | null;
+                taskName?: string | null;
+              }[];
+            }>("/task-projects", user, undefined, {
+              limit: 200,
+              assignedToMe: 1,
+            });
             const taskMap = new Map<string, string[]>();
             (taskData.items || []).forEach((t) => {
               if (!t.scheduleDateTime) return;
@@ -308,8 +366,14 @@ export function EmpDesktopWorkspaceCalendar() {
     void loadMonth(viewYear, viewMonth);
   }, [viewYear, viewMonth, loadMonth]);
 
-  const dayMap = useMemo(() => new Map(days.map((d) => [d.dateKey, d])), [days]);
-  const monthCells = useMemo(() => buildMonthCells(viewYear, viewMonth), [viewYear, viewMonth]);
+  const dayMap = useMemo(
+    () => new Map(days.map((d) => [d.dateKey, d])),
+    [days],
+  );
+  const monthCells = useMemo(
+    () => buildMonthCells(viewYear, viewMonth),
+    [viewYear, viewMonth],
+  );
   const weekCells = useMemo(() => buildWeekCells(focusDateKey), [focusDateKey]);
 
   const headerLabel = useMemo(() => {
@@ -326,7 +390,11 @@ export function EmpDesktopWorkspaceCalendar() {
       const start = weekCells[0]?.dateKey;
       const end = weekCells[6]?.dateKey;
       if (!start || !end) return "Week";
-      const a = parseDateKey(start).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
+      const a = parseDateKey(start).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        timeZone: "UTC",
+      });
       const b = parseDateKey(end).toLocaleDateString("en-IN", {
         day: "numeric",
         month: "short",
@@ -335,11 +403,14 @@ export function EmpDesktopWorkspaceCalendar() {
       });
       return `${a} – ${b}`;
     }
-    return new Date(Date.UTC(viewYear, viewMonth - 1, 1)).toLocaleDateString("en-IN", {
-      month: "long",
-      year: "numeric",
-      timeZone: "UTC",
-    });
+    return new Date(Date.UTC(viewYear, viewMonth - 1, 1)).toLocaleDateString(
+      "en-IN",
+      {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      },
+    );
   }, [viewMode, focusDateKey, weekCells, viewYear, viewMonth]);
 
   const openMonthPicker = () => {
@@ -357,7 +428,10 @@ export function EmpDesktopWorkspaceCalendar() {
     el.click();
   };
 
-  const openDaySheet = (dateKey: string, section: Exclude<CalendarDayDetailSection, "all"> = "punches") => {
+  const openDaySheet = (
+    dateKey: string,
+    section: Exclude<CalendarDayDetailSection, "all"> = "punches",
+  ) => {
     setFocusDateKey(dateKey);
     setDayDetailSection(section);
     setSelectedDateKey(dateKey);
@@ -385,7 +459,10 @@ export function EmpDesktopWorkspaceCalendar() {
         });
     const badgeKind = display?.kind ?? "none";
     const attendanceChip =
-      badgeKind === "present" || badgeKind === "absent" || badgeKind === "leave" || badgeKind === "weekoff"
+      badgeKind === "present" ||
+      badgeKind === "absent" ||
+      badgeKind === "leave" ||
+      badgeKind === "weekoff"
         ? ATTENDANCE_CHIP[badgeKind]
         : null;
     const clickable = !isOutside;
@@ -458,9 +535,13 @@ export function EmpDesktopWorkspaceCalendar() {
                   attendanceChip.className,
                 )}
               >
-                <div className="truncate text-[10px] font-semibold">{attendanceChip.label}</div>
+                <div className="truncate text-[10px] font-semibold">
+                  {attendanceChip.label}
+                </div>
                 {badgeKind === "present" && display?.hoursLine ? (
-                  <div className="truncate text-[9px] font-medium opacity-80">{display.hoursLine}</div>
+                  <div className="truncate text-[9px] font-medium opacity-80">
+                    {display.hoursLine}
+                  </div>
                 ) : null}
               </div>
             ) : null}
@@ -538,7 +619,9 @@ export function EmpDesktopWorkspaceCalendar() {
         }}
         className={cn(
           "block h-full min-h-0 w-full bg-card text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-          cell.dateKey === focusDateKey && viewMode !== "month" && "ring-1 ring-primary/40",
+          cell.dateKey === focusDateKey &&
+            viewMode !== "month" &&
+            "ring-1 ring-primary/40",
         )}
       >
         {inner}
@@ -592,7 +675,12 @@ export function EmpDesktopWorkspaceCalendar() {
                           : "text-muted-foreground hover:text-foreground",
                       )}
                     >
-                      <Icon className={cn("size-3.5 shrink-0 sm:size-4", active ? "text-primary" : "opacity-70")} />
+                      <Icon
+                        className={cn(
+                          "size-3.5 shrink-0 sm:size-4",
+                          active ? "text-primary" : "opacity-70",
+                        )}
+                      />
                       <span className="truncate">{tab.label}</span>
                     </button>
                   );
@@ -600,7 +688,10 @@ export function EmpDesktopWorkspaceCalendar() {
               </div>
             </SheetHeader>
             <div className="px-2 pb-6">
-              <EmpCalendarDayDetailPanel dateKey={selectedDateKey} section={dayDetailSection} />
+              <EmpCalendarDayDetailPanel
+                dateKey={selectedDateKey}
+                section={dayDetailSection}
+              />
             </div>
           </SheetContent>
         </Sheet>
@@ -649,10 +740,15 @@ export function EmpDesktopWorkspaceCalendar() {
             >
               Today
             </Button>
-            <h2 className="ml-1 text-lg font-semibold text-foreground">{headerLabel}</h2>
+            <h2 className="ml-1 text-lg font-semibold text-foreground">
+              {headerLabel}
+            </h2>
           </div>
 
-          <div className="inline-flex rounded-lg border border-border/80 bg-muted/30 p-1" role="tablist">
+          <div
+            className="inline-flex rounded-lg border border-border/80 bg-muted/30 p-1"
+            role="tablist"
+          >
             {VIEW_MODES.map((mode) => {
               const active = viewMode === mode.id;
               return (
@@ -663,7 +759,8 @@ export function EmpDesktopWorkspaceCalendar() {
                   aria-selected={active}
                   onClick={() => {
                     setViewMode(mode.id);
-                    if (mode.id === "day" && !focusDateKey) setFocusDateKey(todayKey);
+                    if (mode.id === "day" && !focusDateKey)
+                      setFocusDateKey(todayKey);
                   }}
                   className={cn(
                     "rounded-md px-3 py-1.5 text-xs font-medium transition-all",
@@ -693,7 +790,9 @@ export function EmpDesktopWorkspaceCalendar() {
         ) : null}
 
         {loading ? (
-          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Loading…</div>
+          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+            Loading…
+          </div>
         ) : viewMode === "day" ? (
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             <EmpCalendarDayDetailPanel dateKey={focusDateKey} section="all" />
@@ -705,11 +804,18 @@ export function EmpDesktopWorkspaceCalendar() {
         ) : (
           <div
             className="grid min-h-0 flex-1 grid-cols-7 gap-px bg-border"
-            style={{ gridTemplateRows: `repeat(${Math.max(1, Math.ceil(monthCells.length / 7))}, minmax(0, 1fr))` }}
+            style={{
+              gridTemplateRows: `repeat(${Math.max(1, Math.ceil(monthCells.length / 7))}, minmax(0, 1fr))`,
+            }}
           >
             {monthCells.map((cell, idx) => {
               if (!cell.dateKey || cell.day == null) {
-                return <div key={`empty-${idx}`} className="h-full min-h-0 bg-card" />;
+                return (
+                  <div
+                    key={`empty-${idx}`}
+                    className="h-full min-h-0 bg-card"
+                  />
+                );
               }
               return renderDayCell(
                 { dateKey: cell.dateKey, day: cell.day, outside: cell.outside },
@@ -722,8 +828,13 @@ export function EmpDesktopWorkspaceCalendar() {
 
         <div className="flex shrink-0 flex-wrap items-center gap-4 border-t border-border px-5 py-3">
           {LEGEND.map((item) => (
-            <span key={item.label} className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <span className={cn("size-2.5 shrink-0 rounded-sm", item.swatch)} />
+            <span
+              key={item.label}
+              className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
+            >
+              <span
+                className={cn("size-2.5 shrink-0 rounded-sm", item.swatch)}
+              />
               {item.label}
             </span>
           ))}

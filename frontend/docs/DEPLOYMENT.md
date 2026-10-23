@@ -3,6 +3,7 @@
 Complete guide for deploying the HRMS Progressive Web App in production environments.
 
 ## Table of Contents
+
 1. [Pre-Deployment Checklist](#pre-deployment-checklist)
 2. [Vercel Deployment (Recommended)](#vercel-deployment-recommended)
 3. [VPS/Self-Hosted Deployment](#vpsself-hosted-deployment)
@@ -89,13 +90,13 @@ Vercel automatically provisions SSL/TLS certificates via Let's Encrypt.
 const nextConfig = {
   // Enable automatic static optimization
   staticPageGenerationTimeout: 60,
-  
+
   // Compression
   compress: true,
-  
+
   // Image optimization
   images: {
-    formats: ['image/avif', 'image/webp'],
+    formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 31536000, // 1 year
   },
 };
@@ -117,6 +118,7 @@ For deploying on your own server infrastructure.
 ### Option A: Nginx + Node.js
 
 #### Prerequisites
+
 - Ubuntu/Debian server with Node.js 18+
 - Nginx installed and configured
 - HTTPS certificate (Let's Encrypt)
@@ -231,7 +233,7 @@ server {
     }
 
     # API proxy
-    location /backend {
+    location https://hrms-api-test.onrender.com {
         proxy_pass http://localhost:8001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -262,6 +264,7 @@ server {
 ```
 
 Enable the site:
+
 ```bash
 sudo ln -s /etc/nginx/sites-available/hrms-pwa /etc/nginx/sites-enabled/
 sudo nginx -t  # Test configuration
@@ -344,6 +347,7 @@ CMD ["node", "server.js"]
 ```
 
 Build and run:
+
 ```bash
 docker build -t hrms-pwa .
 docker run -p 3001:3001 -e NODE_ENV=production hrms-pwa
@@ -363,6 +367,7 @@ docker run -p 3001:3001 -e NODE_ENV=production hrms-pwa
 ### Obtaining Certificates
 
 #### Option 1: Let's Encrypt (Free)
+
 ```bash
 # Using Certbot
 sudo certbot certonly --standalone -d app.yourapp.com
@@ -372,11 +377,13 @@ sudo certbot renew --quiet --noninteractive --post-hook "systemctl reload nginx"
 ```
 
 #### Option 2: Commercial Certificates
+
 - DigiCert
 - GlobalSign
 - Comodo (Sectigo)
 
 #### Nginx HTTPS Configuration
+
 ```nginx
 ssl_certificate /path/to/certificate.crt;
 ssl_certificate_key /path/to/private.key;
@@ -433,13 +440,9 @@ NODE_ENV=production
 // next.config.js
 const nextConfig = {
   images: {
-    formats: ['image/avif', 'image/webp'],
-    sizes: [
-      320, 420, 640, 768, 1024, 1280, 1536, 1920
-    ],
-    deviceSizes: [
-      640, 750, 828, 1080, 1200, 1920, 2048, 3840
-    ],
+    formats: ["image/avif", "image/webp"],
+    sizes: [320, 420, 640, 768, 1024, 1280, 1536, 1920],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     minimumCacheTTL: 31536000, // 1 year for static images
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
@@ -456,29 +459,29 @@ runtimeCaching: [
   // API responses - Network first (5 min cache)
   {
     urlPattern: /^https?.*\/(api|backend)\/.*/i,
-    handler: 'NetworkFirst',
+    handler: "NetworkFirst",
     options: {
-      cacheName: 'api-cache',
+      cacheName: "api-cache",
       networkTimeoutSeconds: 10,
-      expiration: { maxAgeSeconds: 300 }
+      expiration: { maxAgeSeconds: 300 },
     },
   },
   // Images - Cache first (30 days)
   {
     urlPattern: /\.(?:png|jpg|jpeg|svg|webp|gif)$/i,
-    handler: 'CacheFirst',
+    handler: "CacheFirst",
     options: {
-      cacheName: 'image-cache',
-      expiration: { maxAgeSeconds: 2592000 }
+      cacheName: "image-cache",
+      expiration: { maxAgeSeconds: 2592000 },
     },
   },
   // Static files - Cache first (1 year)
   {
     urlPattern: /\.(?:js|css|woff2|woff)$/i,
-    handler: 'CacheFirst',
+    handler: "CacheFirst",
     options: {
-      cacheName: 'static-cache',
-      expiration: { maxAgeSeconds: 31536000 }
+      cacheName: "static-cache",
+      expiration: { maxAgeSeconds: 31536000 },
     },
   },
 ];
@@ -512,17 +515,12 @@ Monitor cache size periodically. Clear old caches:
 ```javascript
 // Script to run maintenance
 // Add to backend cron jobs
-const cacheNames = [
-  'api-cache',
-  'image-cache',
-  'static-cache',
-  'html-cache'
-];
+const cacheNames = ["api-cache", "image-cache", "static-cache", "html-cache"];
 
-cacheNames.forEach(name => {
-  caches.open(name).then(cache => {
-    cache.keys().then(keys => {
-      keys.forEach(request => {
+cacheNames.forEach((name) => {
+  caches.open(name).then((cache) => {
+    cache.keys().then((keys) => {
+      keys.forEach((request) => {
         cache.delete(request);
       });
     });
@@ -560,11 +558,12 @@ Sentry.init({
 **Problem**: Users don't get latest version
 
 **Solution**:
+
 ```javascript
 // Force service worker update check
-if ('serviceWorker' in navigator) {
+if ("serviceWorker" in navigator) {
   const interval = setInterval(() => {
-    navigator.serviceWorker.getRegistration().then(reg => {
+    navigator.serviceWorker.getRegistration().then((reg) => {
       if (reg) reg.update();
     });
   }, 60000); // Check every minute
@@ -576,6 +575,7 @@ if ('serviceWorker' in navigator) {
 **Problem**: Old files served from cache
 
 **Solution**:
+
 ```bash
 # Clear Next.js cache
 rm -rf .next/cache
@@ -592,6 +592,7 @@ pm2 restart hrms-pwa
 **Problem**: SSL/TLS certificate expired
 
 **Solution**:
+
 ```bash
 # Renew Let's Encrypt certificate
 sudo certbot renew --force-renewal
@@ -607,6 +608,7 @@ sudo systemctl restart nginx
 **Problem**: Installation prompt not showing
 
 **Checklist**:
+
 - [ ] Site is HTTPS
 - [ ] manifest.json is valid (validate at https://www.pwabuilder.com/)
 - [ ] Service worker is registered
@@ -619,6 +621,7 @@ sudo systemctl restart nginx
 **Problem**: Pages won't load offline
 
 **Solution**:
+
 1. Check service worker registration: `navigator.serviceWorker.getRegistrations()`
 2. Check cache storage: DevTools → Application → Cache Storage
 3. Verify offline.html exists
@@ -634,4 +637,3 @@ sudo systemctl restart nginx
 - [ ] Quarterly: Run full Lighthouse audit
 - [ ] Quarterly: Update dependencies and security patches
 - [ ] Annually: Review and update manifest.json metadata
-

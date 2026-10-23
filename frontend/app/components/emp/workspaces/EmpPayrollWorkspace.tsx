@@ -8,9 +8,13 @@ import { EmpWorkspaceContent } from "../EmpWorkspaceTabNav";
 import { EmpPayoutContent } from "../EmpPayoutContent";
 import { EmpProfileSalaryAdvancePanel } from "../EmpProfileSalaryAdvancePanel";
 import { EmpDesktopPage } from "../desktop/EmpDesktopPage";
-import { actionTileClass, gridGap } from "../../../dashboard/components/dashboard-ui";
+import {
+  actionTileClass,
+  gridGap,
+} from "../../../dashboard/components/dashboard-ui";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 function useShowLoanAdvances() {
   const [show, setShow] = useState(true);
@@ -19,7 +23,8 @@ function useShowLoanAdvances() {
       const rawUser = localStorage.getItem("user");
       if (!rawUser) return;
       const user = JSON.parse(rawUser);
-      const fromUser = user?.employee?.pwaShowLoanAdvances ?? user?.pwaShowLoanAdvances;
+      const fromUser =
+        user?.employee?.pwaShowLoanAdvances ?? user?.pwaShowLoanAdvances;
       if (typeof fromUser === "boolean") setShow(fromUser !== false);
       const username = user?.username;
       if (!username) return;
@@ -85,7 +90,11 @@ function PayrollWorkspaceInner() {
   if (tab === "payslips") {
     return (
       <EmpWorkspaceContent>
-        <EmpDesktopPage title="Payslips" description="View and download your payslips by period" icon={FileText}>
+        <EmpDesktopPage
+          title="Payslips"
+          description="View and download your payslips by period"
+          icon={FileText}
+        >
           <EmpPayoutContent embedded />
         </EmpDesktopPage>
       </EmpWorkspaceContent>
@@ -96,7 +105,11 @@ function PayrollWorkspaceInner() {
     if (!showLoanAdvances) {
       return (
         <EmpWorkspaceContent>
-          <EmpDesktopPage title="Payroll overview" description="Payslips" icon={Banknote}>
+          <EmpDesktopPage
+            title="Payroll overview"
+            description="Payslips"
+            icon={Banknote}
+          >
             <PayrollOverview showLoanAdvances={false} />
           </EmpDesktopPage>
         </EmpWorkspaceContent>
@@ -104,7 +117,11 @@ function PayrollWorkspaceInner() {
     }
     return (
       <EmpWorkspaceContent>
-        <EmpDesktopPage title="Salary advance" description="Request or track your salary advances" icon={Wallet}>
+        <EmpDesktopPage
+          title="Salary advance"
+          description="Request or track your salary advances"
+          icon={Wallet}
+        >
           <EmpProfileSalaryAdvancePanel />
         </EmpDesktopPage>
       </EmpWorkspaceContent>
@@ -115,7 +132,11 @@ function PayrollWorkspaceInner() {
   if (tab === "generate") {
     return (
       <EmpWorkspaceContent>
-        <EmpDesktopPage title="Payroll overview" description="Payslips and salary advances" icon={Banknote}>
+        <EmpDesktopPage
+          title="Payroll overview"
+          description="Payslips and salary advances"
+          icon={Banknote}
+        >
           <PayrollOverview showLoanAdvances={showLoanAdvances} />
         </EmpDesktopPage>
       </EmpWorkspaceContent>
@@ -124,7 +145,11 @@ function PayrollWorkspaceInner() {
 
   return (
     <EmpWorkspaceContent>
-      <EmpDesktopPage title="Payroll overview" description="Payslips and salary advances" icon={Banknote}>
+      <EmpDesktopPage
+        title="Payroll overview"
+        description="Payslips and salary advances"
+        icon={Banknote}
+      >
         <PayrollOverview showLoanAdvances={showLoanAdvances} />
       </EmpDesktopPage>
     </EmpWorkspaceContent>
@@ -133,7 +158,13 @@ function PayrollWorkspaceInner() {
 
 export function EmpPayrollWorkspace() {
   return (
-    <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading payroll…</div>}>
+    <Suspense
+      fallback={
+        <div className="p-8 text-sm text-muted-foreground">
+          Loading payroll…
+        </div>
+      }
+    >
       <PayrollWorkspaceInner />
     </Suspense>
   );

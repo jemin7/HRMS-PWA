@@ -11,13 +11,23 @@ import { EmpTeamPulsePanel } from "./desktop/EmpTeamPulsePanel";
 import { EmpTeamWeeklyAttendancePanel } from "./desktop/EmpTeamWeeklyAttendancePanel";
 import { StatCard } from "@/app/dashboard/components/StatCard";
 import { groupCountByField } from "@/app/dashboard/components/MetricMicroViz";
-import { cardShell, gridGap, sectionGap } from "@/app/dashboard/components/dashboard-ui";
+import {
+  cardShell,
+  gridGap,
+  sectionGap,
+} from "@/app/dashboard/components/dashboard-ui";
 import { authHeaders } from "@/lib/auth";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 type HrWidgets = {
-  pendingCounts?: { leave?: number; reimbursement?: number; im?: number; tasks?: number };
+  pendingCounts?: {
+    leave?: number;
+    reimbursement?: number;
+    im?: number;
+    tasks?: number;
+  };
   latestTasks?: { id: number; status: string }[];
   upcomingEvents?: { id: string; kind: string; label: string; when: string }[];
   newsFeed?: { id: string; title: string; subtitle: string; date: string }[];
@@ -27,10 +37,21 @@ export function EmpTeamOverview() {
   const user = useCurrentUser();
   const { isManagerView, loading: scopeLoading, scope } = useEmpManagerScope();
   const [teamMembers, setTeamMembers] = useState<
-    { id: number; statusLabel?: string; designation?: string | null; employeeFirstName?: string | null; employeeLastName?: string | null }[]
+    {
+      id: number;
+      statusLabel?: string;
+      designation?: string | null;
+      employeeFirstName?: string | null;
+      employeeLastName?: string | null;
+    }[]
   >([]);
   const [reportees, setReportees] = useState<
-    { id: number; designation?: string | null; employeeFirstName?: string | null; employeeLastName?: string | null }[]
+    {
+      id: number;
+      designation?: string | null;
+      employeeFirstName?: string | null;
+      employeeLastName?: string | null;
+    }[]
   >([]);
   const [apiReporteeCount, setApiReporteeCount] = useState<number | null>(null);
   const [hrWidgets, setHrWidgets] = useState<HrWidgets | null>(null);
@@ -64,7 +85,9 @@ export function EmpTeamOverview() {
       .then(([teamData, reporteesData, widgets]) => {
         if (cancelled) return;
         setTeamMembers(Array.isArray(teamData.members) ? teamData.members : []);
-        const reporteeList = Array.isArray(reporteesData.reportees) ? reporteesData.reportees : [];
+        const reporteeList = Array.isArray(reporteesData.reportees)
+          ? reporteesData.reportees
+          : [];
         setReportees(reporteeList);
         setApiReporteeCount(reporteeList.length);
         setHrWidgets(widgets);
@@ -90,7 +113,8 @@ export function EmpTeamOverview() {
     [hrWidgets],
   );
   const upcomingAnniversaries = useMemo(
-    () => hrWidgets?.upcomingEvents?.filter((e) => e.kind === "anniversary") ?? [],
+    () =>
+      hrWidgets?.upcomingEvents?.filter((e) => e.kind === "anniversary") ?? [],
     [hrWidgets],
   );
 
@@ -100,10 +124,17 @@ export function EmpTeamOverview() {
   );
 
   const teamStatusSegments = useMemo(() => {
-    const present = teamMembers.filter((m) => m.statusLabel === "Checked in").length;
-    const checkedOut = teamMembers.filter((m) => m.statusLabel === "Checked out").length;
+    const present = teamMembers.filter(
+      (m) => m.statusLabel === "Checked in",
+    ).length;
+    const checkedOut = teamMembers.filter(
+      (m) => m.statusLabel === "Checked out",
+    ).length;
     const absent = teamMembers.filter((m) => m.statusLabel === "Absent").length;
-    const pending = Math.max(0, teamMembers.length - present - checkedOut - absent);
+    const pending = Math.max(
+      0,
+      teamMembers.length - present - checkedOut - absent,
+    );
     return [
       { label: "Present", value: present, color: "#22c55e" },
       { label: "Pending", value: pending, color: "#f59e0b" },
@@ -123,8 +154,12 @@ export function EmpTeamOverview() {
   const taskSegments = useMemo(() => {
     const tasks = hrWidgets?.latestTasks ?? [];
     const open = tasks.filter((t) => /open|todo|new/i.test(t.status)).length;
-    const progress = tasks.filter((t) => /progress|active/i.test(t.status)).length;
-    const done = tasks.filter((t) => /complete|done|closed/i.test(t.status)).length;
+    const progress = tasks.filter((t) =>
+      /progress|active/i.test(t.status),
+    ).length;
+    const done = tasks.filter((t) =>
+      /complete|done|closed/i.test(t.status),
+    ).length;
     const pending = pendingTasks;
     if (tasks.length > 0) {
       return [
@@ -143,16 +178,25 @@ export function EmpTeamOverview() {
   const reporteeAvatars = useMemo(
     () =>
       reportees.slice(0, 5).map((r) => ({
-        initial:
-          (r.employeeFirstName?.[0] || r.employeeLastName?.[0] || "?").toUpperCase(),
+        initial: (
+          r.employeeFirstName?.[0] ||
+          r.employeeLastName?.[0] ||
+          "?"
+        ).toUpperCase(),
       })),
     [reportees],
   );
 
   if (scopeLoading || loading) {
     return (
-      <EmpDesktopPage title="Team Overview" description="Team updates, attendance, and celebrations" icon={Users}>
-        <div className={`grid sm:grid-cols-2 lg:grid-cols-4 ${gridGap} animate-pulse`}>
+      <EmpDesktopPage
+        title="Team Overview"
+        description="Team updates, attendance, and celebrations"
+        icon={Users}
+      >
+        <div
+          className={`grid sm:grid-cols-2 lg:grid-cols-4 ${gridGap} animate-pulse`}
+        >
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className={`${cardShell} h-[190px]`} />
           ))}
@@ -163,7 +207,11 @@ export function EmpTeamOverview() {
 
   if (!isManagerView) {
     return (
-      <EmpDesktopPage title="Team Overview" description="Team updates, attendance, and celebrations" icon={Users}>
+      <EmpDesktopPage
+        title="Team Overview"
+        description="Team updates, attendance, and celebrations"
+        icon={Users}
+      >
         <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
           You do not have team management access.
         </div>
@@ -172,7 +220,11 @@ export function EmpTeamOverview() {
   }
 
   return (
-    <EmpDesktopPage title="Team Overview" description="Team updates, attendance, and celebrations" icon={Users}>
+    <EmpDesktopPage
+      title="Team Overview"
+      description="Team updates, attendance, and celebrations"
+      icon={Users}
+    >
       <div className={sectionGap}>
         <div className={`grid sm:grid-cols-2 lg:grid-cols-4 ${gridGap}`}>
           <StatCard
@@ -207,7 +259,8 @@ export function EmpTeamOverview() {
               unit: "Awaiting your review",
               icon: CalendarCheck,
               href: "/empTeam/approvals",
-              trendDelta: pendingTotal > 0 ? `▲ ${pendingTotal} open` : undefined,
+              trendDelta:
+                pendingTotal > 0 ? `▲ ${pendingTotal} open` : undefined,
               visualization: { type: "progress", segments: approvalSegments },
               iconClassName: "bg-amber-500/10 text-amber-600",
               accentColor: "#f59e0b",
@@ -236,41 +289,65 @@ export function EmpTeamOverview() {
               <h3 className="font-display text-base font-semibold text-foreground mb-4">
                 Upcoming birthdays &amp; anniversaries
               </h3>
-              {upcomingBirthdays.length === 0 && upcomingAnniversaries.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No upcoming celebrations this month.</p>
+              {upcomingBirthdays.length === 0 &&
+              upcomingAnniversaries.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No upcoming celebrations this month.
+                </p>
               ) : (
                 <ul className="space-y-3">
-                  {[...upcomingBirthdays, ...upcomingAnniversaries].slice(0, 8).map((ev) => (
-                    <li key={ev.id} className="flex items-center gap-3">
-                      <span className="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Icon
-                          icon={ev.kind === "birthday" ? "mdi:cake-variant" : "mdi:medal"}
-                          className="size-5 text-primary"
-                        />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{ev.label}</p>
-                        <p className="text-xs text-muted-foreground">{ev.when}</p>
-                      </div>
-                    </li>
-                  ))}
+                  {[...upcomingBirthdays, ...upcomingAnniversaries]
+                    .slice(0, 8)
+                    .map((ev) => (
+                      <li key={ev.id} className="flex items-center gap-3">
+                        <span className="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Icon
+                            icon={
+                              ev.kind === "birthday"
+                                ? "mdi:cake-variant"
+                                : "mdi:medal"
+                            }
+                            className="size-5 text-primary"
+                          />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {ev.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {ev.when}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
                 </ul>
               )}
             </section>
 
             <section className={`${cardShell} p-6`}>
-              <h3 className="font-display text-base font-semibold text-foreground mb-4">Team news</h3>
+              <h3 className="font-display text-base font-semibold text-foreground mb-4">
+                Team news
+              </h3>
               {hrWidgets?.newsFeed?.length ? (
                 <ul className="space-y-3">
                   {hrWidgets.newsFeed.slice(0, 5).map((item) => (
-                    <li key={item.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
-                      <p className="text-sm font-medium text-foreground">{item.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{item.subtitle}</p>
+                    <li
+                      key={item.id}
+                      className="border-b border-border pb-3 last:border-0 last:pb-0"
+                    >
+                      <p className="text-sm font-medium text-foreground">
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {item.subtitle}
+                      </p>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">No recent team updates.</p>
+                <p className="text-sm text-muted-foreground">
+                  No recent team updates.
+                </p>
               )}
             </section>
           </div>

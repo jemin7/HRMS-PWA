@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bell } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../ui/card";
 import { Button } from "../../ui/button";
 import { DataTable, type DataTableColumn } from "../../app/data-table";
 import { listCardClass } from "../../app/list-ui-styles";
@@ -13,14 +19,19 @@ import {
   type StoredInAppNotification,
 } from "../../../utils/empInAppNotifications";
 import { getEmployeeIdFromStorage } from "@/lib/pushSubscribe";
-import { empNotifFeedCacheKey, getPageCache, setPageCache } from "../../../utils/pageCache";
+import {
+  empNotifFeedCacheKey,
+  getPageCache,
+  setPageCache,
+} from "../../../utils/pageCache";
 import { useEmpManagerScope } from "../../../hooks/useEmpManagerScope";
 import { formatManagerNotificationCopy } from "../../../utils/empManagerDisplay";
 import { filterNotificationsForViewer } from "../../../utils/empNotificationFilter";
 import { EmpNotificationsHistoryModal } from "../EmpNotificationsHistoryModal";
 import { cn } from "@/app/utils/cn";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 type FeedNotification = {
   id: string;
@@ -35,12 +46,18 @@ type FeedNotification = {
   isTeamItem?: boolean;
 };
 
-type CachedFeed = { recent: FeedNotification[]; older: FeedNotification[]; hasMore: boolean };
+type CachedFeed = {
+  recent: FeedNotification[];
+  older: FeedNotification[];
+  hasMore: boolean;
+};
 
 function authHeaders(): Record<string, string> {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
+      ? localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        ""
       : "";
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -53,13 +70,18 @@ function fmtWhen(iso: string, kind?: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   const now = new Date();
-  const dayDiff = Math.round((localDay(d).getTime() - localDay(now).getTime()) / 86400000);
+  const dayDiff = Math.round(
+    (localDay(d).getTime() - localDay(now).getTime()) / 86400000,
+  );
   if (kind === "holiday") {
     if (dayDiff === 0) return "Today";
     if (dayDiff === 1) return "Tomorrow";
   }
   if (dayDiff === 0) {
-    return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
   return d.toLocaleDateString("en-IN", {
     day: "numeric",
@@ -104,7 +126,9 @@ function mergeFeeds(
   const combined = [...fromStored, ...apiRecent, ...apiOlder];
   const seen = new Set<string>();
   const unique: FeedNotification[] = [];
-  for (const item of combined.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())) {
+  for (const item of combined.sort(
+    (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
+  )) {
     if (seen.has(item.id)) continue;
     seen.add(item.id);
     unique.push(item);
@@ -115,9 +139,16 @@ function mergeFeeds(
 export function EmpDesktopNotifications() {
   const { scope, isManagerView } = useEmpManagerScope();
   const feedCacheKey =
-    typeof window !== "undefined" ? empNotifFeedCacheKey(getEmployeeIdFromStorage()) : "empNotifFeed";
-  const cached = typeof window !== "undefined" ? getPageCache<CachedFeed>(feedCacheKey) : null;
-  const [recent, setRecent] = useState<FeedNotification[]>(cached?.recent ?? []);
+    typeof window !== "undefined"
+      ? empNotifFeedCacheKey(getEmployeeIdFromStorage())
+      : "empNotifFeed";
+  const cached =
+    typeof window !== "undefined"
+      ? getPageCache<CachedFeed>(feedCacheKey)
+      : null;
+  const [recent, setRecent] = useState<FeedNotification[]>(
+    cached?.recent ?? [],
+  );
   const [older, setOlder] = useState<FeedNotification[]>(cached?.older ?? []);
   const [stored, setStored] = useState<StoredInAppNotification[]>([]);
   const [loading, setLoading] = useState(!cached);
@@ -127,10 +158,13 @@ export function EmpDesktopNotifications() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch(`${BACKEND}/emp-notifications/feed?recentDays=7&olderDays=90`, {
-        headers: authHeaders(),
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `${BACKEND}/emp-notifications/feed?recentDays=7&olderDays=90`,
+        {
+          headers: authHeaders(),
+          cache: "no-store",
+        },
+      );
       if (!res.ok) {
         setRecent([]);
         setOlder([]);
@@ -139,7 +173,9 @@ export function EmpDesktopNotifications() {
         const data = await res.json();
         const olderList = Array.isArray(data.older) ? data.older : [];
         const recentList = Array.isArray(data.recent) ? data.recent : [];
-        pruneStoredMemoNotifications(collectMemoIds([...recentList, ...olderList]));
+        pruneStoredMemoNotifications(
+          collectMemoIds([...recentList, ...olderList]),
+        );
         setRecent(recentList);
         setOlder(olderList);
         setPageCache(feedCacheKey, {
@@ -165,7 +201,8 @@ export function EmpDesktopNotifications() {
       void load();
     };
     window.addEventListener("emp-notifications-changed", onChange);
-    return () => window.removeEventListener("emp-notifications-changed", onChange);
+    return () =>
+      window.removeEventListener("emp-notifications-changed", onChange);
   }, [load]);
 
   const fullList = useMemo(() => {
@@ -192,7 +229,9 @@ export function EmpDesktopNotifications() {
         return (
           <div className="min-w-0 py-1">
             <p className="font-medium text-foreground truncate">{copy.title}</p>
-            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{copy.body}</p>
+            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+              {copy.body}
+            </p>
           </div>
         );
       },
@@ -203,14 +242,21 @@ export function EmpDesktopNotifications() {
       colSpan: 4,
       align: "right",
       cell: (n) => (
-        <span className="text-sm text-muted-foreground whitespace-nowrap">{fmtWhen(n.at, n.kind)}</span>
+        <span className="text-sm text-muted-foreground whitespace-nowrap">
+          {fmtWhen(n.at, n.kind)}
+        </span>
       ),
     },
   ];
 
   return (
     <>
-      <Card className={cn(listCardClass, "flex h-full min-h-0 min-w-0 flex-col overflow-hidden")}>
+      <Card
+        className={cn(
+          listCardClass,
+          "flex h-full min-h-0 min-w-0 flex-col overflow-hidden",
+        )}
+      >
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>
             <CardTitle className="text-xl font-semibold tracking-tight flex items-center gap-2">
@@ -220,7 +266,11 @@ export function EmpDesktopNotifications() {
             <CardDescription>Today</CardDescription>
           </div>
           {fullList.length > panelList.length ? (
-            <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setHistoryOpen(true)}
+            >
               View all
             </Button>
           ) : null}
@@ -236,7 +286,9 @@ export function EmpDesktopNotifications() {
             emptyDescription="You're all caught up for today."
             fitContainer
           />
-          {error ? <p className="text-sm text-destructive mt-3">{error}</p> : null}
+          {error ? (
+            <p className="text-sm text-destructive mt-3">{error}</p>
+          ) : null}
         </CardContent>
       </Card>
 

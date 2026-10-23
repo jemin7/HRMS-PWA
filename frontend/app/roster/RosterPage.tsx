@@ -1,45 +1,95 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { Button } from "../components/ui/button"
-import { Input } from "@/app/components/ui/input"
-import { Label } from "../components/ui/label"
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "../components/ui/table"
-import { Badge } from "../components/ui/badge"
-import { RefreshCw, Save, Users, Calendar, Filter, Trash2, AlertCircle, CalendarDays } from "lucide-react"
-import { Skeleton } from "../components/ui/skeleton"
-import { toast } from "sonner"
-import { PageHeader } from "../components/app/page-header"
-import { listCardClass, listPrimaryButtonClass } from "../components/app/list-ui-styles"
-import { cn } from "@/lib/utils"
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "@/app/components/ui/input";
+import { Label } from "../components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+import { Badge } from "../components/ui/badge";
+import {
+  RefreshCw,
+  Save,
+  Users,
+  Calendar,
+  Filter,
+  Trash2,
+  AlertCircle,
+  CalendarDays,
+} from "lucide-react";
+import { Skeleton } from "../components/ui/skeleton";
+import { toast } from "sonner";
+import { PageHeader } from "../components/app/page-header";
+import {
+  listCardClass,
+  listPrimaryButtonClass,
+} from "../components/app/list-ui-styles";
+import { cn } from "@/lib/utils";
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/app/components/ui/popover"
-import { format } from "date-fns"
-import { Calendar as CalendarIcon } from "lucide-react"
-import { FixedCalendar as CalendarComponent } from "@/app/components/ui/color-calendar"
-import { getSidebarContext } from "../utils/sidebarContext"
-import { hasCompanyAccessFlag, isCompanyAdminLikeRole } from "@/lib/companyAccess"
-import { resolveScopedCompanyId } from "../utils/scopeContext"
+} from "@/app/components/ui/popover";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { FixedCalendar as CalendarComponent } from "@/app/components/ui/color-calendar";
+import { getSidebarContext } from "../utils/sidebarContext";
+import {
+  hasCompanyAccessFlag,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
+import { resolveScopedCompanyId } from "../utils/scopeContext";
 // ==================== TYPES ====================
-type ID = number
-type RosterLeaveType = "CASUAL" | "SICK" | "LOP" | "PL" | "COMP_OFF"
+type ID = number;
+type RosterLeaveType = "CASUAL" | "SICK" | "LOP" | "PL" | "COMP_OFF";
 
-interface ServiceProvider { id: ID; companyName: string }
-interface Company { id: ID; serviceProviderID: ID; companyName: string }
-interface Branch { id: ID; serviceProviderID: ID; companyID: ID; branchName: string }
-interface Department { id: ID; serviceProviderID: ID; companyID: ID; branchesID: ID; departmentName: string }
-interface Designation { id: ID; serviceProviderID: ID; companyID: ID; branchesID: ID; departmentID: ID; designation: string }
+interface ServiceProvider {
+  id: ID;
+  companyName: string;
+}
+interface Company {
+  id: ID;
+  serviceProviderID: ID;
+  companyName: string;
+}
+interface Branch {
+  id: ID;
+  serviceProviderID: ID;
+  companyID: ID;
+  branchName: string;
+}
+interface Department {
+  id: ID;
+  serviceProviderID: ID;
+  companyID: ID;
+  branchesID: ID;
+  departmentName: string;
+}
+interface Designation {
+  id: ID;
+  serviceProviderID: ID;
+  companyID: ID;
+  branchesID: ID;
+  departmentID: ID;
+  designation: string;
+}
 
 interface WorkShift {
   id: ID;
-   companyID?: number;
+  companyID?: number;
   branchesID?: number;
   workShiftName?: string;
   shiftName?: string;
@@ -50,63 +100,63 @@ interface WorkShift {
 }
 
 interface RosterDay {
-  id: ID
-  rosterEmployeeID: ID
-  workDate: string
-  workShiftID: ID | null
-  dayType: string
-  leaveType: string | null
-  isLocked: boolean
-  workShift?: WorkShift | null
+  id: ID;
+  rosterEmployeeID: ID;
+  workDate: string;
+  workShiftID: ID | null;
+  dayType: string;
+  leaveType: string | null;
+  isLocked: boolean;
+  workShift?: WorkShift | null;
 }
 
 interface RosterEmployee {
-  id: ID
-  rosterID: ID
-  employeeID: ID
-  manageEmployee: ManageEmployee
-  days: RosterDay[]
+  id: ID;
+  rosterID: ID;
+  employeeID: ID;
+  manageEmployee: ManageEmployee;
+  days: RosterDay[];
 }
 
 interface ManageEmployee {
-  id: ID
-  employeeFirstName?: string | null
-  employeeLastName?: string | null
-  employeeID?: string | null
-  departmentNameID?: ID | null
-  designationID?: ID | null
-  serviceProviderID?: ID | null
-  companyID?: ID | null
-  branchesID?: ID | null
-  allowRotatingShift?: boolean | null
-  workShiftID?: ID | null
-  workShift?: WorkShift | null
+  id: ID;
+  employeeFirstName?: string | null;
+  employeeLastName?: string | null;
+  employeeID?: string | null;
+  departmentNameID?: ID | null;
+  designationID?: ID | null;
+  serviceProviderID?: ID | null;
+  companyID?: ID | null;
+  branchesID?: ID | null;
+  allowRotatingShift?: boolean | null;
+  workShiftID?: ID | null;
+  workShift?: WorkShift | null;
 }
 
 interface LeaveApplication {
-  id: ID
-  serviceProviderID: ID
-  companyID: ID
-  branchesID: ID
-  manageEmployeeID: ID
-  remainingSickLeave: number
-  remainingCasualLeave: number
-  remainingEarnedLeave: number | null
+  id: ID;
+  serviceProviderID: ID;
+  companyID: ID;
+  branchesID: ID;
+  manageEmployeeID: ID;
+  remainingSickLeave: number;
+  remainingCasualLeave: number;
+  remainingEarnedLeave: number | null;
   dayStatuses: Array<{
-    date: string
-    status: string
-  }>
-  revokedAt: string | null
-  revokedReason: string | null
-  appliedLeaveType: string
-  fromDate: string
-  toDate: string
-  purpose: string
-  status: "Approved"
+    date: string;
+    status: string;
+  }>;
+  revokedAt: string | null;
+  revokedReason: string | null;
+  appliedLeaveType: string;
+  fromDate: string;
+  toDate: string;
+  purpose: string;
+  status: "Approved";
 }
 
 // ==================== CONSTANTS ====================
-const BASE = "/backend"
+const BASE = "https://hrms-api-test.onrender.com";
 const API = {
   sp: `${BASE}/service-provider`,
   company: `${BASE}/company`,
@@ -117,411 +167,445 @@ const API = {
   workShifts: `${BASE}/work-shift`,
   bulkUpsert: `${BASE}/roster-days/bulk`,
   deleteRosterDay: (id: ID) => `${BASE}/roster-days/${id}`,
-  getRosterEmployeeByEmployee: (employeeId: ID) => `${BASE}/roster-employees/by-employee/${employeeId}`,
+  getRosterEmployeeByEmployee: (employeeId: ID) =>
+    `${BASE}/roster-employees/by-employee/${employeeId}`,
   leaveApplications: `${BASE}/leave-application`,
   users: `${BASE}/users`,
   manageEmployees: `${BASE}/manage-emp`,
-}
+};
 
 // ==================== UTILITIES ====================
 function isoDate(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const dd = String(d.getDate()).padStart(2, "0")
-  return `${y}-${m}-${dd}`
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
 }
 
 function formatDateForDisplay(dateStr: string): string {
-  const [year, month, day] = dateStr.split('-')
-  return `${day}.${month}.${year}`
+  const [year, month, day] = dateStr.split("-");
+  return `${day}.${month}.${year}`;
 }
 
 function formatDateForTable(dateStr: string): string {
-  const date = new Date(dateStr)
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = date.getFullYear().toString().slice(-2)
-  return `${day}/${month}/${year}`
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear().toString().slice(-2);
+  return `${day}/${month}/${year}`;
 }
 
 function formatDateCustom(dateStr: string): string {
-  const date = new Date(dateStr)
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = date.getFullYear().toString().slice(-2)
-  return `${day}/${month}/${year}`
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear().toString().slice(-2);
+  return `${day}/${month}/${year}`;
 }
 
 function formatWeekday(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-US', { weekday: 'short' })
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", { weekday: "short" });
 }
 
 function parseISODateOnly(s: string): Date {
-  const [y, m, d] = s.split("-").map(Number)
-  return new Date(y, (m || 1) - 1, d || 1)
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
 }
 
 function dateRange(fromISO: string, toISO: string): string[] {
-  const start = parseISODateOnly(fromISO)
-  const end = parseISODateOnly(toISO)
-  const out: string[] = []
-  const cur = new Date(start)
+  const start = parseISODateOnly(fromISO);
+  const end = parseISODateOnly(toISO);
+  const out: string[] = [];
+  const cur = new Date(start);
   while (cur <= end) {
-    out.push(isoDate(cur))
-    cur.setDate(cur.getDate() + 1)
+    out.push(isoDate(cur));
+    cur.setDate(cur.getDate() + 1);
   }
-  return out
+  return out;
 }
 
 async function safeFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, options)
+  const response = await fetch(url, options);
   if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`HTTP ${response.status}: ${errorText}`)
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText}`);
   }
-  return response.json()
+  return response.json();
 }
 
 function empName(e: ManageEmployee): string {
-  const fn = e.employeeFirstName ?? ""
-  const ln = e.employeeLastName ?? ""
-  const full = `${fn} ${ln}`.trim()
-  return full || `EMP-${e.id}`
+  const fn = e.employeeFirstName ?? "";
+  const ln = e.employeeLastName ?? "";
+  const full = `${fn} ${ln}`.trim();
+  return full || `EMP-${e.id}`;
 }
 
 // ==================== MAIN COMPONENT ====================
 export function RosterManagement() {
   // ==================== STATE ====================
-  const [spList, setSpList] = useState<ServiceProvider[]>([])
-  const [coList, setCoList] = useState<Company[]>([])
-  const [brList, setBrList] = useState<Branch[]>([])
-  const [depList, setDepList] = useState<Department[]>([])
-  const [desList, setDesList] = useState<Designation[]>([])
-  const [shiftList, setShiftList] = useState<WorkShift[]>([])
-  const [leaveApplications, setLeaveApplications] = useState<LeaveApplication[]>([])
-  const [currentUserMapping, setCurrentUserMapping] = useState<any>(null)
-  const [managerCompanies, setManagerCompanies] = useState<Company[]>([])
-  const [managerBranches, setManagerBranches] = useState<Branch[]>([])
+  const [spList, setSpList] = useState<ServiceProvider[]>([]);
+  const [coList, setCoList] = useState<Company[]>([]);
+  const [brList, setBrList] = useState<Branch[]>([]);
+  const [depList, setDepList] = useState<Department[]>([]);
+  const [desList, setDesList] = useState<Designation[]>([]);
+  const [shiftList, setShiftList] = useState<WorkShift[]>([]);
+  const [leaveApplications, setLeaveApplications] = useState<
+    LeaveApplication[]
+  >([]);
+  const [currentUserMapping, setCurrentUserMapping] = useState<any>(null);
+  const [managerCompanies, setManagerCompanies] = useState<Company[]>([]);
+  const [managerBranches, setManagerBranches] = useState<Branch[]>([]);
 
-  const [serviceProviderID, setServiceProviderID] = useState<ID | "">("")
-  const [companyID, setCompanyID] = useState<ID | "">("")
-  const [branchesID, setBranchesID] = useState<ID | "">("")
-  const [departmentID, setDepartmentID] = useState<ID | "">("")
-  const [designationID, setDesignationID] = useState<ID | "">("")
+  const [serviceProviderID, setServiceProviderID] = useState<ID | "">("");
+  const [companyID, setCompanyID] = useState<ID | "">("");
+  const [branchesID, setBranchesID] = useState<ID | "">("");
+  const [departmentID, setDepartmentID] = useState<ID | "">("");
+  const [designationID, setDesignationID] = useState<ID | "">("");
 
-  const today = useMemo(() => isoDate(new Date()), [])
-  const [fromDate, setFromDate] = useState<string>(today)
-  const [toDate, setToDate] = useState<string>(today)
+  const today = useMemo(() => isoDate(new Date()), []);
+  const [fromDate, setFromDate] = useState<string>(today);
+  const [toDate, setToDate] = useState<string>(today);
 
-  const [employees, setEmployees] = useState<ManageEmployee[]>([])
-  const [selectedEmpIds, setSelectedEmpIds] = useState<Set<ID>>(new Set())
-  const [selectAll, setSelectAll] = useState(false)
+  const [employees, setEmployees] = useState<ManageEmployee[]>([]);
+  const [selectedEmpIds, setSelectedEmpIds] = useState<Set<ID>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
 
-  const [bulkFrom, setBulkFrom] = useState<Date>()
-  const [bulkTo, setBulkTo] = useState<Date>()
-  const [bulkMode, setBulkMode] = useState<"SHIFT" | "WEEKLY_OFF" | "LEAVE">("SHIFT")
-  const [bulkShiftID, setBulkShiftID] = useState<ID | "">("")
-  const [bulkLeaveType, setBulkLeaveType] = useState<RosterLeaveType>("CASUAL")
+  const [bulkFrom, setBulkFrom] = useState<Date>();
+  const [bulkTo, setBulkTo] = useState<Date>();
+  const [bulkMode, setBulkMode] = useState<"SHIFT" | "WEEKLY_OFF" | "LEAVE">(
+    "SHIFT",
+  );
+  const [bulkShiftID, setBulkShiftID] = useState<ID | "">("");
+  const [bulkLeaveType, setBulkLeaveType] = useState<RosterLeaveType>("CASUAL");
 
-  const [rosterData, setRosterData] = useState<Map<ID, RosterEmployee>>(new Map())
+  const [rosterData, setRosterData] = useState<Map<ID, RosterEmployee>>(
+    new Map(),
+  );
   const [isLoading, setIsLoading] = useState({
     employees: false,
     roster: false,
     bulk: false,
     initial: true,
-    leaves: false
-  })
-  const [deletingDays, setDeletingDays] = useState<Set<ID>>(new Set())
-  const [openFromCalendar, setOpenFromCalendar] = useState(false)
-  const [openToCalendar, setOpenToCalendar] = useState(false)
+    leaves: false,
+  });
+  const [deletingDays, setDeletingDays] = useState<Set<ID>>(new Set());
+  const [openFromCalendar, setOpenFromCalendar] = useState(false);
+  const [openToCalendar, setOpenToCalendar] = useState(false);
 
   // Get user from localStorage
-  const [user, setUser] = useState<any>(null)
-  const [userRole, setUserRole] = useState<"SUPERADMIN" | "SERVICE_PROVIDER" | "COMPANY_ADMIN" | "MULTI_COMPANY_ADMIN" | "EMPLOYEE" | null>(null)
-  const uid = () => Math.random().toString(36).slice(2)
+  const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<
+    | "SUPERADMIN"
+    | "SERVICE_PROVIDER"
+    | "COMPANY_ADMIN"
+    | "MULTI_COMPANY_ADMIN"
+    | "EMPLOYEE"
+    | null
+  >(null);
+  const uid = () => Math.random().toString(36).slice(2);
 
-const getUserAssignedCompanyIDs = (user: any): number[] => {
-  const ids = new Set<number>()
+  const getUserAssignedCompanyIDs = (user: any): number[] => {
+    const ids = new Set<number>();
 
-  if (user?.companyID) ids.add(Number(user.companyID))
+    if (user?.companyID) ids.add(Number(user.companyID));
 
-  if (Array.isArray(user?.userCompanies)) {
-    user.userCompanies.forEach((uc: any) => {
-      if (uc?.companyID) ids.add(Number(uc.companyID))
-    })
-  }
+    if (Array.isArray(user?.userCompanies)) {
+      user.userCompanies.forEach((uc: any) => {
+        if (uc?.companyID) ids.add(Number(uc.companyID));
+      });
+    }
 
-  return Array.from(ids)
-}
+    return Array.from(ids);
+  };
 
   // ==================== USER AUTHENTICATION ====================
   useEffect(() => {
-    const userData = localStorage.getItem('user')
+    const userData = localStorage.getItem("user");
     if (userData) {
       try {
-        const parsedUser = JSON.parse(userData)
-        console.log("✅ User data from localStorage:", parsedUser)
-        setUser(parsedUser)
-        setUserRole(parsedUser.role)
+        const parsedUser = JSON.parse(userData);
+        console.log("✅ User data from localStorage:", parsedUser);
+        setUser(parsedUser);
+        setUserRole(parsedUser.role);
       } catch (error) {
-        console.error("❌ Error parsing user data:", error)
+        console.error("❌ Error parsing user data:", error);
       }
     } else {
-      console.log("❌ No user data in localStorage")
-      window.alert("⚠️ Please log in first!")
+      console.log("❌ No user data in localStorage");
+      window.alert("⚠️ Please log in first!");
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     const isCompanyOperator =
       isCompanyAdminLikeRole(userRole) ||
       userRole === "SERVICE_PROVIDER" ||
-      (userRole === "EMPLOYEE" && hasCompanyAccessFlag())
-    if (!isCompanyOperator || !user) return
+      (userRole === "EMPLOYEE" && hasCompanyAccessFlag());
+    if (!isCompanyOperator || !user) return;
 
     const loadUserMapping = async () => {
       try {
         // Company owner / rights employee — map from login payload (not Users table)
         if (userRole === "EMPLOYEE") {
-          const companyId = Number(user.companyID || 0) || null
-          const spId = Number(user.serviceProviderID || 0) || null
-          const branchId = Number(user.branchesID || 0) || null
+          const companyId = Number(user.companyID || 0) || null;
+          const spId = Number(user.serviceProviderID || 0) || null;
+          const branchId = Number(user.branchesID || 0) || null;
           setCurrentUserMapping({
             username: user.username,
             companyID: companyId,
             serviceProviderID: spId,
             branchesID: branchId,
-          })
+          });
           if (spId) {
-            setServiceProviderID(spId)
-            setSpList([{ id: spId, companyName: "Service Provider" }])
+            setServiceProviderID(spId);
+            setSpList([{ id: spId, companyName: "Service Provider" }]);
           }
           if (companyId) {
-            const allCompanies = await safeFetch<Company[]>(API.company)
-            const activeCompany = allCompanies.find((c) => Number(c.id) === companyId)
+            const allCompanies = await safeFetch<Company[]>(API.company);
+            const activeCompany = allCompanies.find(
+              (c) => Number(c.id) === companyId,
+            );
             if (activeCompany) {
-              setManagerCompanies([activeCompany])
-              setCoList([activeCompany])
-              setServiceProviderID(activeCompany.serviceProviderID)
-              setCompanyID(activeCompany.id)
+              setManagerCompanies([activeCompany]);
+              setCoList([activeCompany]);
+              setServiceProviderID(activeCompany.serviceProviderID);
+              setCompanyID(activeCompany.id);
             } else {
-              setCompanyID(companyId)
+              setCompanyID(companyId);
             }
-            const allBranches = await safeFetch<Branch[]>(API.branches)
+            const allBranches = await safeFetch<Branch[]>(API.branches);
             const companyBranches = allBranches.filter(
               (b) => Number(b.companyID) === companyId,
-            )
-            setManagerBranches(companyBranches)
-            setBrList(companyBranches)
-            if (branchId && companyBranches.some((b) => Number(b.id) === branchId)) {
-              setBranchesID(branchId)
+            );
+            setManagerBranches(companyBranches);
+            setBrList(companyBranches);
+            if (
+              branchId &&
+              companyBranches.some((b) => Number(b.id) === branchId)
+            ) {
+              setBranchesID(branchId);
             } else {
-              setBranchesID(companyBranches.length === 1 ? companyBranches[0].id : "")
+              setBranchesID(
+                companyBranches.length === 1 ? companyBranches[0].id : "",
+              );
             }
           }
-          return
+          return;
         }
 
-        const res = await fetch(API.users)
-        const users = await res.json()
-        const me = users.find((u: any) => u.username === user.username)
+        const res = await fetch(API.users);
+        const users = await res.json();
+        const me = users.find((u: any) => u.username === user.username);
 
         if (me) {
-          setCurrentUserMapping(me)
-          console.log("👨‍💼 Manager mapping loaded:", me)
+          setCurrentUserMapping(me);
+          console.log("👨‍💼 Manager mapping loaded:", me);
 
           // Set service provider for both COMPANY_ADMIN and SERVICE_PROVIDER
           if (me.serviceProvider) {
             const sp: ServiceProvider = {
               id: me.serviceProviderID,
-              companyName: me.serviceProvider.companyName
-            }
-            setSpList([sp])
-            setServiceProviderID(me.serviceProviderID)
+              companyName: me.serviceProvider.companyName,
+            };
+            setSpList([sp]);
+            setServiceProviderID(me.serviceProviderID);
           }
 
           // For COMPANY_ADMIN only: auto-set the single mapped company and branch
-                   // COMPANY_ADMIN: company is controlled by active top dropdown
+          // COMPANY_ADMIN: company is controlled by active top dropdown
           if (isCompanyAdminLikeRole(userRole)) {
-            const assignedCompanyIDs = getUserAssignedCompanyIDs(me)
-            let activeCompanyID = resolveScopedCompanyId(user) ?? me.companyID
+            const assignedCompanyIDs = getUserAssignedCompanyIDs(me);
+            let activeCompanyID = resolveScopedCompanyId(user) ?? me.companyID;
             if (
               assignedCompanyIDs.length > 0 &&
               activeCompanyID &&
               !assignedCompanyIDs.includes(Number(activeCompanyID))
             ) {
-              activeCompanyID = me.companyID
+              activeCompanyID = me.companyID;
             }
 
-            const allCompanies = await safeFetch<Company[]>(API.company)
+            const allCompanies = await safeFetch<Company[]>(API.company);
             const activeCompany =
-              allCompanies.find((c) => Number(c.id) === Number(activeCompanyID)) ||
+              allCompanies.find(
+                (c) => Number(c.id) === Number(activeCompanyID),
+              ) ||
               (me.company
                 ? {
                     id: me.companyID,
                     serviceProviderID: me.serviceProviderID,
                     companyName: me.company.companyName,
                   }
-                : null)
+                : null);
 
             if (activeCompany) {
-              setManagerCompanies([activeCompany])
-              setCoList([activeCompany])
-              setServiceProviderID(activeCompany.serviceProviderID)
-              setCompanyID(activeCompany.id)
+              setManagerCompanies([activeCompany]);
+              setCoList([activeCompany]);
+              setServiceProviderID(activeCompany.serviceProviderID);
+              setCompanyID(activeCompany.id);
             }
 
-            const allBranches = await safeFetch<Branch[]>(API.branches)
+            const allBranches = await safeFetch<Branch[]>(API.branches);
             const companyBranches = allBranches.filter(
               (b) =>
                 Number(b.serviceProviderID) === Number(me.serviceProviderID) &&
-                Number(b.companyID) === Number(activeCompanyID)
-            )
+                Number(b.companyID) === Number(activeCompanyID),
+            );
 
-            setManagerBranches(companyBranches)
-            setBrList(companyBranches)
+            setManagerBranches(companyBranches);
+            setBrList(companyBranches);
 
-            if (me.branchesID && companyBranches.some((b) => Number(b.id) === Number(me.branchesID))) {
-              setBranchesID(me.branchesID)
+            if (
+              me.branchesID &&
+              companyBranches.some(
+                (b) => Number(b.id) === Number(me.branchesID),
+              )
+            ) {
+              setBranchesID(me.branchesID);
             } else {
-              setBranchesID(companyBranches.length === 1 ? companyBranches[0].id : "")
+              setBranchesID(
+                companyBranches.length === 1 ? companyBranches[0].id : "",
+              );
             }
 
-            setDepartmentID("")
-            setDesignationID("")
-            setEmployees([])
-            setSelectedEmpIds(new Set())
+            setDepartmentID("");
+            setDesignationID("");
+            setEmployees([]);
+            setSelectedEmpIds(new Set());
           }
-           // SERVICE_PROVIDER: serviceProviderID is set above; companies will be loaded
+          // SERVICE_PROVIDER: serviceProviderID is set above; companies will be loaded
           // by the company loading effect when serviceProviderID changes
         }
       } catch (error) {
-        console.error("Error loading user mapping:", error)
+        console.error("Error loading user mapping:", error);
       }
-    }
+    };
 
-    loadUserMapping()
-  }, [userRole, user])
+    loadUserMapping();
+  }, [userRole, user]);
 
-  const isSuperAdmin = userRole === "SUPERADMIN"
-  const isServiceProviderRole = userRole === "SERVICE_PROVIDER"
+  const isSuperAdmin = userRole === "SUPERADMIN";
+  const isServiceProviderRole = userRole === "SERVICE_PROVIDER";
   const isServiceProvider =
     isCompanyAdminLikeRole(userRole) ||
-    (userRole === "EMPLOYEE" && hasCompanyAccessFlag())
+    (userRole === "EMPLOYEE" && hasCompanyAccessFlag());
 
   const getActiveRosterCompanyID = () => {
-    const ctx = getSidebarContext()
+    const ctx = getSidebarContext();
     if (isSuperAdmin || isServiceProviderRole) {
       return (
         resolveScopedCompanyId(user) ??
         (ctx?.companyID ? Number(ctx.companyID) : null) ??
         (companyID ? Number(companyID) : null)
-      )
+      );
     }
-    return resolveScopedCompanyId(user) ?? (companyID ? Number(companyID) : null)
-  }
+    return (
+      resolveScopedCompanyId(user) ?? (companyID ? Number(companyID) : null)
+    );
+  };
 
   // ✅ EFFECTIVE SCOPE
   const effectiveServiceProviderID = useMemo(() => {
-    if (isServiceProvider && currentUserMapping) return currentUserMapping.serviceProviderID
-    return serviceProviderID
-  }, [isServiceProvider, currentUserMapping, serviceProviderID])
+    if (isServiceProvider && currentUserMapping)
+      return currentUserMapping.serviceProviderID;
+    return serviceProviderID;
+  }, [isServiceProvider, currentUserMapping, serviceProviderID]);
 
   const effectiveCompanyID = useMemo(() => {
-    const activeCompanyID = getActiveRosterCompanyID()
-    return activeCompanyID ?? companyID
-  }, [userRole, user, currentUserMapping, companyID])
+    const activeCompanyID = getActiveRosterCompanyID();
+    return activeCompanyID ?? companyID;
+  }, [userRole, user, currentUserMapping, companyID]);
 
   const effectiveBranchesID = useMemo(() => {
-    if (isServiceProvider) return branchesID
-    return branchesID
-  }, [isServiceProvider, currentUserMapping, branchesID])
+    if (isServiceProvider) return branchesID;
+    return branchesID;
+  }, [isServiceProvider, currentUserMapping, branchesID]);
 
   useEffect(() => {
     const isCompanyOperator =
       isCompanyAdminLikeRole(userRole) ||
-      (userRole === "EMPLOYEE" && hasCompanyAccessFlag())
-    if (!isCompanyOperator || !user || !currentUserMapping) return
+      (userRole === "EMPLOYEE" && hasCompanyAccessFlag());
+    if (!isCompanyOperator || !user || !currentUserMapping) return;
 
     const syncActiveCompany = async () => {
-      const assignedCompanyIDs = getUserAssignedCompanyIDs(currentUserMapping)
-      let activeCompanyID = resolveScopedCompanyId(user) ?? currentUserMapping.companyID
+      const assignedCompanyIDs = getUserAssignedCompanyIDs(currentUserMapping);
+      let activeCompanyID =
+        resolveScopedCompanyId(user) ?? currentUserMapping.companyID;
       if (
         assignedCompanyIDs.length > 0 &&
         activeCompanyID &&
         !assignedCompanyIDs.includes(Number(activeCompanyID))
       ) {
-        activeCompanyID = currentUserMapping.companyID
+        activeCompanyID = currentUserMapping.companyID;
       }
 
-      if (!activeCompanyID) return
+      if (!activeCompanyID) return;
 
       try {
         const [allCompanies, allBranches] = await Promise.all([
           safeFetch<Company[]>(API.company),
           safeFetch<Branch[]>(API.branches),
-        ])
+        ]);
 
         const activeCompany = allCompanies.find(
-          (c) => Number(c.id) === Number(activeCompanyID)
-        )
+          (c) => Number(c.id) === Number(activeCompanyID),
+        );
 
         const companyBranches = allBranches.filter(
-          (b) => Number(b.companyID) === Number(activeCompanyID)
-        )
+          (b) => Number(b.companyID) === Number(activeCompanyID),
+        );
 
         if (activeCompany) {
-          setCoList([activeCompany])
-          setManagerCompanies([activeCompany])
-          setServiceProviderID(activeCompany.serviceProviderID)
-          setCompanyID(activeCompany.id)
+          setCoList([activeCompany]);
+          setManagerCompanies([activeCompany]);
+          setServiceProviderID(activeCompany.serviceProviderID);
+          setCompanyID(activeCompany.id);
         }
 
-        setBrList(companyBranches)
-        setManagerBranches(companyBranches)
+        setBrList(companyBranches);
+        setManagerBranches(companyBranches);
 
         setBranchesID((prev) =>
           prev && companyBranches.some((b) => Number(b.id) === Number(prev))
             ? prev
             : companyBranches.length === 1
               ? companyBranches[0].id
-              : ""
-        )
+              : "",
+        );
 
-        setDepartmentID("")
-        setDesignationID("")
-        setDepList([])
-        setDesList([])
-        setEmployees([])
-        setSelectedEmpIds(new Set())
-        setRosterData(new Map())
+        setDepartmentID("");
+        setDesignationID("");
+        setDepList([]);
+        setDesList([]);
+        setEmployees([]);
+        setSelectedEmpIds(new Set());
+        setRosterData(new Map());
       } catch (error) {
-        console.error("Failed to sync active company:", error)
+        console.error("Failed to sync active company:", error);
       }
-    }
+    };
 
-    syncActiveCompany()
+    syncActiveCompany();
 
-    const handler = () => syncActiveCompany()
-    window.addEventListener("sidebar-context-changed", handler)
-    window.addEventListener("app-data-refresh", handler)
+    const handler = () => syncActiveCompany();
+    window.addEventListener("sidebar-context-changed", handler);
+    window.addEventListener("app-data-refresh", handler);
 
     return () => {
-      window.removeEventListener("sidebar-context-changed", handler)
-      window.removeEventListener("app-data-refresh", handler)
-    }
-  }, [userRole, user, currentUserMapping])
+      window.removeEventListener("sidebar-context-changed", handler);
+      window.removeEventListener("app-data-refresh", handler);
+    };
+  }, [userRole, user, currentUserMapping]);
 
   // ==================== COMPUTED VALUES ====================
-    const dates = useMemo(() => {
+  const dates = useMemo(() => {
     try {
-      const dateArray = dateRange(fromDate, toDate)
-      return dateArray
+      const dateArray = dateRange(fromDate, toDate);
+      return dateArray;
     } catch {
-      return []
+      return [];
     }
-  }, [fromDate, toDate])
+  }, [fromDate, toDate]);
 
   const canLoadEmployees = useMemo(() => {
     if (isSuperAdmin) {
@@ -531,7 +615,7 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
         !!branchesID &&
         !!fromDate &&
         !!toDate
-      )
+      );
     }
 
     if (isServiceProvider) {
@@ -541,10 +625,10 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
         !!branchesID &&
         !!fromDate &&
         !!toDate
-      )
+      );
     }
 
-    return false
+    return false;
   }, [
     isSuperAdmin,
     isServiceProvider,
@@ -553,115 +637,136 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
     branchesID,
     currentUserMapping,
     fromDate,
-    toDate
-  ])
+    toDate,
+  ]);
 
-  const selectedCompany = useMemo(() =>
-    coList.find(c => c.id === effectiveCompanyID),
-    [coList, effectiveCompanyID]
-  )
+  const selectedCompany = useMemo(
+    () => coList.find((c) => c.id === effectiveCompanyID),
+    [coList, effectiveCompanyID],
+  );
 
-  const shiftOptions = useMemo(() =>
-    shiftList
-      .filter(s =>
-        s.isRotating === true &&
-        Number(s.companyID) === Number(effectiveCompanyID) &&
-        (!effectiveBranchesID || Number(s.branchesID) === Number(effectiveBranchesID))
-      )
-      .map((s) => ({
-        id: s.id,
-        name: s.shiftName ?? s.workShiftName ?? s.shiftCode ?? `Shift-${s.id}`,
-      })),
-    [shiftList]
-  )
+  const shiftOptions = useMemo(
+    () =>
+      shiftList
+        .filter(
+          (s) =>
+            s.isRotating === true &&
+            Number(s.companyID) === Number(effectiveCompanyID) &&
+            (!effectiveBranchesID ||
+              Number(s.branchesID) === Number(effectiveBranchesID)),
+        )
+        .map((s) => ({
+          id: s.id,
+          name:
+            s.shiftName ?? s.workShiftName ?? s.shiftCode ?? `Shift-${s.id}`,
+        })),
+    [shiftList],
+  );
 
-  const bulkFromISO = useMemo(() => bulkFrom ? isoDate(bulkFrom) : "", [bulkFrom])
-  const bulkToISO = useMemo(() => bulkTo ? isoDate(bulkTo) : "", [bulkTo])
+  const bulkFromISO = useMemo(
+    () => (bulkFrom ? isoDate(bulkFrom) : ""),
+    [bulkFrom],
+  );
+  const bulkToISO = useMemo(() => (bulkTo ? isoDate(bulkTo) : ""), [bulkTo]);
 
   // ==================== DATA FETCHING ====================
   const fetchInitialData = useCallback(async () => {
     try {
       // Fetch shifts for both roles
-      const shifts = await safeFetch<WorkShift[]>(API.workShifts).catch(() => [])
-      setShiftList(shifts)
+      const shifts = await safeFetch<WorkShift[]>(API.workShifts).catch(
+        () => [],
+      );
+      setShiftList(shifts);
 
       // Only SUPERADMIN fetches Service Providers
       if (isSuperAdmin) {
-        const sps = await safeFetch<ServiceProvider[]>(API.sp)
-        setSpList(sps)
+        const sps = await safeFetch<ServiceProvider[]>(API.sp);
+        setSpList(sps);
       }
     } catch (error) {
-      console.error("Failed to load initial data:", error)
-      toast.error("Failed to load initial data")
+      console.error("Failed to load initial data:", error);
+      toast.error("Failed to load initial data");
     } finally {
-      setIsLoading(prev => ({ ...prev, initial: false }))
+      setIsLoading((prev) => ({ ...prev, initial: false }));
     }
-  }, [isSuperAdmin])
+  }, [isSuperAdmin]);
 
   const fetchLeaveApplications = useCallback(async () => {
-    setIsLoading(prev => ({ ...prev, leaves: true }))
+    setIsLoading((prev) => ({ ...prev, leaves: true }));
     try {
-      const applications = await safeFetch<LeaveApplication[]>(API.leaveApplications)
-      const approvedLeaves = applications.filter(app => app.status === "Approved")
-      setLeaveApplications(approvedLeaves)
+      const applications = await safeFetch<LeaveApplication[]>(
+        API.leaveApplications,
+      );
+      const approvedLeaves = applications.filter(
+        (app) => app.status === "Approved",
+      );
+      setLeaveApplications(approvedLeaves);
     } catch (error) {
-      console.error("Failed to load leave applications:", error)
-      toast.error("Failed to load leave applications")
-      setLeaveApplications([])
+      console.error("Failed to load leave applications:", error);
+      toast.error("Failed to load leave applications");
+      setLeaveApplications([]);
     } finally {
-      setIsLoading(prev => ({ ...prev, leaves: false }))
+      setIsLoading((prev) => ({ ...prev, leaves: false }));
     }
-  }, [])
+  }, []);
 
   const fetchEmployees = useCallback(async () => {
-    if (!canLoadEmployees) return
+    if (!canLoadEmployees) return;
 
-    setIsLoading(prev => ({ ...prev, employees: true }))
+    setIsLoading((prev) => ({ ...prev, employees: true }));
     try {
-            const activeCompanyID = getActiveRosterCompanyID()
+      const activeCompanyID = getActiveRosterCompanyID();
 
       const params = new URLSearchParams({
         serviceProviderID: String(effectiveServiceProviderID),
         companyID: String(activeCompanyID ?? effectiveCompanyID),
         branchesID: String(effectiveBranchesID),
-      })
-      
+      });
+
       // Only add departmentID if it's selected (not empty/"All Departments")
       if (departmentID) {
-        params.append("departmentID", String(departmentID))
+        params.append("departmentID", String(departmentID));
       }
 
       // Only add designationID if it's selected (not empty/"All Designations")
       if (designationID) {
-        params.append("designationID", String(designationID))
+        params.append("designationID", String(designationID));
       }
 
-      const url = `${API.selectEmployees}?${params}`
-      const response = await safeFetch<ManageEmployee[]>(url)
+      const url = `${API.selectEmployees}?${params}`;
+      const response = await safeFetch<ManageEmployee[]>(url);
 
-      setEmployees(response)
-      setSelectedEmpIds(new Set())
-      setSelectAll(false)
+      setEmployees(response);
+      setSelectedEmpIds(new Set());
+      setSelectAll(false);
 
       await Promise.all([
-        fetchRosterData(response.map(e => e.id)),
-        fetchLeaveApplications()
-      ])
+        fetchRosterData(response.map((e) => e.id)),
+        fetchLeaveApplications(),
+      ]);
     } catch (error) {
-      console.error("Failed to load employees:", error)
-      toast.error("Failed to load employees")
-      setEmployees([])
+      console.error("Failed to load employees:", error);
+      toast.error("Failed to load employees");
+      setEmployees([]);
     } finally {
-      setIsLoading(prev => ({ ...prev, employees: false }))
+      setIsLoading((prev) => ({ ...prev, employees: false }));
     }
-  }, [canLoadEmployees, effectiveServiceProviderID, effectiveCompanyID, effectiveBranchesID, departmentID, designationID, fetchLeaveApplications])
+  }, [
+    canLoadEmployees,
+    effectiveServiceProviderID,
+    effectiveCompanyID,
+    effectiveBranchesID,
+    departmentID,
+    designationID,
+    fetchLeaveApplications,
+  ]);
 
   const fetchRosterData = useCallback(async (employeeIds: ID[]) => {
-    if (employeeIds.length === 0) return
+    if (employeeIds.length === 0) return;
 
-    setIsLoading(prev => ({ ...prev, roster: true }))
+    setIsLoading((prev) => ({ ...prev, roster: true }));
     try {
-      const rosterMap = new Map<ID, RosterEmployee>()
+      const rosterMap = new Map<ID, RosterEmployee>();
 
       const promises = employeeIds.map(async (empId) => {
         try {
@@ -669,379 +774,435 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
             API.getRosterEmployeeByEmployee(empId),
             {
               headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache'
-              }
-            }
-          )
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                Pragma: "no-cache",
+              },
+            },
+          );
           if (response) {
-            rosterMap.set(empId, response)
+            rosterMap.set(empId, response);
           }
         } catch (error) {
-          console.warn(`No roster data for employee ${empId}:`, error)
+          console.warn(`No roster data for employee ${empId}:`, error);
         }
-      })
+      });
 
-      await Promise.all(promises)
-      setRosterData(rosterMap)
+      await Promise.all(promises);
+      setRosterData(rosterMap);
     } catch (error) {
-      console.error("Failed to load roster data:", error)
+      console.error("Failed to load roster data:", error);
     } finally {
-      setIsLoading(prev => ({ ...prev, roster: false }))
+      setIsLoading((prev) => ({ ...prev, roster: false }));
     }
-  }, [])
+  }, []);
 
   // ==================== EFFECTS ====================
   useEffect(() => {
-    fetchInitialData()
-  }, [fetchInitialData])
+    fetchInitialData();
+  }, [fetchInitialData]);
 
   // SUPERADMIN / SERVICE_PROVIDER: Load companies when service provider changes
   useEffect(() => {
-    if (!isSuperAdmin && !isServiceProviderRole) return
+    if (!isSuperAdmin && !isServiceProviderRole) return;
 
-    setCompanyID("")
-    setBranchesID("")
-    setDepartmentID("")
-    setDesignationID("")
-    setCoList([])
-    setBrList([])
-    setDepList([])
-    setDesList([])
-    setEmployees([])
-    setSelectedEmpIds(new Set())
+    setCompanyID("");
+    setBranchesID("");
+    setDepartmentID("");
+    setDesignationID("");
+    setCoList([]);
+    setBrList([]);
+    setDepList([]);
+    setDesList([]);
+    setEmployees([]);
+    setSelectedEmpIds(new Set());
 
-    if (!serviceProviderID) return
+    if (!serviceProviderID) return;
 
     const loadCompanies = async () => {
       try {
-        const all = await safeFetch<Company[]>(API.company)
-        setCoList(all.filter(c => c.serviceProviderID === serviceProviderID))
+        const all = await safeFetch<Company[]>(API.company);
+        setCoList(all.filter((c) => c.serviceProviderID === serviceProviderID));
       } catch (e) {
-        console.error(e)
+        console.error(e);
       }
-    }
+    };
 
-    loadCompanies()
-  }, [serviceProviderID, isSuperAdmin, isServiceProviderRole])
+    loadCompanies();
+  }, [serviceProviderID, isSuperAdmin, isServiceProviderRole]);
 
   // SUPERADMIN / SERVICE_PROVIDER: Load branches when company changes
   useEffect(() => {
-    if (!isSuperAdmin && !isServiceProviderRole && !isServiceProvider) return
+    if (!isSuperAdmin && !isServiceProviderRole && !isServiceProvider) return;
 
-    setBranchesID("")
-    setDepartmentID("")
-    setDesignationID("")
-    setBrList([])
-    setDepList([])
-    setDesList([])
-    setEmployees([])
-    setSelectedEmpIds(new Set())
+    setBranchesID("");
+    setDepartmentID("");
+    setDesignationID("");
+    setBrList([]);
+    setDepList([]);
+    setDesList([]);
+    setEmployees([]);
+    setSelectedEmpIds(new Set());
 
-    if (!effectiveServiceProviderID || !effectiveCompanyID) return
+    if (!effectiveServiceProviderID || !effectiveCompanyID) return;
 
     const loadBranches = async () => {
-      const all = await safeFetch<Branch[]>(API.branches)
+      const all = await safeFetch<Branch[]>(API.branches);
       setBrList(
         all.filter(
-          b =>
-                    Number(b.serviceProviderID) === Number(effectiveServiceProviderID) &&
-            Number(b.companyID) === Number(effectiveCompanyID)
-        )
-      )
-    }
+          (b) =>
+            Number(b.serviceProviderID) ===
+              Number(effectiveServiceProviderID) &&
+            Number(b.companyID) === Number(effectiveCompanyID),
+        ),
+      );
+    };
 
-    loadBranches()
-  }, [effectiveServiceProviderID, effectiveCompanyID, isSuperAdmin, isServiceProviderRole, isServiceProvider])
-
+    loadBranches();
+  }, [
+    effectiveServiceProviderID,
+    effectiveCompanyID,
+    isSuperAdmin,
+    isServiceProviderRole,
+    isServiceProvider,
+  ]);
 
   // Load departments when branch changes (for SUPERADMIN, SERVICE_PROVIDER, and COMPANY_ADMIN)
   useEffect(() => {
     // Reset department and designation when branch changes
-    setDepartmentID("")
-    setDesignationID("")
-    setDepList([])
-    setDesList([])
+    setDepartmentID("");
+    setDesignationID("");
+    setDepList([]);
+    setDesList([]);
 
     // Check if we have required IDs to load departments
-    if (isSuperAdmin && (!serviceProviderID || !companyID || !branchesID)) return
-    if (isServiceProviderRole && (!serviceProviderID || !companyID || !branchesID)) return
-    if (isServiceProvider && (!companyID || !branchesID)) return
+    if (isSuperAdmin && (!serviceProviderID || !companyID || !branchesID))
+      return;
+    if (
+      isServiceProviderRole &&
+      (!serviceProviderID || !companyID || !branchesID)
+    )
+      return;
+    if (isServiceProvider && (!companyID || !branchesID)) return;
 
     const loadDepartments = async () => {
       try {
-        const depsAll = await safeFetch<Department[]>(API.departments)
+        const depsAll = await safeFetch<Department[]>(API.departments);
 
         // Filter departments based on SP, Company, and Branch
-        const filteredDeps = depsAll.filter(d =>
-          d.serviceProviderID === effectiveServiceProviderID &&
-          d.companyID === effectiveCompanyID &&
-          d.branchesID === effectiveBranchesID
-        )
-        setDepList(filteredDeps)
-        console.log("📋 Departments loaded:", filteredDeps.length)
+        const filteredDeps = depsAll.filter(
+          (d) =>
+            d.serviceProviderID === effectiveServiceProviderID &&
+            d.companyID === effectiveCompanyID &&
+            d.branchesID === effectiveBranchesID,
+        );
+        setDepList(filteredDeps);
+        console.log("📋 Departments loaded:", filteredDeps.length);
       } catch (error) {
-        console.error("Failed to load departments:", error)
+        console.error("Failed to load departments:", error);
       }
-    }
+    };
 
-    loadDepartments()
-  }, [effectiveServiceProviderID, effectiveCompanyID, effectiveBranchesID, isSuperAdmin, isServiceProviderRole, isServiceProvider])
+    loadDepartments();
+  }, [
+    effectiveServiceProviderID,
+    effectiveCompanyID,
+    effectiveBranchesID,
+    isSuperAdmin,
+    isServiceProviderRole,
+    isServiceProvider,
+  ]);
 
   // Load designations when department changes
   useEffect(() => {
-    if (isSuperAdmin && (!serviceProviderID || !companyID || !branchesID)) return
-    if (isServiceProviderRole && (!serviceProviderID || !companyID || !branchesID)) return
-    if (isServiceProvider && (!companyID || !branchesID)) return
+    if (isSuperAdmin && (!serviceProviderID || !companyID || !branchesID))
+      return;
+    if (
+      isServiceProviderRole &&
+      (!serviceProviderID || !companyID || !branchesID)
+    )
+      return;
+    if (isServiceProvider && (!companyID || !branchesID)) return;
 
     const loadDesignations = async () => {
       try {
-        const desAll = await safeFetch<Designation[]>(API.designations)
-        
-        let filteredDes = desAll.filter(d =>
-          d.serviceProviderID === effectiveServiceProviderID &&
-          d.companyID === effectiveCompanyID &&
-          d.branchesID === effectiveBranchesID
-        )
+        const desAll = await safeFetch<Designation[]>(API.designations);
+
+        let filteredDes = desAll.filter(
+          (d) =>
+            d.serviceProviderID === effectiveServiceProviderID &&
+            d.companyID === effectiveCompanyID &&
+            d.branchesID === effectiveBranchesID,
+        );
 
         // Filter by department if one is selected
         if (departmentID) {
-          filteredDes = filteredDes.filter(d => d.departmentID === departmentID)
+          filteredDes = filteredDes.filter(
+            (d) => d.departmentID === departmentID,
+          );
         }
 
-        setDesList(filteredDes)
+        setDesList(filteredDes);
       } catch (error) {
-        console.error("Failed to load designations:", error)
+        console.error("Failed to load designations:", error);
       }
-    }
+    };
 
-    loadDesignations()
-  }, [effectiveServiceProviderID, effectiveCompanyID, effectiveBranchesID, departmentID, isSuperAdmin, isServiceProviderRole, isServiceProvider])
+    loadDesignations();
+  }, [
+    effectiveServiceProviderID,
+    effectiveCompanyID,
+    effectiveBranchesID,
+    departmentID,
+    isSuperAdmin,
+    isServiceProviderRole,
+    isServiceProvider,
+  ]);
 
   // Auto-refresh roster data
   useEffect(() => {
     if (employees.length > 0) {
       const interval = setInterval(() => {
-        fetchRosterData(employees.map(e => e.id))
-      }, 30000)
+        fetchRosterData(employees.map((e) => e.id));
+      }, 30000);
 
-      return () => clearInterval(interval)
+      return () => clearInterval(interval);
     }
-  }, [employees, fetchRosterData])
+  }, [employees, fetchRosterData]);
 
   // ==================== UTILITY FUNCTIONS ====================
-  const hasApprovedLeave = useCallback((employeeId: ID, dateStr: string): boolean => {
-    const targetDate = new Date(dateStr).toISOString().split('T')[0]
-    return leaveApplications.some(leave =>
-      leave.manageEmployeeID === employeeId &&
-      leave.status === "Approved" &&
-      leave.dayStatuses.some(day => {
-        const leaveDate = new Date(day.date).toISOString().split('T')[0]
-        return leaveDate === targetDate
-      })
-    )
-  }, [leaveApplications])
+  const hasApprovedLeave = useCallback(
+    (employeeId: ID, dateStr: string): boolean => {
+      const targetDate = new Date(dateStr).toISOString().split("T")[0];
+      return leaveApplications.some(
+        (leave) =>
+          leave.manageEmployeeID === employeeId &&
+          leave.status === "Approved" &&
+          leave.dayStatuses.some((day) => {
+            const leaveDate = new Date(day.date).toISOString().split("T")[0];
+            return leaveDate === targetDate;
+          }),
+      );
+    },
+    [leaveApplications],
+  );
 
-  const getLeaveTypeForDate = useCallback((employeeId: ID, dateStr: string): string | null => {
-    const targetDate = new Date(dateStr).toISOString().split('T')[0]
-    const leave = leaveApplications.find(l =>
-      l.manageEmployeeID === employeeId &&
-      l.status === "Approved"
-    )
-    if (!leave) return null
+  const getLeaveTypeForDate = useCallback(
+    (employeeId: ID, dateStr: string): string | null => {
+      const targetDate = new Date(dateStr).toISOString().split("T")[0];
+      const leave = leaveApplications.find(
+        (l) => l.manageEmployeeID === employeeId && l.status === "Approved",
+      );
+      if (!leave) return null;
 
-    const dayStatus = leave.dayStatuses.find(d => {
-      const leaveDate = new Date(d.date).toISOString().split('T')[0]
-      return leaveDate === targetDate
-    })
-    return dayStatus?.status || null
-  }, [leaveApplications])
+      const dayStatus = leave.dayStatuses.find((d) => {
+        const leaveDate = new Date(d.date).toISOString().split("T")[0];
+        return leaveDate === targetDate;
+      });
+      return dayStatus?.status || null;
+    },
+    [leaveApplications],
+  );
 
-  const getDayForDate = useCallback((empId: ID, dateStr: string): RosterDay | undefined => {
-    const rosterEmp = rosterData.get(empId)
-    if (!rosterEmp?.days) return undefined
+  const getDayForDate = useCallback(
+    (empId: ID, dateStr: string): RosterDay | undefined => {
+      const rosterEmp = rosterData.get(empId);
+      if (!rosterEmp?.days) return undefined;
 
-    const targetDate = new Date(dateStr).toISOString().split('T')[0]
-    return rosterEmp.days.find(day =>
-      new Date(day.workDate).toISOString().split('T')[0] === targetDate
-    )
-  }, [rosterData])
+      const targetDate = new Date(dateStr).toISOString().split("T")[0];
+      return rosterEmp.days.find(
+        (day) =>
+          new Date(day.workDate).toISOString().split("T")[0] === targetDate,
+      );
+    },
+    [rosterData],
+  );
 
-  const getCellDisplay = useCallback((empId: ID, dateStr: string) => {
-    if (hasApprovedLeave(empId, dateStr)) {
-      const leaveType = getLeaveTypeForDate(empId, dateStr)
-      return {
-        text: leaveType || "LEAVE",
-        color: "bg-yellow-100 border-yellow-300",
-        icon: "⚠️",
-        hasApprovedLeave: true,
-        leaveType: leaveType
+  const getCellDisplay = useCallback(
+    (empId: ID, dateStr: string) => {
+      if (hasApprovedLeave(empId, dateStr)) {
+        const leaveType = getLeaveTypeForDate(empId, dateStr);
+        return {
+          text: leaveType || "LEAVE",
+          color: "bg-yellow-100 border-yellow-300",
+          icon: "⚠️",
+          hasApprovedLeave: true,
+          leaveType: leaveType,
+        };
       }
-    }
 
-    const day = getDayForDate(empId, dateStr)
+      const day = getDayForDate(empId, dateStr);
 
-    if (!day) {
-      return {
-        text: "-",
-        color: "bg-gray-50 border-gray-200",
-        icon: null,
-        hasApprovedLeave: false
-      }
-    }
-
-    switch (day.dayType) {
-      case "WORK":
-        const shiftName = day.workShift?.workShiftName || day.workShift?.shiftName || "WORK"
-        return {
-          text: shiftName,
-          color: "bg-blue-50 border-blue-200 text-blue-700",
-          icon: "👨‍💼",
-          details: day.workShift?.shiftCode,
-          hasApprovedLeave: false,
-          rosterDayId: day.id
-        }
-
-      case "WEEKLY_OFF":
-        return {
-          text: "WO",
-          color: "bg-green-50 border-green-200 text-green-700",
-          icon: "🏖️",
-          hasApprovedLeave: false,
-          rosterDayId: day.id
-        }
-
-      case "LEAVE":
-        return {
-          text: day.leaveType || "LEAVE",
-          color: "bg-yellow-50 border-yellow-200 text-yellow-700",
-          icon: "🏥",
-          hasApprovedLeave: false,
-          rosterDayId: day.id
-        }
-
-      default:
+      if (!day) {
         return {
           text: "-",
           color: "bg-gray-50 border-gray-200",
           icon: null,
-          hasApprovedLeave: false
-        }
-    }
-  }, [getDayForDate, hasApprovedLeave, getLeaveTypeForDate, employees])
+          hasApprovedLeave: false,
+        };
+      }
+
+      switch (day.dayType) {
+        case "WORK":
+          const shiftName =
+            day.workShift?.workShiftName || day.workShift?.shiftName || "WORK";
+          return {
+            text: shiftName,
+            color: "bg-blue-50 border-blue-200 text-blue-700",
+            icon: "👨‍💼",
+            details: day.workShift?.shiftCode,
+            hasApprovedLeave: false,
+            rosterDayId: day.id,
+          };
+
+        case "WEEKLY_OFF":
+          return {
+            text: "WO",
+            color: "bg-green-50 border-green-200 text-green-700",
+            icon: "🏖️",
+            hasApprovedLeave: false,
+            rosterDayId: day.id,
+          };
+
+        case "LEAVE":
+          return {
+            text: day.leaveType || "LEAVE",
+            color: "bg-yellow-50 border-yellow-200 text-yellow-700",
+            icon: "🏥",
+            hasApprovedLeave: false,
+            rosterDayId: day.id,
+          };
+
+        default:
+          return {
+            text: "-",
+            color: "bg-gray-50 border-gray-200",
+            icon: null,
+            hasApprovedLeave: false,
+          };
+      }
+    },
+    [getDayForDate, hasApprovedLeave, getLeaveTypeForDate, employees],
+  );
 
   // ==================== EVENT HANDLERS ====================
   const handleDeleteAssignment = async (rosterDayId: ID, employeeId: ID) => {
-    if (!window.confirm("Are you sure you want to remove this assignment?")) return
+    if (!window.confirm("Are you sure you want to remove this assignment?"))
+      return;
 
-    setDeletingDays(prev => new Set([...prev, rosterDayId]))
+    setDeletingDays((prev) => new Set([...prev, rosterDayId]));
     try {
-      await safeFetch(API.deleteRosterDay(rosterDayId), { method: "DELETE" })
+      await safeFetch(API.deleteRosterDay(rosterDayId), { method: "DELETE" });
 
-      setRosterData(prev => {
-        const newMap = new Map(prev)
-        const rosterEmp = newMap.get(employeeId)
+      setRosterData((prev) => {
+        const newMap = new Map(prev);
+        const rosterEmp = newMap.get(employeeId);
         if (rosterEmp) {
-          const updatedDays = rosterEmp.days.filter(day => day.id !== rosterDayId)
-          newMap.set(employeeId, { ...rosterEmp, days: updatedDays })
+          const updatedDays = rosterEmp.days.filter(
+            (day) => day.id !== rosterDayId,
+          );
+          newMap.set(employeeId, { ...rosterEmp, days: updatedDays });
         }
-        return newMap
-      })
+        return newMap;
+      });
 
-      toast.success("Assignment removed successfully!")
+      toast.success("Assignment removed successfully!");
     } catch (error) {
-      console.error("Error deleting roster day:", error)
-      toast.error("Failed to remove assignment")
+      console.error("Error deleting roster day:", error);
+      toast.error("Failed to remove assignment");
     } finally {
-      setDeletingDays(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(rosterDayId)
-        return newSet
-      })
+      setDeletingDays((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(rosterDayId);
+        return newSet;
+      });
     }
-  }
+  };
 
   const handleBulkApply = async () => {
     if (selectedEmpIds.size === 0) {
-      toast.error("Please select at least one employee")
-      return
+      toast.error("Please select at least one employee");
+      return;
     }
 
     if (!bulkFrom || !bulkTo) {
-      toast.error("Please select date range")
-      return
+      toast.error("Please select date range");
+      return;
     }
 
     if (bulkMode === "SHIFT" && !bulkShiftID) {
-      toast.error("Please select a shift")
-      return
+      toast.error("Please select a shift");
+      return;
     }
 
-    const bulkFromDate = bulkFrom
-    const bulkToDate = bulkTo
+    const bulkFromDate = bulkFrom;
+    const bulkToDate = bulkTo;
 
     if (isNaN(bulkFromDate.getTime()) || isNaN(bulkToDate.getTime())) {
-      toast.error("Invalid date format")
-      return
+      toast.error("Invalid date format");
+      return;
     }
 
     if (bulkFromDate > bulkToDate) {
-      toast.error("From date cannot be after To date")
-      return
+      toast.error("From date cannot be after To date");
+      return;
     }
 
-    const selectedDates: string[] = []
-    const curDate = new Date(bulkFromDate)
+    const selectedDates: string[] = [];
+    const curDate = new Date(bulkFromDate);
     while (curDate <= bulkToDate) {
-      selectedDates.push(isoDate(curDate))
-      curDate.setDate(curDate.getDate() + 1)
+      selectedDates.push(isoDate(curDate));
+      curDate.setDate(curDate.getDate() + 1);
     }
 
     const conflicts: Array<{
-      empId: ID,
-      empName: string,
-      date: string,
-      type: string,
-      currentAssignment?: string,
-      dayType?: string
-    }> = []
+      empId: ID;
+      empName: string;
+      date: string;
+      type: string;
+      currentAssignment?: string;
+      dayType?: string;
+    }> = [];
 
-    Array.from(selectedEmpIds).forEach(empId => {
-      const emp = employees.find(e => e.id === empId)
-      if (!emp) return
+    Array.from(selectedEmpIds).forEach((empId) => {
+      const emp = employees.find((e) => e.id === empId);
+      if (!emp) return;
 
-      selectedDates.forEach(date => {
+      selectedDates.forEach((date) => {
         if (hasApprovedLeave(empId, date)) {
-          const leaveType = getLeaveTypeForDate(empId, date)
+          const leaveType = getLeaveTypeForDate(empId, date);
           conflicts.push({
             empId,
             empName: empName(emp),
             date: formatDateForTable(date),
             type: "approved_leave",
             currentAssignment: leaveType || "Approved Leave",
-            dayType: "APPROVED_LEAVE"
-          })
-          return
+            dayType: "APPROVED_LEAVE",
+          });
+          return;
         }
 
-        const day = getDayForDate(empId, date)
+        const day = getDayForDate(empId, date);
         if (day) {
-          let currentType = ""
-          let currentAssignment = ""
+          let currentType = "";
+          let currentAssignment = "";
 
           switch (day.dayType) {
             case "WORK":
-              currentType = "shift"
-              currentAssignment = day.workShift?.workShiftName || day.workShift?.shiftName || day.workShift?.shiftCode || "Shift"
-              break
+              currentType = "shift";
+              currentAssignment =
+                day.workShift?.workShiftName ||
+                day.workShift?.shiftName ||
+                day.workShift?.shiftCode ||
+                "Shift";
+              break;
             case "WEEKLY_OFF":
-              currentType = "weekly_off"
-              currentAssignment = "Weekly Off"
-              break
+              currentType = "weekly_off";
+              currentAssignment = "Weekly Off";
+              break;
             case "LEAVE":
-              currentType = "roster_leave"
-              currentAssignment = day.leaveType || "Leave"
-              break
+              currentType = "roster_leave";
+              currentAssignment = day.leaveType || "Leave";
+              break;
           }
 
           conflicts.push({
@@ -1050,26 +1211,34 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
             date: formatDateForTable(date),
             type: currentType,
             currentAssignment,
-            dayType: day.dayType
-          })
+            dayType: day.dayType,
+          });
         }
-      })
-    })
+      });
+    });
 
     if (conflicts.length > 0) {
       window.alert(
         "❌ Bulk assignment blocked\n\n" +
-        "Reason:\n" +
-        conflicts.slice(0, 10).map(c => `• ${c.empName} | ${c.date} | ${c.currentAssignment || c.type}`).join("\n") +
-        (conflicts.length > 10 ? `\n...and ${conflicts.length - 10} more` : "") +
-        "\n\nFix:\nDelete existing assignments first."
-      )
-      return
+          "Reason:\n" +
+          conflicts
+            .slice(0, 10)
+            .map(
+              (c) =>
+                `• ${c.empName} | ${c.date} | ${c.currentAssignment || c.type}`,
+            )
+            .join("\n") +
+          (conflicts.length > 10
+            ? `\n...and ${conflicts.length - 10} more`
+            : "") +
+          "\n\nFix:\nDelete existing assignments first.",
+      );
+      return;
     }
 
-    const totalCells = selectedEmpIds.size * selectedDates.length
+    const totalCells = selectedEmpIds.size * selectedDates.length;
 
-    setIsLoading(prev => ({ ...prev, bulk: true }))
+    setIsLoading((prev) => ({ ...prev, bulk: true }));
     try {
       const requests = Array.from(selectedEmpIds).map((employeeId) => {
         const payload: any = {
@@ -1077,80 +1246,84 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
           fromDate: bulkFromISO,
           toDate: bulkToISO,
           dayType: bulkMode === "SHIFT" ? "WORK" : bulkMode,
-        }
+        };
 
-        if (bulkMode === "SHIFT") payload.workShiftID = bulkShiftID
-        if (bulkMode === "LEAVE") payload.leaveType = bulkLeaveType
+        if (bulkMode === "SHIFT") payload.workShiftID = bulkShiftID;
+        if (bulkMode === "LEAVE") payload.leaveType = bulkLeaveType;
 
         return safeFetch(API.bulkUpsert, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        })
-      })
+        });
+      });
 
-      await Promise.all(requests)
-      toast.success(`✅ Success! Applied ${bulkMode.toLowerCase()} to ${totalCells} cells`, {
-        duration: 5000,
-        position: 'top-center',
-        style: {
-          backgroundColor: '#d1fae5',
-          border: '2px solid #a7f3d0',
-          color: '#065f46',
-        }
-      })
+      await Promise.all(requests);
+      toast.success(
+        `✅ Success! Applied ${bulkMode.toLowerCase()} to ${totalCells} cells`,
+        {
+          duration: 5000,
+          position: "top-center",
+          style: {
+            backgroundColor: "#d1fae5",
+            border: "2px solid #a7f3d0",
+            color: "#065f46",
+          },
+        },
+      );
 
-      await fetchRosterData(employees.map(e => e.id))
+      await fetchRosterData(employees.map((e) => e.id));
     } catch (error) {
-      console.error("Bulk assignment failed:", error)
+      console.error("Bulk assignment failed:", error);
       toast.error("❌ Failed to apply bulk assignment. Please try again.", {
         duration: 8000,
-        position: 'top-center',
-      })
+        position: "top-center",
+      });
     } finally {
-      setIsLoading(prev => ({ ...prev, bulk: false }))
+      setIsLoading((prev) => ({ ...prev, bulk: false }));
     }
-  }
+  };
 
   const toggleEmp = (id: ID) => {
-    setSelectedEmpIds(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+    setSelectedEmpIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const toggleSelectAll = () => {
     if (selectAll) {
-      setSelectedEmpIds(new Set())
+      setSelectedEmpIds(new Set());
     } else {
-      setSelectedEmpIds(new Set(employees.map(e => e.id)))
+      setSelectedEmpIds(new Set(employees.map((e) => e.id)));
     }
-    setSelectAll(!selectAll)
-  }
+    setSelectAll(!selectAll);
+  };
 
   // Manual refresh function for branches
   const refreshBranches = useCallback(async () => {
     if (!companyID) {
-      toast.error("Please select a company first")
-      return
+      toast.error("Please select a company first");
+      return;
     }
 
     try {
-      const allBranches = await safeFetch<Branch[]>(API.branches)
-      const filtered = allBranches.filter(b => 
-        b.serviceProviderID === effectiveServiceProviderID && 
-        b.companyID === effectiveCompanyID
-      )
-      setBrList(filtered)
-      toast.success(`Loaded ${filtered.length} branches`)
-      console.log("🔄 Branches refreshed:", filtered)
+      const allBranches = await safeFetch<Branch[]>(API.branches);
+      const filtered = allBranches.filter(
+        (b) =>
+          b.serviceProviderID === effectiveServiceProviderID &&
+          b.companyID === effectiveCompanyID,
+      );
+      setBrList(filtered);
+      toast.success(`Loaded ${filtered.length} branches`);
+      console.log("🔄 Branches refreshed:", filtered);
     } catch (error) {
-      console.error("Failed to refresh branches:", error)
-      toast.error("Failed to refresh branches")
+      console.error("Failed to refresh branches:", error);
+      toast.error("Failed to refresh branches");
     }
-  }, [companyID, effectiveServiceProviderID, effectiveCompanyID])
+  }, [companyID, effectiveServiceProviderID, effectiveCompanyID]);
 
   // ==================== RENDER ====================
   if (isLoading.initial) {
@@ -1160,7 +1333,7 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
         <Skeleton className="h-64 w-full" />
         <Skeleton className="h-96 w-full" />
       </div>
-    )
+    );
   }
 
   return (
@@ -1172,11 +1345,13 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
         actions={
           <Button
             variant="outline"
-            onClick={() => fetchRosterData(employees.map(e => e.id))}
+            onClick={() => fetchRosterData(employees.map((e) => e.id))}
             disabled={isLoading.roster || employees.length === 0}
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading.roster ? 'animate-spin' : ''}`} />
-            {isLoading.roster ? 'Refreshing...' : 'Refresh Data'}
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${isLoading.roster ? "animate-spin" : ""}`}
+            />
+            {isLoading.roster ? "Refreshing..." : "Refresh Data"}
           </Button>
         }
       />
@@ -1186,7 +1361,9 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
         <div className="border-b border-border bg-muted/30 px-6 py-3">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">Filters & Selection</h3>
+            <h3 className="text-sm font-semibold text-foreground">
+              Filters & Selection
+            </h3>
           </div>
         </div>
         <div className="p-6">
@@ -1199,12 +1376,12 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
                   className="w-full border rounded-lg h-10 px-3 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   value={serviceProviderID}
                   onChange={(e) => {
-                    const newSP = e.target.value ? Number(e.target.value) : ""
-                    setServiceProviderID(newSP)
-                    setCompanyID("")
-                    setBranchesID("")
-                    setDepartmentID("")
-                    setDesignationID("")
+                    const newSP = e.target.value ? Number(e.target.value) : "";
+                    setServiceProviderID(newSP);
+                    setCompanyID("");
+                    setBranchesID("");
+                    setDepartmentID("");
+                    setDesignationID("");
                   }}
                 >
                   <option value="">Select Provider</option>
@@ -1224,24 +1401,29 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
                 className="w-full border rounded-lg h-10 px-3 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 value={companyID}
                 onChange={(e) => {
-                  const newCompanyID = e.target.value ? Number(e.target.value) : ""
-                                   setCompanyID(newCompanyID)
-                  setEmployees([])
-                  setRosterData(new Map())
-                  setSelectedEmpIds(new Set())
+                  const newCompanyID = e.target.value
+                    ? Number(e.target.value)
+                    : "";
+                  setCompanyID(newCompanyID);
+                  setEmployees([]);
+                  setRosterData(new Map());
+                  setSelectedEmpIds(new Set());
                   // Reset branch when company changes
-                  setBranchesID("")
-                  setDepartmentID("")
-                  setDesignationID("")
+                  setBranchesID("");
+                  setDepartmentID("");
+                  setDesignationID("");
                 }}
                 disabled={
-                  ((isSuperAdmin || isServiceProviderRole) && !serviceProviderID) ||
+                  ((isSuperAdmin || isServiceProviderRole) &&
+                    !serviceProviderID) ||
                   (isServiceProvider && coList.length === 0)
                 }
               >
                 <option value="">Select Company</option>
                 {coList.map((c) => (
-                  <option key={c.id} value={c.id}>{c.companyName}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.companyName}
+                  </option>
                 ))}
               </select>
             </div>
@@ -1265,15 +1447,20 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
               <select
                 className="w-full border rounded-lg h-10 px-3 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 value={branchesID}
-                onChange={(e) => setBranchesID(e.target.value ? Number(e.target.value) : "")}
+                onChange={(e) =>
+                  setBranchesID(e.target.value ? Number(e.target.value) : "")
+                }
                 disabled={
-                  ((isSuperAdmin || isServiceProviderRole) && (!serviceProviderID || !companyID)) ||
+                  ((isSuperAdmin || isServiceProviderRole) &&
+                    (!serviceProviderID || !companyID)) ||
                   (isServiceProvider && !companyID)
                 }
               >
                 <option value="">Select Branch</option>
                 {brList.map((b) => (
-                  <option key={b.id} value={b.id}>{b.branchName}</option>
+                  <option key={b.id} value={b.id}>
+                    {b.branchName}
+                  </option>
                 ))}
               </select>
               {isServiceProvider && brList.length === 0 && companyID && (
@@ -1290,12 +1477,15 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
                 className="w-full border rounded-lg h-10 px-3 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 value={departmentID}
                 onChange={(e) => {
-                  const newDeptID = e.target.value ? Number(e.target.value) : ""
-                  setDepartmentID(newDeptID)
-                  setDesignationID("") // Reset designation when department changes
+                  const newDeptID = e.target.value
+                    ? Number(e.target.value)
+                    : "";
+                  setDepartmentID(newDeptID);
+                  setDesignationID(""); // Reset designation when department changes
                 }}
                 disabled={
-                  ((isSuperAdmin || isServiceProviderRole) && (!serviceProviderID || !companyID || !branchesID)) ||
+                  ((isSuperAdmin || isServiceProviderRole) &&
+                    (!serviceProviderID || !companyID || !branchesID)) ||
                   (isServiceProvider && (!companyID || !branchesID)) ||
                   brList.length === 0
                 }
@@ -1303,7 +1493,9 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
               >
                 <option value="">Select Department</option>
                 {depList.map((d) => (
-                  <option key={d.id} value={d.id}>{d.departmentName}</option>
+                  <option key={d.id} value={d.id}>
+                    {d.departmentName}
+                  </option>
                 ))}
               </select>
               {depList.length === 0 && branchesID && (
@@ -1319,16 +1511,21 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
               <select
                 className="w-full border rounded-lg h-10 px-3 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 value={designationID}
-                onChange={(e) => setDesignationID(e.target.value ? Number(e.target.value) : "")}
+                onChange={(e) =>
+                  setDesignationID(e.target.value ? Number(e.target.value) : "")
+                }
                 disabled={
-                  ((isSuperAdmin || isServiceProviderRole) && (!serviceProviderID || !companyID || !branchesID)) ||
+                  ((isSuperAdmin || isServiceProviderRole) &&
+                    (!serviceProviderID || !companyID || !branchesID)) ||
                   (isServiceProvider && (!companyID || !branchesID)) ||
                   !departmentID // Disable if no department selected
                 }
               >
                 <option value="">All Designations</option>
                 {desList.map((d) => (
-                  <option key={d.id} value={d.id}>{d.designation}</option>
+                  <option key={d.id} value={d.id}>
+                    {d.designation}
+                  </option>
                 ))}
               </select>
             </div>
@@ -1398,7 +1595,10 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
               </Badge>
             )}
             {leaveApplications.length > 0 && (
-              <Badge variant="outline" className="px-3 py-1 bg-yellow-100 text-yellow-800">
+              <Badge
+                variant="outline"
+                className="px-3 py-1 bg-yellow-100 text-yellow-800"
+              >
                 <AlertCircle className="w-3 h-3 mr-1" />
                 Approved Leaves: {leaveApplications.length}
               </Badge>
@@ -1419,7 +1619,8 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
                 Total {dates.length} days
                 {dates.length > 0 && (
                   <span className="ml-2">
-                    ({formatDateForDisplay(dates[0])} → {formatDateForDisplay(dates[dates.length - 1])})
+                    ({formatDateForDisplay(dates[0])} →{" "}
+                    {formatDateForDisplay(dates[dates.length - 1])})
                   </span>
                 )}
               </div>
@@ -1444,7 +1645,10 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
                         Employee
                       </TableHead>
                       {dates.map((d) => (
-                        <TableHead key={d} className="min-w-[120px] text-center px-1">
+                        <TableHead
+                          key={d}
+                          className="min-w-[120px] text-center px-1"
+                        >
                           <div className="flex flex-col items-center">
                             <span className="text-xs font-medium truncate">
                               {formatDateForTable(d)}
@@ -1460,7 +1664,7 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
 
                   <TableBody>
                     {employees.map((emp) => {
-                      const checked = selectedEmpIds.has(emp.id)
+                      const checked = selectedEmpIds.has(emp.id);
                       return (
                         <TableRow key={emp.id} className="hover:bg-muted/40">
                           <TableCell className="sticky left-0 bg-card z-20 border-r">
@@ -1484,15 +1688,20 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
                           </TableCell>
 
                           {dates.map((d) => {
-                            const cellData = getCellDisplay(emp.id, d)
-                            const day = getDayForDate(emp.id, d)
-                            const isDeleting = deletingDays.has(day?.id || 0)
+                            const cellData = getCellDisplay(emp.id, d);
+                            const day = getDayForDate(emp.id, d);
+                            const isDeleting = deletingDays.has(day?.id || 0);
                             // All employees can have roster entries deleted
-                            const isFixedShiftEmp = false
+                            const isFixedShiftEmp = false;
 
                             return (
-                              <TableCell key={`${emp.id}-${d}`} className="text-center p-1">
-                                <div className={`h-14 min-h-[56px] w-[84px] border rounded-md flex flex-col items-center justify-center relative group ${cellData.color} hover:shadow-sm transition-shadow`}>
+                              <TableCell
+                                key={`${emp.id}-${d}`}
+                                className="text-center p-1"
+                              >
+                                <div
+                                  className={`h-14 min-h-[56px] w-[84px] border rounded-md flex flex-col items-center justify-center relative group ${cellData.color} hover:shadow-sm transition-shadow`}
+                                >
                                   {cellData.hasApprovedLeave ? (
                                     <>
                                       <div className="flex items-center gap-1">
@@ -1508,42 +1717,51 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
                                   ) : (
                                     <>
                                       {cellData.icon && (
-                                        <span className="text-xs mb-0.5">{cellData.icon}</span>
-                                      )}
-                                      <span className={`text-xs font-medium truncate max-w-[70px] ${cellData.text.length > 8 ? 'text-[10px]' : ''}`}>
-                                        {cellData.text}
-                                      </span>
-                                      {day?.dayType === "WORK" && day?.workShift?.shiftCode && (
-                                        <span className="text-[10px] text-gray-600 mt-0.5 truncate max-w-[70px]">
-                                          {day.workShift.shiftCode}
+                                        <span className="text-xs mb-0.5">
+                                          {cellData.icon}
                                         </span>
                                       )}
+                                      <span
+                                        className={`text-xs font-medium truncate max-w-[70px] ${cellData.text.length > 8 ? "text-[10px]" : ""}`}
+                                      >
+                                        {cellData.text}
+                                      </span>
+                                      {day?.dayType === "WORK" &&
+                                        day?.workShift?.shiftCode && (
+                                          <span className="text-[10px] text-gray-600 mt-0.5 truncate max-w-[70px]">
+                                            {day.workShift.shiftCode}
+                                          </span>
+                                        )}
                                       {/* Only show delete button for rotating employees with an actual roster day */}
-                                      {cellData.rosterDayId && !isFixedShiftEmp && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            handleDeleteAssignment(cellData.rosterDayId!, emp.id)
-                                          }}
-                                          disabled={isDeleting}
-                                          className="absolute -top-1 -right-1 bg-red-500 text-white p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                                          title="Remove assignment"
-                                        >
-                                          {isDeleting ? (
-                                            <RefreshCw className="w-3 h-3 animate-spin" />
-                                          ) : (
-                                            <Trash2 className="w-3 h-3" />
-                                          )}
-                                        </button>
-                                      )}
+                                      {cellData.rosterDayId &&
+                                        !isFixedShiftEmp && (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteAssignment(
+                                                cellData.rosterDayId!,
+                                                emp.id,
+                                              );
+                                            }}
+                                            disabled={isDeleting}
+                                            className="absolute -top-1 -right-1 bg-red-500 text-white p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                            title="Remove assignment"
+                                          >
+                                            {isDeleting ? (
+                                              <RefreshCw className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                              <Trash2 className="w-3 h-3" />
+                                            )}
+                                          </button>
+                                        )}
                                     </>
                                   )}
                                 </div>
                               </TableCell>
-                            )
+                            );
                           })}
                         </TableRow>
-                      )
+                      );
                     })}
                   </TableBody>
                 </Table>
@@ -1570,7 +1788,10 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
             <Badge variant="outline" className="px-3 py-1">
               Shifts Available: {shiftOptions.length}
             </Badge>
-            <Badge variant="outline" className="px-3 py-1 bg-red-100 text-red-800 border-red-300">
+            <Badge
+              variant="outline"
+              className="px-3 py-1 bg-red-100 text-red-800 border-red-300"
+            >
               <AlertCircle className="w-3 h-3 mr-1" />
               No overrides allowed
             </Badge>
@@ -1587,14 +1808,21 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
               {/* From Date with Calendar Popover */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">From Date</Label>
-                <Popover open={openFromCalendar} onOpenChange={setOpenFromCalendar}>
+                <Popover
+                  open={openFromCalendar}
+                  onOpenChange={setOpenFromCalendar}
+                >
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className="w-full justify-start text-left font-normal"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {bulkFrom ? format(bulkFrom, "dd/MM/yy") : <span>Pick a date</span>}
+                      {bulkFrom ? (
+                        format(bulkFrom, "dd/MM/yy")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -1603,8 +1831,8 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
                       selected={bulkFrom}
                       onSelect={(date) => {
                         if (date) {
-                          setBulkFrom(date)
-                          setOpenFromCalendar(false)
+                          setBulkFrom(date);
+                          setOpenFromCalendar(false);
                         }
                       }}
                       initialFocus
@@ -1622,11 +1850,15 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !bulkTo && "text-muted-foreground"
+                        !bulkTo && "text-muted-foreground",
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {bulkTo ? format(bulkTo, "dd/MM/yy") : <span>Pick a date</span>}
+                      {bulkTo ? (
+                        format(bulkTo, "dd/MM/yy")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -1635,8 +1867,8 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
                       selected={bulkTo}
                       onSelect={(date) => {
                         if (date) {
-                          setBulkTo(date)
-                          setOpenToCalendar(false)
+                          setBulkTo(date);
+                          setOpenToCalendar(false);
                         }
                       }}
                       initialFocus
@@ -1661,24 +1893,36 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
               {/* Assignment Value */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
-                  {bulkMode === "SHIFT" ? "Select Shift" : bulkMode === "LEAVE" ? "Leave Type" : "Value"}
+                  {bulkMode === "SHIFT"
+                    ? "Select Shift"
+                    : bulkMode === "LEAVE"
+                      ? "Leave Type"
+                      : "Value"}
                 </Label>
                 {bulkMode === "SHIFT" ? (
                   <select
                     className="w-full border rounded-lg h-10 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={bulkShiftID}
-                    onChange={(e) => setBulkShiftID(e.target.value ? Number(e.target.value) : "")}
+                    onChange={(e) =>
+                      setBulkShiftID(
+                        e.target.value ? Number(e.target.value) : "",
+                      )
+                    }
                   >
                     <option value="">Select Shift</option>
                     {shiftOptions.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
                     ))}
                   </select>
                 ) : bulkMode === "LEAVE" ? (
                   <select
                     className="w-full border rounded-lg h-10 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={bulkLeaveType}
-                    onChange={(e) => setBulkLeaveType(e.target.value as RosterLeaveType)}
+                    onChange={(e) =>
+                      setBulkLeaveType(e.target.value as RosterLeaveType)
+                    }
                   >
                     <option value="CASUAL">Casual Leave (CL)</option>
                     <option value="SICK">Sick Leave (SL)</option>
@@ -1719,5 +1963,5 @@ const getUserAssignedCompanyIDs = (user: any): number[] => {
         </Card>
       )}
     </div>
-  )
+  );
 }

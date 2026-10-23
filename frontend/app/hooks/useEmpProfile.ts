@@ -9,11 +9,16 @@ import {
   clearPageCache,
   clearPageCachesByPrefix,
 } from "../utils/pageCache";
-import { clearLegacyEmpPhoto, getEmpPhoto, setEmpPhoto } from "../utils/empPhotoCache";
+import {
+  clearLegacyEmpPhoto,
+  getEmpPhoto,
+  setEmpPhoto,
+} from "../utils/empPhotoCache";
 import { applyEmpTheme, readStoredEmpTheme } from "../utils/empTheme";
 import { clearActiveCompanySession } from "../utils/sidebarContext";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export function fmtJoined(dateStr: string | undefined) {
   if (!dateStr) return "—";
@@ -63,7 +68,10 @@ export function useEmpProfile() {
     try {
       clearLegacyEmpPhoto();
       const s = localStorage.getItem("user");
-      const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        "";
       if (s) {
         const u = JSON.parse(s);
         setEmpUser(u);
@@ -106,10 +114,17 @@ export function useEmpProfile() {
     emp?.designations?.designationName ||
     emp?.designation ||
     null;
-  const department = emp?.departments?.departmentName || emp?.department || null;
+  const department =
+    emp?.departments?.departmentName || emp?.department || null;
 
-  const employeeCode = emp?.employeeID || emp?.employeeId || empUser?.username || null;
-  const email = emp?.businessEmail || emp?.personalEmail || empUser?.email || empUser?.username || "—";
+  const employeeCode =
+    emp?.employeeID || emp?.employeeId || empUser?.username || null;
+  const email =
+    emp?.businessEmail ||
+    emp?.personalEmail ||
+    empUser?.email ||
+    empUser?.username ||
+    "—";
   const phone = emp?.businessPhoneNo || emp?.personalPhoneNo || "—";
   const joinedOn = emp?.joiningDate || null;
 
@@ -137,12 +152,18 @@ export function useEmpProfile() {
     setUploadError(null);
     setUploading(true);
     try {
-      const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        "";
       const empId = empData?.id || empUser?.employee?.id || empUser?.employeeId;
       if (!empId) throw new Error("Employee not found");
       const res = await fetch(`${BACKEND}/manage-emp/${empId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ employeePhotoUrl: null }),
       });
       if (!res.ok) throw new Error("Failed to remove photo");
@@ -164,7 +185,9 @@ export function useEmpProfile() {
       } catch {}
       window.dispatchEvent(new Event("emp-photo-updated"));
     } catch (err: unknown) {
-      setUploadError(err instanceof Error ? err.message : "Failed to remove photo");
+      setUploadError(
+        err instanceof Error ? err.message : "Failed to remove photo",
+      );
     } finally {
       setUploading(false);
     }
@@ -183,17 +206,26 @@ export function useEmpProfile() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const uploadRes = await fetch(`${BACKEND}/files/upload`, { method: "POST", body: formData });
+      const uploadRes = await fetch(`${BACKEND}/files/upload`, {
+        method: "POST",
+        body: formData,
+      });
       if (!uploadRes.ok) throw new Error("Upload failed");
       const { url } = await uploadRes.json();
       const fullUrl = url.startsWith("http") ? url : `${BACKEND}${url}`;
 
-      const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        "";
       const empId = empData?.id || empUser?.employee?.id || empUser?.employeeId;
       if (empId) {
         await fetch(`${BACKEND}/manage-emp/${empId}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({ employeePhotoUrl: fullUrl }),
         });
       }
@@ -211,7 +243,9 @@ export function useEmpProfile() {
       } catch {}
       window.dispatchEvent(new Event("emp-photo-updated"));
     } catch (err: unknown) {
-      setUploadError(err instanceof Error ? err.message : "Failed to upload photo");
+      setUploadError(
+        err instanceof Error ? err.message : "Failed to upload photo",
+      );
     } finally {
       setUploading(false);
       e.target.value = "";

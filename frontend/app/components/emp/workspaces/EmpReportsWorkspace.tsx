@@ -8,8 +8,15 @@ import { EmpDateField } from "../EmpDateField";
 import { EmpWorkspaceContent } from "../EmpWorkspaceTabNav";
 import { EmpDesktopPage } from "../desktop/EmpDesktopPage";
 import { EmpDesktopAttendanceTable } from "../desktop/EmpDesktopAttendanceTable";
-import { StatCard, type StatCardData } from "../../../dashboard/components/StatCard";
-import { DashboardSection, actionTileClass, gridGap } from "../../../dashboard/components/dashboard-ui";
+import {
+  StatCard,
+  type StatCardData,
+} from "../../../dashboard/components/StatCard";
+import {
+  DashboardSection,
+  actionTileClass,
+  gridGap,
+} from "../../../dashboard/components/dashboard-ui";
 import { Button } from "../../ui/button";
 import {
   encodeDateKey,
@@ -22,15 +29,36 @@ import {
 import { formatWorkHoursDecimal } from "../../../utils/attendanceDuration";
 import { useEffect, useMemo, useState } from "react";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 const DEFAULT_DAYS = 14;
 
 function ReportsOverview() {
   const tiles = [
-    { href: "/empHistory?tab=attendance", icon: MapPin, label: "Attendance reports", desc: "Hours, presence, daily records" },
-    { href: "/empAttendance?tab=reports", icon: BarChart3, label: "Attendance analytics", desc: "Summary stats and trends" },
-    { href: "/empLeaveApplication?tab=history", icon: Calendar, label: "Leave history", desc: "Past leave applications" },
-    { href: "/empPayout?tab=payslips", icon: FileText, label: "Payroll / payslips", desc: "Download payslips by period" },
+    {
+      href: "/empHistory?tab=attendance",
+      icon: MapPin,
+      label: "Attendance reports",
+      desc: "Hours, presence, daily records",
+    },
+    {
+      href: "/empAttendance?tab=reports",
+      icon: BarChart3,
+      label: "Attendance analytics",
+      desc: "Summary stats and trends",
+    },
+    {
+      href: "/empLeaveApplication?tab=history",
+      icon: Calendar,
+      label: "Leave history",
+      desc: "Past leave applications",
+    },
+    {
+      href: "/empPayout?tab=payslips",
+      icon: FileText,
+      label: "Payroll / payslips",
+      desc: "Download payslips by period",
+    },
   ];
 
   return (
@@ -61,7 +89,10 @@ function AttendanceReportsPanel() {
   const [toDate, setToDate] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      "";
     if (!token) {
       router.replace("/login");
       return;
@@ -95,7 +126,9 @@ function AttendanceReportsPanel() {
   }, [allDays, fromDate, toDate]);
 
   const presentDays = displayDays.filter((d) => d.checkIn && d.checkOut).length;
-  const totalHours = formatWorkHoursDecimal(displayDays.reduce((s, d) => s + d.workSeconds, 0));
+  const totalHours = formatWorkHoursDecimal(
+    displayDays.reduce((s, d) => s + d.workSeconds, 0),
+  );
   const hoursTrend = displayDays
     .slice()
     .reverse()
@@ -141,10 +174,13 @@ function AttendanceReportsPanel() {
       visualization: {
         type: "bars",
         items: displayDays.slice(0, 4).map((d) => ({
-          label: new Date(d.dateKey + "T12:00:00Z").toLocaleDateString("en-IN", {
-            weekday: "short",
-            timeZone: "UTC",
-          }),
+          label: new Date(d.dateKey + "T12:00:00Z").toLocaleDateString(
+            "en-IN",
+            {
+              weekday: "short",
+              timeZone: "UTC",
+            },
+          ),
           value: Math.round((d.workSeconds / 3600) * 10) / 10,
         })),
       },
@@ -154,8 +190,18 @@ function AttendanceReportsPanel() {
   return (
     <>
       <div className="flex flex-wrap items-end gap-3">
-        <EmpDateField label="From" value={fromDate} onChange={setFromDate} max={toDate || undefined} />
-        <EmpDateField label="To" value={toDate} onChange={setToDate} min={fromDate || undefined} />
+        <EmpDateField
+          label="From"
+          value={fromDate}
+          onChange={setFromDate}
+          max={toDate || undefined}
+        />
+        <EmpDateField
+          label="To"
+          value={toDate}
+          onChange={setToDate}
+          min={fromDate || undefined}
+        />
       </div>
       {!loading && displayDays.length > 0 ? (
         <div className={`grid sm:grid-cols-3 ${gridGap} mb-6`}>
@@ -180,7 +226,11 @@ export function EmpReportsWorkspace() {
   if (tab === "attendance") {
     return (
       <EmpWorkspaceContent>
-        <EmpDesktopPage title="Attendance reports" description="Filter and export attendance records" icon={MapPin}>
+        <EmpDesktopPage
+          title="Attendance reports"
+          description="Filter and export attendance records"
+          icon={MapPin}
+        >
           <AttendanceReportsPanel />
         </EmpDesktopPage>
       </EmpWorkspaceContent>
@@ -190,10 +240,16 @@ export function EmpReportsWorkspace() {
   if (tab === "leave") {
     return (
       <EmpWorkspaceContent>
-        <EmpDesktopPage title="Leave reports" description="Leave application history and balances" icon={Calendar}>
+        <EmpDesktopPage
+          title="Leave reports"
+          description="Leave application history and balances"
+          icon={Calendar}
+        >
           <DashboardSection className="max-w-lg">
             <Button asChild>
-              <Link href="/empLeaveApplication?tab=history">Open leave history</Link>
+              <Link href="/empLeaveApplication?tab=history">
+                Open leave history
+              </Link>
             </Button>
           </DashboardSection>
         </EmpDesktopPage>
@@ -204,7 +260,11 @@ export function EmpReportsWorkspace() {
   if (tab === "payroll") {
     return (
       <EmpWorkspaceContent>
-        <EmpDesktopPage title="Payroll reports" description="Payslips and salary records" icon={FileText}>
+        <EmpDesktopPage
+          title="Payroll reports"
+          description="Payslips and salary records"
+          icon={FileText}
+        >
           <DashboardSection className="max-w-lg">
             <Button asChild>
               <Link href="/empPayout?tab=payslips">Open payslips</Link>
@@ -217,7 +277,11 @@ export function EmpReportsWorkspace() {
 
   return (
     <EmpWorkspaceContent>
-      <EmpDesktopPage title="Reports overview" description="Cross-module reports and analytics" icon={BarChart3}>
+      <EmpDesktopPage
+        title="Reports overview"
+        description="Cross-module reports and analytics"
+        icon={BarChart3}
+      >
         <ReportsOverview />
       </EmpDesktopPage>
     </EmpWorkspaceContent>

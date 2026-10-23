@@ -6,7 +6,9 @@ const MOBILE_PWA_LAYOUT_KEY = "_openhrm_mobile_pwa_layout";
 function isMobileUserAgent(): boolean {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent || "";
-  if (/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua)) {
+  if (
+    /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua)
+  ) {
     return true;
   }
   // iPadOS 13+ reports as Mac but is touch-first
@@ -52,7 +54,10 @@ export function isPwaStandalone(): boolean {
     /* ignore */
   }
   // Android TWA / some WebAPK launches
-  if (typeof document !== "undefined" && document.referrer.startsWith("android-app://")) {
+  if (
+    typeof document !== "undefined" &&
+    document.referrer.startsWith("android-app://")
+  ) {
     rememberMobilePwaLayout();
     return true;
   }
@@ -94,7 +99,7 @@ export function setDesktopManagerFlag(enabled: boolean) {
 
 export async function resolveDesktopManagerAfterLogin(
   accessToken: string,
-  backend = "/backend",
+  backend = "https://hrms-api-test.onrender.com",
 ): Promise<boolean> {
   if (!isDesktopBrowser()) {
     setDesktopManagerFlag(false);

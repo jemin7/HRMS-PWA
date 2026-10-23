@@ -14,7 +14,8 @@ import { reporteeDisplayName } from "@/app/utils/empManagerDisplay";
 import { formatPunchTime } from "@/app/utils/empAttendanceHistory";
 import type { TeamMemberRow } from "./EmpTeamViews";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 type DepartmentGroup = {
   id: number;
@@ -37,7 +38,13 @@ function memberName(m: TeamMemberRow) {
   return reporteeDisplayName(m);
 }
 
-function MemberAvatar({ member, className }: { member: TeamMemberRow; className?: string }) {
+function MemberAvatar({
+  member,
+  className,
+}: {
+  member: TeamMemberRow;
+  className?: string;
+}) {
   const name = memberName(member);
   const initials =
     name
@@ -86,12 +93,19 @@ export function EmpCompanyDepartments() {
     const load = async () => {
       setLoading(true);
       try {
-        const scopedRes = await fetch(`${BACKEND}/emp-manager-scope/company-departments`, {
-          headers: authHeaders(),
-          cache: "no-store",
-        });
-        const scopedData = scopedRes.ok ? await scopedRes.json() : { departments: [] };
-        const scopedList: DepartmentGroup[] = Array.isArray(scopedData?.departments)
+        const scopedRes = await fetch(
+          `${BACKEND}/emp-manager-scope/company-departments`,
+          {
+            headers: authHeaders(),
+            cache: "no-store",
+          },
+        );
+        const scopedData = scopedRes.ok
+          ? await scopedRes.json()
+          : { departments: [] };
+        const scopedList: DepartmentGroup[] = Array.isArray(
+          scopedData?.departments,
+        )
           ? scopedData.departments
           : [];
 
@@ -103,14 +117,16 @@ export function EmpCompanyDepartments() {
           );
           if (credRes.ok) {
             const creds = await credRes.json();
-            companyID = creds?.companyID ?? creds?.employee?.companyID ?? companyID;
+            companyID =
+              creds?.companyID ?? creds?.employee?.companyID ?? companyID;
           }
         }
 
         const byName = new Map<string, DepartmentGroup>();
 
         const addDept = (d: DepartmentGroup) => {
-          const key = (d.departmentName || "").trim().toLowerCase() || `id-${d.id}`;
+          const key =
+            (d.departmentName || "").trim().toLowerCase() || `id-${d.id}`;
           const existing = byName.get(key);
           if (!existing) {
             const employees = [...(d.employees || [])];
@@ -151,7 +167,8 @@ export function EmpCompanyDepartments() {
             const branches = await branchesRes.json();
             if (Array.isArray(branches)) {
               for (const b of branches) {
-                if (Number(b.companyID) === Number(companyID)) branchIds.add(b.id);
+                if (Number(b.companyID) === Number(companyID))
+                  branchIds.add(b.id);
               }
             }
           }
@@ -177,7 +194,9 @@ export function EmpCompanyDepartments() {
 
         if (!cancelled) {
           setDepartments(
-            [...byName.values()].sort((a, b) => a.departmentName.localeCompare(b.departmentName)),
+            [...byName.values()].sort((a, b) =>
+              a.departmentName.localeCompare(b.departmentName),
+            ),
           );
         }
       } finally {
@@ -352,7 +371,9 @@ export function EmpCompanyDepartments() {
   const content = (
     <>
       {loading ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">Loading departments…</p>
+        <p className="text-sm text-muted-foreground py-8 text-center">
+          Loading departments…
+        </p>
       ) : departments.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
           No departments configured for your company yet.
@@ -381,15 +402,25 @@ export function EmpCompanyDepartments() {
             {populatedDepartments.map((dept) => (
               <section key={dept.id} className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-semibold text-foreground">{dept.departmentName}</h3>
+                  <h3 className="font-semibold text-foreground">
+                    {dept.departmentName}
+                  </h3>
                   <span className="text-xs text-muted-foreground">
-                    {dept.employeeCount} employee{dept.employeeCount === 1 ? "" : "s"}
+                    {dept.employeeCount} employee
+                    {dept.employeeCount === 1 ? "" : "s"}
                   </span>
                 </div>
                 {viewMode === "grid" ? (
-                  <EmployeeGrid employees={dept.employees} onOpen={openMember} />
+                  <EmployeeGrid
+                    employees={dept.employees}
+                    onOpen={openMember}
+                  />
                 ) : (
-                  <EmployeeList employees={dept.employees} onOpen={openMember} showDepartment={false} />
+                  <EmployeeList
+                    employees={dept.employees}
+                    onOpen={openMember}
+                    showDepartment={false}
+                  />
                 )}
               </section>
             ))}
@@ -471,7 +502,12 @@ function EmployeeGrid({
                 </p>
               </div>
             </div>
-            <p className={cn("text-xs font-semibold mt-3", statusTone(statusLabel))}>
+            <p
+              className={cn(
+                "text-xs font-semibold mt-3",
+                statusTone(statusLabel),
+              )}
+            >
               {statusLabel}
               {checkInLabel ? ` · ${checkInLabel}` : ""}
             </p>
@@ -497,8 +533,12 @@ function EmployeeList({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/40 text-left">
-              <th className="px-4 py-3 font-medium text-muted-foreground">Employee</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">
+                Employee
+              </th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">
+                Status
+              </th>
               {showDepartment ? (
                 <th className="px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">
                   Department
@@ -532,11 +572,18 @@ function EmployeeList({
                         <p className="text-xs text-muted-foreground font-mono">
                           {m.employeeID || m.id}
                         </p>
-                        <p className="font-medium text-foreground truncate">{name}</p>
+                        <p className="font-medium text-foreground truncate">
+                          {name}
+                        </p>
                       </div>
                     </div>
                   </td>
-                  <td className={cn("px-4 py-3 font-semibold whitespace-nowrap", statusTone(statusLabel))}>
+                  <td
+                    className={cn(
+                      "px-4 py-3 font-semibold whitespace-nowrap",
+                      statusTone(statusLabel),
+                    )}
+                  >
                     {statusLabel}
                   </td>
                   {showDepartment ? (

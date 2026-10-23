@@ -61,17 +61,26 @@ export function subscribeProductAccess(listener: () => void) {
 }
 
 export function useProductAccess() {
-  return useSyncExternalStore(subscribeProductAccess, readProductAccess, () => null);
+  return useSyncExternalStore(
+    subscribeProductAccess,
+    readProductAccess,
+    () => null,
+  );
 }
 
 export function subscriptionLimitsModules(): boolean {
   const access = readProductAccess();
-  return !!access && access.subscriptionRequired === true && access.isSubscriptionExempt !== true;
+  return (
+    !!access &&
+    access.subscriptionRequired === true &&
+    access.isSubscriptionExempt !== true
+  );
 }
 
 export function canViewProductModule(moduleKey: string): boolean {
   const access = readProductAccess();
-  if (!access || !access.subscriptionRequired || access.isSubscriptionExempt) return true;
+  if (!access || !access.subscriptionRequired || access.isSubscriptionExempt)
+    return true;
   return access.modules.includes(moduleKey);
 }
 
@@ -91,15 +100,21 @@ export function isProductHrefAllowed(href: string): boolean {
 export async function refreshProductAccess(token?: string | null) {
   if (typeof window === "undefined") return null;
   const accessToken =
-    token || localStorage.getItem("accessToken") || localStorage.getItem("token") || "";
+    token ||
+    localStorage.getItem("accessToken") ||
+    localStorage.getItem("token") ||
+    "";
   if (!accessToken) {
     clearProductAccess();
     return null;
   }
-  const res = await fetch("/backend/company-access/me", {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-  });
+  const res = await fetch(
+    "https://hrms-api-test.onrender.com/company-access/me",
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    },
+  );
   if (!res.ok) return readProductAccess();
   const data = await res.json();
   const next: ProductAccessSnapshot = {

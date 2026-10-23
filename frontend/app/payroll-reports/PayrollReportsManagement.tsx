@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -10,16 +15,39 @@ import { useCurrentUser } from "../hooks/useCurrentUser";
 import * as XLSX from "xlsx";
 import { PageHeader } from "../components/app/page-header";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
-interface Company { id: number; companyName: string; }
-interface Branch { id: number; branchName: string; companyID: number; }
-interface Department { id: number; companyID: number; branchesID: number; departmentName: string; }
-interface Designation { id: number; companyID: number; branchesID: number; departmentID?: number; designation: string; }
+interface Company {
+  id: number;
+  companyName: string;
+}
+interface Branch {
+  id: number;
+  branchName: string;
+  companyID: number;
+}
+interface Department {
+  id: number;
+  companyID: number;
+  branchesID: number;
+  departmentName: string;
+}
+interface Designation {
+  id: number;
+  companyID: number;
+  branchesID: number;
+  departmentID?: number;
+  designation: string;
+}
 interface Employee {
-  id: number; employeeID: string;
-  employeeFirstName: string; employeeLastName: string;
-  companyID: number; branchesID: number; departmentNameID?: number | null;
+  id: number;
+  employeeID: string;
+  employeeFirstName: string;
+  employeeLastName: string;
+  companyID: number;
+  branchesID: number;
+  departmentNameID?: number | null;
   designationID?: number | null;
   designations?: { designation?: string };
   departments?: { departmentName?: string };
@@ -83,12 +111,23 @@ export function PayrollReportsManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [employeeFilter, setEmployeeFilter] = useState("");
   const [columnPickerOpen, setColumnPickerOpen] = useState(false);
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
-    sno: true, employeeID: true, employeeName: true, company: true,
-    branch: true, department: true, designation: true, monthPeriod: true,
-    paymentMode: true, paymentDate: true, status: true,
-  });
-  const toggleColumn = (key: string) => setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }));
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    {
+      sno: true,
+      employeeID: true,
+      employeeName: true,
+      company: true,
+      branch: true,
+      department: true,
+      designation: true,
+      monthPeriod: true,
+      paymentMode: true,
+      paymentDate: true,
+      status: true,
+    },
+  );
+  const toggleColumn = (key: string) =>
+    setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const [formData, setFormData] = useState({
     companyID: null as number | null,
@@ -105,15 +144,23 @@ export function PayrollReportsManagement() {
   useEffect(() => {
     Promise.all([
       fetch(`${BACKEND_URL}/company`).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/branches`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/departments`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/manage-emp`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/designations`, { cache: "no-store" }).then((r) => r.json()),
+      fetch(`${BACKEND_URL}/branches`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
+      fetch(`${BACKEND_URL}/departments`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
+      fetch(`${BACKEND_URL}/manage-emp`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
+      fetch(`${BACKEND_URL}/designations`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
     ]).then(([cos, brs, depts, emps, desigs]) => {
       setCompanies(cos);
       setAllBranches(brs);
       setAllDepartments(depts);
-      setEmployees(Array.isArray(emps) ? emps : emps?.data ?? []);
+      setEmployees(Array.isArray(emps) ? emps : (emps?.data ?? []));
       setAllDesignations(Array.isArray(desigs) ? desigs : []);
     });
   }, []);
@@ -125,7 +172,10 @@ export function PayrollReportsManagement() {
     let cid = formData.companyID;
     if (user.role !== "SUPERADMIN" && user.companyID) cid = user.companyID;
     // For SUPERADMIN: show no branches until a company is selected
-    if (user.role === "SUPERADMIN" && !cid) { setBranches([]); return; }
+    if (user.role === "SUPERADMIN" && !cid) {
+      setBranches([]);
+      return;
+    }
     let filtered = [...allBranches];
     if (cid) filtered = filtered.filter((b) => b.companyID === cid);
     setBranches(filtered);
@@ -135,12 +185,19 @@ export function PayrollReportsManagement() {
 
   useEffect(() => {
     if (!user) return;
-    const cid = user.role !== "SUPERADMIN" && user.companyID ? user.companyID : formData.companyID;
+    const cid =
+      user.role !== "SUPERADMIN" && user.companyID
+        ? user.companyID
+        : formData.companyID;
     // For SUPERADMIN: show no departments until a company is selected
-    if (user.role === "SUPERADMIN" && !cid) { setDepartments([]); return; }
+    if (user.role === "SUPERADMIN" && !cid) {
+      setDepartments([]);
+      return;
+    }
     let filtered = [...allDepartments];
     if (cid) filtered = filtered.filter((d) => d.companyID === cid);
-    if (formData.branchID) filtered = filtered.filter((d) => d.branchesID === formData.branchID);
+    if (formData.branchID)
+      filtered = filtered.filter((d) => d.branchesID === formData.branchID);
     setDepartments(filtered);
   }, [user, allDepartments, formData.companyID, formData.branchID]);
 
@@ -154,18 +211,34 @@ export function PayrollReportsManagement() {
 
     setLoading(true);
     try {
-      const cid = user?.role !== "SUPERADMIN" && user?.companyID ? user.companyID : formData.companyID;
+      const cid =
+        user?.role !== "SUPERADMIN" && user?.companyID
+          ? user.companyID
+          : formData.companyID;
 
-      const res = await fetch(`${BACKEND_URL}/generate-salary`, { cache: "no-store" });
+      const res = await fetch(`${BACKEND_URL}/generate-salary`, {
+        cache: "no-store",
+      });
       const raw = await res.json();
-      const records: SalaryRecord[] = Array.isArray(raw) ? raw : raw?.data ?? [];
+      const records: SalaryRecord[] = Array.isArray(raw)
+        ? raw
+        : (raw?.data ?? []);
 
       // Filter records by company, branch, department, date range
       const filtered = records.filter((rec) => {
         if (cid && rec.companyID !== cid) return false;
-        if (formData.branchID && rec.branchesID !== formData.branchID) return false;
-        if (formData.departmentID && rec.manageEmployee?.departmentNameID !== formData.departmentID) return false;
-        if (formData.designationID && rec.manageEmployee?.designationID !== formData.designationID) return false;
+        if (formData.branchID && rec.branchesID !== formData.branchID)
+          return false;
+        if (
+          formData.departmentID &&
+          rec.manageEmployee?.departmentNameID !== formData.departmentID
+        )
+          return false;
+        if (
+          formData.designationID &&
+          rec.manageEmployee?.designationID !== formData.designationID
+        )
+          return false;
 
         // Filter by date range using monthPeriod or paymentDate
         const recDate = rec.paymentDate || rec.monthPeriod;
@@ -185,15 +258,20 @@ export function PayrollReportsManagement() {
         const emp = rec.manageEmployee;
         const company = rec.companyID ? companyMap.get(rec.companyID) : null;
         const branch = rec.branchesID ? branchMap.get(rec.branchesID) : null;
-        const dept = emp?.departmentNameID ? deptMap.get(emp.departmentNameID) : null;
+        const dept = emp?.departmentNameID
+          ? deptMap.get(emp.departmentNameID)
+          : null;
 
         return {
           sno: i + 1,
           employeeID: emp?.employeeID || "-",
-          employeeName: emp ? `${emp.employeeFirstName} ${emp.employeeLastName}` : "-",
+          employeeName: emp
+            ? `${emp.employeeFirstName} ${emp.employeeLastName}`
+            : "-",
           companyName: company?.companyName || rec.company?.companyName || "-",
           branchName: branch?.branchName || rec.branches?.branchName || "-",
-          departmentName: dept?.departmentName || emp?.departments?.departmentName || "-",
+          departmentName:
+            dept?.departmentName || emp?.departments?.departmentName || "-",
           designation: emp?.designations?.designation || "-",
           monthPeriod: rec.monthPeriod || "-",
           paymentMode: rec.paymentMode || "-",
@@ -231,7 +309,10 @@ export function PayrollReportsManagement() {
   // ── Filter employees by selected company ──
 
   const companyEmployees = employees.filter((emp) => {
-    const cid = user?.role !== "SUPERADMIN" && user?.companyID ? user.companyID : formData.companyID;
+    const cid =
+      user?.role !== "SUPERADMIN" && user?.companyID
+        ? user.companyID
+        : formData.companyID;
     return !cid || emp.companyID === cid;
   });
 
@@ -239,14 +320,15 @@ export function PayrollReportsManagement() {
 
   const filteredData = reportData.filter((row) => {
     const term = searchTerm.toLowerCase();
-    const matchesSearch = !term || (
+    const matchesSearch =
+      !term ||
       row.employeeID.toLowerCase().includes(term) ||
       row.employeeName.toLowerCase().includes(term) ||
       row.companyName.toLowerCase().includes(term) ||
       row.branchName.toLowerCase().includes(term) ||
-      row.departmentName.toLowerCase().includes(term)
-    );
-    const matchesEmployee = !employeeFilter || row.employeeID === employeeFilter;
+      row.departmentName.toLowerCase().includes(term);
+    const matchesEmployee =
+      !employeeFilter || row.employeeID === employeeFilter;
     return matchesSearch && matchesEmployee;
   });
 
@@ -262,22 +344,30 @@ export function PayrollReportsManagement() {
       "S.NO": row.sno,
       "Employee ID": row.employeeID,
       "Employee Name": row.employeeName,
-      "Company": row.companyName,
-      "Branch": row.branchName,
-      "Department": row.departmentName,
-      "Designation": row.designation,
+      Company: row.companyName,
+      Branch: row.branchName,
+      Department: row.departmentName,
+      Designation: row.designation,
       "Month Period": row.monthPeriod,
       "Payment Mode": row.paymentMode,
       "Payment Date": row.paymentDate,
-      "Status": row.status,
+      Status: row.status,
     }));
 
     const ws = XLSX.utils.json_to_sheet(excelRows);
 
     ws["!cols"] = [
-      { wch: 6 }, { wch: 14 }, { wch: 22 }, { wch: 24 },
-      { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 },
-      { wch: 14 }, { wch: 14 }, { wch: 12 },
+      { wch: 6 },
+      { wch: 14 },
+      { wch: 22 },
+      { wch: 24 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 12 },
     ];
 
     const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
@@ -319,26 +409,45 @@ export function PayrollReportsManagement() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Payroll Report");
 
-    const typeLabel = REPORT_TYPES.find((t) => t.value === formData.reportType)?.label?.replace(/\s+/g, "_") || formData.reportType;
-    XLSX.writeFile(wb, `Payroll_${typeLabel}_${formData.dateFrom}_to_${formData.dateTo}.xlsx`);
+    const typeLabel =
+      REPORT_TYPES.find((t) => t.value === formData.reportType)?.label?.replace(
+        /\s+/g,
+        "_",
+      ) || formData.reportType;
+    XLSX.writeFile(
+      wb,
+      `Payroll_${typeLabel}_${formData.dateFrom}_to_${formData.dateTo}.xlsx`,
+    );
   };
 
   // ── Filter designations by company/branch ──
 
   useEffect(() => {
     if (!user) return;
-    const cid = user.role !== "SUPERADMIN" && user.companyID ? user.companyID : formData.companyID;
+    const cid =
+      user.role !== "SUPERADMIN" && user.companyID
+        ? user.companyID
+        : formData.companyID;
     let filtered = [...allDesignations];
     // For SUPERADMIN: show no designations until a company is selected
-    if (user.role === "SUPERADMIN" && !cid) { setDesignations([]); return; }
+    if (user.role === "SUPERADMIN" && !cid) {
+      setDesignations([]);
+      return;
+    }
     if (cid) filtered = filtered.filter((d) => d.companyID === cid);
-    if (formData.branchID) filtered = filtered.filter((d) => d.branchesID === formData.branchID);
+    if (formData.branchID)
+      filtered = filtered.filter((d) => d.branchesID === formData.branchID);
     setDesignations(filtered);
   }, [user, allDesignations, formData.companyID, formData.branchID]);
 
   const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value ? Number(e.target.value) : null;
-    setFormData((prev) => ({ ...prev, branchID: val, departmentID: null, designationID: null }));
+    setFormData((prev) => ({
+      ...prev,
+      branchID: val,
+      departmentID: null,
+      designationID: null,
+    }));
   };
 
   // ── Render ──
@@ -371,7 +480,9 @@ export function PayrollReportsManagement() {
                 >
                   <option value="">Select company</option>
                   {companies.map((c) => (
-                    <option key={c.id} value={c.id}>{c.companyName}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.companyName}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -387,7 +498,9 @@ export function PayrollReportsManagement() {
               >
                 <option value="">All branches</option>
                 {branches.map((b) => (
-                  <option key={b.id} value={b.id}>{b.branchName}</option>
+                  <option key={b.id} value={b.id}>
+                    {b.branchName}
+                  </option>
                 ))}
               </select>
             </div>
@@ -401,13 +514,17 @@ export function PayrollReportsManagement() {
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    departmentID: e.target.value ? Number(e.target.value) : null,
+                    departmentID: e.target.value
+                      ? Number(e.target.value)
+                      : null,
                   }))
                 }
               >
                 <option value="">All departments</option>
                 {departments.map((d) => (
-                  <option key={d.id} value={d.id}>{d.departmentName}</option>
+                  <option key={d.id} value={d.id}>
+                    {d.departmentName}
+                  </option>
                 ))}
               </select>
             </div>
@@ -421,13 +538,17 @@ export function PayrollReportsManagement() {
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    designationID: e.target.value ? Number(e.target.value) : null,
+                    designationID: e.target.value
+                      ? Number(e.target.value)
+                      : null,
                   }))
                 }
               >
                 <option value="">All designations</option>
                 {designations.map((d) => (
-                  <option key={d.id} value={d.id}>{d.designation}</option>
+                  <option key={d.id} value={d.id}>
+                    {d.designation}
+                  </option>
                 ))}
               </select>
             </div>
@@ -439,11 +560,16 @@ export function PayrollReportsManagement() {
                 className="w-full px-3 py-2 border rounded-md bg-white"
                 value={formData.reportType}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, reportType: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    reportType: e.target.value,
+                  }))
                 }
               >
                 {REPORT_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -461,7 +587,8 @@ export function PayrollReportsManagement() {
                 <option value="">All Employees</option>
                 {companyEmployees.map((emp) => (
                   <option key={emp.id} value={emp.employeeID}>
-                    {emp.employeeID} - {emp.employeeFirstName} {emp.employeeLastName}
+                    {emp.employeeID} - {emp.employeeFirstName}{" "}
+                    {emp.employeeLastName}
                   </option>
                 ))}
               </select>
@@ -502,7 +629,8 @@ export function PayrollReportsManagement() {
           </div>
 
           <p className="text-xs text-gray-500 mt-2">
-            Reports are filtered by company, branch, department (if selected) and date range.
+            Reports are filtered by company, branch, department (if selected)
+            and date range.
           </p>
         </CardContent>
       </Card>
@@ -523,7 +651,9 @@ export function PayrollReportsManagement() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                 <FileText className="w-5 h-5" />
-                {REPORT_TYPES.find((t) => t.value === formData.reportType)?.label || formData.reportType} – {filteredData.length} records
+                {REPORT_TYPES.find((t) => t.value === formData.reportType)
+                  ?.label || formData.reportType}{" "}
+                – {filteredData.length} records
               </CardTitle>
               <div className="flex items-center gap-3">
                 <div className="relative w-64">
@@ -544,21 +674,38 @@ export function PayrollReportsManagement() {
                   Download Excel
                 </Button>
                 <div className="relative">
-                  <Button variant="outline" onClick={() => setColumnPickerOpen(v => !v)} className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setColumnPickerOpen((v) => !v)}
+                    className="flex items-center gap-2"
+                  >
                     <FileText className="w-4 h-4" /> Columns
                   </Button>
                   {columnPickerOpen && (
                     <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[200px] max-h-[300px] overflow-y-auto">
                       {[
-                        { key: "sno", label: "S.NO" }, { key: "employeeID", label: "Employee ID" },
-                        { key: "employeeName", label: "Employee Name" }, { key: "company", label: "Company" },
-                        { key: "branch", label: "Branch" }, { key: "department", label: "Department" },
-                        { key: "designation", label: "Designation" }, { key: "monthPeriod", label: "Month Period" },
-                        { key: "paymentMode", label: "Payment Mode" }, { key: "paymentDate", label: "Payment Date" },
+                        { key: "sno", label: "S.NO" },
+                        { key: "employeeID", label: "Employee ID" },
+                        { key: "employeeName", label: "Employee Name" },
+                        { key: "company", label: "Company" },
+                        { key: "branch", label: "Branch" },
+                        { key: "department", label: "Department" },
+                        { key: "designation", label: "Designation" },
+                        { key: "monthPeriod", label: "Month Period" },
+                        { key: "paymentMode", label: "Payment Mode" },
+                        { key: "paymentDate", label: "Payment Date" },
                         { key: "status", label: "Status" },
-                      ].map(col => (
-                        <label key={col.key} className="flex items-center gap-2 py-1 cursor-pointer text-sm">
-                          <input type="checkbox" checked={visibleColumns[col.key] !== false} onChange={() => toggleColumn(col.key)} className="w-3.5 h-3.5 rounded" />
+                      ].map((col) => (
+                        <label
+                          key={col.key}
+                          className="flex items-center gap-2 py-1 cursor-pointer text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns[col.key] !== false}
+                            onChange={() => toggleColumn(col.key)}
+                            className="w-3.5 h-3.5 rounded"
+                          />
                           {col.label}
                         </label>
                       ))}
@@ -572,45 +719,114 @@ export function PayrollReportsManagement() {
           <CardContent className="p-0">
             <div className="overflow-x-auto w-full border-t border-gray-200">
               <table className="min-w-full border-collapse text-xs">
-                <thead data-hrms-report-header className="bg-teal-50 text-teal-900 border-b border-teal-100">
+                <thead
+                  data-hrms-report-header
+                  className="bg-teal-50 text-teal-900 border-b border-teal-100"
+                >
                   <tr>
-                    {visibleColumns.sno && <th className="px-3 py-2 text-center">S.NO</th>}
-                    {visibleColumns.employeeID && <th className="px-3 py-2 text-left">EMPLOYEE ID</th>}
-                    {visibleColumns.employeeName && <th className="px-3 py-2 text-left">EMPLOYEE NAME</th>}
-                    {visibleColumns.company && <th className="px-3 py-2 text-left">COMPANY</th>}
-                    {visibleColumns.branch && <th className="px-3 py-2 text-left">BRANCH</th>}
-                    {visibleColumns.department && <th className="px-3 py-2 text-left">DEPARTMENT</th>}
-                    {visibleColumns.designation && <th className="px-3 py-2 text-left">DESIGNATION</th>}
-                    {visibleColumns.monthPeriod && <th className="px-3 py-2 text-center">MONTH PERIOD</th>}
-                    {visibleColumns.paymentMode && <th className="px-3 py-2 text-center">PAYMENT MODE</th>}
-                    {visibleColumns.paymentDate && <th className="px-3 py-2 text-center">PAYMENT DATE</th>}
-                    {visibleColumns.status && <th className="px-3 py-2 text-center">STATUS</th>}
+                    {visibleColumns.sno && (
+                      <th className="px-3 py-2 text-center">S.NO</th>
+                    )}
+                    {visibleColumns.employeeID && (
+                      <th className="px-3 py-2 text-left">EMPLOYEE ID</th>
+                    )}
+                    {visibleColumns.employeeName && (
+                      <th className="px-3 py-2 text-left">EMPLOYEE NAME</th>
+                    )}
+                    {visibleColumns.company && (
+                      <th className="px-3 py-2 text-left">COMPANY</th>
+                    )}
+                    {visibleColumns.branch && (
+                      <th className="px-3 py-2 text-left">BRANCH</th>
+                    )}
+                    {visibleColumns.department && (
+                      <th className="px-3 py-2 text-left">DEPARTMENT</th>
+                    )}
+                    {visibleColumns.designation && (
+                      <th className="px-3 py-2 text-left">DESIGNATION</th>
+                    )}
+                    {visibleColumns.monthPeriod && (
+                      <th className="px-3 py-2 text-center">MONTH PERIOD</th>
+                    )}
+                    {visibleColumns.paymentMode && (
+                      <th className="px-3 py-2 text-center">PAYMENT MODE</th>
+                    )}
+                    {visibleColumns.paymentDate && (
+                      <th className="px-3 py-2 text-center">PAYMENT DATE</th>
+                    )}
+                    {visibleColumns.status && (
+                      <th className="px-3 py-2 text-center">STATUS</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredData.map((row, i) => (
                     <tr key={i} className="odd:bg-gray-50 border-b">
-                      {visibleColumns.sno && <td className="px-3 py-2 text-center text-[11px]">{row.sno}</td>}
-                      {visibleColumns.employeeID && <td className="px-3 py-2 text-[11px]">{row.employeeID}</td>}
-                      {visibleColumns.employeeName && <td className="px-3 py-2 text-[11px]">{row.employeeName}</td>}
-                      {visibleColumns.company && <td className="px-3 py-2 text-[11px]">{row.companyName}</td>}
-                      {visibleColumns.branch && <td className="px-3 py-2 text-[11px]">{row.branchName}</td>}
-                      {visibleColumns.department && <td className="px-3 py-2 text-[11px]">{row.departmentName}</td>}
-                      {visibleColumns.designation && <td className="px-3 py-2 text-[11px]">{row.designation}</td>}
-                      {visibleColumns.monthPeriod && <td className="px-3 py-2 text-center text-[11px]">{row.monthPeriod}</td>}
-                      {visibleColumns.paymentMode && <td className="px-3 py-2 text-center text-[11px]">{row.paymentMode}</td>}
-                      {visibleColumns.paymentDate && <td className="px-3 py-2 text-center text-[11px]">{row.paymentDate}</td>}
-                      {visibleColumns.status && <td className="px-3 py-2 text-center text-[11px]">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                          row.status === "Paid"
-                            ? "bg-green-100 text-green-700"
-                            : row.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-gray-100 text-gray-700"
-                        }`}>
-                          {row.status}
-                        </span>
-                      </td>}
+                      {visibleColumns.sno && (
+                        <td className="px-3 py-2 text-center text-[11px]">
+                          {row.sno}
+                        </td>
+                      )}
+                      {visibleColumns.employeeID && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.employeeID}
+                        </td>
+                      )}
+                      {visibleColumns.employeeName && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.employeeName}
+                        </td>
+                      )}
+                      {visibleColumns.company && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.companyName}
+                        </td>
+                      )}
+                      {visibleColumns.branch && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.branchName}
+                        </td>
+                      )}
+                      {visibleColumns.department && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.departmentName}
+                        </td>
+                      )}
+                      {visibleColumns.designation && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.designation}
+                        </td>
+                      )}
+                      {visibleColumns.monthPeriod && (
+                        <td className="px-3 py-2 text-center text-[11px]">
+                          {row.monthPeriod}
+                        </td>
+                      )}
+                      {visibleColumns.paymentMode && (
+                        <td className="px-3 py-2 text-center text-[11px]">
+                          {row.paymentMode}
+                        </td>
+                      )}
+                      {visibleColumns.paymentDate && (
+                        <td className="px-3 py-2 text-center text-[11px]">
+                          {row.paymentDate}
+                        </td>
+                      )}
+                      {visibleColumns.status && (
+                        <td className="px-3 py-2 text-center text-[11px]">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                              row.status === "Paid"
+                                ? "bg-green-100 text-green-700"
+                                : row.status === "Pending"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {row.status}
+                          </span>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

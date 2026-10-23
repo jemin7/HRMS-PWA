@@ -24,10 +24,13 @@ export function useMemoChatPolling<T>(
       inFlight = true;
       try {
         const headers = getHeaders?.() ?? {};
-        const res = await fetch(`/backend/employee-memo/${memoId}`, {
-          cache: "no-store",
-          headers,
-        });
+        const res = await fetch(
+          `https://hrms-api-test.onrender.com/employee-memo/${memoId}`,
+          {
+            cache: "no-store",
+            headers,
+          },
+        );
         if (!res.ok) return;
         const data = await res.json();
         if (!cancelled) onUpdateRef.current(data);

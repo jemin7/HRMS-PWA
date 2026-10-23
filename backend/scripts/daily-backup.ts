@@ -3,7 +3,7 @@
  * Usage: npm run backup:daily
  *
  * Example crontab:
- * 59 23 * * * cd /var/www/openhrm/backend && npm run backup:daily >> /var/log/openhrm-backup.log 2>&1
+ * 59 23 * * * cd /var/www/openhrmhttps://hrms-api-test.onrender.com && npm run backup:daily >> /var/log/openhrm-backup.log 2>&1
  */
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';

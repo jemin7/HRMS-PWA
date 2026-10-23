@@ -65,7 +65,9 @@ export function resolveScopedCompanyId(
   const role = String(user.role || "").toUpperCase();
   const userCompanyId = toPositiveId(user.companyID);
   const switchedId =
-    getActiveCompanyId() ?? toPositiveId(ctx?.companyID) ?? toPositiveId(user.activeCompanyID);
+    getActiveCompanyId() ??
+    toPositiveId(ctx?.companyID) ??
+    toPositiveId(user.activeCompanyID);
   const ctxCompanyId = toPositiveId(ctx?.companyID);
 
   const assignedIds = new Set<number>();
@@ -134,10 +136,14 @@ export async function resolveEmployeeCreds(username?: string): Promise<{
 } | null> {
   if (!username) return null;
   try {
-    const res = await fetch("/backend/manage-emp/credentials/all");
+    const res = await fetch(
+      "https://hrms-api-test.onrender.com/manage-emp/credentials/all",
+    );
     const creds = await res.json();
     if (!Array.isArray(creds)) return null;
-    const row = creds.find((c: { username?: string }) => c.username === username);
+    const row = creds.find(
+      (c: { username?: string }) => c.username === username,
+    );
     if (!row) return null;
     return {
       companyID: toPositiveId(row.companyID ?? row.company?.id),
@@ -161,10 +167,12 @@ export async function resolveAdminUserMapping(
 ): Promise<ScopedUser | null> {
   if (!username) return null;
   try {
-    const res = await fetch("/backend/users");
+    const res = await fetch("https://hrms-api-test.onrender.com/users");
     const users = await res.json();
     if (!Array.isArray(users)) return null;
-    return users.find((u: { username?: string }) => u.username === username) ?? null;
+    return (
+      users.find((u: { username?: string }) => u.username === username) ?? null
+    );
   } catch {
     return null;
   }
@@ -359,7 +367,11 @@ export async function filterBranchesForUser<T extends ScopeRecord>(
 }
 
 export async function filterCompaniesForUser<
-  T extends { id: number; serviceProviderID?: number | null; branchesID?: number | null },
+  T extends {
+    id: number;
+    serviceProviderID?: number | null;
+    branchesID?: number | null;
+  },
 >(all: T[], user: ScopedUser): Promise<T[]> {
   if (!user?.role) return [];
 

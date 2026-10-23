@@ -8,7 +8,13 @@ import { Button } from "../ui/button";
 
 type ModuleMeta = { moduleKey: string; label: string };
 
-const ACTIONS: { key: keyof Pick<ModulePermission, "canView" | "canCreate" | "canEdit" | "canDelete">; label: string }[] = [
+const ACTIONS: {
+  key: keyof Pick<
+    ModulePermission,
+    "canView" | "canCreate" | "canEdit" | "canDelete"
+  >;
+  label: string;
+}[] = [
   { key: "canView", label: "View" },
   { key: "canCreate", label: "Create" },
   { key: "canEdit", label: "Edit" },
@@ -32,11 +38,17 @@ export function EmployeeRightsPanel({ employeeId }: { employeeId: number }) {
     try {
       const headers = authHeaders();
       const [modRes, permRes] = await Promise.all([
-        fetch("/backend/employee-permissions/modules", { headers, cache: "no-store" }),
-        fetch(`/backend/employee-permissions?employeeId=${employeeId}`, {
-          headers,
-          cache: "no-store",
-        }),
+        fetch(
+          "https://hrms-api-test.onrender.com/employee-permissions/modules",
+          { headers, cache: "no-store" },
+        ),
+        fetch(
+          `https://hrms-api-test.onrender.com/employee-permissions?employeeId=${employeeId}`,
+          {
+            headers,
+            cache: "no-store",
+          },
+        ),
       ]);
       if (modRes.ok) {
         const mods = await modRes.json();
@@ -47,7 +59,9 @@ export function EmployeeRightsPanel({ employeeId }: { employeeId: number }) {
       setPermissions(Array.isArray(data.permissions) ? data.permissions : []);
       setReadOnly(!!data.readOnly);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to load permissions");
+      toast.error(
+        e instanceof Error ? e.message : "Failed to load permissions",
+      );
     } finally {
       setLoading(false);
     }
@@ -57,7 +71,10 @@ export function EmployeeRightsPanel({ employeeId }: { employeeId: number }) {
     if (employeeId) void load();
   }, [employeeId, load]);
 
-  const toggle = (moduleKey: string, field: (typeof ACTIONS)[number]["key"]) => {
+  const toggle = (
+    moduleKey: string,
+    field: (typeof ACTIONS)[number]["key"],
+  ) => {
     if (readOnly) return;
     setPermissions((prev) =>
       prev.map((row) => {
@@ -79,9 +96,20 @@ export function EmployeeRightsPanel({ employeeId }: { employeeId: number }) {
     setPermissions((prev) =>
       prev.map((row) => {
         if (row.moduleKey !== moduleKey) return row;
-        const allOn = !!(row.canView && row.canCreate && row.canEdit && row.canDelete);
+        const allOn = !!(
+          row.canView &&
+          row.canCreate &&
+          row.canEdit &&
+          row.canDelete
+        );
         const nextVal = !allOn;
-        return { ...row, canView: nextVal, canCreate: nextVal, canEdit: nextVal, canDelete: nextVal };
+        return {
+          ...row,
+          canView: nextVal,
+          canCreate: nextVal,
+          canEdit: nextVal,
+          canDelete: nextVal,
+        };
       }),
     );
   };
@@ -90,17 +118,24 @@ export function EmployeeRightsPanel({ employeeId }: { employeeId: number }) {
     if (readOnly) return;
     setSaving(true);
     try {
-      const res = await fetch("/backend/employee-permissions", {
-        method: "PUT",
-        headers: { ...authHeaders(), "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId, permissions }),
-      });
+      const res = await fetch(
+        "https://hrms-api-test.onrender.com/employee-permissions",
+        {
+          method: "PUT",
+          headers: { ...authHeaders(), "Content-Type": "application/json" },
+          body: JSON.stringify({ employeeId, permissions }),
+        },
+      );
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      setPermissions(Array.isArray(data.permissions) ? data.permissions : permissions);
+      setPermissions(
+        Array.isArray(data.permissions) ? data.permissions : permissions,
+      );
       toast.success("Permissions saved");
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to save permissions");
+      toast.error(
+        e instanceof Error ? e.message : "Failed to save permissions",
+      );
     } finally {
       setSaving(false);
     }
@@ -118,13 +153,18 @@ export function EmployeeRightsPanel({ employeeId }: { employeeId: number }) {
   }, [modules]);
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground py-6 text-center">Loading permissions…</p>;
+    return (
+      <p className="text-sm text-muted-foreground py-6 text-center">
+        Loading permissions…
+      </p>
+    );
   }
 
   if (readOnly) {
     return (
       <p className="text-sm text-muted-foreground py-4">
-        This employee is the company owner — owner permissions are always full and cannot be edited.
+        This employee is the company owner — owner permissions are always full
+        and cannot be edited.
       </p>
     );
   }
@@ -139,7 +179,10 @@ export function EmployeeRightsPanel({ employeeId }: { employeeId: number }) {
                 <th className="px-4 py-3 font-semibold">Module</th>
                 <th className="px-3 py-3 font-semibold text-center">All</th>
                 {ACTIONS.map((a) => (
-                  <th key={a.key} className="px-3 py-3 font-semibold text-center">
+                  <th
+                    key={a.key}
+                    className="px-3 py-3 font-semibold text-center"
+                  >
                     {a.label}
                   </th>
                 ))}
@@ -147,10 +190,17 @@ export function EmployeeRightsPanel({ employeeId }: { employeeId: number }) {
             </thead>
             <tbody>
               {visiblePermissions.map((row) => {
-                const allChecked = !!(row.canView && row.canCreate && row.canEdit && row.canDelete);
+                const allChecked = !!(
+                  row.canView &&
+                  row.canCreate &&
+                  row.canEdit &&
+                  row.canDelete
+                );
                 return (
                   <tr key={row.moduleKey} className="border-b last:border-0">
-                    <td className="px-4 py-2.5 font-medium">{labelFor(row.moduleKey)}</td>
+                    <td className="px-4 py-2.5 font-medium">
+                      {labelFor(row.moduleKey)}
+                    </td>
                     <td className="px-3 py-2.5 text-center">
                       <input
                         type="checkbox"
@@ -177,7 +227,9 @@ export function EmployeeRightsPanel({ employeeId }: { employeeId: number }) {
           </table>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground py-4">No modules available.</p>
+        <p className="text-sm text-muted-foreground py-4">
+          No modules available.
+        </p>
       )}
 
       <div className="flex justify-end">

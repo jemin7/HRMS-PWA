@@ -8,26 +8,45 @@ import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { getPageCache, setPageCache } from "../../utils/pageCache";
 import { toast } from "sonner";
 import { useEmpManagerScope } from "../../hooks/useEmpManagerScope";
-import { isTeamMemberId, nameForEmployeeId } from "../../utils/empManagerDisplay";
+import {
+  isTeamMemberId,
+  nameForEmployeeId,
+} from "../../utils/empManagerDisplay";
 import { splitPreviewRecords } from "../../utils/empListLimit";
 import { EmpRecordHistorySheet } from "./EmpRecordHistorySheet";
 import { EmpListViewMoreButton } from "./EmpListViewMoreButton";
 import { EmpReimbursementApprovalSheet } from "./EmpReimbursementApprovalSheet";
-import { displayStatusLabel, isPartiallyApprovedStatus } from "../../utils/statusDisplay";
+import {
+  displayStatusLabel,
+  isPartiallyApprovedStatus,
+} from "../../utils/statusDisplay";
 import { EmpPortalPage, empListClass, empPageRootClass } from "./EmpPortalPage";
 import { useEmpPortalDesktop } from "../layout/EmpPortalShell";
-import { EmpDesktopReimbursementGrid, EmpDesktopReimbursementTable } from "./desktop/EmpDesktopReimbursementTable";
+import {
+  EmpDesktopReimbursementGrid,
+  EmpDesktopReimbursementTable,
+} from "./desktop/EmpDesktopReimbursementTable";
 import { EmpDesktopPage } from "./desktop/EmpDesktopPage";
-import { EmpTeamStyleDataSection, useTeamListControls } from "./desktop/EmpTeamStyleDataSection";
+import {
+  EmpTeamStyleDataSection,
+  useTeamListControls,
+} from "./desktop/EmpTeamStyleDataSection";
 import { EmpReimbursementApplyForm } from "./EmpReimbursementApplyForm";
 import { FormModal } from "../ui/form-modal";
 import { Button } from "../ui/button";
 import { cn } from "@/app/utils/cn";
 import { Wallet } from "lucide-react";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
-const CATEGORIES = ["Travelling", "Food", "Accommodation", "Consumables", "Other"] as const;
+const CATEGORIES = [
+  "Travelling",
+  "Food",
+  "Accommodation",
+  "Consumables",
+  "Other",
+] as const;
 
 export interface ReimbursementRow {
   id: string;
@@ -81,21 +100,33 @@ export function EmpReimbursementMobile({
   const isPortalDesktop = useEmpPortalDesktop();
   const inWorkspace = !!desktopTab;
   const { scope, isManagerView } = useEmpManagerScope();
-  const [rows, setRows] = useState<ReimbursementRow[]>(() => getPageCache<ReimbursementRow[]>("empReimbursements") ?? []);
+  const [rows, setRows] = useState<ReimbursementRow[]>(
+    () => getPageCache<ReimbursementRow[]>("empReimbursements") ?? [],
+  );
   const [employeeId, setEmployeeId] = useState<number | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [approvalId, setApprovalId] = useState<string | null>(null);
   const [applyOpen, setApplyOpen] = useState(false);
   const listControls = useTeamListControls("emp-profile-reimb-view");
-  const { viewMode, selectViewMode, searchOpen, searchQuery, setSearchQuery, toggleSearch, filterOpen, toggleFilter } =
-    listControls;
+  const {
+    viewMode,
+    selectViewMode,
+    searchOpen,
+    searchQuery,
+    setSearchQuery,
+    toggleSearch,
+    filterOpen,
+    toggleFilter,
+  } = listControls;
   const [statusFilter, setStatusFilter] = useState("all");
 
   const load = useCallback(async (empId: number) => {
     const token =
       typeof window !== "undefined"
-        ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
+        ? localStorage.getItem("token") ||
+          localStorage.getItem("accessToken") ||
+          ""
         : "";
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
     try {
@@ -114,14 +145,19 @@ export function EmpReimbursementMobile({
                 paidStatus: i.paidStatus,
               }))
             : r.reimbursementType
-              ? [{
-                  reimbursementType: r.reimbursementType,
-                  amount: r.amount,
-                  description: r.description,
-                  status: r.status || "Pending",
-                }]
+              ? [
+                  {
+                    reimbursementType: r.reimbursementType,
+                    amount: r.amount,
+                    description: r.description,
+                    status: r.status || "Pending",
+                  },
+                ]
               : [];
-        const amt = items.reduce((s: number, i: any) => s + parseFloat(i.amount || "0"), 0);
+        const amt = items.reduce(
+          (s: number, i: any) => s + parseFloat(i.amount || "0"),
+          0,
+        );
         return {
           id: String(r.id),
           date: r.date || "",
@@ -145,7 +181,9 @@ export function EmpReimbursementMobile({
 
   useEffect(() => {
     if (!user?.username) return;
-    fetch(`${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`)
+    fetch(
+      `${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`,
+    )
       .then((r) => (r.ok ? r.json() : null))
       .then((creds) => {
         const id = creds?.employee?.id;
@@ -158,7 +196,9 @@ export function EmpReimbursementMobile({
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this reimbursement request?")) return;
-    const res = await fetch(`${BACKEND}/reimbursement/${id}`, { method: "DELETE" });
+    const res = await fetch(`${BACKEND}/reimbursement/${id}`, {
+      method: "DELETE",
+    });
     if (!res.ok) toast.error("Could not delete");
     else {
       toast.success("Deleted");
@@ -167,11 +207,18 @@ export function EmpReimbursementMobile({
     setMenuId(null);
   };
 
-  const { preview: previewRows, history: historyRows, hasHistory } = splitPreviewRecords(rows);
+  const {
+    preview: previewRows,
+    history: historyRows,
+    hasHistory,
+  } = splitPreviewRecords(rows);
 
   const employeeNameForRow = (r: ReimbursementRow) => {
     if (r.manageEmployee) {
-      const n = [r.manageEmployee.employeeFirstName, r.manageEmployee.employeeLastName]
+      const n = [
+        r.manageEmployee.employeeFirstName,
+        r.manageEmployee.employeeLastName,
+      ]
         .filter(Boolean)
         .join(" ")
         .trim();
@@ -181,16 +228,24 @@ export function EmpReimbursementMobile({
   };
 
   const renderRow = (r: ReimbursementRow) => {
-    const canEdit = r.status === "Pending" && !isTeamMemberId(scope, r.manageEmployeeID);
-    const canResubmit = r.status === "Rejected" && !isTeamMemberId(scope, r.manageEmployeeID);
+    const canEdit =
+      r.status === "Pending" && !isTeamMemberId(scope, r.manageEmployeeID);
+    const canResubmit =
+      r.status === "Rejected" && !isTeamMemberId(scope, r.manageEmployeeID);
     const teamClaim = isTeamMemberId(scope, r.manageEmployeeID);
-    const hasPendingItems = (r.items || []).some((i) => (i.status || "Pending") === "Pending");
+    const hasPendingItems = (r.items || []).some(
+      (i) => (i.status || "Pending") === "Pending",
+    );
     const canManagerApprove =
       isManagerView &&
       teamClaim &&
-      (r.status === "Pending" || (isPartiallyApprovedStatus(r.status) && hasPendingItems));
+      (r.status === "Pending" ||
+        (isPartiallyApprovedStatus(r.status) && hasPendingItems));
     return (
-      <div key={r.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div
+        key={r.id}
+        className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+      >
         <div className="grid grid-cols-[1fr_auto] gap-2 px-3 py-2.5 text-[12px]">
           <div className="space-y-0.5 min-w-0">
             {teamClaim && (
@@ -206,10 +261,12 @@ export function EmpReimbursementMobile({
               {r.taskProjectID ? `#${r.taskProjectID}` : "—"}
             </p>
             <p>
-              <span className="text-gray-400">Amount:</span> ₹{totalAmount(r).toFixed(2)}
+              <span className="text-gray-400">Amount:</span> ₹
+              {totalAmount(r).toFixed(2)}
             </p>
             <p>
-              <span className="text-gray-400">Status:</span> {displayStatus(r.status)}
+              <span className="text-gray-400">Status:</span>{" "}
+              {displayStatus(r.status)}
             </p>
           </div>
           <button
@@ -222,7 +279,10 @@ export function EmpReimbursementMobile({
         </div>
         {menuId === r.id && (
           <div className="border-t border-gray-100 flex flex-wrap px-1 py-1">
-            <Link href={`/empReimbursement/${r.id}`} className="text-[12px] font-semibold text-[#2563eb] px-3 py-2">
+            <Link
+              href={`/empReimbursement/${r.id}`}
+              className="text-[12px] font-semibold text-[#2563eb] px-3 py-2"
+            >
               Show details
             </Link>
             {canManagerApprove && (
@@ -239,16 +299,26 @@ export function EmpReimbursementMobile({
             )}
             {canEdit && (
               <>
-                <Link href={`/empReimbursement/${r.id}/edit`} className="text-[12px] font-semibold text-gray-700 px-3 py-2">
+                <Link
+                  href={`/empReimbursement/${r.id}/edit`}
+                  className="text-[12px] font-semibold text-gray-700 px-3 py-2"
+                >
                   Edit
                 </Link>
-                <button type="button" className="text-[12px] font-semibold text-red-600 px-3 py-2" onClick={() => handleDelete(r.id)}>
+                <button
+                  type="button"
+                  className="text-[12px] font-semibold text-red-600 px-3 py-2"
+                  onClick={() => handleDelete(r.id)}
+                >
                   Delete
                 </button>
               </>
             )}
             {canResubmit && (
-              <Link href={`/empReimbursement/${r.id}/edit?resubmit=1`} className="text-[12px] font-semibold text-amber-700 px-3 py-2">
+              <Link
+                href={`/empReimbursement/${r.id}/edit?resubmit=1`}
+                className="text-[12px] font-semibold text-amber-700 px-3 py-2"
+              >
                 Resubmit
               </Link>
             )}
@@ -258,10 +328,15 @@ export function EmpReimbursementMobile({
     );
   };
 
-  const showList = !inWorkspace || desktopTab === "overview" || desktopTab === "history" || desktopTab === "approvals";
-  const listRows = desktopTab === "approvals"
-    ? previewRows.filter((r) => isTeamMemberId(scope, r.manageEmployeeID))
-    : previewRows;
+  const showList =
+    !inWorkspace ||
+    desktopTab === "overview" ||
+    desktopTab === "history" ||
+    desktopTab === "approvals";
+  const listRows =
+    desktopTab === "approvals"
+      ? previewRows.filter((r) => isTeamMemberId(scope, r.manageEmployeeID))
+      : previewRows;
 
   const filteredListRows = useMemo(() => {
     return listRows.filter((row) => {
@@ -316,7 +391,11 @@ export function EmpReimbursementMobile({
               <EmpTeamStyleDataSection
                 title="Reimbursement claims"
                 actions={
-                  <Button type="button" size="sm" onClick={() => setApplyOpen(true)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setApplyOpen(true)}
+                  >
                     <Plus className="size-4" />
                     New claim
                   </Button>
@@ -367,7 +446,10 @@ export function EmpReimbursementMobile({
                 }
               />
               {hasHistory ? (
-                <EmpListViewMoreButton count={historyRows.length} onClick={() => setHistoryOpen(true)} />
+                <EmpListViewMoreButton
+                  count={historyRows.length}
+                  onClick={() => setHistoryOpen(true)}
+                />
               ) : null}
             </>
           ) : null}
@@ -400,7 +482,11 @@ export function EmpReimbursementMobile({
     return (
       <EmpDesktopPage
         title={pageTitle}
-        description={isManagerView ? "Review and approve team claims" : "Track your reimbursement claims"}
+        description={
+          isManagerView
+            ? "Review and approve team claims"
+            : "Track your reimbursement claims"
+        }
         icon={Wallet}
         actions={
           <Button asChild>
@@ -421,7 +507,10 @@ export function EmpReimbursementMobile({
               onDelete={handleDelete}
             />
             {hasHistory ? (
-              <EmpListViewMoreButton count={historyRows.length} onClick={() => setHistoryOpen(true)} />
+              <EmpListViewMoreButton
+                count={historyRows.length}
+                onClick={() => setHistoryOpen(true)}
+              />
             ) : null}
           </>
         ) : null}
@@ -458,7 +547,9 @@ export function EmpReimbursementMobile({
           <div>
             <h1>Reimbursement</h1>
             <p className="emp-portal-subtitle">
-              {isManagerView ? "Team reimbursement claims — review and approve" : "Your submitted claims"}
+              {isManagerView
+                ? "Team reimbursement claims — review and approve"
+                : "Your submitted claims"}
             </p>
           </div>
           <Link
@@ -470,27 +561,44 @@ export function EmpReimbursementMobile({
           </Link>
         </div>
       ) : !inWorkspace ? (
-      <div className="px-4 pt-5 pb-3">
-        <h1 className="text-[22px] font-bold text-gray-900">Reimbursement</h1>
-        <p className="text-[12px] text-gray-500 mt-0.5">
-          {isManagerView ? "Team reimbursement claims — review & approve" : "Your submitted claims"}
-        </p>
-      </div>
+        <div className="px-4 pt-5 pb-3">
+          <h1 className="text-[22px] font-bold text-gray-900">Reimbursement</h1>
+          <p className="text-[12px] text-gray-500 mt-0.5">
+            {isManagerView
+              ? "Team reimbursement claims — review & approve"
+              : "Your submitted claims"}
+          </p>
+        </div>
       ) : null}
 
       {showList && (
-      <div className={`${isPortalDesktop && !inWorkspace ? "" : inWorkspace ? "" : "px-4"} flex-1`}>
-        {rows.length === 0 ? (
-          <p className="text-[13px] text-gray-400 text-center py-12">No reimbursement requests</p>
-        ) : (
-          <>
-            <div className={inWorkspace ? "emp-ws-table-list" : empListClass(isPortalDesktop)}>{listRows.map(renderRow)}</div>
-            {hasHistory && (
-              <EmpListViewMoreButton count={historyRows.length} onClick={() => setHistoryOpen(true)} />
-            )}
-          </>
-        )}
-      </div>
+        <div
+          className={`${isPortalDesktop && !inWorkspace ? "" : inWorkspace ? "" : "px-4"} flex-1`}
+        >
+          {rows.length === 0 ? (
+            <p className="text-[13px] text-gray-400 text-center py-12">
+              No reimbursement requests
+            </p>
+          ) : (
+            <>
+              <div
+                className={
+                  inWorkspace
+                    ? "emp-ws-table-list"
+                    : empListClass(isPortalDesktop)
+                }
+              >
+                {listRows.map(renderRow)}
+              </div>
+              {hasHistory && (
+                <EmpListViewMoreButton
+                  count={historyRows.length}
+                  onClick={() => setHistoryOpen(true)}
+                />
+              )}
+            </>
+          )}
+        </div>
       )}
 
       <EmpRecordHistorySheet
@@ -514,7 +622,11 @@ export function EmpReimbursementMobile({
       <Link
         href="/empReimbursement/new"
         className={`mobile-fab fixed right-4 z-40 w-14 h-14 rounded-full bg-[#2563eb] text-white shadow-lg flex items-center justify-center active:scale-90 ${isPortalDesktop ? "emp-portal-fab-hidden" : ""}`}
-        style={isPortalDesktop ? undefined : { bottom: "calc(64px + env(safe-area-inset-bottom))" }}
+        style={
+          isPortalDesktop
+            ? undefined
+            : { bottom: "calc(64px + env(safe-area-inset-bottom))" }
+        }
         aria-label="New reimbursement"
       >
         <Plus className="w-6 h-6" strokeWidth={2.5} />

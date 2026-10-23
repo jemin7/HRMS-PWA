@@ -1,6 +1,7 @@
 import { formatDevicePunchForDisplay } from "./devicePunchTime";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export type AttendanceActualStatusResult = {
   actualStatus: string;
@@ -21,7 +22,11 @@ export async function detectAttendanceActualStatus(params: {
   const timeToMin = (t: string): number => {
     if (!t) return 0;
     const p = t.split(":");
-    return (parseInt(p[0]) || 0) * 60 + (parseInt(p[1]) || 0) + (parseInt(p[2]) || 0) / 60;
+    return (
+      (parseInt(p[0]) || 0) * 60 +
+      (parseInt(p[1]) || 0) +
+      (parseInt(p[2]) || 0) / 60
+    );
   };
 
   const parsePunchTime = (pt: string): string | null => {
@@ -29,24 +34,37 @@ export async function detectAttendanceActualStatus(params: {
     return f?.timeStr ?? null;
   };
 
-  const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const WEEKDAYS = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   const dayOfWeek = WEEKDAYS[new Date(date).getDay()];
 
-  const [logsRes, empRes, policyRes, holidayRes, leaveRes, regRes, rosterRes] = await Promise.all([
-    fetch(`${BACKEND_URL}/process-att-logs?dateFrom=${date}&dateTo=${date}&manageEmployeeIds=${employeeId}&limit=1000`, { cache: "no-store" }),
-    fetch(`${BACKEND_URL}/manage-emp/${employeeId}`, { cache: "no-store" }),
-    fetch(`${BACKEND_URL}/attendance-policy`, { cache: "no-store" }),
-    fetch(`${BACKEND_URL}/public-holiday`, { cache: "no-store" }),
-    fetch(`${BACKEND_URL}/leave-application`, { cache: "no-store" }),
-    fetch(`${BACKEND_URL}/emp-attendance-regularise`, { cache: "no-store" }),
-    fetch(`${BACKEND_URL}/rosters`, { cache: "no-store" }),
-  ]);
+  const [logsRes, empRes, policyRes, holidayRes, leaveRes, regRes, rosterRes] =
+    await Promise.all([
+      fetch(
+        `${BACKEND_URL}/process-att-logs?dateFrom=${date}&dateTo=${date}&manageEmployeeIds=${employeeId}&limit=1000`,
+        { cache: "no-store" },
+      ),
+      fetch(`${BACKEND_URL}/manage-emp/${employeeId}`, { cache: "no-store" }),
+      fetch(`${BACKEND_URL}/attendance-policy`, { cache: "no-store" }),
+      fetch(`${BACKEND_URL}/public-holiday`, { cache: "no-store" }),
+      fetch(`${BACKEND_URL}/leave-application`, { cache: "no-store" }),
+      fetch(`${BACKEND_URL}/emp-attendance-regularise`, { cache: "no-store" }),
+      fetch(`${BACKEND_URL}/rosters`, { cache: "no-store" }),
+    ]);
 
   const logsRaw = await logsRes.json();
-  const allLogs: { manage_employee_id?: number; punch_time?: string }[] = Array.isArray(logsRaw)
-    ? logsRaw
-    : (logsRaw?.data ?? []);
-  const empLogs = allLogs.filter((l) => Number(l.manage_employee_id) === Number(employeeId));
+  const allLogs: { manage_employee_id?: number; punch_time?: string }[] =
+    Array.isArray(logsRaw) ? logsRaw : (logsRaw?.data ?? []);
+  const empLogs = allLogs.filter(
+    (l) => Number(l.manage_employee_id) === Number(employeeId),
+  );
   const punches: string[] = empLogs
     .map((l) => parsePunchTime(l.punch_time ?? ""))
     .filter(Boolean)
@@ -58,9 +76,14 @@ export async function detectAttendanceActualStatus(params: {
     branchesID?: number;
     companyID?: number;
   } | null = empRes.ok ? await empRes.json() : null;
-  const allPolicies: { companyID?: number; branchesID?: number }[] = policyRes.ok ? await policyRes.json() : [];
-  const allHolidays: { companyID?: number; branchesID?: number; startDate?: string; endDate?: string }[] =
-    holidayRes.ok ? await holidayRes.json() : [];
+  const allPolicies: { companyID?: number; branchesID?: number }[] =
+    policyRes.ok ? await policyRes.json() : [];
+  const allHolidays: {
+    companyID?: number;
+    branchesID?: number;
+    startDate?: string;
+    endDate?: string;
+  }[] = holidayRes.ok ? await holidayRes.json() : [];
   const allLeaves: {
     manageEmployeeID?: number;
     status?: string;
@@ -77,8 +100,10 @@ export async function detectAttendanceActualStatus(params: {
     checkInTime?: string;
     checkOutTime?: string;
   }[] = regRes.ok ? await regRes.json() : [];
-  const allRosters: { employeeID?: number; days?: { workDate?: string; dayType?: string }[] }[] =
-    rosterRes.ok ? await rosterRes.json() : [];
+  const allRosters: {
+    employeeID?: number;
+    days?: { workDate?: string; dayType?: string }[];
+  }[] = rosterRes.ok ? await rosterRes.json() : [];
 
   const resolvedCompanyID = companyID ?? empData?.companyID;
   const resolvedBranchID = branchesID ?? empData?.branchesID;
@@ -108,15 +133,25 @@ export async function detectAttendanceActualStatus(params: {
   const empShiftEntry = empData?.empWorkShift?.[0];
   const workShiftID = empShiftEntry?.workShiftID ?? empData?.workShiftID;
   if (workShiftID) {
-    const wsRes = await fetch(`${BACKEND_URL}/work-shift/${workShiftID}`, { cache: "no-store" });
+    const wsRes = await fetch(`${BACKEND_URL}/work-shift/${workShiftID}`, {
+      cache: "no-store",
+    });
     if (wsRes.ok) workShift = await wsRes.json();
   }
 
-  const isFlexible =
-    !!(workShift?.isFlexible || String((policy as { workingHoursType?: string } | null)?.workingHoursType || "").toLowerCase().includes("flex"));
+  const isFlexible = !!(
+    workShift?.isFlexible ||
+    String(
+      (policy as { workingHoursType?: string } | null)?.workingHoursType || "",
+    )
+      .toLowerCase()
+      .includes("flex")
+  );
   const isRotating = workShift?.isRotating || false;
   const shiftDay =
-    workShift?.workShiftDay?.find((d) => d.weekDay === dayOfWeek && d.shiftType === "WORK") ?? null;
+    workShift?.workShiftDay?.find(
+      (d) => d.weekDay === dayOfWeek && d.shiftType === "WORK",
+    ) ?? null;
 
   const existingReg = allRegs.find(
     (r) =>
@@ -153,7 +188,9 @@ export async function detectAttendanceActualStatus(params: {
   const isWeekOff = (): boolean => {
     if (!workShift) return false;
     if (isRotating) {
-      const roster = allRosters.find((r) => Number(r.employeeID) === Number(employeeId));
+      const roster = allRosters.find(
+        (r) => Number(r.employeeID) === Number(employeeId),
+      );
       const rDay = roster?.days?.find(
         (d) => new Date(d.workDate ?? "").toISOString().split("T")[0] === date,
       );
@@ -170,8 +207,13 @@ export async function detectAttendanceActualStatus(params: {
       }
       const rawStart = String(h.startDate ?? "");
       const rawEnd = String(h.endDate ?? "");
-      const hs = rawStart.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] || new Date(rawStart).toISOString().split("T")[0];
-      const he = rawEnd.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] || new Date(rawEnd).toISOString().split("T")[0] || hs;
+      const hs =
+        rawStart.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ||
+        new Date(rawStart).toISOString().split("T")[0];
+      const he =
+        rawEnd.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ||
+        new Date(rawEnd).toISOString().split("T")[0] ||
+        hs;
       return !!hs && date >= hs && date <= he;
     });
 
@@ -212,7 +254,10 @@ export async function detectAttendanceActualStatus(params: {
       if (bs > 0 && be > 0 && st <= bs && et >= be) worked -= be - bs;
     }
     if (!isFlexible && policy) {
-      const pol = policy as { trimPreshiftMin?: number; trimPostshiftMin?: number };
+      const pol = policy as {
+        trimPreshiftMin?: number;
+        trimPostshiftMin?: number;
+      };
       worked -= pol.trimPreshiftMin || 0;
       worked -= pol.trimPostshiftMin || 0;
     }
@@ -270,7 +315,8 @@ export async function detectAttendanceActualStatus(params: {
       return build(markAs === "Absent" ? "ABSENT" : "HALFDAY");
     }
     if (lastMin < shiftEndMin - earlyAllow) return build("HALFDAY");
-    if (firstMin > graceEnd && firstMin <= maxLateCutoff) return build("LATE_MARK");
+    if (firstMin > graceEnd && firstMin <= maxLateCutoff)
+      return build("LATE_MARK");
     return build("FULLDAY");
   }
 

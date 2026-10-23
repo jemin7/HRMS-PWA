@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 function todayDismissKey() {
   return `_markout_reminder_dismissed_${new Date().toISOString().slice(0, 10)}`;
@@ -21,13 +22,18 @@ export function EmpMarkoutReminderBanner() {
       return;
     }
     const token =
-      localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      "";
     if (!token) return;
     try {
-      const res = await fetch(`${BACKEND}/emp-location-attendance/markout-reminder`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `${BACKEND}/emp-location-attendance/markout-reminder`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        },
+      );
       if (!res.ok) {
         setMessage(null);
         return;
@@ -57,7 +63,9 @@ export function EmpMarkoutReminderBanner() {
         className="w-5 h-5 text-amber-600 shrink-0 mt-0.5"
       />
       <div className="min-w-0 flex-1">
-        <p className="text-[12px] font-semibold text-amber-900 leading-snug">{message}</p>
+        <p className="text-[12px] font-semibold text-amber-900 leading-snug">
+          {message}
+        </p>
         <Link
           href="/empAttendance"
           className="inline-block mt-1.5 text-[11px] font-bold text-[#4f46e5]"

@@ -42,11 +42,11 @@ import {
 type SystemMetrics = any;
 
 const API = {
-  system: "/backend/system-dashboard/live",
-  companies: "/backend/company",
-  users: "/backend/users",
-  subscriptions: "/backend/subscription",
-  externalApis: "/backend/external-apis",
+  system: "https://hrms-api-test.onrender.com/system-dashboard/live",
+  companies: "https://hrms-api-test.onrender.com/company",
+  users: "https://hrms-api-test.onrender.com/users",
+  subscriptions: "https://hrms-api-test.onrender.com/subscription",
+  externalApis: "https://hrms-api-test.onrender.com/external-apis",
 };
 
 function uptime(seconds?: number) {
@@ -142,7 +142,11 @@ function SummaryMetricCard({
                 : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
             }`}
           >
-            {trendUp ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
+            {trendUp ? (
+              <ArrowUpRight className="size-3.5" />
+            ) : (
+              <ArrowDownRight className="size-3.5" />
+            )}
             {Math.abs(trend)}%
           </div>
         )}
@@ -152,10 +156,18 @@ function SummaryMetricCard({
           {displayValue ?? value.toLocaleString()}
           {suffix}
         </div>
-        <p className="text-sm font-medium text-[#0F172A] dark:text-foreground">{label}</p>
+        <p className="text-sm font-medium text-[#0F172A] dark:text-foreground">
+          {label}
+        </p>
       </div>
       <div className="mt-5 border-t border-[#E5E7EB]/80 pt-4 dark:border-border/60">
-        <StaticSparkline data={spark} color={color} width={280} height={44} className="w-full" />
+        <StaticSparkline
+          data={spark}
+          color={color}
+          width={280}
+          height={44}
+          className="w-full"
+        />
       </div>
     </div>
   );
@@ -164,7 +176,11 @@ function SummaryMetricCard({
 
 export default function SuperDashboard() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
-  const [counts, setCounts] = useState({ tenants: 0, users: 0, subscriptions: 0 });
+  const [counts, setCounts] = useState({
+    tenants: 0,
+    users: 0,
+    subscriptions: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [apiCount, setApiCount] = useState<number | null>(null);
   const metricsFingerprintRef = useRef("");
@@ -174,7 +190,8 @@ export default function SuperDashboard() {
     fetch(API.externalApis, { headers: authHeaders(), cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((body) => {
-        if (!cancelled && Number.isFinite(body?.activeCount)) setApiCount(body.activeCount);
+        if (!cancelled && Number.isFinite(body?.activeCount))
+          setApiCount(body.activeCount);
       })
       .catch(() => {});
     return () => {
@@ -186,12 +203,16 @@ export default function SuperDashboard() {
 
   const loadDashboard = async () => {
     try {
-      const [systemRes, companyRes, usersRes, subscriptionRes] = await Promise.all([
-        fetch(API.system, { headers: authHeaders(), cache: "no-store" }),
-        fetch(API.companies, { headers: authHeaders(), cache: "no-store" }),
-        fetch(API.users, { headers: authHeaders(), cache: "no-store" }),
-        fetch(API.subscriptions, { headers: authHeaders(), cache: "no-store" }),
-      ]);
+      const [systemRes, companyRes, usersRes, subscriptionRes] =
+        await Promise.all([
+          fetch(API.system, { headers: authHeaders(), cache: "no-store" }),
+          fetch(API.companies, { headers: authHeaders(), cache: "no-store" }),
+          fetch(API.users, { headers: authHeaders(), cache: "no-store" }),
+          fetch(API.subscriptions, {
+            headers: authHeaders(),
+            cache: "no-store",
+          }),
+        ]);
 
       const [system, companies, users, subscriptions] = await Promise.all([
         systemRes.ok ? systemRes.json() : null,
@@ -200,11 +221,13 @@ export default function SuperDashboard() {
         subscriptionRes.ok ? subscriptionRes.json() : [],
       ]);
 
-      const companyList = Array.isArray(companies) ? companies : companies?.data ?? [];
-      const userList = Array.isArray(users) ? users : users?.data ?? [];
+      const companyList = Array.isArray(companies)
+        ? companies
+        : (companies?.data ?? []);
+      const userList = Array.isArray(users) ? users : (users?.data ?? []);
       const subscriptionList = Array.isArray(subscriptions)
         ? subscriptions
-        : subscriptions?.data ?? [];
+        : (subscriptions?.data ?? []);
 
       setMetrics((prev: SystemMetrics | null) => {
         const fp = metricsFingerprint(system);
@@ -241,12 +264,24 @@ export default function SuperDashboard() {
     serviceOnline(metrics?.services?.backend) &&
     serviceOnline(metrics?.services?.frontend);
 
-  const resourceChart = useMemo(() => chartSeries(["cpu", "memory", "disk"], 36), [chartSeries]);
-  const networkChart = useMemo(() => chartSeries(["rxSec", "txSec"], 36), [chartSeries]);
-  const dbChart = useMemo(() => chartSeries(["dbIdle", "dbActive", "dbTotal"], 36), [chartSeries]);
+  const resourceChart = useMemo(
+    () => chartSeries(["cpu", "memory", "disk"], 36),
+    [chartSeries],
+  );
+  const networkChart = useMemo(
+    () => chartSeries(["rxSec", "txSec"], 36),
+    [chartSeries],
+  );
+  const dbChart = useMemo(
+    () => chartSeries(["dbIdle", "dbActive", "dbTotal"], 36),
+    [chartSeries],
+  );
 
   const checkedAt = metrics?.checkedAt
-    ? new Date(metrics.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    ? new Date(metrics.checkedAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : "—";
 
   const services = useMemo(
@@ -291,15 +326,23 @@ export default function SuperDashboard() {
     const totalMem = Number(metrics?.memory?.total ?? 1);
 
     return [
-      { name: "node", cpu: backendCpu + frontendCpu, mem: backendMem + frontendMem },
+      {
+        name: "node",
+        cpu: backendCpu + frontendCpu,
+        mem: backendMem + frontendMem,
+      },
       {
         name: "postgres",
-        cpu: serviceOnline(metrics?.services?.postgres) ? Math.min(18, backendCpu + 6) : 0,
+        cpu: serviceOnline(metrics?.services?.postgres)
+          ? Math.min(18, backendCpu + 6)
+          : 0,
         mem: Number(metrics?.database?.sizeBytes ?? 0) * 0.02,
       },
       {
         name: "nginx",
-        cpu: serviceOnline(metrics?.services?.nginx) ? Math.min(8, backendCpu + 2) : 0,
+        cpu: serviceOnline(metrics?.services?.nginx)
+          ? Math.min(8, backendCpu + 2)
+          : 0,
         mem: 48 * 1024 * 1024,
       },
       { name: "systemd", cpu: 2, mem: 32 * 1024 * 1024 },
@@ -407,12 +450,15 @@ export default function SuperDashboard() {
             Super Admin Dashboard <span className="font-normal"></span>
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-[#64748B] dark:text-muted-foreground">
-            Live monitoring of infrastructure, tenants, database, application health and security.
+            Live monitoring of infrastructure, tenants, database, application
+            health and security.
           </p>
         </div>
         <div className="text-right text-xs text-[#64748B] dark:text-muted-foreground">
           <p>Last sync · {checkedAt}</p>
-          <p className="mt-1">{metrics?.server?.hostname ?? "Server"} · auto-refresh 10s</p>
+          <p className="mt-1">
+            {metrics?.server?.hostname ?? "Server"} · auto-refresh 10s
+          </p>
         </div>
       </div>
 
@@ -524,14 +570,26 @@ export default function SuperDashboard() {
         >
           <div className="mb-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-[#F8FAFC] p-3 dark:bg-muted/30">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-[#64748B]">Download</p>
-              <p className="mt-1 text-lg font-bold tabular-nums">{formatRate(metrics?.network?.rxSec)}</p>
-              <p className="text-[11px] text-[#64748B]">Today {formatBytes(metrics?.network?.rxBytes)}</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-[#64748B]">
+                Download
+              </p>
+              <p className="mt-1 text-lg font-bold tabular-nums">
+                {formatRate(metrics?.network?.rxSec)}
+              </p>
+              <p className="text-[11px] text-[#64748B]">
+                Today {formatBytes(metrics?.network?.rxBytes)}
+              </p>
             </div>
             <div className="rounded-xl bg-[#F8FAFC] p-3 dark:bg-muted/30">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-[#64748B]">Upload</p>
-              <p className="mt-1 text-lg font-bold tabular-nums">{formatRate(metrics?.network?.txSec)}</p>
-              <p className="text-[11px] text-[#64748B]">Today {formatBytes(metrics?.network?.txBytes)}</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-[#64748B]">
+                Upload
+              </p>
+              <p className="mt-1 text-lg font-bold tabular-nums">
+                {formatRate(metrics?.network?.txSec)}
+              </p>
+              <p className="text-[11px] text-[#64748B]">
+                Today {formatBytes(metrics?.network?.txBytes)}
+              </p>
             </div>
           </div>
           <EnterpriseAreaChart
@@ -556,18 +614,36 @@ export default function SuperDashboard() {
                 label: "Connections",
                 value: `${metrics?.database?.totalConnections ?? 0}/${metrics?.database?.maxConnections ?? 0}`,
               },
-              { label: "Database Size", value: formatBytes(metrics?.database?.sizeBytes) },
-              { label: "Long Queries", value: metrics?.database?.longRunningQueries ?? 0 },
-              { label: "Blocked Queries", value: metrics?.database?.blockedQueries ?? 0 },
+              {
+                label: "Database Size",
+                value: formatBytes(metrics?.database?.sizeBytes),
+              },
+              {
+                label: "Long Queries",
+                value: metrics?.database?.longRunningQueries ?? 0,
+              },
+              {
+                label: "Blocked Queries",
+                value: metrics?.database?.blockedQueries ?? 0,
+              },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl bg-[#F8FAFC] p-4 dark:bg-muted/30">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-[#64748B]">{item.label}</p>
-                <p className="mt-1 text-xl font-bold tabular-nums">{item.value}</p>
+              <div
+                key={item.label}
+                className="rounded-xl bg-[#F8FAFC] p-4 dark:bg-muted/30"
+              >
+                <p className="text-[11px] font-medium uppercase tracking-wide text-[#64748B]">
+                  {item.label}
+                </p>
+                <p className="mt-1 text-xl font-bold tabular-nums">
+                  {item.value}
+                </p>
               </div>
             ))}
           </div>
           <div className="mt-6">
-            <p className="mb-3 text-sm font-medium">Database connections over time</p>
+            <p className="mb-3 text-sm font-medium">
+              Database connections over time
+            </p>
             <EnterpriseAreaChart
               data={dbChart}
               lines={[
@@ -651,12 +727,14 @@ export default function SuperDashboard() {
                 {
                   label: "Nginx Errors",
                   value: metrics?.logs?.nginxErrorsLast1000Lines ?? 0,
-                  ok: Number(metrics?.logs?.nginxErrorsLast1000Lines ?? 0) === 0,
+                  ok:
+                    Number(metrics?.logs?.nginxErrorsLast1000Lines ?? 0) === 0,
                 },
                 {
                   label: "Backend Errors",
                   value: metrics?.logs?.backendErrorsLast500Lines ?? 0,
-                  ok: Number(metrics?.logs?.backendErrorsLast500Lines ?? 0) === 0,
+                  ok:
+                    Number(metrics?.logs?.backendErrorsLast500Lines ?? 0) === 0,
                 },
               ].map((row) => (
                 <div
@@ -668,11 +746,18 @@ export default function SuperDashboard() {
                       className={`size-2 shrink-0 rounded-full ${row.ok ? "bg-emerald-500" : "bg-amber-500"}`}
                     />
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{row.label}</p>
-                      <p className="text-xs text-[#64748B] dark:text-muted-foreground">{row.value}</p>
+                      <p className="truncate text-sm font-medium">
+                        {row.label}
+                      </p>
+                      <p className="text-xs text-[#64748B] dark:text-muted-foreground">
+                        {row.value}
+                      </p>
                     </div>
                   </div>
-                  <StatusPill label={row.ok ? "Secure" : "Review"} tone={row.ok ? "ok" : "warn"} />
+                  <StatusPill
+                    label={row.ok ? "Secure" : "Review"}
+                    tone={row.ok ? "ok" : "warn"}
+                  />
                 </div>
               ))}
             </div>
@@ -694,7 +779,9 @@ export default function SuperDashboard() {
               <div key={proc.name}>
                 <div className="mb-1.5 flex items-center justify-between text-sm">
                   <span className="font-medium capitalize">{proc.name}</span>
-                  <span className="text-xs tabular-nums text-[#64748B]">{proc.cpu.toFixed(1)}% CPU</span>
+                  <span className="text-xs tabular-nums text-[#64748B]">
+                    {proc.cpu.toFixed(1)}% CPU
+                  </span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-[#E2E8F0] dark:bg-muted">
                   <div
@@ -707,14 +794,34 @@ export default function SuperDashboard() {
           </div>
           <div className="mt-6 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-[#F8FAFC] p-3 dark:bg-muted/30">
-              <p className="text-[11px] font-medium text-[#64748B]">CPU usage</p>
-              <p className="text-lg font-bold">{metrics?.cpu?.usagePercent ?? 0}%</p>
-              <StaticSparkline data={spark("cpu", 16)} color={SAAS.blue} width={120} height={32} className="mt-2" />
+              <p className="text-[11px] font-medium text-[#64748B]">
+                CPU usage
+              </p>
+              <p className="text-lg font-bold">
+                {metrics?.cpu?.usagePercent ?? 0}%
+              </p>
+              <StaticSparkline
+                data={spark("cpu", 16)}
+                color={SAAS.blue}
+                width={120}
+                height={32}
+                className="mt-2"
+              />
             </div>
             <div className="rounded-xl bg-[#F8FAFC] p-3 dark:bg-muted/30">
-              <p className="text-[11px] font-medium text-[#64748B]">Memory usage</p>
-              <p className="text-lg font-bold">{metrics?.memory?.usagePercent ?? 0}%</p>
-              <StaticSparkline data={spark("memory", 16)} color={SAAS.purple} width={120} height={32} className="mt-2" />
+              <p className="text-[11px] font-medium text-[#64748B]">
+                Memory usage
+              </p>
+              <p className="text-lg font-bold">
+                {metrics?.memory?.usagePercent ?? 0}%
+              </p>
+              <StaticSparkline
+                data={spark("memory", 16)}
+                color={SAAS.purple}
+                width={120}
+                height={32}
+                className="mt-2"
+              />
             </div>
           </div>
         </Panel>
@@ -722,127 +829,166 @@ export default function SuperDashboard() {
 
       {/* Row 4 — PM2 Runtime */}
       <div className={lazySection}>
-      <Panel title="PM2 Runtime" subtitle="Application process monitoring">
-        <div className="grid gap-6 lg:grid-cols-2">
-          {[
-            { label: "Backend", data: metrics?.pm2?.backend },
-            { label: "Frontend", data: metrics?.pm2?.frontend },
-          ].map(({ label, data }) => (
-            <div key={label} className="rounded-2xl border border-[#E5E7EB]/80 p-5 dark:border-border/60">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <IconBubble icon={Server} color={SAAS.blue} className="size-10" />
-                  <div>
-                    <h4 className="font-semibold">{label}</h4>
-                    <p className="text-xs text-[#64748B]">PID {data?.pid ?? "—"}</p>
+        <Panel title="PM2 Runtime" subtitle="Application process monitoring">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {[
+              { label: "Backend", data: metrics?.pm2?.backend },
+              { label: "Frontend", data: metrics?.pm2?.frontend },
+            ].map(({ label, data }) => (
+              <div
+                key={label}
+                className="rounded-2xl border border-[#E5E7EB]/80 p-5 dark:border-border/60"
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <IconBubble
+                      icon={Server}
+                      color={SAAS.blue}
+                      className="size-10"
+                    />
+                    <div>
+                      <h4 className="font-semibold">{label}</h4>
+                      <p className="text-xs text-[#64748B]">
+                        PID {data?.pid ?? "—"}
+                      </p>
+                    </div>
+                  </div>
+                  <StatusPill
+                    label={serviceOnline(data?.status) ? "Online" : "Offline"}
+                    tone={serviceOnline(data?.status) ? "ok" : "danger"}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-xl bg-[#F8FAFC] p-3 dark:bg-muted/30">
+                    <p className="text-[11px] text-[#64748B]">CPU</p>
+                    <p className="font-bold">{data?.cpu ?? 0}%</p>
+                  </div>
+                  <div className="rounded-xl bg-[#F8FAFC] p-3 dark:bg-muted/30">
+                    <p className="text-[11px] text-[#64748B]">Memory</p>
+                    <p className="font-bold">{formatBytes(data?.memory)}</p>
+                  </div>
+                  <div className="rounded-xl bg-[#F8FAFC] p-3 dark:bg-muted/30">
+                    <p className="text-[11px] text-[#64748B]">Restarts</p>
+                    <p className="font-bold">{data?.restarts ?? 0}</p>
+                  </div>
+                  <div className="rounded-xl bg-[#F8FAFC] p-3 dark:bg-muted/30">
+                    <p className="text-[11px] text-[#64748B]">Uptime</p>
+                    <p className="font-bold">
+                      {uptime((data?.uptimeMs ?? 0) / 1000)}
+                    </p>
                   </div>
                 </div>
-                <StatusPill
-                  label={serviceOnline(data?.status) ? "Online" : "Offline"}
-                  tone={serviceOnline(data?.status) ? "ok" : "danger"}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-xl bg-[#F8FAFC] p-3 dark:bg-muted/30">
-                  <p className="text-[11px] text-[#64748B]">CPU</p>
-                  <p className="font-bold">{data?.cpu ?? 0}%</p>
-                </div>
-                <div className="rounded-xl bg-[#F8FAFC] p-3 dark:bg-muted/30">
-                  <p className="text-[11px] text-[#64748B]">Memory</p>
-                  <p className="font-bold">{formatBytes(data?.memory)}</p>
-                </div>
-                <div className="rounded-xl bg-[#F8FAFC] p-3 dark:bg-muted/30">
-                  <p className="text-[11px] text-[#64748B]">Restarts</p>
-                  <p className="font-bold">{data?.restarts ?? 0}</p>
-                </div>
-                <div className="rounded-xl bg-[#F8FAFC] p-3 dark:bg-muted/30">
-                  <p className="text-[11px] text-[#64748B]">Uptime</p>
-                  <p className="font-bold">{uptime((data?.uptimeMs ?? 0) / 1000)}</p>
+                <div className="mt-4">
+                  <StaticSparkline
+                    data={spark("memory", 20)}
+                    color={SAAS.blue}
+                    width={200}
+                    height={36}
+                  />
                 </div>
               </div>
-              <div className="mt-4">
-                <StaticSparkline data={spark("memory", 20)} color={SAAS.blue} width={200} height={36} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </Panel>
+            ))}
+          </div>
+        </Panel>
       </div>
 
       {/* Row 5 — Activity timeline */}
       <div className={lazySection}>
-      <Panel title="System Activity Timeline" subtitle="Recent platform events">
-        <div className="space-y-1">
-          {activityItems.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-start gap-4 rounded-xl px-3 py-3"
-            >
+        <Panel
+          title="System Activity Timeline"
+          subtitle="Recent platform events"
+        >
+          <div className="space-y-1">
+            {activityItems.map((item) => (
               <div
-                className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full"
-                style={{
-                  backgroundColor:
-                    item.status === "ok"
-                      ? `${SAAS.green}18`
-                      : item.status === "warn"
-                        ? `${SAAS.amber}18`
-                        : `${SAAS.red}18`,
-                  color:
-                    item.status === "ok" ? SAAS.green : item.status === "warn" ? SAAS.amber : SAAS.red,
-                }}
+                key={item.id}
+                className="flex items-start gap-4 rounded-xl px-3 py-3"
               >
-                {item.icon === "shield" ? (
-                  <Shield className="size-4" />
-                ) : item.icon === "database" ? (
-                  <Database className="size-4" />
-                ) : item.icon === "server" ? (
-                  <Server className="size-4" />
-                ) : (
-                  <Activity className="size-4" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium">{item.user}</span>
-                  <StatusPill
-                    label={item.status === "ok" ? "Completed" : "Attention"}
-                    tone={item.status === "ok" ? "ok" : "warn"}
-                  />
+                <div
+                  className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full"
+                  style={{
+                    backgroundColor:
+                      item.status === "ok"
+                        ? `${SAAS.green}18`
+                        : item.status === "warn"
+                          ? `${SAAS.amber}18`
+                          : `${SAAS.red}18`,
+                    color:
+                      item.status === "ok"
+                        ? SAAS.green
+                        : item.status === "warn"
+                          ? SAAS.amber
+                          : SAAS.red,
+                  }}
+                >
+                  {item.icon === "shield" ? (
+                    <Shield className="size-4" />
+                  ) : item.icon === "database" ? (
+                    <Database className="size-4" />
+                  ) : item.icon === "server" ? (
+                    <Server className="size-4" />
+                  ) : (
+                    <Activity className="size-4" />
+                  )}
                 </div>
-                <p className="mt-0.5 text-sm text-[#64748B] dark:text-muted-foreground">{item.description}</p>
-                <p className="mt-1 text-[11px] text-[#64748B]/80">{item.time}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium">{item.user}</span>
+                    <StatusPill
+                      label={item.status === "ok" ? "Completed" : "Attention"}
+                      tone={item.status === "ok" ? "ok" : "warn"}
+                    />
+                  </div>
+                  <p className="mt-0.5 text-sm text-[#64748B] dark:text-muted-foreground">
+                    {item.description}
+                  </p>
+                  <p className="mt-1 text-[11px] text-[#64748B]/80">
+                    {item.time}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </Panel>
+            ))}
+          </div>
+        </Panel>
       </div>
 
       {/* Row 6 — Storage */}
       <div className={lazySection}>
-      <Panel title="Storage" subtitle="Volume capacity across mounted filesystems">
-        <div className="space-y-5">
-          {(disks.length ? disks : [metrics?.disk?.root]).filter(Boolean).slice(0, 6).map((d: any) => (
-            <CapacityBar
-              key={`${d.mount}-${d.filesystem}`}
-              label={d.mount || "/"}
-              used={d.used ?? 0}
-              total={d.size ?? 0}
-            />
-          ))}
-          {disks.length === 0 && !metrics?.disk?.root ? (
-            <p className="text-sm text-[#64748B]">No storage data available.</p>
-          ) : null}
-        </div>
-      </Panel>
+        <Panel
+          title="Storage"
+          subtitle="Volume capacity across mounted filesystems"
+        >
+          <div className="space-y-5">
+            {(disks.length ? disks : [metrics?.disk?.root])
+              .filter(Boolean)
+              .slice(0, 6)
+              .map((d: any) => (
+                <CapacityBar
+                  key={`${d.mount}-${d.filesystem}`}
+                  label={d.mount || "/"}
+                  used={d.used ?? 0}
+                  total={d.size ?? 0}
+                />
+              ))}
+            {disks.length === 0 && !metrics?.disk?.root ? (
+              <p className="text-sm text-[#64748B]">
+                No storage data available.
+              </p>
+            ) : null}
+          </div>
+        </Panel>
       </div>
 
       {/* Floating status widget */}
       <div className="pointer-events-none fixed bottom-6 right-6 z-40 hidden lg:block">
-        <div className={`${panelCard} pointer-events-auto w-[220px] bg-white p-4 dark:bg-card`}>
+        <div
+          className={`${panelCard} pointer-events-auto w-[220px] bg-white p-4 dark:bg-card`}
+        >
           <div className="flex items-center gap-2">
             <span className="size-2.5 rounded-full bg-emerald-500" />
-            <p className="text-sm font-semibold text-[#0F172A] dark:text-foreground">System Status</p>
+            <p className="text-sm font-semibold text-[#0F172A] dark:text-foreground">
+              System Status
+            </p>
           </div>
           <div className="mt-3 space-y-2 text-xs text-[#64748B]">
             <div className="flex justify-between gap-2">
@@ -852,12 +998,16 @@ export default function SuperDashboard() {
             <div className="flex justify-between gap-2">
               <span>Platform Status</span>
               <span className="font-semibold text-emerald-600">
-                {allServicesOk && alerts.length === 0 ? "Operational" : "Degraded"}
+                {allServicesOk && alerts.length === 0
+                  ? "Operational"
+                  : "Degraded"}
               </span>
             </div>
             <div className="flex justify-between gap-2">
               <span>Health Score</span>
-              <span className="font-medium text-[#0F172A]">{systemHealth}%</span>
+              <span className="font-medium text-[#0F172A]">
+                {systemHealth}%
+              </span>
             </div>
           </div>
         </div>

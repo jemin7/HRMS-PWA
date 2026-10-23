@@ -22,7 +22,10 @@ export default function SystemApisPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/backend/external-apis", { headers: authHeaders(), cache: "no-store" })
+    fetch("https://hrms-api-test.onrender.com/external-apis", {
+      headers: authHeaders(),
+      cache: "no-store",
+    })
       .then(async (res) => {
         const body = await res.json().catch(() => null);
         if (!res.ok) throw new Error(body?.message || "Could not load APIs");
@@ -55,7 +58,9 @@ export default function SystemApisPage() {
             <div className="h-full rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm dark:border-border dark:bg-card">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-base font-semibold text-[#0F172A] dark:text-foreground">{row.name}</h2>
+                  <h2 className="text-base font-semibold text-[#0F172A] dark:text-foreground">
+                    {row.name}
+                  </h2>
                   <p className="text-xs text-[#64748B]">{row.provider}</p>
                 </div>
                 <span

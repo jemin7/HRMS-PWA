@@ -2,7 +2,8 @@
 
 import { useCallback, useState } from "react";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export type LeaveBalanceCard = {
   key: "sick" | "casual" | "privileged";
@@ -26,22 +27,30 @@ export function useEmpLeaveBalance() {
     try {
       const [empRes, plDataRaw, balanceRecordRaw] = await Promise.all([
         robustGet<any>(`${BACKEND}/manage-emp/${employeeId}`),
-        robustGet<any[]>(`${BACKEND}/privileged-leave/employee/${employeeId}`).catch(() => []),
-        robustGet<any>(`${BACKEND}/emp-leave-balance/employee/${employeeId}`).catch(() => ({})),
+        robustGet<any[]>(
+          `${BACKEND}/privileged-leave/employee/${employeeId}`,
+        ).catch(() => []),
+        robustGet<any>(
+          `${BACKEND}/emp-leave-balance/employee/${employeeId}`,
+        ).catch(() => ({})),
       ]);
 
       const policy =
         empRes.leavePolicy ||
-        ([...(empRes.empLeavePolicy ?? [])].sort(
+        [...(empRes.empLeavePolicy ?? [])].sort(
           (a: any, b: any) =>
-            new Date(b.effectFrom || 0).getTime() - new Date(a.effectFrom || 0).getTime(),
-        )[0]?.leavePolicy) ||
+            new Date(b.effectFrom || 0).getTime() -
+            new Date(a.effectFrom || 0).getTime(),
+        )[0]?.leavePolicy ||
         {};
 
       const totalSick = Number(policy.sickLeaveCount) || 0;
       const totalCasual = Number(policy.casualLeaveCount) || 0;
       const totalPrivileged = Array.isArray(plDataRaw)
-        ? plDataRaw.reduce((s: number, e: any) => s + (Number(e.balanceLeaves) || 0), 0)
+        ? plDataRaw.reduce(
+            (s: number, e: any) => s + (Number(e.balanceLeaves) || 0),
+            0,
+          )
         : 0;
 
       const balanceRecord: any = balanceRecordRaw ?? {};
@@ -57,7 +66,11 @@ export function useEmpLeaveBalance() {
       setCards([
         { key: "sick", label: "Sick", ...mk(usedSick, totalSick) },
         { key: "casual", label: "Casual", ...mk(usedCasual, totalCasual) },
-        { key: "privileged", label: "Privilege", ...mk(usedPrivileged, totalPrivileged) },
+        {
+          key: "privileged",
+          label: "Privilege",
+          ...mk(usedPrivileged, totalPrivileged),
+        },
       ]);
     } catch {
       setCards([]);

@@ -19,7 +19,8 @@ import { splitPreviewRecords } from "../utils/empListLimit";
 import { EmpRecordHistorySheet } from "../components/emp/EmpRecordHistorySheet";
 import { EmpListViewMoreButton } from "../components/emp/EmpListViewMoreButton";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 const HISTORY_PREVIEW = 5;
 
 export default function EmpAttendanceMobilePage() {
@@ -34,17 +35,22 @@ export default function EmpAttendanceMobilePage() {
 
   const getToken = () =>
     typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
+      ? localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        ""
       : "";
 
   const loadStatus = useCallback(async () => {
     const token = getToken();
     if (!token) return;
     try {
-      const res = await fetch(`${BACKEND}/emp-location-attendance/today?_=${Date.now()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `${BACKEND}/emp-location-attendance/today?_=${Date.now()}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        },
+      );
       if (res.ok) {
         const data = await res.json();
         setTodayStatus(data);
@@ -61,10 +67,13 @@ export default function EmpAttendanceMobilePage() {
     setHistoryLoading(true);
     const { from, to } = lastNDaysRange(30);
     try {
-      const res = await fetch(`${BACKEND}/emp-location-attendance/my?from=${from}&to=${to}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `${BACKEND}/emp-location-attendance/my?from=${from}&to=${to}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        },
+      );
       if (res.ok) {
         const data: AttendanceLocationRecord[] = await res.json();
         setAllDays(groupAttendanceByDay(Array.isArray(data) ? data : []));
@@ -100,16 +109,19 @@ export default function EmpAttendanceMobilePage() {
     return allDays;
   }, [allDays, searchDate]);
 
-  const { preview: previewDays, history: historyDays, hasHistory } = splitPreviewRecords(
-    listDays,
-    HISTORY_PREVIEW,
-  );
+  const {
+    preview: previewDays,
+    history: historyDays,
+    hasHistory,
+  } = splitPreviewRecords(listDays, HISTORY_PREVIEW);
   const displayDays = searchDate ? listDays : previewDays;
 
   return (
     <>
       <div className="flex flex-col px-4 pt-4 pb-4">
-        <h1 className="text-[20px] font-bold text-gray-900 mb-0.5">Attendance</h1>
+        <h1 className="text-[20px] font-bold text-gray-900 mb-0.5">
+          Attendance
+        </h1>
         <p className="text-[11px] text-gray-500 mb-3">
           Today&apos;s status · latest {HISTORY_PREVIEW} days below
         </p>
@@ -125,7 +137,9 @@ export default function EmpAttendanceMobilePage() {
 
         <div className="flex flex-col border-t border-gray-200/80 pt-4 mt-1">
           <div className="mb-2">
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">History</p>
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+              History
+            </p>
             <EmpMobileDateField
               label="Search by date"
               value={searchDate}
@@ -141,19 +155,27 @@ export default function EmpAttendanceMobilePage() {
                 Clear · show latest {HISTORY_PREVIEW} days
               </button>
             ) : (
-              <p className="text-[10px] text-gray-400 mt-1">Tap a date for full details</p>
+              <p className="text-[10px] text-gray-400 mt-1">
+                Tap a date for full details
+              </p>
             )}
           </div>
 
           <div className="pb-2">
             {historyLoading ? (
               <div className="flex flex-col items-center py-8 gap-2">
-                <Icon icon="solar:refresh-bold-duotone" className="w-7 h-7 text-blue-400 animate-spin" />
+                <Icon
+                  icon="solar:refresh-bold-duotone"
+                  className="w-7 h-7 text-blue-400 animate-spin"
+                />
                 <p className="text-[12px] text-gray-400">Loading…</p>
               </div>
             ) : displayDays.length === 0 ? (
               <div className="flex flex-col items-center py-8 gap-2">
-                <Icon icon="solar:calendar-bold-duotone" className="w-9 h-9 text-gray-200" />
+                <Icon
+                  icon="solar:calendar-bold-duotone"
+                  className="w-9 h-9 text-gray-200"
+                />
                 <p className="text-[12px] text-gray-400">No records</p>
               </div>
             ) : (
@@ -169,7 +191,10 @@ export default function EmpAttendanceMobilePage() {
                   ))}
                 </div>
                 {!searchDate && hasHistory && (
-                  <EmpListViewMoreButton count={historyDays.length} onClick={() => setHistoryOpen(true)} />
+                  <EmpListViewMoreButton
+                    count={historyDays.length}
+                    onClick={() => setHistoryOpen(true)}
+                  />
                 )}
               </>
             )}

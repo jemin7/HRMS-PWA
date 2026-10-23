@@ -12,10 +12,20 @@ import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Textarea } from "@/app/components/ui/textarea";
 
-const TASK_TYPES = ["Internal Task", "Customer Visit", "SERVICE", "PRODUCT_INQUIRY", "PURCHASE_ORDER"];
+const TASK_TYPES = [
+  "Internal Task",
+  "Customer Visit",
+  "SERVICE",
+  "PRODUCT_INQUIRY",
+  "PURCHASE_ORDER",
+];
 const PRIORITIES = ["Urgent", "High", "Medium", "Low"];
 
-type Dept = { id: number; departmentName?: string | null; companyID?: number | null };
+type Dept = {
+  id: number;
+  departmentName?: string | null;
+  companyID?: number | null;
+};
 type AssignEmployee = {
   id: number;
   employeeID?: string | null;
@@ -23,7 +33,12 @@ type AssignEmployee = {
   employeeLastName?: string | null;
   companyName?: string | null;
 };
-type CustomerOpt = { id: number; customerCode?: string; customerName?: string; label?: string };
+type CustomerOpt = {
+  id: number;
+  customerCode?: string;
+  customerName?: string;
+  label?: string;
+};
 type SiteOpt = {
   id: number;
   branchName?: string;
@@ -55,8 +70,11 @@ const fieldClass =
 const labelClass = "text-xs font-semibold text-gray-600 mb-1 block";
 
 function empLabel(e: AssignEmployee): string {
-  const name = `${e.employeeFirstName ?? ""} ${e.employeeLastName ?? ""}`.trim();
-  const base = name ? `${name}${e.employeeID ? ` (${e.employeeID})` : ""}` : e.employeeID || `#${e.id}`;
+  const name =
+    `${e.employeeFirstName ?? ""} ${e.employeeLastName ?? ""}`.trim();
+  const base = name
+    ? `${name}${e.employeeID ? ` (${e.employeeID})` : ""}`
+    : e.employeeID || `#${e.id}`;
   return e.companyName ? `${base} · ${e.companyName}` : base;
 }
 
@@ -124,9 +142,9 @@ export function MobileTaskCreateSheet({
     if (!open || !user) return;
     setLoadingMeta(true);
     Promise.all([
-      fetch("/backend/departments", { cache: "no-store" }).then((r) =>
-        r.ok ? r.json() : [],
-      ),
+      fetch("https://hrms-api-test.onrender.com/departments", {
+        cache: "no-store",
+      }).then((r) => (r.ok ? r.json() : [])),
       taskFetch<CustomerOpt[]>("/task-customers/dropdown", user, undefined, {
         q: "",
         limit: 80,
@@ -211,7 +229,9 @@ export function MobileTaskCreateSheet({
         priority: form.priority,
         createdByEmployeeID: creatorEmp.id,
         assignedEmployeeIds:
-          form.assignedEmployeeIds.length > 0 ? form.assignedEmployeeIds : undefined,
+          form.assignedEmployeeIds.length > 0
+            ? form.assignedEmployeeIds
+            : undefined,
       };
       if (isCustomerVisit) {
         if (form.customerID) payload.customerID = Number(form.customerID);
@@ -247,7 +267,9 @@ export function MobileTaskCreateSheet({
             <Input
               id="desktop-task-title"
               value={form.taskName}
-              onChange={(e) => setForm((p) => ({ ...p, taskName: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, taskName: e.target.value }))
+              }
               placeholder="Enter task name"
             />
           </div>
@@ -304,7 +326,9 @@ export function MobileTaskCreateSheet({
               id="desktop-task-priority"
               className="app-select w-full"
               value={form.priority}
-              onChange={(e) => setForm((p) => ({ ...p, priority: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, priority: e.target.value }))
+              }
             >
               {PRIORITIES.map((p) => (
                 <option key={p} value={p}>
@@ -323,7 +347,11 @@ export function MobileTaskCreateSheet({
                   className="app-select w-full"
                   value={form.customerID}
                   onChange={(e) =>
-                    setForm((p) => ({ ...p, customerID: e.target.value, siteID: "" }))
+                    setForm((p) => ({
+                      ...p,
+                      customerID: e.target.value,
+                      siteID: "",
+                    }))
                   }
                 >
                   <option value="">Select customer</option>
@@ -341,7 +369,9 @@ export function MobileTaskCreateSheet({
                   id="desktop-task-site"
                   className="app-select w-full"
                   value={form.siteID}
-                  onChange={(e) => setForm((p) => ({ ...p, siteID: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, siteID: e.target.value }))
+                  }
                   disabled={!form.customerID}
                 >
                   <option value="">
@@ -378,7 +408,9 @@ export function MobileTaskCreateSheet({
               id="desktop-task-due"
               type="datetime-local"
               value={form.dueDateTime}
-              onChange={(e) => setForm((p) => ({ ...p, dueDateTime: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, dueDateTime: e.target.value }))
+              }
               required={form.assignedEmployeeIds.length > 0}
             />
           </div>
@@ -388,7 +420,9 @@ export function MobileTaskCreateSheet({
             <Textarea
               id="desktop-task-desc"
               value={form.description}
-              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, description: e.target.value }))
+              }
               placeholder="Task details (optional)"
               rows={4}
             />
@@ -468,7 +502,8 @@ export function MobileTaskCreateSheet({
       <div
         className="fixed inset-x-0 bottom-0 z-[201] bg-white rounded-t-2xl flex flex-col shadow-2xl"
         style={{
-          maxHeight: "min(92dvh, calc(100dvh - env(safe-area-inset-top) - 12px))",
+          maxHeight:
+            "min(92dvh, calc(100dvh - env(safe-area-inset-top) - 12px))",
         }}
         role="dialog"
         aria-modal="true"
@@ -476,7 +511,10 @@ export function MobileTaskCreateSheet({
       >
         <div className="shrink-0 px-5 pt-4 pb-3 border-b border-gray-100 flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h3 id="mobile-task-create-title" className="text-[17px] font-semibold text-gray-900">
+            <h3
+              id="mobile-task-create-title"
+              className="text-[17px] font-semibold text-gray-900"
+            >
               New task
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
@@ -498,7 +536,9 @@ export function MobileTaskCreateSheet({
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           {loadingMeta && (
-            <p className="text-xs text-gray-400 text-center">Loading options…</p>
+            <p className="text-xs text-gray-400 text-center">
+              Loading options…
+            </p>
           )}
 
           <div>
@@ -506,7 +546,9 @@ export function MobileTaskCreateSheet({
             <input
               type="text"
               value={form.taskName}
-              onChange={(e) => setForm((p) => ({ ...p, taskName: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, taskName: e.target.value }))
+              }
               placeholder="Enter task name"
               className={fieldClass}
             />
@@ -539,7 +581,9 @@ export function MobileTaskCreateSheet({
               <select
                 className={fieldClass}
                 value={form.priority}
-                onChange={(e) => setForm((p) => ({ ...p, priority: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, priority: e.target.value }))
+                }
               >
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>
@@ -580,7 +624,11 @@ export function MobileTaskCreateSheet({
                   className={fieldClass}
                   value={form.customerID}
                   onChange={(e) =>
-                    setForm((p) => ({ ...p, customerID: e.target.value, siteID: "" }))
+                    setForm((p) => ({
+                      ...p,
+                      customerID: e.target.value,
+                      siteID: "",
+                    }))
                   }
                 >
                   <option value="">Select customer</option>
@@ -597,7 +645,9 @@ export function MobileTaskCreateSheet({
                 <select
                   className={fieldClass}
                   value={form.siteID}
-                  onChange={(e) => setForm((p) => ({ ...p, siteID: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, siteID: e.target.value }))
+                  }
                   disabled={!form.customerID}
                 >
                   <option value="">
@@ -621,7 +671,9 @@ export function MobileTaskCreateSheet({
             <label className={labelClass}>Description</label>
             <textarea
               value={form.description}
-              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, description: e.target.value }))
+              }
               placeholder="Task details (optional)"
               rows={3}
               className={`${fieldClass} min-h-[80px] resize-none`}
@@ -645,7 +697,9 @@ export function MobileTaskCreateSheet({
               <input
                 type="datetime-local"
                 value={form.dueDateTime}
-                onChange={(e) => setForm((p) => ({ ...p, dueDateTime: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, dueDateTime: e.target.value }))
+                }
                 className={fieldClass}
                 required={form.assignedEmployeeIds.length > 0}
               />
@@ -684,7 +738,9 @@ export function MobileTaskCreateSheet({
                           onChange={() => toggleAssignee(emp.id)}
                           className="h-4 w-4 rounded border-gray-300"
                         />
-                        <span className="text-sm text-gray-900">{empLabel(emp)}</span>
+                        <span className="text-sm text-gray-900">
+                          {empLabel(emp)}
+                        </span>
                       </label>
                     ))
                   )}

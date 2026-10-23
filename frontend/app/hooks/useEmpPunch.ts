@@ -1,10 +1,14 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { fetchGPSOnUserGesture, type LocationCoords } from "../utils/empGeolocation";
+import {
+  fetchGPSOnUserGesture,
+  type LocationCoords,
+} from "../utils/empGeolocation";
 import { setPageCache } from "../utils/pageCache";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export interface TodayStatus {
   isCheckedIn: boolean;
@@ -30,10 +34,15 @@ export interface TodayStatus {
   absentDeclaration?: { leaveType?: string; reason?: string };
 }
 
-export type PunchCheckType = "CHECK_IN" | "CHECK_OUT" | "BREAK_IN" | "BREAK_OUT";
+export type PunchCheckType =
+  | "CHECK_IN"
+  | "CHECK_OUT"
+  | "BREAK_IN"
+  | "BREAK_OUT";
 
 function parseUA(ua: string) {
-  let browser = "Unknown", os = "Unknown";
+  let browser = "Unknown",
+    os = "Unknown";
   if (/Edg\//i.test(ua)) browser = "Edge";
   else if (/Chrome/i.test(ua)) browser = "Chrome";
   else if (/Firefox/i.test(ua)) browser = "Firefox";
@@ -114,7 +123,8 @@ export function useEmpPunch(onStatusChange?: (s: TodayStatus) => void) {
       setPunchLoading(true);
       setLocationLoading(true);
       try {
-        const location: LocationCoords = extras?.location ?? (await fetchGPSOnUserGesture());
+        const location: LocationCoords =
+          extras?.location ?? (await fetchGPSOnUserGesture());
         let photoUrl: string | undefined;
         if (extras?.photoFile) {
           photoUrl = await uploadPunchPhoto(extras.photoFile);
@@ -124,7 +134,10 @@ export function useEmpPunch(onStatusChange?: (s: TodayStatus) => void) {
         const token = getToken();
         const res = await fetch(`${BACKEND}/emp-location-attendance/punch`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({
             checkType,
             latitude: location.latitude,
@@ -168,11 +181,17 @@ export function useEmpPunch(onStatusChange?: (s: TodayStatus) => void) {
       setPunchLoading(true);
       try {
         const token = getToken();
-        const res = await fetch(`${BACKEND}/emp-location-attendance/mark-absent`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ reason }),
-        });
+        const res = await fetch(
+          `${BACKEND}/emp-location-attendance/mark-absent`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ reason }),
+          },
+        );
         if (!res.ok) {
           const body = await res.json().catch(() => null);
           throw new Error(apiErrorMessage(body, "Failed to mark absent"));

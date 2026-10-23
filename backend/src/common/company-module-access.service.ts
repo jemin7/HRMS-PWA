@@ -74,12 +74,32 @@ export class CompanyModuleAccessService {
     const hit = this.cache.get(companyId);
     if (hit && Date.now() - hit.at < CACHE_MS) return hit.decision;
 
-    const latest = await this.prisma.companySubscription.findFirst({
+    const subscriptionInclude = {
+      plan: { include: { assignedModules: { include: { module: true } } } },
+    };
+
+    // Prefer a subscription that is active right now. Ordering only by endDate can
+    // select a cancelled, renewed, inactive, or future-dated row over the current
+    // plan and incorrectly deny access to modules included in the active plan.
+    const now = new Date();
+    const current = await this.prisma.companySubscription.findFirst({
+      where: {
+        companyID: companyId,
+        status: SubscriptionStatus.ACTIVE,
+        isActive: true,
+        startDate: { lte: now },
+        endDate: { gte: now },
+      },
+      orderBy: [{ startDate: 'desc' }, { endDate: 'desc' }],
+      include: subscriptionInclude,
+    });
+
+    // Keep the most recent record as a fallback so callers receive the existing
+    // NO_ACTIVE_SUBSCRIPTION / SUBSCRIPTION_EXPIRED decision when none is current.
+    const latest = current ?? await this.prisma.companySubscription.findFirst({
       where: { companyID: companyId },
       orderBy: { endDate: 'desc' },
-      include: {
-        plan: { include: { assignedModules: { include: { module: true } } } },
-      },
+      include: subscriptionInclude,
     });
     const decision = this.decide(companyId, latest);
     this.cache.set(companyId, { at: Date.now(), decision });

@@ -21,7 +21,8 @@ import {
   detectAttendanceActualStatus,
 } from "@/app/utils/attendanceActualStatus";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 function todayDateString(): string {
   const now = new Date();
@@ -143,15 +144,20 @@ export function TeamAttendanceRegulariseModal({
     setSubmitting(true);
     try {
       const payload = {
-        serviceProviderID: employee.serviceProviderID ?? user?.serviceProviderID,
+        serviceProviderID:
+          employee.serviceProviderID ?? user?.serviceProviderID,
         companyID: employee.companyID,
         branchesID: employee.branchesID,
         manageEmployeeID: employeeId,
         attendanceDate: new Date(attendanceDate),
         day,
         checkInTime: checkInTime ? new Date(`2000-01-01T${checkInTime}`) : null,
-        checkOutTime: checkOutTime ? new Date(`2000-01-01T${checkOutTime}`) : null,
-        actualStatus: actualStatus ? actualStatus.replace(" (Regularized)", "") : null,
+        checkOutTime: checkOutTime
+          ? new Date(`2000-01-01T${checkOutTime}`)
+          : null,
+        actualStatus: actualStatus
+          ? actualStatus.replace(" (Regularized)", "")
+          : null,
         requestedStatus,
         reason: reason.trim(),
         remarks: null,
@@ -195,7 +201,9 @@ export function TeamAttendanceRegulariseModal({
             Regularize attendance
           </DialogTitle>
           <DialogDescription>
-            {employeeName ? `Submit attendance regularization for ${employeeName}.` : "Submit attendance regularization."}
+            {employeeName
+              ? `Submit attendance regularization for ${employeeName}.`
+              : "Submit attendance regularization."}
           </DialogDescription>
         </DialogHeader>
 
@@ -208,11 +216,15 @@ export function TeamAttendanceRegulariseModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="team-reg-actual">Actual status (system detected)</Label>
+            <Label htmlFor="team-reg-actual">
+              Actual status (system detected)
+            </Label>
             <div className="relative">
               <Input
                 id="team-reg-actual"
-                value={loadingStatus ? "Detecting status…" : actualStatus || "—"}
+                value={
+                  loadingStatus ? "Detecting status…" : actualStatus || "—"
+                }
                 readOnly
                 className="bg-muted pr-10"
               />
@@ -255,7 +267,12 @@ export function TeamAttendanceRegulariseModal({
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={submitting}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={loadingStatus || submitting}>

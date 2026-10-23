@@ -10,14 +10,18 @@ import { useEmpPortalDesktop } from "@/app/components/layout/EmpPortalShell";
 import { EmpTeamApprovalsPanel } from "./EmpTeamApprovalsPanel";
 import { EmpDesktopPage } from "./desktop/EmpDesktopPage";
 import { FilterBar } from "@/app/components/app/filter-bar";
-import { listCardClass, listIconButtonClass } from "@/app/components/app/list-ui-styles";
+import {
+  listCardClass,
+  listIconButtonClass,
+} from "@/app/components/app/list-ui-styles";
 import { cn } from "@/app/utils/cn";
 import { fmtJoined } from "@/app/hooks/useEmpProfile";
 import { authHeaders } from "@/lib/auth";
 import { hasModuleWriteAccess } from "@/lib/companyAccess";
 import { Button } from "@/app/components/ui/button";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export type TeamMemberRow = {
   id: number;
@@ -56,7 +60,13 @@ function memberName(m: TeamMemberRow) {
   return reporteeDisplayName(m);
 }
 
-function MemberAvatar({ member, className }: { member: TeamMemberRow; className?: string }) {
+function MemberAvatar({
+  member,
+  className,
+}: {
+  member: TeamMemberRow;
+  className?: string;
+}) {
   const name = memberName(member);
   const initials =
     name
@@ -103,7 +113,8 @@ export function EmpTeamMyTeam() {
   const [statusLoading, setStatusLoading] = useState(false);
 
   useEffect(() => {
-    const nextScope: TeamScope = searchParams.get("scope") === "team" ? "team" : "reportees";
+    const nextScope: TeamScope =
+      searchParams.get("scope") === "team" ? "team" : "reportees";
     setScope(nextScope);
   }, [searchParams]);
 
@@ -152,7 +163,10 @@ export function EmpTeamMyTeam() {
       const email = (m.email || "").toLowerCase();
       const designation = (m.designation || "").toLowerCase();
       return (
-        name.includes(q) || id.includes(q) || email.includes(q) || designation.includes(q)
+        name.includes(q) ||
+        id.includes(q) ||
+        email.includes(q) ||
+        designation.includes(q)
       );
     });
   }, [members, searchQuery]);
@@ -171,7 +185,11 @@ export function EmpTeamMyTeam() {
   };
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">Loading team…</p>;
+    return (
+      <p className="text-sm text-muted-foreground py-8 text-center">
+        Loading team…
+      </p>
+    );
   }
 
   if (!isManagerView) {
@@ -247,7 +265,10 @@ export function EmpTeamMyTeam() {
               aria-label="Grid view"
               title="Grid view"
               onClick={() => selectViewMode("grid")}
-              className={cn(listIconButtonClass, viewMode === "grid" && "bg-muted text-foreground")}
+              className={cn(
+                listIconButtonClass,
+                viewMode === "grid" && "bg-muted text-foreground",
+              )}
             >
               <LayoutGrid className="size-4" strokeWidth={1.75} />
             </button>
@@ -256,7 +277,10 @@ export function EmpTeamMyTeam() {
               aria-label="List view"
               title="List view"
               onClick={() => selectViewMode("list")}
-              className={cn(listIconButtonClass, viewMode === "list" && "bg-muted text-foreground")}
+              className={cn(
+                listIconButtonClass,
+                viewMode === "list" && "bg-muted text-foreground",
+              )}
             >
               <List className="size-4" strokeWidth={1.75} />
             </button>
@@ -265,15 +289,21 @@ export function EmpTeamMyTeam() {
       />
 
       {statusLoading ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">Loading team members…</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          Loading team members…
+        </p>
       ) : members.length === 0 ? (
-        <div className={cn(listCardClass, "p-8 text-center text-muted-foreground")}>
+        <div
+          className={cn(listCardClass, "p-8 text-center text-muted-foreground")}
+        >
           {scope === "reportees"
             ? "No reportees linked yet. Assign team members from the employee form in admin."
             : "No team members who report to your reportees yet."}
         </div>
       ) : filteredMembers.length === 0 ? (
-        <div className={cn(listCardClass, "p-8 text-center text-muted-foreground")}>
+        <div
+          className={cn(listCardClass, "p-8 text-center text-muted-foreground")}
+        >
           No employees match &ldquo;{searchQuery.trim()}&rdquo;.
         </div>
       ) : viewMode === "grid" ? (
@@ -282,7 +312,8 @@ export function EmpTeamMyTeam() {
             const name = memberName(m);
             const statusLabel = m.statusLabel || "Yet to check-in";
             const checkInLabel =
-              m.checkInTime && (m.isCheckedIn || m.statusLabel === "Checked out")
+              m.checkInTime &&
+              (m.isCheckedIn || m.statusLabel === "Checked out")
                 ? formatPunchTime(m.checkInTime)
                 : null;
 
@@ -302,13 +333,20 @@ export function EmpTeamMyTeam() {
                     <p className="truncate font-mono text-xs text-muted-foreground">
                       {m.employeeID || `ID ${m.id}`}
                     </p>
-                    <p className="truncate font-semibold text-foreground">{name}</p>
+                    <p className="truncate font-semibold text-foreground">
+                      {name}
+                    </p>
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">
                       {m.designation || "—"}
                     </p>
                   </div>
                 </div>
-                <p className={cn("mt-3 text-xs font-semibold", statusTone(statusLabel))}>
+                <p
+                  className={cn(
+                    "mt-3 text-xs font-semibold",
+                    statusTone(statusLabel),
+                  )}
+                >
                   {statusLabel}
                   {checkInLabel ? ` · ${checkInLabel}` : ""}
                 </p>
@@ -321,7 +359,10 @@ export function EmpTeamMyTeam() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left" data-hrms-table-header>
+                <tr
+                  className="border-b border-border text-left"
+                  data-hrms-table-header
+                >
                   <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Employee
                   </th>
@@ -351,16 +392,26 @@ export function EmpTeamMyTeam() {
                     >
                       <td className="px-4 py-3">
                         <div className="flex min-w-[200px] items-center gap-3">
-                          <MemberAvatar member={m} className="size-10 text-xs" />
+                          <MemberAvatar
+                            member={m}
+                            className="size-10 text-xs"
+                          />
                           <div className="min-w-0">
                             <p className="font-mono text-xs text-muted-foreground">
                               {m.employeeID || m.id}
                             </p>
-                            <p className="truncate font-medium text-foreground">{name}</p>
+                            <p className="truncate font-medium text-foreground">
+                              {name}
+                            </p>
                           </div>
                         </div>
                       </td>
-                      <td className={cn("whitespace-nowrap px-4 py-3 font-semibold", statusTone(statusLabel))}>
+                      <td
+                        className={cn(
+                          "whitespace-nowrap px-4 py-3 font-semibold",
+                          statusTone(statusLabel),
+                        )}
+                      >
                         {statusLabel}
                       </td>
                       <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
@@ -389,7 +440,11 @@ export function EmpTeamMyTeam() {
 
   if (isDesktop) {
     return (
-      <EmpDesktopPage title="My Team" description="View and manage your team members" icon={Users}>
+      <EmpDesktopPage
+        title="My Team"
+        description="View and manage your team members"
+        icon={Users}
+      >
         {body}
       </EmpDesktopPage>
     );

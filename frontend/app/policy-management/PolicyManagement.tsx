@@ -26,7 +26,7 @@ import { listPrimaryButtonClass } from "../components/app/list-ui-styles";
 import { cn } from "@/app/utils/cn";
 import { Badge } from "../components/ui/badge";
 
-const API = "/backend/company-policies";
+const API = "https://hrms-api-test.onrender.com/company-policies";
 
 type PolicyType = "TERMS_OF_USE" | "PRIVACY_POLICY" | "SLA";
 
@@ -78,19 +78,44 @@ function PolicyRichTextEditor({
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-1">
-        <Button type="button" variant="outline" size="sm" onClick={() => exec("bold")}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => exec("bold")}
+        >
           B
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => exec("italic")}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => exec("italic")}
+        >
           I
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => exec("underline")}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => exec("underline")}
+        >
           U
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => exec("insertUnorderedList")}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => exec("insertUnorderedList")}
+        >
           List
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => exec("insertOrderedList")}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => exec("insertOrderedList")}
+        >
           1.
         </Button>
       </div>
@@ -128,7 +153,8 @@ export function PolicyManagement({
   const fetchRows = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const token =
+        localStorage.getItem("accessToken") || localStorage.getItem("token");
       const res = await fetch(API, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
@@ -173,7 +199,9 @@ export function PolicyManagement({
     if (t) {
       data = data.filter((r) =>
         [TYPE_LABEL[r.type], r.policyName, r.versionName].some((x) =>
-          String(x || "").toLowerCase().includes(t),
+          String(x || "")
+            .toLowerCase()
+            .includes(t),
         ),
       );
     }
@@ -202,7 +230,10 @@ export function PolicyManagement({
               const ad = new Date(a.effectiveFrom).getTime();
               const bd = new Date(b.effectiveFrom).getTime();
               if (ad !== bd) return bd - ad;
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              return (
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+              );
             })[0]
         : null;
     setForm({
@@ -237,13 +268,18 @@ export function PolicyManagement({
       toast.error("Select a policy type");
       return;
     }
-    if (!form.policyName.trim() || !form.versionName.trim() || !form.effectiveFrom) {
+    if (
+      !form.policyName.trim() ||
+      !form.versionName.trim() ||
+      !form.effectiveFrom
+    ) {
       toast.error("Policy name, version and effective date are required");
       return;
     }
     setSaving(true);
     try {
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const token =
+        localStorage.getItem("accessToken") || localStorage.getItem("token");
       const res = await fetch(API, {
         method: "POST",
         headers: {
@@ -259,7 +295,9 @@ export function PolicyManagement({
         }),
       });
       if (!res.ok) throw new Error(await res.text());
-      toast.success(revising ? "Policy revision added" : "Policy version added");
+      toast.success(
+        revising ? "Policy revision added" : "Policy version added",
+      );
       resetForm();
       setIsAddingNew(false);
       fetchRows();
@@ -340,7 +378,9 @@ export function PolicyManagement({
   );
 
   if (!isSuperAdmin) {
-    return <div className="p-8 text-center text-gray-500">Access restricted.</div>;
+    return (
+      <div className="p-8 text-center text-gray-500">Access restricted.</div>
+    );
   }
 
   return (
@@ -385,26 +425,26 @@ export function PolicyManagement({
             {typeFilter ? (
               <Input value={TYPE_LABEL[typeFilter]} disabled />
             ) : (
-            <Select
-              value={form.type || undefined}
-              onValueChange={(v) =>
-                setForm((p) => ({
-                  ...p,
-                  type: v as PolicyType,
-                  policyName: p.policyName || TYPE_LABEL[v as PolicyType],
-                }))
-              }
-              disabled={revising}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select policy type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TERMS_OF_USE">Terms of Use</SelectItem>
-                <SelectItem value="PRIVACY_POLICY">Privacy Policy</SelectItem>
-                <SelectItem value="SLA">SLA</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select
+                value={form.type || undefined}
+                onValueChange={(v) =>
+                  setForm((p) => ({
+                    ...p,
+                    type: v as PolicyType,
+                    policyName: p.policyName || TYPE_LABEL[v as PolicyType],
+                  }))
+                }
+                disabled={revising}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select policy type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TERMS_OF_USE">Terms of Use</SelectItem>
+                  <SelectItem value="PRIVACY_POLICY">Privacy Policy</SelectItem>
+                  <SelectItem value="SLA">SLA</SelectItem>
+                </SelectContent>
+              </Select>
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -412,7 +452,9 @@ export function PolicyManagement({
               <Label>Policy name</Label>
               <Input
                 value={form.policyName}
-                onChange={(e) => setForm((p) => ({ ...p, policyName: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, policyName: e.target.value }))
+                }
                 required
               />
             </div>
@@ -421,7 +463,9 @@ export function PolicyManagement({
               <Input
                 type="date"
                 value={form.effectiveFrom}
-                onChange={(e) => setForm((p) => ({ ...p, effectiveFrom: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, effectiveFrom: e.target.value }))
+                }
                 required
               />
             </div>
@@ -429,7 +473,9 @@ export function PolicyManagement({
               <Label>Version name</Label>
               <Input
                 value={form.versionName}
-                onChange={(e) => setForm((p) => ({ ...p, versionName: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, versionName: e.target.value }))
+                }
                 required
               />
             </div>

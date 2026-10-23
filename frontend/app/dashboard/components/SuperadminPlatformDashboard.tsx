@@ -13,12 +13,22 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { authHeaders } from "@/lib/auth";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
 import { StatCard, type StatCardData } from "./StatCard";
 
 function EmptyHint({ message = "Nothing yet." }: { message?: string }) {
-  return <div className="text-sm text-muted-foreground py-3 text-center">{message}</div>;
+  return (
+    <div className="text-sm text-muted-foreground py-3 text-center">
+      {message}
+    </div>
+  );
 }
 
 export function SuperadminPlatformDashboard() {
@@ -43,26 +53,37 @@ export function SuperadminPlatformDashboard() {
       setLoading(true);
       try {
         const headers = authHeaders();
-        const [spRes, compRes, usersRes, empRes, branchRes, deviceRes] = await Promise.all([
-          fetch("/backend/service-provider", { headers }),
-          fetch("/backend/company", { headers }),
-          fetch("/backend/users", { headers }),
-          fetch("/backend/manage-employee", { headers }),
-          fetch("/backend/branches", { headers }),
-          fetch("/backend/devices", { headers }),
-        ]);
+        const [spRes, compRes, usersRes, empRes, branchRes, deviceRes] =
+          await Promise.all([
+            fetch("https://hrms-api-test.onrender.com/service-provider", {
+              headers,
+            }),
+            fetch("https://hrms-api-test.onrender.com/company", { headers }),
+            fetch("https://hrms-api-test.onrender.com/users", { headers }),
+            fetch("https://hrms-api-test.onrender.com/manage-employee", {
+              headers,
+            }),
+            fetch("https://hrms-api-test.onrender.com/branches", { headers }),
+            fetch("https://hrms-api-test.onrender.com/devices", { headers }),
+          ]);
 
         const sps = spRes.ok ? await spRes.json() : [];
         const compJson = compRes.ok ? await compRes.json() : [];
-        const companies = Array.isArray(compJson) ? compJson : compJson?.data ?? [];
+        const companies = Array.isArray(compJson)
+          ? compJson
+          : (compJson?.data ?? []);
         const users = usersRes.ok ? await usersRes.json() : [];
         const employees = empRes.ok ? await empRes.json() : [];
         const branches = branchRes.ok ? await branchRes.json() : [];
         const devices = deviceRes.ok ? await deviceRes.json() : [];
 
         const userList = Array.isArray(users) ? users : [];
-        const activeUsers = userList.filter((u: any) => u.isActive !== false).length;
-        const companyAdmins = userList.filter((u: any) => u.role === "COMPANY_ADMIN" || u.role === "ADMIN").length;
+        const activeUsers = userList.filter(
+          (u: any) => u.isActive !== false,
+        ).length;
+        const companyAdmins = userList.filter(
+          (u: any) => u.role === "COMPANY_ADMIN" || u.role === "ADMIN",
+        ).length;
 
         if (cancelled) return;
 
@@ -78,10 +99,16 @@ export function SuperadminPlatformDashboard() {
         });
 
         setRecentCompanies([...companies].slice(-5).reverse());
-        setRecentProviders([...(Array.isArray(sps) ? sps : [])].slice(-5).reverse());
+        setRecentProviders(
+          [...(Array.isArray(sps) ? sps : [])].slice(-5).reverse(),
+        );
         setRecentUsers(
           [...userList]
-            .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+            .sort(
+              (a: any, b: any) =>
+                new Date(b.createdAt || 0).getTime() -
+                new Date(a.createdAt || 0).getTime(),
+            )
             .slice(0, 5),
         );
       } catch {
@@ -106,7 +133,11 @@ export function SuperadminPlatformDashboard() {
         visualization: {
           type: "funnel",
           items: [
-            { label: "Providers", value: stats.serviceProviders, color: "#2563eb" },
+            {
+              label: "Providers",
+              value: stats.serviceProviders,
+              color: "#2563eb",
+            },
             { label: "Tenants", value: stats.companies, color: "#7c3aed" },
             { label: "Branches", value: stats.branches, color: "#14b8a6" },
           ],
@@ -119,7 +150,11 @@ export function SuperadminPlatformDashboard() {
         icon: TrendingUp,
         visualization: {
           type: "sparkline",
-          data: [Math.max(1, stats.companies - 2), stats.companies - 1, stats.companies],
+          data: [
+            Math.max(1, stats.companies - 2),
+            stats.companies - 1,
+            stats.companies,
+          ],
           color: "#7c3aed",
         },
       },
@@ -132,7 +167,11 @@ export function SuperadminPlatformDashboard() {
           type: "stacked",
           segments: [
             { label: "Active", value: stats.activeUsers, color: "#22c55e" },
-            { label: "Inactive", value: Math.max(0, stats.users - stats.activeUsers), color: "#94a3b8" },
+            {
+              label: "Inactive",
+              value: Math.max(0, stats.users - stats.activeUsers),
+              color: "#94a3b8",
+            },
           ],
         },
       },
@@ -159,7 +198,11 @@ export function SuperadminPlatformDashboard() {
           segments: [
             { label: "Active", value: stats.activeUsers, color: "#22c55e" },
             { label: "Admins", value: stats.companyAdmins, color: "#2563eb" },
-            { label: "Other", value: Math.max(0, stats.users - stats.activeUsers), color: "#94a3b8" },
+            {
+              label: "Other",
+              value: Math.max(0, stats.users - stats.activeUsers),
+              color: "#94a3b8",
+            },
           ],
         },
       },
@@ -170,7 +213,10 @@ export function SuperadminPlatformDashboard() {
         icon: ShieldCheck,
         visualization: {
           type: "ring",
-          value: stats.users > 0 ? Math.round((stats.companyAdmins / stats.users) * 100) : 0,
+          value:
+            stats.users > 0
+              ? Math.round((stats.companyAdmins / stats.users) * 100)
+              : 0,
           max: 100,
           color: "#2563eb",
         },
@@ -244,8 +290,12 @@ export function SuperadminPlatformDashboard() {
                   className="flex items-center justify-between rounded-md p-2 -mx-2 hover:bg-accent/40 transition-colors"
                 >
                   <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{c.companyName || `Company ${c.id}`}</div>
-                    <div className="text-[11px] text-muted-foreground font-mono">ID {c.id}</div>
+                    <div className="text-sm font-medium truncate">
+                      {c.companyName || `Company ${c.id}`}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground font-mono">
+                      ID {c.id}
+                    </div>
                   </div>
                   <Badge variant="secondary">tenant</Badge>
                 </Link>
@@ -270,8 +320,12 @@ export function SuperadminPlatformDashboard() {
                   className="flex items-center justify-between rounded-md p-2 -mx-2 hover:bg-accent/40 transition-colors"
                 >
                   <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{sp.companyName || `SP ${sp.id}`}</div>
-                    <div className="text-[11px] text-muted-foreground truncate">{sp.emailAdd || sp.contactNo || "—"}</div>
+                    <div className="text-sm font-medium truncate">
+                      {sp.companyName || `SP ${sp.id}`}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground truncate">
+                      {sp.emailAdd || sp.contactNo || "—"}
+                    </div>
                   </div>
                   <Badge variant="default">SP</Badge>
                 </Link>
@@ -292,7 +346,8 @@ export function SuperadminPlatformDashboard() {
               recentUsers.map((u) => (
                 <div key={u.id} className="text-sm py-1">
                   <div className="font-medium truncate">
-                    {[u.firstName, u.lastName].filter(Boolean).join(" ") || u.username}
+                    {[u.firstName, u.lastName].filter(Boolean).join(" ") ||
+                      u.username}
                   </div>
                   <div className="text-[11px] text-muted-foreground truncate">
                     {u.role} · {u.username}

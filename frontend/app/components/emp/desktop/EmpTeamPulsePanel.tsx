@@ -10,7 +10,8 @@ import { authHeaders } from "@/lib/auth";
 import { cn } from "@/app/utils/cn";
 import type { TeamMemberRow } from "../EmpTeamViews";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 function statusDot(label: string) {
   if (label === "Checked in") return "bg-emerald-500";
@@ -32,7 +33,8 @@ export function EmpTeamPulsePanel() {
     })
       .then((r) => (r.ok ? r.json() : { members: [] }))
       .then((data) => {
-        if (!cancelled) setMembers(Array.isArray(data.members) ? data.members : []);
+        if (!cancelled)
+          setMembers(Array.isArray(data.members) ? data.members : []);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -43,8 +45,12 @@ export function EmpTeamPulsePanel() {
   }, []);
 
   const stats = useMemo(() => {
-    const present = members.filter((m) => m.statusLabel === "Checked in").length;
-    const checkedOut = members.filter((m) => m.statusLabel === "Checked out").length;
+    const present = members.filter(
+      (m) => m.statusLabel === "Checked in",
+    ).length;
+    const checkedOut = members.filter(
+      (m) => m.statusLabel === "Checked out",
+    ).length;
     const absent = members.filter((m) => m.statusLabel === "Absent").length;
     const pending = members.length - present - checkedOut - absent;
     return { present, checkedOut, absent, pending, total: members.length };
@@ -56,12 +62,17 @@ export function EmpTeamPulsePanel() {
     <section className={cn(cardShell, "p-5 flex flex-col gap-4")}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-display text-base font-semibold text-foreground">Today&apos;s team pulse</h3>
+          <h3 className="font-display text-base font-semibold text-foreground">
+            Today&apos;s team pulse
+          </h3>
           <p className="text-sm text-muted-foreground mt-0.5">
             Live attendance snapshot for people who report to your reportees
           </p>
         </div>
-        <Link href="/empTeam/my-team" className="text-xs font-medium text-primary hover:underline shrink-0">
+        <Link
+          href="/empTeam/my-team"
+          className="text-xs font-medium text-primary hover:underline shrink-0"
+        >
           View all
         </Link>
       </div>
@@ -69,23 +80,31 @@ export function EmpTeamPulsePanel() {
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading team pulse…</p>
       ) : members.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No team members who report to your reportees yet.</p>
+        <p className="text-sm text-muted-foreground">
+          No team members who report to your reportees yet.
+        </p>
       ) : (
         <>
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-xl border border-border bg-emerald-500/5 p-4 text-center">
               <UserCheck className="size-5 text-emerald-600 mx-auto mb-1" />
-              <p className="text-2xl font-bold text-foreground">{stats.present}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {stats.present}
+              </p>
               <p className="text-xs text-muted-foreground">Present</p>
             </div>
             <div className="rounded-xl border border-border bg-amber-500/5 p-4 text-center">
               <Clock className="size-5 text-amber-600 mx-auto mb-1" />
-              <p className="text-2xl font-bold text-foreground">{stats.pending}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {stats.pending}
+              </p>
               <p className="text-xs text-muted-foreground">Yet to check-in</p>
             </div>
             <div className="rounded-xl border border-border bg-rose-500/5 p-4 text-center">
               <UserX className="size-5 text-rose-600 mx-auto mb-1" />
-              <p className="text-2xl font-bold text-foreground">{stats.absent + stats.checkedOut}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {stats.absent + stats.checkedOut}
+              </p>
               <p className="text-xs text-muted-foreground">Away / Out</p>
             </div>
           </div>
@@ -102,7 +121,9 @@ export function EmpTeamPulsePanel() {
               />
               <div
                 className="bg-rose-400 transition-all"
-                style={{ width: `${((stats.absent + stats.checkedOut) / stats.total) * 100}%` }}
+                style={{
+                  width: `${((stats.absent + stats.checkedOut) / stats.total) * 100}%`,
+                }}
               />
             </div>
           ) : null}

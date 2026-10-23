@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -10,15 +15,31 @@ import { useCurrentUser } from "../../hooks/useCurrentUser";
 import * as XLSX from "xlsx";
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
-interface Company { id: number; companyName: string; }
-interface Branch { id: number; branchName: string; companyID: number; }
-interface Department { id: number; companyID: number; branchesID: number; departmentName: string; }
+interface Company {
+  id: number;
+  companyName: string;
+}
+interface Branch {
+  id: number;
+  branchName: string;
+  companyID: number;
+}
+interface Department {
+  id: number;
+  companyID: number;
+  branchesID: number;
+  departmentName: string;
+}
 interface Employee {
-  id: number; employeeID: string;
-  employeeFirstName: string; employeeLastName: string;
-  companyID: number; branchesID: number; departmentNameID?: number | null;
+  id: number;
+  employeeID: string;
+  employeeFirstName: string;
+  employeeLastName: string;
+  companyID: number;
+  branchesID: number;
+  departmentNameID?: number | null;
 }
 
 interface CanteenRecord {
@@ -84,10 +105,18 @@ export function CanteenReports() {
   useEffect(() => {
     Promise.all([
       fetch(`${BACKEND_URL}/company`).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/branches`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/departments`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/manage-emp`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/canteen/setup`, { cache: "no-store" }).then((r) => r.json()),
+      fetch(`${BACKEND_URL}/branches`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
+      fetch(`${BACKEND_URL}/departments`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
+      fetch(`${BACKEND_URL}/manage-emp`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
+      fetch(`${BACKEND_URL}/canteen/setup`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
     ]).then(([cos, brs, depts, emps, setup]) => {
       setCompanies(cos);
       setAllBranches(brs);
@@ -118,10 +147,14 @@ export function CanteenReports() {
 
   useEffect(() => {
     if (!user) return;
-    const cid = user.role !== "SUPERADMIN" && user.companyID ? user.companyID : formData.companyID;
+    const cid =
+      user.role !== "SUPERADMIN" && user.companyID
+        ? user.companyID
+        : formData.companyID;
     let filtered = [...allDepartments];
     if (cid) filtered = filtered.filter((d) => d.companyID === cid);
-    if (formData.branchID) filtered = filtered.filter((d) => d.branchesID === formData.branchID);
+    if (formData.branchID)
+      filtered = filtered.filter((d) => d.branchesID === formData.branchID);
     setDepartments(filtered);
     // Auto-select if only one department
     if (user.role !== "SUPERADMIN" && filtered.length === 1) {
@@ -135,13 +168,23 @@ export function CanteenReports() {
     const raw = pt.replace("Z", "").replace(/[+-]\d{2}:\d{2}$/, "");
     const d = new Date(raw);
     return {
-      date: d.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }),
-      time: d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true }),
+      date: d.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }),
+      time: d.toLocaleTimeString("en-IN", {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      }),
     };
   };
 
   const getReportTypeLabel = () =>
-    REPORT_TYPES.find((t) => t.value === formData.reportType)?.label || formData.reportType;
+    REPORT_TYPES.find((t) => t.value === formData.reportType)?.label ||
+    formData.reportType;
 
   // ── Generate Report ──
 
@@ -153,7 +196,10 @@ export function CanteenReports() {
 
     setLoading(true);
     try {
-      const cid = user?.role !== "SUPERADMIN" && user?.companyID ? user.companyID : formData.companyID;
+      const cid =
+        user?.role !== "SUPERADMIN" && user?.companyID
+          ? user.companyID
+          : formData.companyID;
 
       const params = new URLSearchParams({
         dateFrom: formData.dateFrom,
@@ -162,9 +208,13 @@ export function CanteenReports() {
       });
       if (cid) params.set("companyId", String(cid));
       if (formData.branchID) params.set("branchId", String(formData.branchID));
-      if (formData.departmentID) params.set("departmentId", String(formData.departmentID));
+      if (formData.departmentID)
+        params.set("departmentId", String(formData.departmentID));
 
-      const res = await fetch(`${BACKEND_URL}/canteen/reports?${params.toString()}`, { cache: "no-store" });
+      const res = await fetch(
+        `${BACKEND_URL}/canteen/reports?${params.toString()}`,
+        { cache: "no-store" },
+      );
       const records: CanteenRecord[] = await res.json();
 
       // Build lookup maps
@@ -174,10 +224,14 @@ export function CanteenReports() {
       const deptMap = new Map(allDepartments.map((d) => [d.id, d]));
 
       const rows: ReportRow[] = records.map((rec, i) => {
-        const emp = rec.manage_employee_id ? empMap.get(rec.manage_employee_id) : null;
+        const emp = rec.manage_employee_id
+          ? empMap.get(rec.manage_employee_id)
+          : null;
         const company = emp?.companyID ? companyMap.get(emp.companyID) : null;
         const branch = emp?.branchesID ? branchMap.get(emp.branchesID) : null;
-        const dept = emp?.departmentNameID ? deptMap.get(emp.departmentNameID) : null;
+        const dept = emp?.departmentNameID
+          ? deptMap.get(emp.departmentNameID)
+          : null;
         const { date, time } = rec.punch_time
           ? formatPunchTime(rec.punch_time)
           : { date: "-", time: "-" };
@@ -225,7 +279,10 @@ export function CanteenReports() {
   // ── Compute employees filtered by selected company ──
 
   const companyEmployees = employees.filter((emp) => {
-    const cid = user?.role !== "SUPERADMIN" && user?.companyID ? user.companyID : formData.companyID;
+    const cid =
+      user?.role !== "SUPERADMIN" && user?.companyID
+        ? user.companyID
+        : formData.companyID;
     return !cid || emp.companyID === cid;
   });
 
@@ -233,14 +290,15 @@ export function CanteenReports() {
 
   const filteredData = reportData.filter((row) => {
     const term = searchTerm.toLowerCase();
-    const matchesSearch = !term || (
+    const matchesSearch =
+      !term ||
       row.employeeID.toLowerCase().includes(term) ||
       row.employeeName.toLowerCase().includes(term) ||
       row.companyName.toLowerCase().includes(term) ||
       row.branchName.toLowerCase().includes(term) ||
-      row.departmentName.toLowerCase().includes(term)
-    );
-    const matchesEmployee = !employeeFilter || row.employeeID === employeeFilter;
+      row.departmentName.toLowerCase().includes(term);
+    const matchesEmployee =
+      !employeeFilter || row.employeeID === employeeFilter;
     return matchesSearch && matchesEmployee;
   });
 
@@ -256,11 +314,11 @@ export function CanteenReports() {
       "S.NO": row.sno,
       "Employee ID": row.employeeID,
       "Employee Name": row.employeeName,
-      "Company": row.companyName,
-      "Branch": row.branchName,
-      "Department": row.departmentName,
+      Company: row.companyName,
+      Branch: row.branchName,
+      Department: row.departmentName,
       "Default Token": row.defaultToken,
-      "Date": row.date,
+      Date: row.date,
       "Punch Time": row.time,
     }));
 
@@ -320,7 +378,10 @@ export function CanteenReports() {
     XLSX.utils.book_append_sheet(wb, ws, "Canteen Report");
 
     const typeLabel = getReportTypeLabel().replace(/\s+/g, "_");
-    XLSX.writeFile(wb, `Canteen_${typeLabel}_${formData.dateFrom}_to_${formData.dateTo}.xlsx`);
+    XLSX.writeFile(
+      wb,
+      `Canteen_${typeLabel}_${formData.dateFrom}_to_${formData.dateTo}.xlsx`,
+    );
   };
 
   // ── Branch change handler ──
@@ -338,7 +399,8 @@ export function CanteenReports() {
       <div className="flex items-center justify-between w-full">
         <div className="min-w-0 flex-1">
           <p className="text-gray-600 mt-1 text-sm">
-            Generate and view canteen reports by company, branch, department and date range.
+            Generate and view canteen reports by company, branch, department and
+            date range.
           </p>
         </div>
       </div>
@@ -346,7 +408,9 @@ export function CanteenReports() {
       {/* Filter Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">Canteen Filters</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            Canteen Filters
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -403,7 +467,9 @@ export function CanteenReports() {
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    departmentID: e.target.value ? Number(e.target.value) : null,
+                    departmentID: e.target.value
+                      ? Number(e.target.value)
+                      : null,
                   }))
                 }
               >
@@ -423,7 +489,10 @@ export function CanteenReports() {
                 className="w-full px-3 py-2 border rounded-md bg-white"
                 value={formData.reportType}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, reportType: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    reportType: e.target.value,
+                  }))
                 }
               >
                 {REPORT_TYPES.map((t) => (
@@ -448,7 +517,8 @@ export function CanteenReports() {
                 <option value="">All Employees</option>
                 {companyEmployees.map((emp) => (
                   <option key={emp.id} value={emp.employeeID}>
-                    {emp.employeeID} - {emp.employeeFirstName} {emp.employeeLastName}
+                    {emp.employeeID} - {emp.employeeFirstName}{" "}
+                    {emp.employeeLastName}
                   </option>
                 ))}
               </select>
@@ -478,11 +548,7 @@ export function CanteenReports() {
             </div>
 
             <div className="flex items-end gap-3">
-              <Button
-                className=""
-                onClick={generateReport}
-                disabled={loading}
-              >
+              <Button className="" onClick={generateReport} disabled={loading}>
                 {loading ? "Generating..." : "Generate Report"}
               </Button>
               <Button variant="outline" onClick={resetForm}>
@@ -492,7 +558,8 @@ export function CanteenReports() {
           </div>
 
           <p className="text-xs text-gray-500 mt-2">
-            Reports are filtered by company, branch, department (if selected) and date range.
+            Reports are filtered by company, branch, department (if selected)
+            and date range.
           </p>
         </CardContent>
       </Card>
@@ -556,23 +623,41 @@ export function CanteenReports() {
                 <tbody>
                   {filteredData.map((row, i) => (
                     <tr key={i} className="odd:bg-gray-50 border-b">
-                      <td className="px-3 py-2 text-center text-[11px]">{row.sno}</td>
-                      <td className="px-3 py-2 text-[11px]">{row.employeeID}</td>
-                      <td className="px-3 py-2 text-[11px]">{row.employeeName}</td>
-                      <td className="px-3 py-2 text-[11px]">{row.companyName}</td>
-                      <td className="px-3 py-2 text-[11px]">{row.branchName}</td>
-                      <td className="px-3 py-2 text-[11px]">{row.departmentName}</td>
                       <td className="px-3 py-2 text-center text-[11px]">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                          row.defaultToken === "Enabled"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}>
+                        {row.sno}
+                      </td>
+                      <td className="px-3 py-2 text-[11px]">
+                        {row.employeeID}
+                      </td>
+                      <td className="px-3 py-2 text-[11px]">
+                        {row.employeeName}
+                      </td>
+                      <td className="px-3 py-2 text-[11px]">
+                        {row.companyName}
+                      </td>
+                      <td className="px-3 py-2 text-[11px]">
+                        {row.branchName}
+                      </td>
+                      <td className="px-3 py-2 text-[11px]">
+                        {row.departmentName}
+                      </td>
+                      <td className="px-3 py-2 text-center text-[11px]">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            row.defaultToken === "Enabled"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
                           {row.defaultToken}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-center text-[11px]">{row.date}</td>
-                      <td className="px-3 py-2 text-center text-[11px]">{row.time}</td>
+                      <td className="px-3 py-2 text-center text-[11px]">
+                        {row.date}
+                      </td>
+                      <td className="px-3 py-2 text-center text-[11px]">
+                        {row.time}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import {
   Table,
   TableBody,
@@ -17,7 +22,7 @@ import { Input } from "../components/ui/input";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 interface DashboardData {
   date: string;
@@ -38,7 +43,13 @@ interface EmployeeRow {
   device_name?: string;
 }
 
-type DetailType = "checkin" | "token-assigned" | "token-cancel" | "token-consumed" | "token-not-consumed" | null;
+type DetailType =
+  | "checkin"
+  | "token-assigned"
+  | "token-cancel"
+  | "token-consumed"
+  | "token-not-consumed"
+  | null;
 
 export function CanteenDashboard() {
   const today = new Date().toISOString().split("T")[0];
@@ -51,13 +62,18 @@ export function CanteenDashboard() {
   const user = useCurrentUser();
 
   // Non-SUPERADMIN users see only their company's data
-  const companyParam = user && user.role !== "SUPERADMIN" && user.companyID
-    ? `&companyId=${user.companyID}` : "";
+  const companyParam =
+    user && user.role !== "SUPERADMIN" && user.companyID
+      ? `&companyId=${user.companyID}`
+      : "";
 
   const fetchDashboard = async (d: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/canteen/dashboard?date=${d}${companyParam}`, { cache: "no-store" });
+      const res = await fetch(
+        `${BACKEND_URL}/canteen/dashboard?date=${d}${companyParam}`,
+        { cache: "no-store" },
+      );
       const data = await res.json();
       setDashboard(data);
     } catch (err) {
@@ -72,7 +88,10 @@ export function CanteenDashboard() {
     setDetailLoading(true);
     setDetailType(type);
     try {
-      const res = await fetch(`${BACKEND_URL}/canteen/dashboard/${type}?date=${date}${companyParam}`, { cache: "no-store" });
+      const res = await fetch(
+        `${BACKEND_URL}/canteen/dashboard/${type}?date=${date}${companyParam}`,
+        { cache: "no-store" },
+      );
       const data = await res.json();
       setDetailData(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -89,13 +108,45 @@ export function CanteenDashboard() {
 
   const cards = dashboard
     ? [
-        { label: "Check In", value: dashboard.checkin, icon: "mdi:login", color: "from-blue-500 to-blue-600", type: "checkin" as DetailType },
-        { label: "Token Assigned", value: dashboard.tokenAssigned, icon: "mdi:ticket-confirmation-outline", color: "from-green-500 to-green-600", type: "token-assigned" as DetailType },
+        {
+          label: "Check In",
+          value: dashboard.checkin,
+          icon: "mdi:login",
+          color: "from-blue-500 to-blue-600",
+          type: "checkin" as DetailType,
+        },
+        {
+          label: "Token Assigned",
+          value: dashboard.tokenAssigned,
+          icon: "mdi:ticket-confirmation-outline",
+          color: "from-green-500 to-green-600",
+          type: "token-assigned" as DetailType,
+        },
         ...(dashboard.defaultTokenEnabled
-          ? [{ label: "Token Cancel", value: dashboard.tokenCancel, icon: "mdi:cancel", color: "from-orange-500 to-orange-600", type: "token-cancel" as DetailType }]
+          ? [
+              {
+                label: "Token Cancel",
+                value: dashboard.tokenCancel,
+                icon: "mdi:cancel",
+                color: "from-orange-500 to-orange-600",
+                type: "token-cancel" as DetailType,
+              },
+            ]
           : []),
-        { label: "Token Consumed", value: dashboard.tokenConsumed, icon: "mdi:check-circle-outline", color: "from-emerald-500 to-emerald-600", type: "token-consumed" as DetailType },
-        { label: "Token Not Consumed", value: dashboard.tokenNotConsumed, icon: "mdi:close-circle-outline", color: "from-red-500 to-red-600", type: "token-not-consumed" as DetailType },
+        {
+          label: "Token Consumed",
+          value: dashboard.tokenConsumed,
+          icon: "mdi:check-circle-outline",
+          color: "from-emerald-500 to-emerald-600",
+          type: "token-consumed" as DetailType,
+        },
+        {
+          label: "Token Not Consumed",
+          value: dashboard.tokenNotConsumed,
+          icon: "mdi:close-circle-outline",
+          color: "from-red-500 to-red-600",
+          type: "token-not-consumed" as DetailType,
+        },
       ]
     : [];
 
@@ -122,7 +173,10 @@ export function CanteenDashboard() {
         <Input
           type="date"
           value={date}
-          onChange={(e) => { setDate(e.target.value); setDetailType(null); }}
+          onChange={(e) => {
+            setDate(e.target.value);
+            setDetailType(null);
+          }}
           className="w-44"
         />
       </div>
@@ -131,7 +185,9 @@ export function CanteenDashboard() {
         <p className="text-gray-500">Loading...</p>
       ) : (
         <>
-          <div className={`grid grid-cols-1 sm:grid-cols-2 ${dashboard?.defaultTokenEnabled ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
+          <div
+            className={`grid grid-cols-1 sm:grid-cols-2 ${dashboard?.defaultTokenEnabled ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-4`}
+          >
             {cards.map((c) => (
               <div
                 key={c.label}
@@ -142,12 +198,16 @@ export function CanteenDashboard() {
                 <div className="absolute bottom-0 left-0 w-14 h-14 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
                 <div className="relative">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm font-medium text-white/80">{c.label}</p>
+                    <p className="text-sm font-medium text-white/80">
+                      {c.label}
+                    </p>
                     <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center backdrop-blur-sm">
                       <Icon icon={c.icon} className="w-5 h-5 text-white" />
                     </div>
                   </div>
-                  <p className="text-3xl font-extrabold tracking-tight tabular-nums">{c.value}</p>
+                  <p className="text-3xl font-extrabold tracking-tight tabular-nums">
+                    {c.value}
+                  </p>
                 </div>
               </div>
             ))}
@@ -156,7 +216,11 @@ export function CanteenDashboard() {
           {detailType && (
             <Card>
               <CardHeader className="flex flex-row items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => setDetailType(null)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setDetailType(null)}
+                >
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <CardTitle>{detailTitle}</CardTitle>
@@ -175,7 +239,9 @@ export function CanteenDashboard() {
                           <TableHead>User ID</TableHead>
                           <TableHead>Employee Name</TableHead>
                           <TableHead>Punch Time</TableHead>
-                          {detailType === "checkin" && <TableHead>Device</TableHead>}
+                          {detailType === "checkin" && (
+                            <TableHead>Device</TableHead>
+                          )}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -189,7 +255,9 @@ export function CanteenDashboard() {
                                 ? (() => {
                                     // punch_time is stored as naive timestamp (IST) but API appends Z.
                                     // Strip the Z/timezone so it displays as-is without conversion.
-                                    const raw = row.punch_time.replace("Z", "").replace(/[+-]\d{2}:\d{2}$/, "");
+                                    const raw = row.punch_time
+                                      .replace("Z", "")
+                                      .replace(/[+-]\d{2}:\d{2}$/, "");
                                     const d = new Date(raw);
                                     return d.toLocaleString("en-IN", {
                                       year: "numeric",
@@ -204,7 +272,9 @@ export function CanteenDashboard() {
                                 : "-"}
                             </TableCell>
                             {detailType === "checkin" && (
-                              <TableCell>{row.device_name || row.device_sn || "-"}</TableCell>
+                              <TableCell>
+                                {row.device_name || row.device_sn || "-"}
+                              </TableCell>
                             )}
                           </TableRow>
                         ))}

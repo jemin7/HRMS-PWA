@@ -6,7 +6,8 @@ import { CalendarDays } from "lucide-react";
 import { EmpDesktopPage } from "./desktop/EmpDesktopPage";
 import { useEmpPortalDesktop } from "@/app/components/layout/EmpPortalShell";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export type EmpHolidayRow = {
   id: number;
@@ -35,7 +36,9 @@ function dateRangeLabel(start: string, end: string): string {
   return `${formatDisplayDate(start)} – ${formatDisplayDate(end)}`;
 }
 
-export function EmpHolidayListMobile({ embedded = false }: { embedded?: boolean } = {}) {
+export function EmpHolidayListMobile({
+  embedded = false,
+}: { embedded?: boolean } = {}) {
   const isDesktop = useEmpPortalDesktop();
   const [holidays, setHolidays] = useState<EmpHolidayRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +52,9 @@ export function EmpHolidayListMobile({ embedded = false }: { embedded?: boolean 
         typeof window !== "undefined"
           ? localStorage.getItem("token") || localStorage.getItem("accessToken")
           : null;
-      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers: HeadersInit = token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
       const res = await fetch(`${BACKEND}/emp-notifications/holidays`, {
         headers,
         cache: "no-store",
@@ -58,7 +63,9 @@ export function EmpHolidayListMobile({ embedded = false }: { embedded?: boolean 
       const data = (await res.json()) as EmpHolidayRow[];
       setHolidays(Array.isArray(data) ? data : []);
     } catch {
-      setError("Unable to load holiday list. Pull to refresh or try again later.");
+      setError(
+        "Unable to load holiday list. Pull to refresh or try again later.",
+      );
       setHolidays([]);
     } finally {
       setLoading(false);
@@ -87,7 +94,11 @@ export function EmpHolidayListMobile({ embedded = false }: { embedded?: boolean 
     [upcoming, past],
   );
 
-  const renderSection = (title: string, items: EmpHolidayRow[], accent: string) => {
+  const renderSection = (
+    title: string,
+    items: EmpHolidayRow[],
+    accent: string,
+  ) => {
     if (items.length === 0) return null;
     return (
       <div className="mb-5">
@@ -104,15 +115,22 @@ export function EmpHolidayListMobile({ embedded = false }: { embedded?: boolean 
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${accent}`}
                 >
-                  <Icon icon="solar:calendar-mark-bold-duotone" className="w-5 h-5 text-rose-600" />
+                  <Icon
+                    icon="solar:calendar-mark-bold-duotone"
+                    className="w-5 h-5 text-rose-600"
+                  />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-bold text-gray-900 leading-snug">{h.name}</p>
+                  <p className="text-[15px] font-bold text-gray-900 leading-snug">
+                    {h.name}
+                  </p>
                   <p className="text-[13px] text-gray-700 mt-1 font-medium">
                     {dateRangeLabel(h.startDate, h.endDate)}
                   </p>
                   {h.financialYear ? (
-                    <p className="text-[11px] text-gray-500 mt-1">FY: {h.financialYear}</p>
+                    <p className="text-[11px] text-gray-500 mt-1">
+                      FY: {h.financialYear}
+                    </p>
                   ) : null}
                 </div>
               </div>
@@ -126,7 +144,9 @@ export function EmpHolidayListMobile({ embedded = false }: { embedded?: boolean 
   const body = (
     <>
       {loading ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">Loading holidays…</p>
+        <p className="text-sm text-muted-foreground py-8 text-center">
+          Loading holidays…
+        </p>
       ) : error ? (
         <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
           {error}
@@ -148,18 +168,29 @@ export function EmpHolidayListMobile({ embedded = false }: { embedded?: boolean 
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/40 text-left">
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Holiday</th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Date</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                    Holiday
+                  </th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                    Date
+                  </th>
                   <th className="px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">
                     Financial year
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {allRows.map((h) => (
-                  <tr key={h.id} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3 font-medium text-foreground">{h.name}</td>
+                  <tr
+                    key={h.id}
+                    className="border-b border-border last:border-0"
+                  >
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      {h.name}
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {dateRangeLabel(h.startDate, h.endDate)}
                     </td>
@@ -196,8 +227,12 @@ export function EmpHolidayListMobile({ embedded = false }: { embedded?: boolean 
     return (
       <div className="space-y-4">
         <div>
-          <h3 className="text-base font-semibold text-foreground">My holidays</h3>
-          <p className="text-sm text-muted-foreground">Company holidays on your calendar</p>
+          <h3 className="text-base font-semibold text-foreground">
+            My holidays
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Company holidays on your calendar
+          </p>
         </div>
         {body}
       </div>

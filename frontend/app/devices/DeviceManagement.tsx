@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { hasModuleWriteAccess, isCompanyAdminLikeRole } from "@/lib/companyAccess";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  hasModuleWriteAccess,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -16,7 +24,20 @@ import {
 } from "../components/ui/table";
 import { Badge } from "../components/ui/badge";
 import { Icon } from "@iconify/react";
-import { Plus, Search, Edit, Trash2, ArrowLeft, X, Save, RotateCcw, Filter, ArrowDownUp, ArrowUpDown, Fingerprint } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  ArrowLeft,
+  X,
+  Save,
+  RotateCcw,
+  Filter,
+  ArrowDownUp,
+  ArrowUpDown,
+  Fingerprint,
+} from "lucide-react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { useRouter } from "next/navigation";
 import { FormDrawer } from "../components/ui/form-drawer";
@@ -95,10 +116,10 @@ interface Branch {
 // ---------------------------
 
 const API = {
-  devices: "/backend/devices",
-  serviceProviders: "/backend/service-provider",
-  companies: "/backend/company",
-  branches: "/backend/branches",
+  devices: "https://hrms-api-test.onrender.com/devices",
+  serviceProviders: "https://hrms-api-test.onrender.com/service-provider",
+  companies: "https://hrms-api-test.onrender.com/company",
+  branches: "https://hrms-api-test.onrender.com/branches",
 };
 
 const MIN_CHARS = 0;
@@ -123,13 +144,24 @@ export function DeviceManagement() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const user = useCurrentUser();
-  const canManage = user?.role === "SUPERADMIN" || isCompanyAdminLikeRole(user?.role) || user?.role === "ADMIN" || user?.role === "SERVICE_PROVIDER" || canDesktopManagerManage(user) || hasModuleWriteAccess("DEVICES");
-  const canAdd = user?.role === "SUPERADMIN" || isCompanyAdminLikeRole(user?.role) || user?.role === "ADMIN" || canDesktopManagerManage(user) || hasModuleWriteAccess("DEVICES");
-const canDelete =
-  user?.role === "SUPERADMIN" ||
-  isCompanyAdminLikeRole(user?.role) ||
-  user?.role === "ADMIN" ||
-  canDesktopManagerManage(user);
+  const canManage =
+    user?.role === "SUPERADMIN" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "ADMIN" ||
+    user?.role === "SERVICE_PROVIDER" ||
+    canDesktopManagerManage(user) ||
+    hasModuleWriteAccess("DEVICES");
+  const canAdd =
+    user?.role === "SUPERADMIN" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "ADMIN" ||
+    canDesktopManagerManage(user) ||
+    hasModuleWriteAccess("DEVICES");
+  const canDelete =
+    user?.role === "SUPERADMIN" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "ADMIN" ||
+    canDesktopManagerManage(user);
   // UI
   const table = useClientTable("deviceName");
   const [branchFilter, setBranchFilter] = useState("ALL");
@@ -193,24 +225,22 @@ const canDelete =
     try {
       setLoading(true);
       const all = await fetchJSONSafe<DeviceRead[]>(API.devices);
-  const mapping = await resolveScopeUserMapping(user);
-if (mapping) setCurrentUserMapping(mapping);
+      const mapping = await resolveScopeUserMapping(user);
+      if (mapping) setCurrentUserMapping(mapping);
 
-const ctx = getSidebarContext();
+      const ctx = getSidebarContext();
 
-const activeCompanyID =
-  ctx?.companyID ??
-  mapping?.companyID ??
-  user?.companyID ??
-  null;
+      const activeCompanyID =
+        ctx?.companyID ?? mapping?.companyID ?? user?.companyID ?? null;
 
-const filteredDevices = (Array.isArray(all) ? all : []).filter((d: any) => {
-  if (!activeCompanyID) return true;
-  return Number(d.companyID) === Number(activeCompanyID);
-});
+      const filteredDevices = (Array.isArray(all) ? all : []).filter(
+        (d: any) => {
+          if (!activeCompanyID) return true;
+          return Number(d.companyID) === Number(activeCompanyID);
+        },
+      );
 
-setDevices(filteredDevices);
-
+      setDevices(filteredDevices);
     } catch (e: any) {
       console.error("Failed to load devices:", e);
       setDevices([]);
@@ -238,26 +268,36 @@ setDevices(filteredDevices);
 
       if (user?.role === "SUPERADMIN") {
         if (ctx?.companyID) {
-          filtered = filtered.filter((b) => Number(b.companyID) === Number(ctx.companyID));
+          filtered = filtered.filter(
+            (b) => Number(b.companyID) === Number(ctx.companyID),
+          );
         }
       } else if (user?.role === "SERVICE_PROVIDER") {
         const companyID = ctx?.companyID ?? mapping?.companyID;
         if (companyID) {
-          filtered = filtered.filter((b) => Number(b.companyID) === Number(companyID));
+          filtered = filtered.filter(
+            (b) => Number(b.companyID) === Number(companyID),
+          );
         } else if (mapping?.serviceProviderID) {
           filtered = filtered.filter(
-            (b) => Number(b.serviceProviderID) === Number(mapping.serviceProviderID)
+            (b) =>
+              Number(b.serviceProviderID) === Number(mapping.serviceProviderID),
           );
         }
       } else if (isCompanyAdminLikeRole(user?.role) || user?.role === "ADMIN") {
-        const companyID = ctx?.companyID ?? mapping?.companyID ?? user?.companyID;
+        const companyID =
+          ctx?.companyID ?? mapping?.companyID ?? user?.companyID;
         if (companyID) {
-          filtered = filtered.filter((b) => Number(b.companyID) === Number(companyID));
+          filtered = filtered.filter(
+            (b) => Number(b.companyID) === Number(companyID),
+          );
         }
       } else if (user?.role === "BRANCH_ADMIN") {
         const branchesID = mapping?.branchesID ?? user?.branchesID;
         if (branchesID) {
-          filtered = filtered.filter((b) => Number(b.id) === Number(branchesID));
+          filtered = filtered.filter(
+            (b) => Number(b.id) === Number(branchesID),
+          );
           setBranchFilter(String(branchesID));
         }
       }
@@ -271,44 +311,50 @@ setDevices(filteredDevices);
     }
   };
 
-
-useEffect(() => {
-const handler = () => {
-  setBranchFilter(user?.role === "BRANCH_ADMIN" ? String(user?.branchesID ?? "ALL") : "ALL");
-  setBrList([]);
-  setFormData((p) => ({
-    ...p,
-    branchesID: null,
-    brAutocomplete: "",
-  }));
-
-  if (user) {
-    fetchDevices();
-    fetchBranchFilterList();
-  }
-  };
-
-  const sidebarPageClickHandler = (e: any) => {
-    if (e.detail?.path === "/devices") {
-      closeDevicePagePanels();
+  useEffect(() => {
+    const handler = () => {
+      setBranchFilter(
+        user?.role === "BRANCH_ADMIN"
+          ? String(user?.branchesID ?? "ALL")
+          : "ALL",
+      );
+      setBrList([]);
+      setFormData((p) => ({
+        ...p,
+        branchesID: null,
+        brAutocomplete: "",
+      }));
 
       if (user) {
         fetchDevices();
         fetchBranchFilterList();
       }
-    }
-  };
+    };
 
-  window.addEventListener("sidebar-context-changed", handler);
-  window.addEventListener("app-data-refresh", handler);
-  window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler);
+    const sidebarPageClickHandler = (e: any) => {
+      if (e.detail?.path === "/devices") {
+        closeDevicePagePanels();
 
-  return () => {
-    window.removeEventListener("sidebar-context-changed", handler);
-    window.removeEventListener("app-data-refresh", handler);
-    window.removeEventListener("sidebar-main-page-click", sidebarPageClickHandler);
-  };
-}, [user]);
+        if (user) {
+          fetchDevices();
+          fetchBranchFilterList();
+        }
+      }
+    };
+
+    window.addEventListener("sidebar-context-changed", handler);
+    window.addEventListener("app-data-refresh", handler);
+    window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler);
+
+    return () => {
+      window.removeEventListener("sidebar-context-changed", handler);
+      window.removeEventListener("app-data-refresh", handler);
+      window.removeEventListener(
+        "sidebar-main-page-click",
+        sidebarPageClickHandler,
+      );
+    };
+  }, [user]);
 
   // ---------------------------
   // Debounced suggestions
@@ -325,13 +371,17 @@ const handler = () => {
       spAbortRef.current = ctrl;
       setSpLoading(true);
       try {
-        const all = await fetchJSONSafe<ServiceProvider[]>(API.serviceProviders, ctrl.signal);
-        const filtered = (all || []).filter(sp =>
-          (sp.companyName ?? "").toLowerCase().includes(query.toLowerCase())
+        const all = await fetchJSONSafe<ServiceProvider[]>(
+          API.serviceProviders,
+          ctrl.signal,
+        );
+        const filtered = (all || []).filter((sp) =>
+          (sp.companyName ?? "").toLowerCase().includes(query.toLowerCase()),
         );
         setSpList(filtered.slice(0, 20));
       } catch (e) {
-        if ((e as any).name !== "AbortError") console.error("SP fetch error:", e);
+        if ((e as any).name !== "AbortError")
+          console.error("SP fetch error:", e);
       } finally {
         setSpLoading(false);
       }
@@ -351,12 +401,13 @@ const handler = () => {
       setCoLoading(true);
       try {
         const all = await fetchJSONSafe<Company[]>(API.companies, ctrl.signal);
-        const filtered = (all || []).filter(c =>
-          (c.companyName ?? "").toLowerCase().includes(query.toLowerCase())
+        const filtered = (all || []).filter((c) =>
+          (c.companyName ?? "").toLowerCase().includes(query.toLowerCase()),
         );
         setCoList(filtered.slice(0, 20));
       } catch (e) {
-        if ((e as any).name !== "AbortError") console.error("Company fetch error:", e);
+        if ((e as any).name !== "AbortError")
+          console.error("Company fetch error:", e);
       } finally {
         setCoLoading(false);
       }
@@ -364,78 +415,83 @@ const handler = () => {
   };
 
   const runFetchBranches = (query: string) => {
-  if (brTimerRef.current) clearTimeout(brTimerRef.current);
+    if (brTimerRef.current) clearTimeout(brTimerRef.current);
 
-  brTimerRef.current = setTimeout(async () => {
-    if (query.length < MIN_CHARS) {
-      setBrList([]);
-      return;
-    }
-
-    if (brAbortRef.current) brAbortRef.current.abort();
-
-    const ctrl = new AbortController();
-    brAbortRef.current = ctrl;
-    setBrLoading(true);
-
-    try {
-      const all = await fetchJSONSafe<Branch[]>(API.branches, ctrl.signal);
-      const ctx = getSidebarContext();
-
-      const activeCompanyID =
-        ctx?.companyID ??
-        formData.companyID ??
-        currentUserMapping?.companyID ??
-        user?.companyID ??
-        null;
-
-      let filtered = Array.isArray(all) ? all : [];
-
-      if (activeCompanyID) {
-        filtered = filtered.filter(
-          (b: any) => Number(b.companyID) === Number(activeCompanyID)
-        );
+    brTimerRef.current = setTimeout(async () => {
+      if (query.length < MIN_CHARS) {
+        setBrList([]);
+        return;
       }
 
-      if (user?.role === "BRANCH_ADMIN") {
-        const branchesID = currentUserMapping?.branchesID ?? user?.branchesID;
+      if (brAbortRef.current) brAbortRef.current.abort();
 
-        if (branchesID) {
+      const ctrl = new AbortController();
+      brAbortRef.current = ctrl;
+      setBrLoading(true);
+
+      try {
+        const all = await fetchJSONSafe<Branch[]>(API.branches, ctrl.signal);
+        const ctx = getSidebarContext();
+
+        const activeCompanyID =
+          ctx?.companyID ??
+          formData.companyID ??
+          currentUserMapping?.companyID ??
+          user?.companyID ??
+          null;
+
+        let filtered = Array.isArray(all) ? all : [];
+
+        if (activeCompanyID) {
           filtered = filtered.filter(
-            (b: any) => Number(b.id) === Number(branchesID)
+            (b: any) => Number(b.companyID) === Number(activeCompanyID),
           );
         }
-      }
 
-      filtered = filtered.filter((b) =>
-        (b.branchName ?? "").toLowerCase().includes(query.toLowerCase())
-      );
+        if (user?.role === "BRANCH_ADMIN") {
+          const branchesID = currentUserMapping?.branchesID ?? user?.branchesID;
 
-      const seen = new Set<number>();
-      setBrList(
-        filtered.filter((b) => {
-          const id = Number(b.id);
-          if (!Number.isFinite(id) || seen.has(id)) return false;
-          seen.add(id);
-          return true;
-        }).slice(0, 20)
-      );
-    } catch (e) {
-      if ((e as any).name !== "AbortError") {
-        console.error("Branches fetch error:", e);
+          if (branchesID) {
+            filtered = filtered.filter(
+              (b: any) => Number(b.id) === Number(branchesID),
+            );
+          }
+        }
+
+        filtered = filtered.filter((b) =>
+          (b.branchName ?? "").toLowerCase().includes(query.toLowerCase()),
+        );
+
+        const seen = new Set<number>();
+        setBrList(
+          filtered
+            .filter((b) => {
+              const id = Number(b.id);
+              if (!Number.isFinite(id) || seen.has(id)) return false;
+              seen.add(id);
+              return true;
+            })
+            .slice(0, 20),
+        );
+      } catch (e) {
+        if ((e as any).name !== "AbortError") {
+          console.error("Branches fetch error:", e);
+        }
+      } finally {
+        setBrLoading(false);
       }
-    } finally {
-      setBrLoading(false);
-    }
-  }, DEBOUNCE_MS);
-};
+    }, DEBOUNCE_MS);
+  };
 
   // Close suggestion popovers on outside click
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
-      if (spRef.current && !spRef.current.contains(e.target as any)) setSpList([]);
-      if (coRef.current && !coRef.current.contains(e.target as any)) setCoList([]);
-      if (brRef.current && !brRef.current.contains(e.target as any)) setBrList([]);
+      if (spRef.current && !spRef.current.contains(e.target as any))
+        setSpList([]);
+      if (coRef.current && !coRef.current.contains(e.target as any))
+        setCoList([]);
+      if (brRef.current && !brRef.current.contains(e.target as any))
+        setBrList([]);
     };
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
@@ -480,23 +536,26 @@ const handler = () => {
     // Auto-set Service Provider, Company, and Branch for MANAGER (no UI display)
     const ctx = getSidebarContext();
 
-// Active sidebar company always gets first priority
-if (ctx) {
-  baseFormData.serviceProviderID = ctx.serviceProviderID;
-  baseFormData.companyID = ctx.companyID;
-  baseFormData.spAutocomplete = ctx.serviceProviderName;
-  baseFormData.coAutocomplete = ctx.companyName;
-} else if (currentUserMapping) {
-  baseFormData.serviceProviderID = currentUserMapping.serviceProviderID;
-  baseFormData.companyID = currentUserMapping.companyID;
-  baseFormData.spAutocomplete = currentUserMapping.serviceProvider?.companyName || "";
-  baseFormData.coAutocomplete = currentUserMapping.company?.companyName || "";
+    // Active sidebar company always gets first priority
+    if (ctx) {
+      baseFormData.serviceProviderID = ctx.serviceProviderID;
+      baseFormData.companyID = ctx.companyID;
+      baseFormData.spAutocomplete = ctx.serviceProviderName;
+      baseFormData.coAutocomplete = ctx.companyName;
+    } else if (currentUserMapping) {
+      baseFormData.serviceProviderID = currentUserMapping.serviceProviderID;
+      baseFormData.companyID = currentUserMapping.companyID;
+      baseFormData.spAutocomplete =
+        currentUserMapping.serviceProvider?.companyName || "";
+      baseFormData.coAutocomplete =
+        currentUserMapping.company?.companyName || "";
 
-  if (user?.role === "BRANCH_ADMIN") {
-    baseFormData.branchesID = currentUserMapping.branchesID;
-    baseFormData.brAutocomplete = currentUserMapping.branches?.branchName || "";
-  }
-}
+      if (user?.role === "BRANCH_ADMIN") {
+        baseFormData.branchesID = currentUserMapping.branchesID;
+        baseFormData.brAutocomplete =
+          currentUserMapping.branches?.branchName || "";
+      }
+    }
 
     setFormData(baseFormData);
     setEditingDevice(null);
@@ -526,7 +585,8 @@ if (ctx) {
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setFormData((p) => ({ ...p, address: data.address || "" }));
-      if (!data.address) toast.message("Could not resolve an address for these coordinates");
+      if (!data.address)
+        toast.message("Could not resolve an address for these coordinates");
       else toast.success("Address resolved");
     } catch (e: any) {
       toast.error(e?.message || "Address lookup failed");
@@ -572,10 +632,12 @@ if (ctx) {
 
     // Validation
     const validationErrors: string[] = [];
-    if (!formData.deviceName?.trim()) validationErrors.push("Device Name is required");
-    if (!formData.deviceSN?.trim()) validationErrors.push("Device Serial Number is required");
+    if (!formData.deviceName?.trim())
+      validationErrors.push("Device Name is required");
+    if (!formData.deviceSN?.trim())
+      validationErrors.push("Device Serial Number is required");
     if (validationErrors.length > 0) {
-      validationErrors.forEach(msg => toast.error(msg));
+      validationErrors.forEach((msg) => toast.error(msg));
       return;
     }
 
@@ -583,30 +645,30 @@ if (ctx) {
     setError(null);
 
     // For MANAGER, ensure serviceProviderID, companyID, and branchesID are set from user mapping
-   const ctx = getSidebarContext();
+    const ctx = getSidebarContext();
 
-let finalServiceProviderID =
-  ctx?.serviceProviderID ??
-  formData.serviceProviderID ??
-  currentUserMapping?.serviceProviderID ??
-  null;
+    let finalServiceProviderID =
+      ctx?.serviceProviderID ??
+      formData.serviceProviderID ??
+      currentUserMapping?.serviceProviderID ??
+      null;
 
-let finalCompanyID =
-  ctx?.companyID ??
-  formData.companyID ??
-  currentUserMapping?.companyID ??
-  user?.companyID ??
-  null;
+    let finalCompanyID =
+      ctx?.companyID ??
+      formData.companyID ??
+      currentUserMapping?.companyID ??
+      user?.companyID ??
+      null;
 
-let finalBranchesID = formData.branchesID;
+    let finalBranchesID = formData.branchesID;
 
-if (user?.role === "BRANCH_ADMIN") {
-  finalBranchesID =
-    formData.branchesID ??
-    currentUserMapping?.branchesID ??
-    user?.branchesID ??
-    null;
-}
+    if (user?.role === "BRANCH_ADMIN") {
+      finalBranchesID =
+        formData.branchesID ??
+        currentUserMapping?.branchesID ??
+        user?.branchesID ??
+        null;
+    }
 
     const payload: any = {
       status: formData.status,
@@ -671,7 +733,8 @@ if (user?.role === "BRANCH_ADMIN") {
     setIsAddingNew(true);
 
     // For MANAGER, use their mapped IDs instead of the device's IDs
-    let finalServiceProviderID = d.serviceProviderID ?? d.serviceProvider?.id ?? null;
+    let finalServiceProviderID =
+      d.serviceProviderID ?? d.serviceProvider?.id ?? null;
     let finalCompanyID = d.companyID ?? d.company?.id ?? null;
     let finalBranchesID = d.branchesID ?? d.branches?.id ?? null;
     let spName = "";
@@ -724,47 +787,46 @@ if (user?.role === "BRANCH_ADMIN") {
     });
   };
 
- const handleDelete = async (device: DeviceRead) => {
-  const deviceName = device.deviceName || "this device";
+  const handleDelete = async (device: DeviceRead) => {
+    const deviceName = device.deviceName || "this device";
 
-  const confirmed = window.confirm(
-    `Are you sure you want to delete "${deviceName}"?\n\nThis action cannot be undone.`
-  );
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${deviceName}"?\n\nThis action cannot be undone.`,
+    );
 
-  if (!confirmed) return;
+    if (!confirmed) return;
 
-  try {
-    const res = await fetch(`${API.devices}/${device.id}`, {
-      method: "DELETE",
-    });
+    try {
+      const res = await fetch(`${API.devices}/${device.id}`, {
+        method: "DELETE",
+      });
 
-    if (!res.ok) {
-      const msg = await res.text();
-      throw new Error(msg || "Delete failed");
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || "Delete failed");
+      }
+
+      await fetchDevices();
+      toast.success("Device deleted successfully");
+    } catch (e: any) {
+      toast.error(e?.message || "Delete failed");
     }
+  };
 
-    await fetchDevices();
-    toast.success("Device deleted successfully");
-  } catch (e: any) {
-    toast.error(e?.message || "Delete failed");
-  }
-};
+  const closeDevicePagePanels = () => {
+    resetForm();
 
-const closeDevicePagePanels = () => {
-  resetForm();
+    setIsAddingNew(false);
+    setEditingDevice(null);
 
-  setIsAddingNew(false);
-  setEditingDevice(null);
+    setSpList([]);
+    setCoList([]);
+    setBrList([]);
+  };
 
-  setSpList([]);
-  setCoList([]);
-  setBrList([]);
-};
-
-const handleCancel = () => {
-  closeDevicePagePanels();
-};
-
+  const handleCancel = () => {
+    closeDevicePagePanels();
+  };
 
   const filteredDevices = useMemo(() => {
     const t = table.search.trim().toLowerCase();
@@ -776,7 +838,8 @@ const handleCancel = () => {
         branchFilter === "ALL" || branchFilter === deviceBranchID;
 
       const matchesStatus =
-        statusFilter === "ALL" || (d.status || "").toUpperCase() === statusFilter;
+        statusFilter === "ALL" ||
+        (d.status || "").toUpperCase() === statusFilter;
 
       const matchesSearch =
         !t ||
@@ -804,11 +867,19 @@ const handleCancel = () => {
       if (key === "deviceMake") return d.deviceMake || "";
       if (key === "deviceModel") return d.deviceModel || "";
       if (key === "deviceSN") return d.deviceSN || "";
-      if (key === "branchName") return d.branches?.branchName || d.branchName || "";
+      if (key === "branchName")
+        return d.branches?.branchName || d.branchName || "";
       if (key === "status") return d.status || "";
       return "";
     });
-  }, [devices, table.search, table.sortBy, table.sortDir, branchFilter, statusFilter]);
+  }, [
+    devices,
+    table.search,
+    table.sortBy,
+    table.sortDir,
+    branchFilter,
+    statusFilter,
+  ]);
 
   const branchFilterOptions = useMemo(
     () => [
@@ -842,34 +913,72 @@ const handleCancel = () => {
     return typeMap[type] || type;
   };
 
-  const deviceColumns = useMemo((): DataTableColumn<DeviceRead>[] => [
-    { key: "deviceName", header: "Name", sortable: true, colSpan: 2, cell: (d) => <span className="font-medium">{d.deviceName}</span> },
-    {
-      key: "deviceType",
-      header: "Type",
-      sortable: true,
-      colSpan: 2,
-      cell: (d) => d.deviceType ? (
-        <Badge variant="secondary" className="text-xs">{deviceTypeLabel(d.deviceType)}</Badge>
-      ) : "—",
-    },
-    { key: "deviceMake", header: "Make", sortable: true, colSpan: 1, cell: (d) => d.deviceMake || "—" },
-    { key: "deviceModel", header: "Model", sortable: true, colSpan: 2, cell: (d) => d.deviceModel || "—" },
-    { key: "deviceSN", header: "Serial", sortable: true, colSpan: 2, cell: (d) => d.deviceSN || "—" },
-    { key: "branchName", header: "Branch", sortable: true, colSpan: 2, cell: (d) => brName(d) },
-    {
-      key: "actions",
-      header: "Actions",
-      colSpan: 1,
-      align: "right",
-      cell: (d) => (
-        <EntityRowActions
-          onEdit={canManage ? () => handleEdit(d) : undefined}
-onDelete={canDelete ? () => handleDelete(d) : undefined}
-        />
-      ),
-    },
-  ], [canManage, canDelete]);
+  const deviceColumns = useMemo(
+    (): DataTableColumn<DeviceRead>[] => [
+      {
+        key: "deviceName",
+        header: "Name",
+        sortable: true,
+        colSpan: 2,
+        cell: (d) => <span className="font-medium">{d.deviceName}</span>,
+      },
+      {
+        key: "deviceType",
+        header: "Type",
+        sortable: true,
+        colSpan: 2,
+        cell: (d) =>
+          d.deviceType ? (
+            <Badge variant="secondary" className="text-xs">
+              {deviceTypeLabel(d.deviceType)}
+            </Badge>
+          ) : (
+            "—"
+          ),
+      },
+      {
+        key: "deviceMake",
+        header: "Make",
+        sortable: true,
+        colSpan: 1,
+        cell: (d) => d.deviceMake || "—",
+      },
+      {
+        key: "deviceModel",
+        header: "Model",
+        sortable: true,
+        colSpan: 2,
+        cell: (d) => d.deviceModel || "—",
+      },
+      {
+        key: "deviceSN",
+        header: "Serial",
+        sortable: true,
+        colSpan: 2,
+        cell: (d) => d.deviceSN || "—",
+      },
+      {
+        key: "branchName",
+        header: "Branch",
+        sortable: true,
+        colSpan: 2,
+        cell: (d) => brName(d),
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        colSpan: 1,
+        align: "right",
+        cell: (d) => (
+          <EntityRowActions
+            onEdit={canManage ? () => handleEdit(d) : undefined}
+            onDelete={canDelete ? () => handleDelete(d) : undefined}
+          />
+        ),
+      },
+    ],
+    [canManage, canDelete],
+  );
 
   // ---------------------------
   // Helpers for rendering names in table
@@ -883,14 +992,18 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
 
   return (
     <div className="space-y-6 w-full max-w-none animate-fade-in page-content-enter">
-
       <PageHeader
         icon={Fingerprint}
         title="Attendance Devices"
         description="Biometric, web, mobile, and geo sources used to capture attendance events."
         actions={
           !isAddingNew && canAdd ? (
-            <Button onClick={() => { resetForm(); setIsAddingNew(true); }}>
+            <Button
+              onClick={() => {
+                resetForm();
+                setIsAddingNew(true);
+              }}
+            >
               <Plus className="w-4 h-4 mr-1" />
               Add Device
             </Button>
@@ -901,7 +1014,9 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
       {/* Add/Edit Form - Drawer */}
       <FormDrawer
         open={isAddingNew}
-        onOpenChange={(v) => { if (!v) handleCancel(); }}
+        onOpenChange={(v) => {
+          if (!v) handleCancel();
+        }}
         title={editingDevice ? "Edit Device" : "Add New Device"}
       >
         <div>
@@ -939,7 +1054,11 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
                   value={formData.spAutocomplete}
                   onChange={(e) => {
                     const val = e.target.value;
-                    setFormData((p) => ({ ...p, spAutocomplete: val, serviceProviderID: null }));
+                    setFormData((p) => ({
+                      ...p,
+                      spAutocomplete: val,
+                      serviceProviderID: null,
+                    }));
                     runFetchServiceProviders(val);
                   }}
                   onFocus={(e) => {
@@ -952,7 +1071,11 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
                 />
                 {spList.length > 0 && (
                   <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
-                    {spLoading && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
+                    {spLoading && (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        Loading…
+                      </div>
+                    )}
                     {spList.map((sp) => (
                       <div
                         key={sp.id}
@@ -983,7 +1106,11 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
                   value={formData.coAutocomplete}
                   onChange={(e) => {
                     const val = e.target.value;
-                    setFormData((p) => ({ ...p, coAutocomplete: val, companyID: null }));
+                    setFormData((p) => ({
+                      ...p,
+                      coAutocomplete: val,
+                      companyID: null,
+                    }));
                     runFetchCompanies(val);
                   }}
                   onFocus={(e) => {
@@ -996,7 +1123,11 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
                 />
                 {coList.length > 0 && (
                   <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
-                    {coLoading && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
+                    {coLoading && (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        Loading…
+                      </div>
+                    )}
                     {coList.map((co) => (
                       <div
                         key={co.id}
@@ -1031,7 +1162,11 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
                 user?.companyID
               }
               onInputChange={(display) =>
-                setFormData((p) => ({ ...p, brAutocomplete: display, branchesID: null }))
+                setFormData((p) => ({
+                  ...p,
+                  brAutocomplete: display,
+                  branchesID: null,
+                }))
               }
               onBranchSelect={({ id, branchName }) => {
                 setFormData((p) => ({
@@ -1051,7 +1186,9 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
               <Label>Device Name *</Label>
               <Input
                 value={formData.deviceName}
-                onChange={(e) => setFormData((p) => ({ ...p, deviceName: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, deviceName: e.target.value }))
+                }
                 placeholder="Enter device name"
                 required
               />
@@ -1061,7 +1198,9 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
               <Label>Device Make *</Label>
               <Input
                 value={formData.deviceMake}
-                onChange={(e) => setFormData((p) => ({ ...p, deviceMake: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, deviceMake: e.target.value }))
+                }
                 placeholder="Enter device make"
                 required
               />
@@ -1071,7 +1210,9 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
               <Label>Device Model *</Label>
               <Input
                 value={formData.deviceModel}
-                onChange={(e) => setFormData((p) => ({ ...p, deviceModel: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, deviceModel: e.target.value }))
+                }
                 placeholder="Enter device model"
                 required
               />
@@ -1099,7 +1240,9 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
               <Label>Device SN *</Label>
               <Input
                 value={formData.deviceSN}
-                onChange={(e) => setFormData((p) => ({ ...p, deviceSN: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, deviceSN: e.target.value }))
+                }
                 placeholder="Enter device serial number"
                 required
               />
@@ -1107,9 +1250,12 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
 
             <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/60 p-4">
               <div>
-                <Label className="text-sm font-semibold text-gray-800">Device location</Label>
+                <Label className="text-sm font-semibold text-gray-800">
+                  Device location
+                </Label>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Shown on the dashboard for employees who punch in through this device.
+                  Shown on the dashboard for employees who punch in through this
+                  device.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -1139,7 +1285,9 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
                     type="number"
                     step="any"
                     value={formData.latitude}
-                    onChange={(e) => setFormData((p) => ({ ...p, latitude: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, latitude: e.target.value }))
+                    }
                     placeholder="e.g. 16.9944"
                   />
                 </div>
@@ -1149,14 +1297,18 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
                     type="number"
                     step="any"
                     value={formData.longitude}
-                    onChange={(e) => setFormData((p) => ({ ...p, longitude: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, longitude: e.target.value }))
+                    }
                     placeholder="e.g. 73.3007"
                   />
                 </div>
               </div>
               {formData.address ? (
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">Resolved address</Label>
+                  <Label className="text-xs text-gray-500">
+                    Resolved address
+                  </Label>
                   <p className="text-sm text-gray-800 bg-white border border-gray-200 rounded-md px-3 py-2">
                     {formData.address}
                   </p>
@@ -1170,63 +1322,74 @@ onDelete={canDelete ? () => handleDelete(d) : undefined}
               </Button>
               <Button type="submit" className="" disabled={saving}>
                 <Save className="w-4 h-4 mr-1" />
-                {saving ? "Saving..." : editingDevice ? "Update Device" : "Add Device"}
+                {saving
+                  ? "Saving..."
+                  : editingDevice
+                    ? "Update Device"
+                    : "Add Device"}
               </Button>
             </div>
           </form>
         </div>
       </FormDrawer>
 
-      {!isAddingNew && (<>
-        <FilterBar
-          search={{
-            value: table.search,
-            onChange: table.setSearch,
-            placeholder: "Search code, name, serial, IP…",
-          }}
-          filters={
-            <>
-              <FilterSelect
-                id="devices-branch"
-                value={branchFilter}
-                onChange={setBranchFilter}
-                options={branchFilterOptions}
-                width="w-56"
-                ariaLabel="Filter by branch"
-              />
-              <FilterSelect
-                id="devices-status"
-                value={statusFilter}
-                onChange={setStatusFilter}
-                options={statusFilterOptions}
-                width="w-44"
-                ariaLabel="Filter by status"
-              />
-            </>
-          }
-        />
+      {!isAddingNew && (
+        <>
+          <FilterBar
+            search={{
+              value: table.search,
+              onChange: table.setSearch,
+              placeholder: "Search code, name, serial, IP…",
+            }}
+            filters={
+              <>
+                <FilterSelect
+                  id="devices-branch"
+                  value={branchFilter}
+                  onChange={setBranchFilter}
+                  options={branchFilterOptions}
+                  width="w-56"
+                  ariaLabel="Filter by branch"
+                />
+                <FilterSelect
+                  id="devices-status"
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={statusFilterOptions}
+                  width="w-44"
+                  ariaLabel="Filter by status"
+                />
+              </>
+            }
+          />
 
-        <EntityListShell
-          title="All devices"
-          columns={deviceColumns}
-          rows={filteredDevices}
-          rowKey={(d) => String(d.id)}
-          isLoading={loading}
-          sortBy={table.sortBy}
-          sortDir={table.sortDir}
-          onSort={table.setSort}
-          emptyIcon={Fingerprint}
-          emptyTitle="No devices yet"
-          emptyDescription="Add your first attendance device to start capturing punches."
-          emptyAction={
-            canAdd ? (
-              <Button onClick={() => { resetForm(); setIsAddingNew(true); }}>
-                <Plus className="w-4 h-4 mr-1" /> Add Device
-              </Button>
-            ) : undefined
-          }
-        />
-      </>)}
+          <EntityListShell
+            title="All devices"
+            columns={deviceColumns}
+            rows={filteredDevices}
+            rowKey={(d) => String(d.id)}
+            isLoading={loading}
+            sortBy={table.sortBy}
+            sortDir={table.sortDir}
+            onSort={table.setSort}
+            emptyIcon={Fingerprint}
+            emptyTitle="No devices yet"
+            emptyDescription="Add your first attendance device to start capturing punches."
+            emptyAction={
+              canAdd ? (
+                <Button
+                  onClick={() => {
+                    resetForm();
+                    setIsAddingNew(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add Device
+                </Button>
+              ) : undefined
+            }
+          />
+        </>
+      )}
     </div>
   );
 }

@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Icon } from "@iconify/react";
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export function CanteenSetup() {
   const [enabled, setEnabled] = useState(false);
@@ -16,7 +21,9 @@ export function CanteenSetup() {
   const fetchSetup = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/canteen/setup`, { cache: "no-store" });
+      const res = await fetch(`${BACKEND_URL}/canteen/setup`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       setEnabled(!!data.default_token_enabled);
     } catch (err) {
@@ -81,7 +88,10 @@ export function CanteenSetup() {
               {enabled ? "Enabled" : "Disabled"}
             </span>
             {saving && (
-              <Icon icon="mdi:loading" className="w-4 h-4 animate-spin text-gray-400" />
+              <Icon
+                icon="mdi:loading"
+                className="w-4 h-4 animate-spin text-gray-400"
+              />
             )}
           </div>
         </CardContent>

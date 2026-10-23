@@ -1,13 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pencil, Save, AlertTriangle, Building2, Users, PlusCircle } from "lucide-react";
+import {
+  Pencil,
+  Save,
+  AlertTriangle,
+  Building2,
+  Users,
+  PlusCircle,
+} from "lucide-react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { getSidebarContext } from "../utils/sidebarContext";
-import { Button } from "../components/ui/button"
-import { NoticeBanner } from "../components/ui/notice-banner"
-import { ArrowLeft } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Button } from "../components/ui/button";
+import { NoticeBanner } from "../components/ui/notice-banner";
+import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 type Company = {
   id: number;
   companyName: string;
@@ -25,7 +32,7 @@ type ESICCompliance = {
   dueDate: number;
 };
 
-const DEFAULT_COMPLIANCE: Omit<ESICCompliance, 'companyID'> = {
+const DEFAULT_COMPLIANCE: Omit<ESICCompliance, "companyID"> = {
   esicThresholdCount: 10,
   esicApplicable: false,
   wageCeiling: 21000,
@@ -36,9 +43,10 @@ const DEFAULT_COMPLIANCE: Omit<ESICCompliance, 'companyID'> = {
 };
 
 export default function ESICCompliancePage() {
-  const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+  const BACKEND =
+    process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
   const currentUser = useCurrentUser();
-  const router = useRouter()
+  const router = useRouter();
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -64,13 +72,15 @@ export default function ESICCompliancePage() {
             companyName: currentUser.company?.companyName || "Company",
           };
           setSelectedCompany(managerCompany);
-          
+
           // Fetch compliance and employee data for this company
           fetchCompliance(currentUser.companyID);
           fetchEmployeeCount(currentUser.companyID);
         } else if (currentUser.serviceProviderID && allCompanies) {
           // SP-level manager: filter companies by serviceProviderID
-          const spCompanies = allCompanies.filter((c: any) => c.serviceProviderID === currentUser.serviceProviderID);
+          const spCompanies = allCompanies.filter(
+            (c: any) => c.serviceProviderID === currentUser.serviceProviderID,
+          );
           setCompanies(spCompanies);
         }
         setIsInitialized(true);
@@ -85,10 +95,9 @@ export default function ESICCompliancePage() {
     }
   }, [selectedCompany]);
 
-
-    const handleBackToCompany = () => {
-    router.push('/company')
-  }
+  const handleBackToCompany = () => {
+    router.push("/company");
+  };
 
   const fetchCompanies = async () => {
     try {
@@ -107,16 +116,16 @@ export default function ESICCompliancePage() {
       const res = await fetch(`${BACKEND}/manage-emp`);
       if (res.ok) {
         const allEmployees = await res.json();
-        
-        const companyEmployees = allEmployees.filter((emp: any) => 
-          emp.companyID === companyID
+
+        const companyEmployees = allEmployees.filter(
+          (emp: any) => emp.companyID === companyID,
         );
-        
+
         const eligibleEmployees = companyEmployees.filter((emp: any) => {
           if (!emp.contractors) return true;
           return emp.contractors.contractorType !== "MSP";
         });
-        
+
         setEmployeeCount(eligibleEmployees.length || 0);
       }
     } catch (error) {
@@ -149,7 +158,7 @@ export default function ESICCompliancePage() {
   };
 
   const handleCompanyChange = (id: string) => {
-    const company = companies.find(c => c.id === Number(id)) || null;
+    const company = companies.find((c) => c.id === Number(id)) || null;
     setSelectedCompany(company);
     if (company) {
       fetchCompliance(company.id);
@@ -163,13 +172,18 @@ export default function ESICCompliancePage() {
       setData({
         companyID: selectedCompany.id,
         ...DEFAULT_COMPLIANCE,
-        [field]: value
+        [field]: value,
       });
     } else if (data) {
       setData({ ...data, [field]: value });
     }
-    
-    if (field === "esicApplicable" && value === false && employeeCount && employeeCount >= 10) {
+
+    if (
+      field === "esicApplicable" &&
+      value === false &&
+      employeeCount &&
+      employeeCount >= 10
+    ) {
       setShowWarning(true);
     } else if (field === "esicApplicable" && value === true) {
       setShowWarning(false);
@@ -181,14 +195,14 @@ export default function ESICCompliancePage() {
 
     try {
       setIsLoading(true);
-      
+
       const complianceData = data || {
         companyID: selectedCompany.id,
-        ...DEFAULT_COMPLIANCE
+        ...DEFAULT_COMPLIANCE,
       };
 
       let response;
-      
+
       if (isNewRecord || !data) {
         response = await fetch(`${BACKEND}/esic-compliance`, {
           method: "POST",
@@ -231,13 +245,21 @@ export default function ESICCompliancePage() {
   };
 
   // Check if user is authorized
-  if (!currentUser || (currentUser.role !== "SUPERADMIN" && currentUser.role !== "SERVICE_PROVIDER")) {
+  if (
+    !currentUser ||
+    (currentUser.role !== "SUPERADMIN" &&
+      currentUser.role !== "SERVICE_PROVIDER")
+  ) {
     return (
       <div className="p-8 max-w-6xl mx-auto">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <h2 className="text-xl font-semibold text-red-800 mb-2">Access Denied</h2>
-          <p className="text-red-600">{"You don't have permission to view this page."}</p>
+          <h2 className="text-xl font-semibold text-red-800 mb-2">
+            Access Denied
+          </h2>
+          <p className="text-red-600">
+            {"You don't have permission to view this page."}
+          </p>
         </div>
       </div>
     );
@@ -245,8 +267,7 @@ export default function ESICCompliancePage() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8">
-
-        {/* Back Button */}
+      {/* Back Button */}
       <Button
         variant="ghost"
         onClick={handleBackToCompany}
@@ -267,7 +288,7 @@ export default function ESICCompliancePage() {
                 onChange={(e) => handleCompanyChange(e.target.value)}
               >
                 <option value="">Select Company</option>
-                {companies.map(c => (
+                {companies.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.companyName}
                   </option>
@@ -275,17 +296,22 @@ export default function ESICCompliancePage() {
               </select>
             </>
           ) : (
-            currentUser?.role === "SERVICE_PROVIDER" && selectedCompany && (
+            currentUser?.role === "SERVICE_PROVIDER" &&
+            selectedCompany && (
               <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg">
                 <Building2 size={18} className="text-blue-600" />
-                <span className="font-medium text-blue-800">{selectedCompany.companyName}</span>
+                <span className="font-medium text-blue-800">
+                  {selectedCompany.companyName}
+                </span>
                 {currentUser.company?.companyName && (
-                  <span className="text-xs text-blue-600 ml-2">(Auto-selected)</span>
+                  <span className="text-xs text-blue-600 ml-2">
+                    (Auto-selected)
+                  </span>
                 )}
               </div>
             )
           )}
-          
+
           {selectedCompany && isNewRecord && !isLoading && (
             <span className="text-blue-600 text-sm flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full">
               <PlusCircle size={16} />
@@ -304,13 +330,19 @@ export default function ESICCompliancePage() {
               <div className="bg-gray-50 px-6 py-4 border-b">
                 <div className="flex items-center gap-2">
                   <Building2 size={18} className="text-blue-600" />
-                  <h2 className="font-semibold text-gray-800">Company Details</h2>
+                  <h2 className="font-semibold text-gray-800">
+                    Company Details
+                  </h2>
                 </div>
               </div>
               <div className="p-6">
                 <div className="mb-4">
-                  <label className="text-xs text-gray-500 uppercase">Company Name</label>
-                  <p className="font-medium text-gray-900 text-lg">{selectedCompany.companyName}</p>
+                  <label className="text-xs text-gray-500 uppercase">
+                    Company Name
+                  </label>
+                  <p className="font-medium text-gray-900 text-lg">
+                    {selectedCompany.companyName}
+                  </p>
                   {currentUser?.role === "SERVICE_PROVIDER" && (
                     <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                       <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
@@ -318,17 +350,21 @@ export default function ESICCompliancePage() {
                     </p>
                   )}
                 </div>
-                
+
                 <div className="space-y-2 pt-2 border-t">
                   {selectedCompany.esiNo ? (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">ESI No.:</span>
-                      <span className="text-sm font-medium">{selectedCompany.esiNo}</span>
+                      <span className="text-sm font-medium">
+                        {selectedCompany.esiNo}
+                      </span>
                     </div>
                   ) : (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">ESI No.:</span>
-                      <span className="text-sm text-gray-400">Not registered</span>
+                      <span className="text-sm text-gray-400">
+                        Not registered
+                      </span>
                     </div>
                   )}
                 </div>
@@ -340,12 +376,16 @@ export default function ESICCompliancePage() {
               <div className="bg-gray-50 px-6 py-4 border-b">
                 <div className="flex items-center gap-2">
                   <Users size={18} className="text-green-600" />
-                  <h2 className="font-semibold text-gray-800">Employee Statistics</h2>
+                  <h2 className="font-semibold text-gray-800">
+                    Employee Statistics
+                  </h2>
                 </div>
               </div>
               <div className="p-6">
                 <div>
-                  <label className="text-xs text-gray-500 uppercase">Total Employee Count</label>
+                  <label className="text-xs text-gray-500 uppercase">
+                    Total Employee Count
+                  </label>
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-bold text-gray-900">
                       {employeeCount ?? 0}
@@ -356,16 +396,20 @@ export default function ESICCompliancePage() {
                     Excluding MSP contractor employees
                   </p>
                 </div>
-                
+
                 <div className="mt-6 pt-4 border-t">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">ESIC Applicable:</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      data?.esicApplicable 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {data?.esicApplicable ? 'Yes' : 'No'}
+                    <span className="text-sm font-medium text-gray-700">
+                      ESIC Applicable:
+                    </span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        data?.esicApplicable
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {data?.esicApplicable ? "Yes" : "No"}
                     </span>
                   </div>
                 </div>
@@ -378,7 +422,9 @@ export default function ESICCompliancePage() {
             {/* Header with Edit/Save/Cancel */}
             <div className="flex items-center justify-between bg-white p-4 rounded-lg border shadow-sm">
               <div>
-                <h2 className="text-xl font-semibold text-gray-800">ESIC Compliance Settings</h2>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  ESIC Compliance Settings
+                </h2>
                 {isNewRecord && (
                   <p className="text-sm text-blue-600 mt-1">
                     No existing configuration found. Please configure and save.
@@ -408,8 +454,12 @@ export default function ESICCompliancePage() {
                       disabled={isLoading}
                       className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2.5 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
                     >
-                      <Save size={18} /> 
-                      {isLoading ? 'Saving...' : isNewRecord ? 'Create Settings' : 'Save Changes'}
+                      <Save size={18} />
+                      {isLoading
+                        ? "Saving..."
+                        : isNewRecord
+                          ? "Create Settings"
+                          : "Save Changes"}
                     </button>
                   </>
                 )}
@@ -426,7 +476,9 @@ export default function ESICCompliancePage() {
                 {/* ESIC Threshold & Applicability */}
                 <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
                   <div className="bg-gray-50 px-6 py-4 border-b">
-                    <h3 className="font-semibold text-gray-800">ESIC Eligibility</h3>
+                    <h3 className="font-semibold text-gray-800">
+                      ESIC Eligibility
+                    </h3>
                   </div>
                   <div className="p-6 space-y-6">
                     {/* ESIC Minimum Employee count threshold value */}
@@ -437,9 +489,17 @@ export default function ESICCompliancePage() {
                       <div className="flex items-center gap-3">
                         <input
                           type="number"
-                          value={data?.esicThresholdCount ?? DEFAULT_COMPLIANCE.esicThresholdCount}
+                          value={
+                            data?.esicThresholdCount ??
+                            DEFAULT_COMPLIANCE.esicThresholdCount
+                          }
                           disabled={!editMode}
-                          onChange={(e) => handleChange("esicThresholdCount", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleChange(
+                              "esicThresholdCount",
+                              Number(e.target.value),
+                            )
+                          }
                           className="border rounded-lg px-4 py-2.5 w-32 disabled:bg-gray-50"
                         />
                         <span className="text-sm text-gray-500">employees</span>
@@ -454,15 +514,23 @@ export default function ESICCompliancePage() {
                       <div className="flex items-center gap-3">
                         <input
                           type="checkbox"
-                          checked={data?.esicApplicable ?? DEFAULT_COMPLIANCE.esicApplicable}
+                          checked={
+                            data?.esicApplicable ??
+                            DEFAULT_COMPLIANCE.esicApplicable
+                          }
                           disabled={!editMode}
-                          onChange={(e) => handleChange("esicApplicable", e.target.checked)}
+                          onChange={(e) =>
+                            handleChange("esicApplicable", e.target.checked)
+                          }
                           className="w-5 h-5 rounded border-gray-300 text-blue-600"
                         />
                         {showWarning && (
                           <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
                             <AlertTriangle size={16} />
-                            <span className="text-sm">ESIC should be applicable when employee count is 10 or more</span>
+                            <span className="text-sm">
+                              ESIC should be applicable when employee count is
+                              10 or more
+                            </span>
                           </div>
                         )}
                       </div>
@@ -473,7 +541,9 @@ export default function ESICCompliancePage() {
                 {/* Wage Ceiling Section */}
                 <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
                   <div className="bg-gray-50 px-6 py-4 border-b">
-                    <h3 className="font-semibold text-gray-800">Wage Ceiling Settings</h3>
+                    <h3 className="font-semibold text-gray-800">
+                      Wage Ceiling Settings
+                    </h3>
                   </div>
                   <div className="p-6 space-y-6">
                     {/* Employee gross monthly wage ≤ */}
@@ -485,12 +555,18 @@ export default function ESICCompliancePage() {
                         <span className="text-gray-600">₹</span>
                         <input
                           type="number"
-                          value={data?.wageCeiling ?? DEFAULT_COMPLIANCE.wageCeiling}
+                          value={
+                            data?.wageCeiling ?? DEFAULT_COMPLIANCE.wageCeiling
+                          }
                           disabled={!editMode}
-                          onChange={(e) => handleChange("wageCeiling", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleChange("wageCeiling", Number(e.target.value))
+                          }
                           className="border rounded-lg px-4 py-2.5 w-32 disabled:bg-gray-50"
                         />
-                        <span className="text-sm text-gray-500 ml-2">(Default: ₹21,000)</span>
+                        <span className="text-sm text-gray-500 ml-2">
+                          (Default: ₹21,000)
+                        </span>
                       </div>
                     </div>
 
@@ -503,12 +579,22 @@ export default function ESICCompliancePage() {
                         <span className="text-gray-600">₹</span>
                         <input
                           type="number"
-                          value={data?.disabledWageCeiling ?? DEFAULT_COMPLIANCE.disabledWageCeiling}
+                          value={
+                            data?.disabledWageCeiling ??
+                            DEFAULT_COMPLIANCE.disabledWageCeiling
+                          }
                           disabled={!editMode}
-                          onChange={(e) => handleChange("disabledWageCeiling", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleChange(
+                              "disabledWageCeiling",
+                              Number(e.target.value),
+                            )
+                          }
                           className="border rounded-lg px-4 py-2.5 w-32 disabled:bg-gray-50"
                         />
-                        <span className="text-sm text-gray-500 ml-2">(Default: ₹25,000)</span>
+                        <span className="text-sm text-gray-500 ml-2">
+                          (Default: ₹25,000)
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -517,7 +603,9 @@ export default function ESICCompliancePage() {
                 {/* Contribution Rates Section */}
                 <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
                   <div className="bg-gray-50 px-6 py-4 border-b">
-                    <h3 className="font-semibold text-gray-800">Contribution Rates</h3>
+                    <h3 className="font-semibold text-gray-800">
+                      Contribution Rates
+                    </h3>
                   </div>
                   <div className="p-6 space-y-6">
                     {/* Employee Contribution */}
@@ -529,13 +617,20 @@ export default function ESICCompliancePage() {
                         <input
                           type="number"
                           step="0.01"
-                          value={data?.employeeRate ?? DEFAULT_COMPLIANCE.employeeRate}
+                          value={
+                            data?.employeeRate ??
+                            DEFAULT_COMPLIANCE.employeeRate
+                          }
                           disabled={!editMode}
-                          onChange={(e) => handleChange("employeeRate", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleChange("employeeRate", Number(e.target.value))
+                          }
                           className="border rounded-lg px-4 py-2.5 w-24 disabled:bg-gray-50"
                         />
                         <span className="text-gray-600">% of Gross Salary</span>
-                        <span className="text-sm text-gray-500 ml-2">(0.75% Default)</span>
+                        <span className="text-sm text-gray-500 ml-2">
+                          (0.75% Default)
+                        </span>
                       </div>
                     </div>
 
@@ -548,13 +643,20 @@ export default function ESICCompliancePage() {
                         <input
                           type="number"
                           step="0.01"
-                          value={data?.employerRate ?? DEFAULT_COMPLIANCE.employerRate}
+                          value={
+                            data?.employerRate ??
+                            DEFAULT_COMPLIANCE.employerRate
+                          }
                           disabled={!editMode}
-                          onChange={(e) => handleChange("employerRate", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleChange("employerRate", Number(e.target.value))
+                          }
                           className="border rounded-lg px-4 py-2.5 w-24 disabled:bg-gray-50"
                         />
                         <span className="text-gray-600">% of Gross Salary</span>
-                        <span className="text-sm text-gray-500 ml-2">(3.25% Default)</span>
+                        <span className="text-sm text-gray-500 ml-2">
+                          (3.25% Default)
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -563,7 +665,9 @@ export default function ESICCompliancePage() {
                 {/* Due Date Section */}
                 <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
                   <div className="bg-gray-50 px-6 py-4 border-b">
-                    <h3 className="font-semibold text-gray-800">Payment Schedule</h3>
+                    <h3 className="font-semibold text-gray-800">
+                      Payment Schedule
+                    </h3>
                   </div>
                   <div className="p-6">
                     <div className="flex items-center gap-4">
@@ -576,11 +680,15 @@ export default function ESICCompliancePage() {
                           type="number"
                           value={data?.dueDate ?? DEFAULT_COMPLIANCE.dueDate}
                           disabled={!editMode}
-                          onChange={(e) => handleChange("dueDate", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleChange("dueDate", Number(e.target.value))
+                          }
                           className="border rounded-lg px-4 py-2.5 w-24 disabled:bg-gray-50"
                         />
                         <span className="text-gray-600">of Next Month</span>
-                        <span className="text-sm text-gray-500 ml-2">(15th Default)</span>
+                        <span className="text-sm text-gray-500 ml-2">
+                          (15th Default)
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -588,12 +696,27 @@ export default function ESICCompliancePage() {
 
                 {/* Info Box */}
                 <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
-                  <h4 className="font-semibold text-blue-800 mb-2">ESIC Rules Summary</h4>
+                  <h4 className="font-semibold text-blue-800 mb-2">
+                    ESIC Rules Summary
+                  </h4>
                   <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
-                    <li>Applicable if employee count ≥ {data?.esicThresholdCount || 10}</li>
-                    <li>Wage ceiling: ₹{data?.wageCeiling || 21000} (₹{data?.disabledWageCeiling || 25000} for disabled employees)</li>
-                    <li>Employee contribution: {data?.employeeRate || 0.75}% of gross salary</li>
-                    <li>Employer contribution: {data?.employerRate || 3.25}% of gross salary</li>
+                    <li>
+                      Applicable if employee count ≥{" "}
+                      {data?.esicThresholdCount || 10}
+                    </li>
+                    <li>
+                      Wage ceiling: ₹{data?.wageCeiling || 21000} (₹
+                      {data?.disabledWageCeiling || 25000} for disabled
+                      employees)
+                    </li>
+                    <li>
+                      Employee contribution: {data?.employeeRate || 0.75}% of
+                      gross salary
+                    </li>
+                    <li>
+                      Employer contribution: {data?.employerRate || 3.25}% of
+                      gross salary
+                    </li>
                     <li>Due date: {data?.dueDate || 15}th of next month</li>
                   </ul>
                 </div>

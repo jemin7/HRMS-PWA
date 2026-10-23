@@ -5,10 +5,7 @@ import { Boxes } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "../components/app/page-header";
-import {
-  FilterBar,
-  FilterSelect,
-} from "../components/app/filter-bar";
+import { FilterBar, FilterSelect } from "../components/app/filter-bar";
 import { EntityListShell } from "../components/app/entity-list-shell";
 import { EntityRowActions } from "../components/app/entity-row-actions";
 import { DetailCard } from "../components/app/detail-card";
@@ -20,10 +17,7 @@ import {
 import { FormDrawer } from "../components/ui/form-drawer";
 
 import type { DataTableColumn } from "../components/app/data-table";
-import {
-  sortRows,
-  useClientTable,
-} from "../hooks/use-client-table";
+import { sortRows, useClientTable } from "../hooks/use-client-table";
 
 type ID = number;
 
@@ -38,7 +32,7 @@ interface CompanyModuleRead {
 }
 
 const API = {
-  companyModules: "/backend/company-modules",
+  companyModules: "https://hrms-api-test.onrender.com/company-modules",
 };
 
 async function fetchJSONSafe<T>(
@@ -49,9 +43,7 @@ async function fetchJSONSafe<T>(
     ...options,
     headers: {
       Accept: "application/json",
-      ...(options?.body
-        ? { "Content-Type": "application/json" }
-        : {}),
+      ...(options?.body ? { "Content-Type": "application/json" } : {}),
       ...options?.headers,
     },
     cache: "no-store",
@@ -73,15 +65,14 @@ async function fetchJSONSafe<T>(
   }
 
   if (!response.ok) {
-    const message =
-      Array.isArray(responseBody?.message)
-        ? responseBody.message.join(", ")
-        : responseBody?.message ||
-          responseBody?.error ||
-          (responseText.startsWith("<!DOCTYPE")
-            ? `API returned an HTML page instead of JSON. Check API URL: ${url}`
-            : responseText) ||
-          `${response.status} ${response.statusText}`;
+    const message = Array.isArray(responseBody?.message)
+      ? responseBody.message.join(", ")
+      : responseBody?.message ||
+        responseBody?.error ||
+        (responseText.startsWith("<!DOCTYPE")
+          ? `API returned an HTML page instead of JSON. Check API URL: ${url}`
+          : responseText) ||
+        `${response.status} ${response.statusText}`;
 
     throw new Error(message);
   }
@@ -98,7 +89,6 @@ async function fetchJSONSafe<T>(
 
   return (responseBody?.data ?? responseBody) as T;
 }
-
 
 function moduleFeatures(row: CompanyModuleRead): string {
   const key = String(row.moduleKey || row.moduleName || "").toUpperCase();
@@ -128,24 +118,19 @@ export function CompanyModulesManagement() {
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [isViewing, setIsViewing] = useState(false);
-  const [viewRow, setViewRow] =
-    useState<CompanyModuleRead | null>(null);
+  const [viewRow, setViewRow] = useState<CompanyModuleRead | null>(null);
 
   const fetchRows = async () => {
     try {
       setLoading(true);
 
-      const data = await fetchJSONSafe<CompanyModuleRead[]>(
-        API.companyModules,
-      );
+      const data = await fetchJSONSafe<CompanyModuleRead[]>(API.companyModules);
 
       setRows(Array.isArray(data) ? data : []);
     } catch (err: any) {
       console.error("Failed to load company modules:", err);
       setRows([]);
-      toast.error(
-        err?.message || "Failed to load company modules",
-      );
+      toast.error(err?.message || "Failed to load company modules");
     } finally {
       setLoading(false);
     }
@@ -166,10 +151,7 @@ export function CompanyModulesManagement() {
     };
 
     window.addEventListener("app-data-refresh", reload);
-    window.addEventListener(
-      "sidebar-main-page-click",
-      sidebarPageClickHandler,
-    );
+    window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler);
 
     return () => {
       window.removeEventListener("app-data-refresh", reload);
@@ -203,43 +185,28 @@ export function CompanyModulesManagement() {
 
       const matchesSearch =
         !search ||
-        row.moduleName
-          ?.toLowerCase()
-          .includes(search) ||
-        row.moduleDescription
-          ?.toLowerCase()
-          .includes(search);
+        row.moduleName?.toLowerCase().includes(search) ||
+        row.moduleDescription?.toLowerCase().includes(search);
 
       return matchesStatus && matchesSearch;
     });
 
-    return sortRows(
-      filtered,
-      table.sortBy,
-      table.sortDir,
-      (row, key) => {
-        if (key === "moduleName") {
-          return row.moduleName ?? "";
-        }
+    return sortRows(filtered, table.sortBy, table.sortDir, (row, key) => {
+      if (key === "moduleName") {
+        return row.moduleName ?? "";
+      }
 
-        if (key === "moduleDescription") {
-          return row.moduleDescription ?? "";
-        }
+      if (key === "moduleDescription") {
+        return row.moduleDescription ?? "";
+      }
 
-        if (key === "moduleStatus") {
-          return row.moduleStatus !== false ? 1 : 0;
-        }
+      if (key === "moduleStatus") {
+        return row.moduleStatus !== false ? 1 : 0;
+      }
 
-        return "";
-      },
-    );
-  }, [
-    rows,
-    statusFilter,
-    table.search,
-    table.sortBy,
-    table.sortDir,
-  ]);
+      return "";
+    });
+  }, [rows, statusFilter, table.search, table.sortBy, table.sortDir]);
 
   const statusOptions = [
     { value: "ALL", label: "All statuses" },
@@ -278,11 +245,7 @@ export function CompanyModulesManagement() {
         header: "Action (View)",
         colSpan: 2,
         align: "right",
-        cell: (row) => (
-          <EntityRowActions
-            onView={() => handleView(row)}
-          />
-        ),
+        cell: (row) => <EntityRowActions onView={() => handleView(row)} />,
       },
     ],
     [],
@@ -326,9 +289,7 @@ export function CompanyModulesManagement() {
                 },
                 {
                   label: "Description",
-                  value:
-                    viewRow.moduleDescription ||
-                    "No description provided",
+                  value: viewRow.moduleDescription || "No description provided",
                 },
                 {
                   label: "Features",
@@ -346,8 +307,7 @@ export function CompanyModulesManagement() {
             search={{
               value: table.search,
               onChange: table.setSearch,
-              placeholder:
-                "Search module name or description…",
+              placeholder: "Search module name or description…",
             }}
             filters={
               <FilterSelect

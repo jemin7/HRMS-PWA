@@ -17,10 +17,14 @@ import {
   TableRow,
 } from "../ui/table";
 import { FormModal } from "../ui/form-modal";
-import { EmpTeamStyleDataSection, useTeamListControls } from "./desktop/EmpTeamStyleDataSection";
+import {
+  EmpTeamStyleDataSection,
+  useTeamListControls,
+} from "./desktop/EmpTeamStyleDataSection";
 import { cn } from "@/app/utils/cn";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 interface SalaryAdvance {
   id: string;
@@ -33,7 +37,9 @@ interface SalaryAdvance {
 
 const STATUS_FILTERS = ["all", "Pending", "Approved", "Rejected", "Paid"];
 
-function statusVariant(status: string): "default" | "destructive" | "warning" | "secondary" | "muted" {
+function statusVariant(
+  status: string,
+): "default" | "destructive" | "warning" | "secondary" | "muted" {
   if (status === "Approved" || status === "Paid") return "default";
   if (status === "Rejected") return "destructive";
   if (status === "Pending") return "secondary";
@@ -57,7 +63,9 @@ function SalaryAdvanceTable({ rows }: { rows: SalaryAdvance[] }) {
             {rows.map((a) => (
               <TableRow key={a.id} className="hover:bg-muted/30">
                 <TableCell>{a.createdAt || "—"}</TableCell>
-                <TableCell className="font-medium">₹{a.advanceAmount}</TableCell>
+                <TableCell className="font-medium">
+                  ₹{a.advanceAmount}
+                </TableCell>
                 <TableCell className="max-w-xs truncate">{a.reason}</TableCell>
                 <TableCell>
                   <Badge variant={statusVariant(a.status)}>{a.status}</Badge>
@@ -80,8 +88,12 @@ function SalaryAdvanceGrid({ rows }: { rows: SalaryAdvance[] }) {
           className="rounded-xl border border-border bg-card shadow-sm p-4 hover:border-primary/40 transition-colors"
         >
           <p className="text-xs text-muted-foreground">{a.createdAt || "—"}</p>
-          <p className="font-semibold text-foreground mt-1 tabular-nums">₹{a.advanceAmount}</p>
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{a.reason}</p>
+          <p className="font-semibold text-foreground mt-1 tabular-nums">
+            ₹{a.advanceAmount}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+            {a.reason}
+          </p>
           <div className="mt-3">
             <Badge variant={statusVariant(a.status)}>{a.status}</Badge>
           </div>
@@ -99,8 +111,16 @@ export function EmpProfileSalaryAdvancePanel() {
   const [submitting, setSubmitting] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const listControls = useTeamListControls("emp-profile-advance-view");
-  const { viewMode, selectViewMode, searchOpen, searchQuery, setSearchQuery, toggleSearch, filterOpen, toggleFilter } =
-    listControls;
+  const {
+    viewMode,
+    selectViewMode,
+    searchOpen,
+    searchQuery,
+    setSearchQuery,
+    toggleSearch,
+    filterOpen,
+    toggleFilter,
+  } = listControls;
   const [formData, setFormData] = useState({
     advanceAmount: "",
     reason: "",
@@ -111,30 +131,37 @@ export function EmpProfileSalaryAdvancePanel() {
     branchesID: undefined as number | undefined,
   });
 
-  const loadAdvances = useCallback(async (employeeId?: number) => {
-    const id = employeeId ?? formData.manageEmployeeID;
-    if (!id) return;
-    try {
-      const response = await fetch(`${BACKEND_URL}/salary-advance`, { cache: "no-store" });
-      if (!response.ok) throw new Error("Failed to load");
-      const data = await response.json();
-      const filtered = (Array.isArray(data) ? data : []).filter(
-        (a: { manageEmployeeID?: number }) => a.manageEmployeeID === id,
-      );
-      setAdvances(
-        filtered.map((a: Record<string, unknown>) => ({
-          id: String(a.id),
-          advanceAmount: String(a.advanceAmount || ""),
-          reason: String(a.reason || ""),
-          status: String(a.status || "Pending"),
-          previousAdvancesDue: String(a.previousAdvancesDue || "0"),
-          createdAt: a.createdAt ? new Date(String(a.createdAt)).toISOString().slice(0, 10) : "",
-        })),
-      );
-    } catch {
-      setAdvances([]);
-    }
-  }, [formData.manageEmployeeID]);
+  const loadAdvances = useCallback(
+    async (employeeId?: number) => {
+      const id = employeeId ?? formData.manageEmployeeID;
+      if (!id) return;
+      try {
+        const response = await fetch(`${BACKEND_URL}/salary-advance`, {
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error("Failed to load");
+        const data = await response.json();
+        const filtered = (Array.isArray(data) ? data : []).filter(
+          (a: { manageEmployeeID?: number }) => a.manageEmployeeID === id,
+        );
+        setAdvances(
+          filtered.map((a: Record<string, unknown>) => ({
+            id: String(a.id),
+            advanceAmount: String(a.advanceAmount || ""),
+            reason: String(a.reason || ""),
+            status: String(a.status || "Pending"),
+            previousAdvancesDue: String(a.previousAdvancesDue || "0"),
+            createdAt: a.createdAt
+              ? new Date(String(a.createdAt)).toISOString().slice(0, 10)
+              : "",
+          })),
+        );
+      } catch {
+        setAdvances([]);
+      }
+    },
+    [formData.manageEmployeeID],
+  );
 
   useEffect(() => {
     if (!user?.username) return;
@@ -218,14 +245,18 @@ export function EmpProfileSalaryAdvancePanel() {
         <div className="space-y-4 max-w-2xl">
           <div>
             <Label>Previous advances due</Label>
-            <p className="text-sm font-medium mt-1">₹{formData.previousAdvancesDue}</p>
+            <p className="text-sm font-medium mt-1">
+              ₹{formData.previousAdvancesDue}
+            </p>
           </div>
           <div>
             <Label htmlFor="advanceAmount">Advance amount *</Label>
             <Input
               id="advanceAmount"
               value={formData.advanceAmount}
-              onChange={(e) => setFormData((p) => ({ ...p, advanceAmount: e.target.value }))}
+              onChange={(e) =>
+                setFormData((p) => ({ ...p, advanceAmount: e.target.value }))
+              }
               placeholder="Enter amount"
             />
           </div>
@@ -234,12 +265,19 @@ export function EmpProfileSalaryAdvancePanel() {
             <Input
               id="reason"
               value={formData.reason}
-              onChange={(e) => setFormData((p) => ({ ...p, reason: e.target.value }))}
+              onChange={(e) =>
+                setFormData((p) => ({ ...p, reason: e.target.value }))
+              }
               placeholder="Reason for advance"
             />
           </div>
           <div className="flex gap-2">
-            <Button type="button" size="lg" onClick={() => void submit()} disabled={submitting}>
+            <Button
+              type="button"
+              size="lg"
+              onClick={() => void submit()}
+              disabled={submitting}
+            >
               {submitting ? "Submitting…" : "Submit request"}
             </Button>
           </div>

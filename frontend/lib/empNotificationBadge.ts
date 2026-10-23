@@ -13,7 +13,7 @@ import { syncAppBadge } from "./appBadge";
 
 const BACKEND =
   (typeof process !== "undefined" && process.env.NEXT_PUBLIC_BACKEND_URL) ||
-  "/backend";
+  "https://hrms-api-test.onrender.com";
 
 const BELL_LAST_VIEWED_KEY = "_bell_last_viewed";
 const NOTICE_LAST_VIEWED_KEY = "_notice_last_viewed";
@@ -51,12 +51,15 @@ export async function clearEmpBadgesForVisitedPath(
   search = "",
 ): Promise<void> {
   if (typeof window === "undefined") return;
-  const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+  const token =
+    localStorage.getItem("accessToken") || localStorage.getItem("token");
   const employeeId = getEmployeeIdFromStorage();
   if (!token || !employeeId) return;
 
   const headers = { Authorization: `Bearer ${token}` };
-  const qs = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  const qs = new URLSearchParams(
+    search.startsWith("?") ? search.slice(1) : search,
+  );
   const path = pathname || "";
 
   const isHome =
@@ -80,20 +83,21 @@ export async function clearEmpBadgesForVisitedPath(
 
   if (path.startsWith("/empLeaveApplication")) {
     try {
-      const res = await fetch(`${BACKEND}/leave-application/employee/${employeeId}`, {
-        headers,
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `${BACKEND}/leave-application/employee/${employeeId}`,
+        {
+          headers,
+          cache: "no-store",
+        },
+      );
       if (res.ok) {
         const rows = await res.json();
         const own = (Array.isArray(rows) ? rows : []).filter(
           (r: { manageEmployeeID?: number | null }) =>
             Number(r.manageEmployeeID) === employeeId,
         );
-        const {
-          markEmpRecordsSeenBulk,
-          pendingLeaveRowsForBadge,
-        } = await import("@/app/utils/empHomeSeen");
+        const { markEmpRecordsSeenBulk, pendingLeaveRowsForBadge } =
+          await import("@/app/utils/empHomeSeen");
         markEmpRecordsSeenBulk("leave", pendingLeaveRowsForBadge(own));
       }
     } catch {
@@ -103,20 +107,21 @@ export async function clearEmpBadgesForVisitedPath(
 
   if (path.startsWith("/empReimbursement")) {
     try {
-      const res = await fetch(`${BACKEND}/reimbursement/employee/${employeeId}`, {
-        headers,
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `${BACKEND}/reimbursement/employee/${employeeId}`,
+        {
+          headers,
+          cache: "no-store",
+        },
+      );
       if (res.ok) {
         const rows = await res.json();
         const own = (Array.isArray(rows) ? rows : []).filter(
           (r: { manageEmployeeID?: number | null }) =>
             Number(r.manageEmployeeID) === employeeId,
         );
-        const {
-          markEmpRecordsSeenBulk,
-          pendingReimbRowsForBadge,
-        } = await import("@/app/utils/empHomeSeen");
+        const { markEmpRecordsSeenBulk, pendingReimbRowsForBadge } =
+          await import("@/app/utils/empHomeSeen");
         markEmpRecordsSeenBulk("reimb", pendingReimbRowsForBadge(own));
       }
     } catch {
@@ -134,7 +139,11 @@ function loadIdSet(key: string): Set<number> {
   try {
     const raw = localStorage.getItem(key);
     const parsed = JSON.parse(raw || "[]");
-    return new Set(Array.isArray(parsed) ? parsed.map(Number).filter((n) => Number.isFinite(n) && n > 0) : []);
+    return new Set(
+      Array.isArray(parsed)
+        ? parsed.map(Number).filter((n) => Number.isFinite(n) && n > 0)
+        : [],
+    );
   } catch {
     return new Set();
   }
@@ -146,13 +155,17 @@ export async function fetchBellBadgeCount(
   token: string,
 ): Promise<number> {
   const headers = { Authorization: `Bearer ${token}` };
-  const lastViewed = readTs(BELL_LAST_VIEWED_KEY) || readTs(NOTICE_LAST_VIEWED_KEY);
+  const lastViewed =
+    readTs(BELL_LAST_VIEWED_KEY) || readTs(NOTICE_LAST_VIEWED_KEY);
 
   try {
-    const res = await fetch(`${BACKEND}/emp-notifications/feed?recentDays=30&olderDays=0`, {
-      headers,
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${BACKEND}/emp-notifications/feed?recentDays=30&olderDays=0`,
+      {
+        headers,
+        cache: "no-store",
+      },
+    );
     if (!res.ok) return 0;
     const data = await res.json();
     const recent = Array.isArray(data?.recent) ? data.recent : [];
@@ -223,16 +236,27 @@ const EMPTY_SIDEBAR_BADGES: EmpSidebarBadgeCounts = {
   notices: 0,
 };
 
-function isGeneralMemo(memo: { memoType?: string | null; undoneAt?: string | null }) {
+function isGeneralMemo(memo: {
+  memoType?: string | null;
+  undoneAt?: string | null;
+}) {
   if (memo.undoneAt) return false;
   const type = (memo.memoType || "General").trim().toLowerCase();
   return type === "general";
 }
 
-function isNoticeMemo(memo: { memoType?: string | null; undoneAt?: string | null }) {
+function isNoticeMemo(memo: {
+  memoType?: string | null;
+  undoneAt?: string | null;
+}) {
   if (memo.undoneAt) return false;
   const type = (memo.memoType || "").trim().toLowerCase();
-  return type === "information" || type === "notice" || type === "warning" || type === "complaint";
+  return (
+    type === "information" ||
+    type === "notice" ||
+    type === "warning" ||
+    type === "complaint"
+  );
 }
 
 function isTeamPendingLeave(
@@ -245,9 +269,16 @@ function isTeamPendingLeave(
   reporteeIds: Set<number>,
 ): boolean {
   const ownerId = Number(row.manageEmployeeID);
-  if (!Number.isFinite(ownerId) || ownerId === selfId || !reporteeIds.has(ownerId)) return false;
+  if (
+    !Number.isFinite(ownerId) ||
+    ownerId === selfId ||
+    !reporteeIds.has(ownerId)
+  )
+    return false;
   // Match EmpTeamApprovalsPanel exactly
-  return getDisplayLeaveStatus(row.status, row.dayStatuses) === "Approval Pending";
+  return (
+    getDisplayLeaveStatus(row.status, row.dayStatuses) === "Approval Pending"
+  );
 }
 
 function isTeamPendingReimb(
@@ -260,28 +291,47 @@ function isTeamPendingReimb(
   reporteeIds: Set<number>,
 ): boolean {
   const ownerId = Number(row.manageEmployeeID);
-  if (!Number.isFinite(ownerId) || ownerId === selfId || !reporteeIds.has(ownerId)) return false;
+  if (
+    !Number.isFinite(ownerId) ||
+    ownerId === selfId ||
+    !reporteeIds.has(ownerId)
+  )
+    return false;
   const status = row.status || "Pending";
-  const hasPendingItems = (row.items || []).some((i) => (i.status || "Pending") === "Pending");
-  return status === "Pending" || (isPartiallyApprovedStatus(status) && hasPendingItems);
+  const hasPendingItems = (row.items || []).some(
+    (i) => (i.status || "Pending") === "Pending",
+  );
+  return (
+    status === "Pending" ||
+    (isPartiallyApprovedStatus(status) && hasPendingItems)
+  );
 }
 
-function isOwnPendingUnseenLeave(row: {
-  manageEmployeeID?: number | null;
-  id?: number | string;
-  status?: string | null;
-}, selfId: number): boolean {
+function isOwnPendingUnseenLeave(
+  row: {
+    manageEmployeeID?: number | null;
+    id?: number | string;
+    status?: string | null;
+  },
+  selfId: number,
+): boolean {
   if (Number(row.manageEmployeeID) !== selfId) return false;
   return countUnseenLeaveBadge([{ id: row.id ?? "", status: row.status }]) > 0;
 }
 
-function isOwnPendingUnseenReimb(row: {
-  manageEmployeeID?: number | null;
-  id?: number | string;
-  status?: string | null;
-}, selfId: number): boolean {
+function isOwnPendingUnseenReimb(
+  row: {
+    manageEmployeeID?: number | null;
+    id?: number | string;
+    status?: string | null;
+  },
+  selfId: number,
+): boolean {
   if (Number(row.manageEmployeeID) !== selfId) return false;
-  return countUnseenReimbursementBadge([{ id: row.id ?? "", status: row.status }]) > 0;
+  return (
+    countUnseenReimbursementBadge([{ id: row.id ?? "", status: row.status }]) >
+    0
+  );
 }
 
 /** Sidebar unread / pending counts for emp portal nav (role-aware). */
@@ -310,7 +360,10 @@ export async function fetchEmpSidebarBadgeCounts(
         reporteeIdList = Array.isArray(scope?.reporteeIds)
           ? scope.reporteeIds
               .map(Number)
-              .filter((id: number) => Number.isFinite(id) && id > 0 && id !== employeeId)
+              .filter(
+                (id: number) =>
+                  Number.isFinite(id) && id > 0 && id !== employeeId,
+              )
           : [];
       }
     } catch {
@@ -323,21 +376,34 @@ export async function fetchEmpSidebarBadgeCounts(
   const noticeLastViewed = readTs(NOTICE_LAST_VIEWED_KEY);
 
   // Same endpoints EmpTeamApprovalsPanel uses: employee/:selfId returns scoped rows
-  const [memos, leaveRows, reimbRows, advanceRows, homeBell] = await Promise.all([
-    fetch(`${BACKEND}/employee-memo?employeeID=${employeeId}`, { headers, cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : []))
-      .catch(() => []),
-    fetch(`${BACKEND}/leave-application/employee/${employeeId}`, { headers, cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : []))
-      .catch(() => []),
-    fetch(`${BACKEND}/reimbursement/employee/${employeeId}`, { headers, cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : []))
-      .catch(() => []),
-    fetch(`${BACKEND}/salary-advance/employee/${employeeId}`, { headers, cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : []))
-      .catch(() => []),
-    fetchBellBadgeCount(employeeId, token),
-  ]);
+  const [memos, leaveRows, reimbRows, advanceRows, homeBell] =
+    await Promise.all([
+      fetch(`${BACKEND}/employee-memo?employeeID=${employeeId}`, {
+        headers,
+        cache: "no-store",
+      })
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => []),
+      fetch(`${BACKEND}/leave-application/employee/${employeeId}`, {
+        headers,
+        cache: "no-store",
+      })
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => []),
+      fetch(`${BACKEND}/reimbursement/employee/${employeeId}`, {
+        headers,
+        cache: "no-store",
+      })
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => []),
+      fetch(`${BACKEND}/salary-advance/employee/${employeeId}`, {
+        headers,
+        cache: "no-store",
+      })
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => []),
+      fetchBellBadgeCount(employeeId, token),
+    ]);
 
   counts.home = homeBell;
 
@@ -360,7 +426,8 @@ export async function fetchEmpSidebarBadgeCounts(
           Number.isFinite(senderId) &&
           senderId > 0 &&
           senderId !== employeeId &&
-          (recipients.includes(employeeId) || Number(memo.employeeID) === employeeId);
+          (recipients.includes(employeeId) ||
+            Number(memo.employeeID) === employeeId);
         if (isIncoming && Number.isFinite(id) && id > 0 && !readIds.has(id)) {
           imUnread += 1;
         }
@@ -380,16 +447,29 @@ export async function fetchEmpSidebarBadgeCounts(
   const advances = Array.isArray(advanceRows) ? advanceRows : [];
 
   // Own leave/reimb badges — only the current employee's records (role: employee portal self)
-  counts.leave = leaves.filter((l) => isOwnPendingUnseenLeave(l, employeeId)).length;
-  counts.reimbursement = reimbs.filter((r) => isOwnPendingUnseenReimb(r, employeeId)).length;
+  counts.leave = leaves.filter((l) =>
+    isOwnPendingUnseenLeave(l, employeeId),
+  ).length;
+  counts.reimbursement = reimbs.filter((r) =>
+    isOwnPendingUnseenReimb(r, employeeId),
+  ).length;
 
   // Team approvals — only manager reportees, same rules as EmpTeamApprovalsPanel
   if (isManager && reporteeIds.size > 0) {
-    const pendingLeave = leaves.filter((l) => isTeamPendingLeave(l, employeeId, reporteeIds)).length;
-    const pendingReimb = reimbs.filter((r) => isTeamPendingReimb(r, employeeId, reporteeIds)).length;
+    const pendingLeave = leaves.filter((l) =>
+      isTeamPendingLeave(l, employeeId, reporteeIds),
+    ).length;
+    const pendingReimb = reimbs.filter((r) =>
+      isTeamPendingReimb(r, employeeId, reporteeIds),
+    ).length;
     const pendingAdvance = advances.filter((row) => {
       const ownerId = Number(row?.manageEmployeeID);
-      if (!Number.isFinite(ownerId) || ownerId === employeeId || !reporteeIds.has(ownerId)) return false;
+      if (
+        !Number.isFinite(ownerId) ||
+        ownerId === employeeId ||
+        !reporteeIds.has(ownerId)
+      )
+        return false;
       return (row?.status || "Pending") === "Pending";
     }).length;
     counts.approvals = pendingLeave + pendingReimb + pendingAdvance;
@@ -399,7 +479,10 @@ export async function fetchEmpSidebarBadgeCounts(
 
   if (TASK_MANAGEMENT_ENABLED) {
     try {
-      let user: Record<string, unknown> = { role: "EMPLOYEE", employee: { id: employeeId } };
+      let user: Record<string, unknown> = {
+        role: "EMPLOYEE",
+        employee: { id: employeeId },
+      };
       try {
         const stored = JSON.parse(localStorage.getItem("user") || "{}");
         if (stored?.employee?.id) user = stored;
@@ -409,15 +492,15 @@ export async function fetchEmpSidebarBadgeCounts(
       const data = await taskFetch<{
         items: {
           status: string;
-          engineerAssignments?: { manageEmployeeID?: number | null; status?: string | null }[];
+          engineerAssignments?: {
+            manageEmployeeID?: number | null;
+            status?: string | null;
+          }[];
         }[];
-      }>(
-        "/task-projects",
-        user,
-        undefined,
-        { limit: 100, assignedToMe: 1 },
-      );
-      counts.tasks = (data.items || []).filter((t) => isWorkingActiveAssignedTask(t, employeeId)).length;
+      }>("/task-projects", user, undefined, { limit: 100, assignedToMe: 1 });
+      counts.tasks = (data.items || []).filter((t) =>
+        isWorkingActiveAssignedTask(t, employeeId),
+      ).length;
     } catch {
       counts.tasks = 0;
     }

@@ -1,17 +1,50 @@
 "use client";
 import { VerifiedLocationFields } from "../components/location/VerifiedLocationFields";
 
-import { hasCompanyAccessFlag, hasModuleWriteAccess, isCompanyAdminLikeRole } from "@/lib/companyAccess";
+import {
+  hasCompanyAccessFlag,
+  hasModuleWriteAccess,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
 import { Badge } from "../components/ui/badge";
 import { Icon } from "@iconify/react";
-import { Plus, Search, Edit, Trash2, Eye, ArrowLeft, X, Save, ChevronDown, FileText, Shield, UserPlus, Building2, Store, Factory, GitBranch } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  ArrowLeft,
+  X,
+  Save,
+  ChevronDown,
+  FileText,
+  Shield,
+  UserPlus,
+  Building2,
+  Store,
+  Factory,
+  GitBranch,
+} from "lucide-react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { useRouter } from "next/navigation";
 
@@ -34,7 +67,10 @@ import { EntityListShell } from "../components/app/entity-list-shell";
 import type { DataTableColumn } from "../components/app/data-table";
 import { EntityRowActions } from "../components/app/entity-row-actions";
 import { DetailCard } from "../components/app/detail-card";
-import { EntityDetailHero, EntityDetailLayout } from "../components/app/entity-detail-layout";
+import {
+  EntityDetailHero,
+  EntityDetailLayout,
+} from "../components/app/entity-detail-layout";
 import { FormSectionNav } from "../components/app/form-section-nav";
 import { useClientTable, sortRows } from "../hooks/use-client-table";
 import { FINANCIAL_YEAR_EMPTY } from "../utils/companyFormPayload";
@@ -66,8 +102,8 @@ interface BankDetailRead {
 }
 
 interface BankDetailForm {
-  id?: ID;            // present for existing rows
-  _localId: string;   // for React key handling
+  id?: ID; // present for existing rows
+  _localId: string; // for React key handling
   bankName: string;
   branchName: string; // UI label maps to bankBranchName
   accountNo: string;
@@ -81,7 +117,7 @@ interface BranchRead {
   branchName?: string | null;
   branchType?: string | null;
 
-  latitude?: string | null;  
+  latitude?: string | null;
   longitude?: string | null;
   geofenchradius?: string | null;
 
@@ -101,7 +137,14 @@ interface BranchRead {
   msmeNo?: string | null;
   msmeCertUrl?: string | null;
   shopRegNo?: string | null;
-  shopRegCertHistory?: { certNo: string; effectFrom: string; pdfUrl?: string; _localId: string }[] | null;
+  shopRegCertHistory?:
+    | {
+        certNo: string;
+        effectFrom: string;
+        pdfUrl?: string;
+        _localId: string;
+      }[]
+    | null;
   contactNo?: string | null;
   emailAdd?: string | null;
   companyLogoUrl?: string | null;
@@ -134,16 +177,14 @@ interface Company {
   gstNo?: string | null;
 }
 
-
-
 // ---------------------------
 // Config & helpers
 // ---------------------------
 const API = {
-  branches: "/backend/branches",
-  serviceProviders: "/backend/service-provider",
-  companies: "/backend/company",
-  users: "/backend/users",
+  branches: "https://hrms-api-test.onrender.com/branches",
+  serviceProviders: "https://hrms-api-test.onrender.com/service-provider",
+  companies: "https://hrms-api-test.onrender.com/company",
+  users: "https://hrms-api-test.onrender.com/users",
 };
 
 const MIN_CHARS = 0;
@@ -158,7 +199,9 @@ const getStoredActiveCompanyID = (): number | null => {
     if (sessionId) return sessionId;
 
     const userData = JSON.parse(localStorage.getItem("user") || "{}");
-    const localId = Number(userData?.activeCompanyID || userData?.companyID || 0);
+    const localId = Number(
+      userData?.activeCompanyID || userData?.companyID || 0,
+    );
 
     return localId || null;
   } catch {
@@ -228,7 +271,9 @@ export function BranchManagement() {
   const [showBranchAdminPanel, setShowBranchAdminPanel] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<BranchRead | null>(null);
   const [branchAdmins, setBranchAdmins] = useState<any[]>([]);
-  const [editingBranchAdmin, setEditingBranchAdmin] = useState<any | null>(null);
+  const [editingBranchAdmin, setEditingBranchAdmin] = useState<any | null>(
+    null,
+  );
   const [branchAdminFormOpen, setBranchAdminFormOpen] = useState(false);
   const [branchAdminSaving, setBranchAdminSaving] = useState(false);
   const [branchAdminForm, setBranchAdminForm] = useState({
@@ -257,8 +302,17 @@ export function BranchManagement() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const user = useCurrentUser();
-  const canManage = user?.role === "SUPERADMIN" || user?.role === "SERVICE_PROVIDER" || isCompanyAdminLikeRole(user?.role) || user?.role === "ADMIN" || hasModuleWriteAccess("BRANCHES");
-  const canCreate = user?.role === "SUPERADMIN" || isCompanyAdminLikeRole(user?.role) || user?.role === "ADMIN" || hasModuleWriteAccess("BRANCHES");
+  const canManage =
+    user?.role === "SUPERADMIN" ||
+    user?.role === "SERVICE_PROVIDER" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "ADMIN" ||
+    hasModuleWriteAccess("BRANCHES");
+  const canCreate =
+    user?.role === "SUPERADMIN" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "ADMIN" ||
+    hasModuleWriteAccess("BRANCHES");
   const isEmployee = user?.role === "EMPLOYEE";
 
   const canManageBranchAdmins =
@@ -274,12 +328,12 @@ export function BranchManagement() {
 
     branchName: "",
     branchType: "",
-    latitude  :"",    
-    longitude     :"",
+    latitude: "",
+    longitude: "",
     placeId: "",
     locationSource: "",
     locationVerified: false,
-    geofenchradius:"",
+    geofenchradius: "",
     address: "",
     country: "",
     state: "",
@@ -296,7 +350,12 @@ export function BranchManagement() {
     msmeNo: "",
     msmeCertUrl: "",
     shopRegNo: "",
-    shopRegCertHistory: [] as { certNo: string; effectFrom: string; pdfUrl?: string; _localId: string }[],
+    shopRegCertHistory: [] as {
+      certNo: string;
+      effectFrom: string;
+      pdfUrl?: string;
+      _localId: string;
+    }[],
     contactNo: "",
     emailAdd: "",
     companyLogoUrl: "",
@@ -314,11 +373,15 @@ export function BranchManagement() {
 
   const [originalBankIds, setOriginalBankIds] = useState<ID[]>([]);
 
-  const [stagingShopReg, setStagingShopReg] = useState({ certNo: "", effectFrom: new Date().toISOString().slice(0, 10), pdfUrl: "" as string });
+  const [stagingShopReg, setStagingShopReg] = useState({
+    certNo: "",
+    effectFrom: new Date().toISOString().slice(0, 10),
+    pdfUrl: "" as string,
+  });
 
   // Handle PT Compliance navigation
   const handlePTCompliance = () => {
-    router.push('/pt-compliance');
+    router.push("/pt-compliance");
   };
 
   const fetchBranches = async () => {
@@ -337,7 +400,7 @@ export function BranchManagement() {
       const ctx = getSidebarContext();
       if (ctx?.companyID && !isEmployeeOperator) {
         visibleBranches = visibleBranches.filter(
-          (b: any) => Number(b.companyID) === Number(ctx.companyID)
+          (b: any) => Number(b.companyID) === Number(ctx.companyID),
         );
       }
 
@@ -355,7 +418,9 @@ export function BranchManagement() {
   }, [user]);
 
   useEffect(() => {
-    const handler = () => { if (user) fetchBranches(); };
+    const handler = () => {
+      if (user) fetchBranches();
+    };
 
     const sidebarPageClickHandler = (e: any) => {
       if (e.detail?.path === "/branches") {
@@ -371,7 +436,10 @@ export function BranchManagement() {
     return () => {
       window.removeEventListener("sidebar-context-changed", handler);
       window.removeEventListener("app-data-refresh", handler);
-      window.removeEventListener("sidebar-main-page-click", sidebarPageClickHandler);
+      window.removeEventListener(
+        "sidebar-main-page-click",
+        sidebarPageClickHandler,
+      );
     };
   }, [user]);
 
@@ -390,13 +458,17 @@ export function BranchManagement() {
       spAbortRef.current = ctrl;
       setSpLoading(true);
       try {
-        const all = await fetchJSONSafe<ServiceProvider[]>(API.serviceProviders, ctrl.signal);
-        const filtered = (all || []).filter(sp =>
-          (sp.companyName ?? "").toLowerCase().includes(query.toLowerCase())
+        const all = await fetchJSONSafe<ServiceProvider[]>(
+          API.serviceProviders,
+          ctrl.signal,
+        );
+        const filtered = (all || []).filter((sp) =>
+          (sp.companyName ?? "").toLowerCase().includes(query.toLowerCase()),
         );
         setSpList(filtered.slice(0, 20));
       } catch (e) {
-        if ((e as any).name !== "AbortError") console.error("SP fetch error:", e);
+        if ((e as any).name !== "AbortError")
+          console.error("SP fetch error:", e);
       } finally {
         setSpLoading(false);
       }
@@ -416,12 +488,13 @@ export function BranchManagement() {
       setCoLoading(true);
       try {
         const all = await fetchJSONSafe<Company[]>(API.companies, ctrl.signal);
-        const filtered = (all || []).filter(c =>
-          (c.companyName ?? "").toLowerCase().includes(query.toLowerCase())
+        const filtered = (all || []).filter((c) =>
+          (c.companyName ?? "").toLowerCase().includes(query.toLowerCase()),
         );
         setCoList(filtered.slice(0, 20));
       } catch (e) {
-        if ((e as any).name !== "AbortError") console.error("Company fetch error:", e);
+        if ((e as any).name !== "AbortError")
+          console.error("Company fetch error:", e);
       } finally {
         setCoLoading(false);
       }
@@ -431,8 +504,10 @@ export function BranchManagement() {
   // Close suggestion popovers on outside click
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
-      if (spRef.current && !spRef.current.contains(e.target as any)) setSpList([]);
-      if (coRef.current && !coRef.current.contains(e.target as any)) setCoList([]);
+      if (spRef.current && !spRef.current.contains(e.target as any))
+        setSpList([]);
+      if (coRef.current && !coRef.current.contains(e.target as any))
+        setCoList([]);
     };
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
@@ -483,7 +558,8 @@ export function BranchManagement() {
 
     const pickAssigned = (candidate: number | null) =>
       candidate &&
-      (assignedCompanyIDs.length === 0 || assignedCompanyIDs.includes(candidate))
+      (assignedCompanyIDs.length === 0 ||
+        assignedCompanyIDs.includes(candidate))
         ? candidate
         : null;
 
@@ -507,9 +583,7 @@ export function BranchManagement() {
         toPositiveId(formData.companyID);
     } else {
       companyID =
-        ctxCompanyID ??
-        toPositiveId(formData.companyID) ??
-        mappedCompanyID;
+        ctxCompanyID ?? toPositiveId(formData.companyID) ?? mappedCompanyID;
     }
 
     const activeCompanyFromUserCompanies = userCompanyList.find(
@@ -518,8 +592,8 @@ export function BranchManagement() {
 
     const companyName =
       Number(ctx?.companyID) === Number(companyID)
-        ? ctx?.companyName ?? ""
-        : activeCompanyFromUserCompanies?.company?.companyName ??
+        ? (ctx?.companyName ?? "")
+        : (activeCompanyFromUserCompanies?.company?.companyName ??
           activeCompanyFromUserCompanies?.companyName ??
           currentUserMapping?.company?.companyName ??
           (typeof userAny?.company === "string"
@@ -527,7 +601,7 @@ export function BranchManagement() {
             : userAny?.company?.companyName) ??
           userAny?.companyName ??
           formData.coAutocomplete ??
-          "";
+          "");
 
     const mappedSpID = toPositiveId(
       currentUserMapping?.serviceProviderID ??
@@ -537,7 +611,9 @@ export function BranchManagement() {
     const ctxSpID = toPositiveId(ctx?.serviceProviderID);
     const serviceProviderID =
       mappedSpID ??
-      (ctxCompanyID && companyID && ctxCompanyID === companyID ? ctxSpID : null) ??
+      (ctxCompanyID && companyID && ctxCompanyID === companyID
+        ? ctxSpID
+        : null) ??
       null;
 
     return {
@@ -554,7 +630,6 @@ export function BranchManagement() {
       companyName,
     };
   };
-
 
   const handleEditBranchAdmin = (admin: any) => {
     setEditingBranchAdmin(admin);
@@ -593,8 +668,9 @@ export function BranchManagement() {
         // Fallback: list companies and pick by id (handles empty/404 quirks).
         const all = await fetchJSONSafe<Company[]>(API.companies);
         company =
-          (Array.isArray(all) ? all : []).find((c) => Number(c.id) === companyId) ??
-          null;
+          (Array.isArray(all) ? all : []).find(
+            (c) => Number(c.id) === companyId,
+          ) ?? null;
       }
 
       if (!company || !company.id) {
@@ -639,12 +715,12 @@ export function BranchManagement() {
       companyID: null as ID | null,
       branchName: "",
       branchType: "",
-      latitude:"",      
-      longitude     :"",
+      latitude: "",
+      longitude: "",
       placeId: "",
       locationSource: "",
       locationVerified: false,
-      geofenchradius:"",
+      geofenchradius: "",
       address: "",
       country: "",
       state: "",
@@ -715,11 +791,15 @@ export function BranchManagement() {
     }));
   };
 
-  const updateBankDetail = (localId: string, key: keyof BankDetailForm, val: string) => {
+  const updateBankDetail = (
+    localId: string,
+    key: keyof BankDetailForm,
+    val: string,
+  ) => {
     setFormData((p) => ({
       ...p,
       bankDetailsForm: p.bankDetailsForm.map((x) =>
-        x._localId === localId ? { ...x, [key]: val } : x
+        x._localId === localId ? { ...x, [key]: val } : x,
       ),
     }));
   };
@@ -732,9 +812,10 @@ export function BranchManagement() {
 
     // Validation
     const validationErrors: string[] = [];
-    if (!formData.branchName?.trim()) validationErrors.push("Branch Name is required");
+    if (!formData.branchName?.trim())
+      validationErrors.push("Branch Name is required");
     if (validationErrors.length > 0) {
-      validationErrors.forEach(msg => toast.error(msg));
+      validationErrors.forEach((msg) => toast.error(msg));
       return;
     }
 
@@ -748,7 +829,9 @@ export function BranchManagement() {
       activeCtx.serviceProviderID ?? formData.serviceProviderID,
     );
 
-    let finalCompanyID = toPositiveId(activeCtx.companyID ?? formData.companyID);
+    let finalCompanyID = toPositiveId(
+      activeCtx.companyID ?? formData.companyID,
+    );
 
     if (!finalCompanyID) {
       toast.error("Company is not selected");
@@ -759,9 +842,9 @@ export function BranchManagement() {
     // If SP is missing, derive it from the company record so Prisma connect doesn't fail.
     if (!finalServiceProviderID) {
       try {
-        const company = await fetchJSONSafe<Company & { serviceProviderID?: number | null }>(
-          `${API.companies}/${finalCompanyID}`,
-        );
+        const company = await fetchJSONSafe<
+          Company & { serviceProviderID?: number | null }
+        >(`${API.companies}/${finalCompanyID}`);
         finalServiceProviderID = toPositiveId(company?.serviceProviderID);
       } catch {
         /* continue; backend will also try to resolve */
@@ -778,9 +861,11 @@ export function BranchManagement() {
     }));
 
     // compute deletions (only in edit mode)
-    const remainingIds = new Set(apiBankDetails.filter(x => x.id != null).map(x => x.id as number));
+    const remainingIds = new Set(
+      apiBankDetails.filter((x) => x.id != null).map((x) => x.id as number),
+    );
     const idsToDelete = editingBranch
-      ? originalBankIds.filter(id => !remainingIds.has(id))
+      ? originalBankIds.filter((id) => !remainingIds.has(id))
       : [];
 
     const payload: any = {
@@ -788,8 +873,8 @@ export function BranchManagement() {
       companyID: finalCompanyID,
       branchName: formData.branchName || undefined,
       branchType: formData.branchType || undefined,
-      latitude: formData.latitude || undefined,      
-      longitude     : formData.longitude || undefined,
+      latitude: formData.latitude || undefined,
+      longitude: formData.longitude || undefined,
       placeId: formData.placeId || undefined,
       locationSource: formData.locationSource || undefined,
       locationVerified: formData.locationVerified,
@@ -810,7 +895,10 @@ export function BranchManagement() {
       msmeNo: formData.msmeNo || undefined,
       msmeCertUrl: formData.msmeCertUrl || undefined,
       shopRegNo: formData.shopRegNo || undefined,
-      shopRegCertHistory: formData.shopRegCertHistory && formData.shopRegCertHistory.length > 0 ? formData.shopRegCertHistory : undefined,
+      shopRegCertHistory:
+        formData.shopRegCertHistory && formData.shopRegCertHistory.length > 0
+          ? formData.shopRegCertHistory
+          : undefined,
       contactNo: formData.contactNo || undefined,
       emailAdd: formData.emailAdd || undefined,
       companyLogoUrl: formData.companyLogoUrl || undefined,
@@ -849,7 +937,6 @@ export function BranchManagement() {
     }
   };
 
-
   const handleDeleteBranchAdmin = async (id: number) => {
     if (!confirm("Delete Branch Admin?")) return;
 
@@ -875,14 +962,16 @@ export function BranchManagement() {
     setIsAddingNew(true);
     setIsViewing(false);
 
-    const bankDetailsForm: BankDetailForm[] = (b.bankDetails ?? []).map((bd) => ({
-      id: bd.id,
-      _localId: uid(),
-      bankName: bd.bankName ?? "",
-      branchName: bd.bankBranchName ?? "",
-      accountNo: bd.accountNo ?? "",
-      ifscCode: bd.ifscCode ?? "",
-    }));
+    const bankDetailsForm: BankDetailForm[] = (b.bankDetails ?? []).map(
+      (bd) => ({
+        id: bd.id,
+        _localId: uid(),
+        bankName: bd.bankName ?? "",
+        branchName: bd.bankBranchName ?? "",
+        accountNo: bd.accountNo ?? "",
+        ifscCode: bd.ifscCode ?? "",
+      }),
+    );
 
     // For MANAGER, use their mapped IDs instead of the branch's IDs
     let finalServiceProviderID = b.serviceProviderID ?? null;
@@ -899,7 +988,8 @@ export function BranchManagement() {
       user?.role === "EMPLOYEE" ||
       hasCompanyAccessFlag()
     ) {
-      finalServiceProviderID = b.serviceProviderID ?? activeCtx.serviceProviderID;
+      finalServiceProviderID =
+        b.serviceProviderID ?? activeCtx.serviceProviderID;
       finalCompanyID = b.companyID ?? activeCtx.companyID;
       spName = activeCtx.serviceProviderName || spName;
       coName = activeCtx.companyName || coName;
@@ -971,7 +1061,10 @@ export function BranchManagement() {
 
     // Restore "Same as Company" when branch compliance/location fields match company.
     if (companyForCompare) {
-      const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
+      const norm = (v: unknown) =>
+        String(v ?? "")
+          .trim()
+          .toLowerCase();
       const matches =
         norm(b.address) === norm(companyForCompare.address) &&
         norm(b.country) === norm(companyForCompare.country) &&
@@ -990,7 +1083,9 @@ export function BranchManagement() {
       setSameAsCompany(false);
     }
 
-    setOriginalBankIds(bankDetailsForm.filter(x => x.id != null).map(x => x.id!));
+    setOriginalBankIds(
+      bankDetailsForm.filter((x) => x.id != null).map((x) => x.id!),
+    );
 
     // Clear suggestion lists to prevent highlighting/focus
     setTimeout(() => {
@@ -1049,12 +1144,12 @@ export function BranchManagement() {
     closeBranchPagePanels();
   };
   const openBranchAdminPanel = async (branch: BranchRead) => {
-   setSelectedBranch(branch);
-setShowBranchAdminPanel(true);
-setBranchAdminFormOpen(false);
-setEditingBranchAdmin(null);
-setIsAddingNew(false);
-setIsViewing(false);
+    setSelectedBranch(branch);
+    setShowBranchAdminPanel(true);
+    setBranchAdminFormOpen(false);
+    setEditingBranchAdmin(null);
+    setIsAddingNew(false);
+    setIsViewing(false);
 
     setBranchAdminForm({
       username: "",
@@ -1086,7 +1181,7 @@ setIsViewing(false);
           "Email:",
           u.email,
           "Branch:",
-          u.branchesID
+          u.branchesID,
         );
 
         return (
@@ -1156,7 +1251,7 @@ setIsViewing(false);
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       if (!res.ok) throw new Error(await res.text());
@@ -1164,7 +1259,7 @@ setIsViewing(false);
       toast.success(
         isEdit
           ? "Branch admin user updated successfully"
-          : "Branch admin user created successfully"
+          : "Branch admin user created successfully",
       );
 
       setBranchAdminForm({
@@ -1188,7 +1283,6 @@ setIsViewing(false);
       setBranchAdminSaving(false);
     }
   };
-
 
   const closeBranchAdminPanel = () => {
     setShowBranchAdminPanel(false);
@@ -1231,7 +1325,7 @@ setIsViewing(false);
         ]
           .filter(Boolean)
           .map((x) => (x ?? "").toLowerCase())
-          .some((f) => f.includes(t))
+          .some((f) => f.includes(t)),
       );
     }
     return sortRows(list, table.sortBy, table.sortDir, (row, key) => {
@@ -1245,65 +1339,66 @@ setIsViewing(false);
     });
   }, [branches, table.search, table.sortBy, table.sortDir]);
 
-  const branchColumns = useMemo((): DataTableColumn<BranchRead>[] => [
-    {
-      key: "branchName",
-      header: "Name",
-      sortable: true,
-      colSpan: 3,
-      cell: (b) => <span className="font-medium">{b.branchName || "—"}</span>,
-    },
-     {
-      key: "country",
-      header: "Country",
-      sortable: true,
-      colSpan: 2,
-      cell: (b) => b.country || "—",
-    },
-    {
-      key: "state",
-      header: "State",
-      sortable: true,
-      colSpan: 2,
-      cell: (b) => b.state || "—",
-    },
-    {
-      key: "city",
-      header: "City",
-      sortable: true,
-      colSpan: 2,
-      cell: (b) => b.city || "—",
-    },
-    
+  const branchColumns = useMemo(
+    (): DataTableColumn<BranchRead>[] => [
+      {
+        key: "branchName",
+        header: "Name",
+        sortable: true,
+        colSpan: 3,
+        cell: (b) => <span className="font-medium">{b.branchName || "—"}</span>,
+      },
+      {
+        key: "country",
+        header: "Country",
+        sortable: true,
+        colSpan: 2,
+        cell: (b) => b.country || "—",
+      },
+      {
+        key: "state",
+        header: "State",
+        sortable: true,
+        colSpan: 2,
+        cell: (b) => b.state || "—",
+      },
+      {
+        key: "city",
+        header: "City",
+        sortable: true,
+        colSpan: 2,
+        cell: (b) => b.city || "—",
+      },
 
-    
-   
-    {
-      key: "actions",
-      header: "Actions",
-      colSpan: 2,
-      align: "right",
-      cell: (b) => (
-        <EntityRowActions
-          onEdit={canManage ? () => handleEdit(b) : undefined}
-          onDelete={() => handleDelete(b.id)}
-          extra={
-            canManageBranchAdmins
-              ? [{
-                  icon: UserPlus,
-                  title: "Manage Branch Admin Users",
-                  onClick: () => openBranchAdminPanel(b),
-                }]
-              : undefined
-          }
-        />
-      ),
-    },
-  ], [canManage, canManageBranchAdmins]);
+      {
+        key: "actions",
+        header: "Actions",
+        colSpan: 2,
+        align: "right",
+        cell: (b) => (
+          <EntityRowActions
+            onEdit={canManage ? () => handleEdit(b) : undefined}
+            onDelete={() => handleDelete(b.id)}
+            extra={
+              canManageBranchAdmins
+                ? [
+                    {
+                      icon: UserPlus,
+                      title: "Manage Branch Admin Users",
+                      onClick: () => openBranchAdminPanel(b),
+                    },
+                  ]
+                : undefined
+            }
+          />
+        ),
+      },
+    ],
+    [canManage, canManageBranchAdmins],
+  );
 
   return (
     <div className="space-y-6 w-full max-w-none animate-fade-in page-content-enter">
-
       <PageHeader
         icon={GitBranch}
         title="Branches"
@@ -1333,7 +1428,9 @@ setIsViewing(false);
       {/* Add/Edit Form - Drawer */}
       <FormDrawer
         open={isAddingNew}
-        onOpenChange={function handleDrawerChange(v: boolean) { if (!v) handleCancel(); }}
+        onOpenChange={function handleDrawerChange(v: boolean) {
+          if (!v) handleCancel();
+        }}
         title={editingBranch ? "Edit Branch" : "Add New Branch"}
       >
         <div>
@@ -1357,454 +1454,677 @@ setIsViewing(false);
               />
 
               {branchFormTab === "basic" && (
-              <>
-              {/* Service Provider - auto-filled from sidebar */}
-              {false && (
-                <div ref={spRef} className="space-y-2 relative">
-                  <Label>Service Provider *</Label>
-                  <Input
-                    value={formData.spAutocomplete}
-                    onChange={(e) => {
-                      if (editingBranch) return;
-                      const val = e.target.value;
-                      setFormData((p) => ({ ...p, spAutocomplete: val, serviceProviderID: null }));
-                      runFetchServiceProviders(val);
-                    }}
-                    onFocus={(e) => {
-                      if (editingBranch) return;
-                      const val = e.target.value;
-                      if (val.length >= MIN_CHARS) runFetchServiceProviders(val);
-                    }}
-                    placeholder="Start typing service provider..."
-                    autoComplete="off"
-                    required
-                    readOnly={editingBranch ? true : false}
-                    className={editingBranch ? "bg-gray-50 cursor-not-allowed" : ""}
-                  />
-                  {spList.length > 0 && !editingBranch && (
-                    <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
-                      {spLoading && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
-                      {spList.map((sp) => (
-                        <div
-                          key={sp.id}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            setFormData((p) => ({
-                              ...p,
-                              serviceProviderID: sp.id,
-                              spAutocomplete: sp.companyName,
-                            }));
-                            setSpList([]);
-                          }}
-                        >
-                          {sp.companyName}
+                <>
+                  {/* Service Provider - auto-filled from sidebar */}
+                  {false && (
+                    <div ref={spRef} className="space-y-2 relative">
+                      <Label>Service Provider *</Label>
+                      <Input
+                        value={formData.spAutocomplete}
+                        onChange={(e) => {
+                          if (editingBranch) return;
+                          const val = e.target.value;
+                          setFormData((p) => ({
+                            ...p,
+                            spAutocomplete: val,
+                            serviceProviderID: null,
+                          }));
+                          runFetchServiceProviders(val);
+                        }}
+                        onFocus={(e) => {
+                          if (editingBranch) return;
+                          const val = e.target.value;
+                          if (val.length >= MIN_CHARS)
+                            runFetchServiceProviders(val);
+                        }}
+                        placeholder="Start typing service provider..."
+                        autoComplete="off"
+                        required
+                        readOnly={editingBranch ? true : false}
+                        className={
+                          editingBranch ? "bg-gray-50 cursor-not-allowed" : ""
+                        }
+                      />
+                      {spList.length > 0 && !editingBranch && (
+                        <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
+                          {spLoading && (
+                            <div className="px-3 py-2 text-sm text-gray-500">
+                              Loading…
+                            </div>
+                          )}
+                          {spList.map((sp) => (
+                            <div
+                              key={sp.id}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setFormData((p) => ({
+                                  ...p,
+                                  serviceProviderID: sp.id,
+                                  spAutocomplete: sp.companyName,
+                                }));
+                                setSpList([]);
+                              }}
+                            >
+                              {sp.companyName}
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* Company - auto-filled from sidebar */}
-              {false && (
-                <div ref={coRef} className="space-y-2 relative">
-                  <Label>Company *</Label>
-                  <Input
-                    value={formData.coAutocomplete}
-                    onChange={(e) => {
-                      if (editingBranch) return;
-                      const val = e.target.value;
-                      setFormData((p) => ({ ...p, coAutocomplete: val, companyID: null }));
-                      runFetchCompanies(val);
-                    }}
-                    onFocus={(e) => {
-                      if (editingBranch) return;
-                      const val = e.target.value;
-                      if (val.length >= MIN_CHARS) runFetchCompanies(val);
-                    }}
-                    placeholder="Start typing company..."
-                    autoComplete="off"
-                    required
-                    readOnly={editingBranch ? true : false}
-                    className={editingBranch ? "bg-gray-50 cursor-not-allowed" : ""}
-                  />
-                  {coList.length > 0 && !editingBranch && (
-                    <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
-                      {coLoading && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
-                      {coList.map((co) => (
-                        <div
-                          key={co.id}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            setFormData((p) => ({
-                              ...p,
-                              companyID: co.id,
-                              coAutocomplete: co.companyName,
-                            }));
-                            setCoList([]);
-                          }}
-                        >
-                          {co.companyName}
+                  {/* Company - auto-filled from sidebar */}
+                  {false && (
+                    <div ref={coRef} className="space-y-2 relative">
+                      <Label>Company *</Label>
+                      <Input
+                        value={formData.coAutocomplete}
+                        onChange={(e) => {
+                          if (editingBranch) return;
+                          const val = e.target.value;
+                          setFormData((p) => ({
+                            ...p,
+                            coAutocomplete: val,
+                            companyID: null,
+                          }));
+                          runFetchCompanies(val);
+                        }}
+                        onFocus={(e) => {
+                          if (editingBranch) return;
+                          const val = e.target.value;
+                          if (val.length >= MIN_CHARS) runFetchCompanies(val);
+                        }}
+                        placeholder="Start typing company..."
+                        autoComplete="off"
+                        required
+                        readOnly={editingBranch ? true : false}
+                        className={
+                          editingBranch ? "bg-gray-50 cursor-not-allowed" : ""
+                        }
+                      />
+                      {coList.length > 0 && !editingBranch && (
+                        <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
+                          {coLoading && (
+                            <div className="px-3 py-2 text-sm text-gray-500">
+                              Loading…
+                            </div>
+                          )}
+                          {coList.map((co) => (
+                            <div
+                              key={co.id}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setFormData((p) => ({
+                                  ...p,
+                                  companyID: co.id,
+                                  coAutocomplete: co.companyName,
+                                }));
+                                setCoList([]);
+                              }}
+                            >
+                              {co.companyName}
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              <FormSection
-                title="Branch information"
-                description="Core branch details and classification."
-              >
-                <div className="flex items-center gap-2.5 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-3">
-                  <Checkbox
-                    id="sameAsCompany"
-                    checked={sameAsCompany}
-                    disabled={companyFillLoading}
-                    onCheckedChange={async (checked) => {
-                      const isChecked = checked === true;
-                      setSameAsCompany(isChecked);
-                      if (isChecked) {
-                        await fillBranchFromCompany();
+                  <FormSection
+                    title="Branch information"
+                    description="Core branch details and classification."
+                  >
+                    <div className="flex items-center gap-2.5 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-3">
+                      <Checkbox
+                        id="sameAsCompany"
+                        checked={sameAsCompany}
+                        disabled={companyFillLoading}
+                        onCheckedChange={async (checked) => {
+                          const isChecked = checked === true;
+                          setSameAsCompany(isChecked);
+                          if (isChecked) {
+                            await fillBranchFromCompany();
+                          }
+                        }}
+                      />
+                      <Label
+                        htmlFor="sameAsCompany"
+                        className="cursor-pointer font-normal"
+                      >
+                        Same as Company
+                        {companyFillLoading ? " loading..." : ""}
+                      </Label>
+                    </div>
+
+                    <FormField label="Branch Name" required>
+                      <Input
+                        value={formData.branchName}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            branchName: e.target.value,
+                          }))
+                        }
+                        placeholder="Enter branch name"
+                        required
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Branch Type"
+                      description="Select all types that apply to this branch."
+                    >
+                      <OptionCardGroup
+                        options={[
+                          {
+                            value: "office",
+                            label: "Office",
+                            description: "Corporate HQ",
+                            icon: Building2,
+                          },
+                          {
+                            value: "shop",
+                            label: "Shop",
+                            description: "Retail outlet",
+                            icon: Store,
+                          },
+                          {
+                            value: "factory",
+                            label: "Factory",
+                            description: "Manufacturing",
+                            icon: Factory,
+                          },
+                        ]}
+                        value={(formData.branchType || "")
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean)}
+                        onChange={(types) =>
+                          setFormData((p) => ({
+                            ...p,
+                            branchType: types.join(", "),
+                          }))
+                        }
+                      />
+                    </FormField>
+
+                    <VerifiedLocationFields
+                      feature="branch"
+                      label="Branch Address"
+                      address={formData.address}
+                      latitude={formData.latitude}
+                      longitude={formData.longitude}
+                      placeId={formData.placeId}
+                      onChange={(patch) =>
+                        setFormData((p) => ({
+                          ...p,
+                          address: patch.address ?? p.address,
+                          latitude: patch.latitude ?? p.latitude,
+                          longitude: patch.longitude ?? p.longitude,
+                          placeId: patch.placeId ?? p.placeId,
+                          locationSource:
+                            patch.locationSource ?? p.locationSource,
+                          locationVerified:
+                            patch.locationVerified ?? p.locationVerified,
+                        }))
                       }
+                    />
+                  </FormSection>
+
+                  <LocationFields
+                    values={{
+                      country: formData.country,
+                      state: formData.state,
+                      city: formData.city,
+                      pincode: formData.pincode,
+                      currency: formData.currency,
                     }}
+                    onChange={(patch) =>
+                      setFormData((p) => ({ ...p, ...patch }))
+                    }
+                    showCurrency={false}
                   />
-                  <Label htmlFor="sameAsCompany" className="cursor-pointer font-normal">
-                    Same as Company
-                    {companyFillLoading ? " loading..." : ""}
-                  </Label>
-                </div>
 
-                <FormField label="Branch Name" required>
-                  <Input
-                    value={formData.branchName}
-                    onChange={(e) => setFormData((p) => ({ ...p, branchName: e.target.value }))}
-                    placeholder="Enter branch name"
-                    required
-                  />
-                </FormField>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-2 sm:col-span-1">
+                      <Label>Geofence Radius (meters)</Label>
+                      <Input
+                        type="number"
+                        value={formData.geofenchradius}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            geofenchradius: e.target.value,
+                          }))
+                        }
+                        placeholder="50–100 after the pin is verified"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Employees can punch only within this radius of the saved
+                        office pin. After the pin is on the building, 50–100 m
+                        is usually enough.
+                      </p>
+                    </div>
+                  </div>
 
-                <FormField label="Branch Type" description="Select all types that apply to this branch.">
-                  <OptionCardGroup
-                    options={[
-                      { value: "office", label: "Office", description: "Corporate HQ", icon: Building2 },
-                      { value: "shop", label: "Shop", description: "Retail outlet", icon: Store },
-                      { value: "factory", label: "Factory", description: "Manufacturing", icon: Factory },
-                    ]}
-                    value={(formData.branchType || "").split(",").map((s) => s.trim()).filter(Boolean)}
-                    onChange={(types) => setFormData((p) => ({ ...p, branchType: types.join(", ") }))}
-                  />
-                </FormField>
-
-                <VerifiedLocationFields
-                  feature="branch"
-                  label="Branch Address"
-                  address={formData.address}
-                  latitude={formData.latitude}
-                  longitude={formData.longitude}
-                  placeId={formData.placeId}
-                  onChange={(patch) =>
-                    setFormData((p) => ({
-                      ...p,
-                      address: patch.address ?? p.address,
-                      latitude: patch.latitude ?? p.latitude,
-                      longitude: patch.longitude ?? p.longitude,
-                      placeId: patch.placeId ?? p.placeId,
-                      locationSource: patch.locationSource ?? p.locationSource,
-                      locationVerified: patch.locationVerified ?? p.locationVerified,
-                    }))
-                  }
-                />
-              </FormSection>
-
-              <LocationFields
-                values={{
-                   country: formData.country,
-                  state: formData.state,
-                  city: formData.city,
-                  pincode: formData.pincode,
-                  currency: formData.currency,
-                }}
-                onChange={(patch) => setFormData((p) => ({ ...p, ...patch }))}
-                showCurrency={false}
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-2 sm:col-span-1">
-                  <Label>Geofence Radius (meters)</Label>
-                  <Input
-                    type="number"
-                    value={ formData.geofenchradius}
-                    onChange={(e) => setFormData((p) => ({ ...p, geofenchradius: e.target.value }))}
-                    placeholder="50–100 after the pin is verified"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Employees can punch only within this radius of the saved office pin. After the pin is on the building, 50–100 m is usually enough.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Time Zone</Label>
-                  <TimezoneSelect
-                    value={formData.timeZone || ""}
-                    onChange={(value) => setFormData((p) => ({ ...p, timeZone: value }))}
-                  />
-                </div>
-                <SearchSuggestInput
-                  label="Currency"
-                  placeholder="Type currency code…"
-                  value={formData.currency}
-                  onChange={(v) => setFormData((p) => ({ ...p, currency: v }))}
-                  onSelect={({ display }) => setFormData((p) => ({ ...p, currency: display }))}
-                  fetchData={fetchCurrencies}
-                  displayField="code"
-                  valueField="code"
-                />
-              </div>
-
-              </>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Time Zone</Label>
+                      <TimezoneSelect
+                        value={formData.timeZone || ""}
+                        onChange={(value) =>
+                          setFormData((p) => ({ ...p, timeZone: value }))
+                        }
+                      />
+                    </div>
+                    <SearchSuggestInput
+                      label="Currency"
+                      placeholder="Type currency code…"
+                      value={formData.currency}
+                      onChange={(v) =>
+                        setFormData((p) => ({ ...p, currency: v }))
+                      }
+                      onSelect={({ display }) =>
+                        setFormData((p) => ({ ...p, currency: display }))
+                      }
+                      fetchData={fetchCurrencies}
+                      displayField="code"
+                      valueField="code"
+                    />
+                  </div>
+                </>
               )}
 
               {branchFormTab === "compliance" && (
-              <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>PF No</Label><Input value={formData.pfNo} onChange={(e) => setFormData((p) => ({ ...p, pfNo: e.target.value }))} /></div>
-                <div className="space-y-2"><Label>TAN No</Label><Input value={formData.tanNo} onChange={(e) => setFormData((p) => ({ ...p, tanNo: e.target.value }))} /></div>
-                <div className="space-y-2"><Label>ESI No</Label><Input value={formData.esiNo} onChange={(e) => setFormData((p) => ({ ...p, esiNo: e.target.value }))} /></div>
-                <div className="space-y-2"><Label>LIN No</Label><Input value={formData.linNo} onChange={(e) => setFormData((p) => ({ ...p, linNo: e.target.value }))} /></div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>GST No</Label>
-                  <Input value={formData.gstNo} onChange={(e) => setFormData((p) => ({ ...p, gstNo: e.target.value }))} />
-                  <PdfUploadField label="GST certificate (PDF)" value={formData.gstCertUrl} onChange={(url) => setFormData((p) => ({ ...p, gstCertUrl: url ?? "" }))} />
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>MSME certification no</Label>
-                  <Input value={formData.msmeNo} onChange={(e) => setFormData((p) => ({ ...p, msmeNo: e.target.value }))} />
-                  <PdfUploadField label="MSME certificate (PDF)" value={formData.msmeCertUrl} onChange={(url) => setFormData((p) => ({ ...p, msmeCertUrl: url ?? "" }))} />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Shop Registration Certificate</Label>
-                <div className="flex flex-wrap items-end gap-2">
-                  <div className="flex-1 min-w-[140px]">
-                    <Input
-                      placeholder="Certificate No"
-                      value={stagingShopReg.certNo}
-                      onChange={(e) => setStagingShopReg((p) => ({ ...p, certNo: e.target.value }))}
-                    />
-                  </div>
-                  <div className="w-40">
-                    <Input
-                      type="date"
-                      value={stagingShopReg.effectFrom}
-                      onChange={(e) => setStagingShopReg((p) => ({ ...p, effectFrom: e.target.value }))}
-                    />
-                  </div>
-                  <div className="min-w-[200px]">
-                    <PdfUploadField
-                      label="Certificate PDF"
-                      value={stagingShopReg.pdfUrl || null}
-                      onChange={(url) => setStagingShopReg((p) => ({ ...p, pdfUrl: url ?? "" }))}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={!stagingShopReg.certNo.trim()}
-                    onClick={() => {
-                      const entry = {
-                        certNo: stagingShopReg.certNo.trim(),
-                        effectFrom: stagingShopReg.effectFrom,
-                        pdfUrl: stagingShopReg.pdfUrl || undefined,
-                        _localId: Math.random().toString(36).slice(2, 10),
-                      };
-                      setFormData((p) => ({
-                        ...p,
-                        shopRegCertHistory: [...(p.shopRegCertHistory || []), entry],
-                        shopRegNo: entry.certNo,
-                      }));
-                      setStagingShopReg({ certNo: "", effectFrom: new Date().toISOString().slice(0, 10), pdfUrl: "" });
-                    }}
-                  >
-                    Add
-                  </Button>
-                </div>
-                {(formData.shopRegCertHistory || []).length > 0 && (
-                  <div className="border border-gray-200 rounded-lg overflow-hidden mt-2">
-                    <div className="bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide flex">
-                      <span className="flex-1">Certificate No</span>
-                      <span className="w-32 text-center">Effect Date</span>
-                      <span className="w-10"></span>
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>PF No</Label>
+                      <Input
+                        value={formData.pfNo}
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, pfNo: e.target.value }))
+                        }
+                      />
                     </div>
-                    {(formData.shopRegCertHistory || []).map((entry, i) => (
-                      <div
-                        key={entry._localId}
-                        className={`flex items-center px-3 py-2 text-sm ${i === (formData.shopRegCertHistory || []).length - 1 ? "bg-blue-50 font-medium" : "bg-white"} ${i > 0 ? "border-t border-gray-100" : ""}`}
-                      >
-                        <span className="flex-1">{entry.certNo}</span>
-                        <span className="w-32 text-center text-gray-500">{entry.effectFrom || "—"}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setFormData((p) => {
-                              const updated = (p.shopRegCertHistory || []).filter((x) => x._localId !== entry._localId);
-                              return { ...p, shopRegCertHistory: updated, shopRegNo: updated.length > 0 ? updated[updated.length - 1].certNo : "" };
-                            });
-                          }}
-                          className="h-6 w-6 p-0 text-red-500"
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    ))}
+                    <div className="space-y-2">
+                      <Label>TAN No</Label>
+                      <Input
+                        value={formData.tanNo}
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, tanNo: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>ESI No</Label>
+                      <Input
+                        value={formData.esiNo}
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, esiNo: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>LIN No</Label>
+                      <Input
+                        value={formData.linNo}
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, linNo: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>GST No</Label>
+                      <Input
+                        value={formData.gstNo}
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, gstNo: e.target.value }))
+                        }
+                      />
+                      <PdfUploadField
+                        label="GST certificate (PDF)"
+                        value={formData.gstCertUrl}
+                        onChange={(url) =>
+                          setFormData((p) => ({ ...p, gstCertUrl: url ?? "" }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>MSME certification no</Label>
+                      <Input
+                        value={formData.msmeNo}
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, msmeNo: e.target.value }))
+                        }
+                      />
+                      <PdfUploadField
+                        label="MSME certificate (PDF)"
+                        value={formData.msmeCertUrl}
+                        onChange={(url) =>
+                          setFormData((p) => ({ ...p, msmeCertUrl: url ?? "" }))
+                        }
+                      />
+                    </div>
                   </div>
-                )}
-              </div>
 
-              <FormField label="Financial Year Start">
-                <Select
-                  value={formData.financialYearStart || FINANCIAL_YEAR_EMPTY}
-                  onValueChange={(value) =>
-                    setFormData((p) => ({
-                      ...p,
-                      financialYearStart: value === FINANCIAL_YEAR_EMPTY ? "" : value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select start date" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={FINANCIAL_YEAR_EMPTY}>Select start date</SelectItem>
-                    <SelectItem value="1st Jan">1st January</SelectItem>
-                    <SelectItem value="1st April">1st April</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormField>
+                  <div className="space-y-2">
+                    <Label>Shop Registration Certificate</Label>
+                    <div className="flex flex-wrap items-end gap-2">
+                      <div className="flex-1 min-w-[140px]">
+                        <Input
+                          placeholder="Certificate No"
+                          value={stagingShopReg.certNo}
+                          onChange={(e) =>
+                            setStagingShopReg((p) => ({
+                              ...p,
+                              certNo: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="w-40">
+                        <Input
+                          type="date"
+                          value={stagingShopReg.effectFrom}
+                          onChange={(e) =>
+                            setStagingShopReg((p) => ({
+                              ...p,
+                              effectFrom: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="min-w-[200px]">
+                        <PdfUploadField
+                          label="Certificate PDF"
+                          value={stagingShopReg.pdfUrl || null}
+                          onChange={(url) =>
+                            setStagingShopReg((p) => ({
+                              ...p,
+                              pdfUrl: url ?? "",
+                            }))
+                          }
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={!stagingShopReg.certNo.trim()}
+                        onClick={() => {
+                          const entry = {
+                            certNo: stagingShopReg.certNo.trim(),
+                            effectFrom: stagingShopReg.effectFrom,
+                            pdfUrl: stagingShopReg.pdfUrl || undefined,
+                            _localId: Math.random().toString(36).slice(2, 10),
+                          };
+                          setFormData((p) => ({
+                            ...p,
+                            shopRegCertHistory: [
+                              ...(p.shopRegCertHistory || []),
+                              entry,
+                            ],
+                            shopRegNo: entry.certNo,
+                          }));
+                          setStagingShopReg({
+                            certNo: "",
+                            effectFrom: new Date().toISOString().slice(0, 10),
+                            pdfUrl: "",
+                          });
+                        }}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                    {(formData.shopRegCertHistory || []).length > 0 && (
+                      <div className="border border-gray-200 rounded-lg overflow-hidden mt-2">
+                        <div className="bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide flex">
+                          <span className="flex-1">Certificate No</span>
+                          <span className="w-32 text-center">Effect Date</span>
+                          <span className="w-10"></span>
+                        </div>
+                        {(formData.shopRegCertHistory || []).map((entry, i) => (
+                          <div
+                            key={entry._localId}
+                            className={`flex items-center px-3 py-2 text-sm ${i === (formData.shopRegCertHistory || []).length - 1 ? "bg-blue-50 font-medium" : "bg-white"} ${i > 0 ? "border-t border-gray-100" : ""}`}
+                          >
+                            <span className="flex-1">{entry.certNo}</span>
+                            <span className="w-32 text-center text-gray-500">
+                              {entry.effectFrom || "—"}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setFormData((p) => {
+                                  const updated = (
+                                    p.shopRegCertHistory || []
+                                  ).filter(
+                                    (x) => x._localId !== entry._localId,
+                                  );
+                                  return {
+                                    ...p,
+                                    shopRegCertHistory: updated,
+                                    shopRegNo:
+                                      updated.length > 0
+                                        ? updated[updated.length - 1].certNo
+                                        : "",
+                                  };
+                                });
+                              }}
+                              className="h-6 w-6 p-0 text-red-500"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-              </>
+                  <FormField label="Financial Year Start">
+                    <Select
+                      value={
+                        formData.financialYearStart || FINANCIAL_YEAR_EMPTY
+                      }
+                      onValueChange={(value) =>
+                        setFormData((p) => ({
+                          ...p,
+                          financialYearStart:
+                            value === FINANCIAL_YEAR_EMPTY ? "" : value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select start date" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={FINANCIAL_YEAR_EMPTY}>
+                          Select start date
+                        </SelectItem>
+                        <SelectItem value="1st Jan">1st January</SelectItem>
+                        <SelectItem value="1st April">1st April</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                </>
               )}
 
               {branchFormTab === "contact" && (
-              <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Contact Number</Label>
-                  <Input value={formData.contactNo} onChange={(e) => setFormData((p) => ({ ...p, contactNo: e.target.value }))} />
-                </div>
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Contact Number</Label>
+                      <Input
+                        value={formData.contactNo}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            contactNo: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <Label>Email Address</Label>
-                  <Input type="email" value={formData.emailAdd} onChange={(e) => setFormData((p) => ({ ...p, emailAdd: e.target.value }))} />
-                </div>
-              </div>
+                    <div className="space-y-2">
+                      <Label>Email Address</Label>
+                      <Input
+                        type="email"
+                        value={formData.emailAdd}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            emailAdd: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
 
-              <FormSection title="Branding" description="Logo and signature used on documents and payslips.">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FileDropzone
-                    label="Company Logo"
-                    accept="image/*"
-                    hint="PNG or JPG"
-                    value={logoFile}
-                    onChange={setLogoFile}
-                    variant="image"
-                  />
-                  <FileDropzone
-                    label="Signature Upload"
-                    accept="image/*"
-                    hint="PNG or JPG"
-                    value={signatureFile}
-                    onChange={setSignatureFile}
-                    variant="image"
-                  />
-                </div>
-              </FormSection>
-
-              </>
+                  <FormSection
+                    title="Branding"
+                    description="Logo and signature used on documents and payslips."
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FileDropzone
+                        label="Company Logo"
+                        accept="image/*"
+                        hint="PNG or JPG"
+                        value={logoFile}
+                        onChange={setLogoFile}
+                        variant="image"
+                      />
+                      <FileDropzone
+                        label="Signature Upload"
+                        accept="image/*"
+                        hint="PNG or JPG"
+                        value={signatureFile}
+                        onChange={setSignatureFile}
+                        variant="image"
+                      />
+                    </div>
+                  </FormSection>
+                </>
               )}
 
               {branchFormTab === "banking" && (
-              <>
-              {/* Bank Details repeater - hidden for ADMIN and COMPANY_ADMIN */}
-              {!(user?.role === "ADMIN" || isCompanyAdminLikeRole(user?.role)) && <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Bank Details</h3>
-                  <Button variant="outline" size="sm" type="button" onClick={addBankDetail}>
-                    <Plus className="w-4 h-4 mr-1" /> Add Bank Detail
-                  </Button>
-                </div>
-
-                {formData.bankDetailsForm.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 border border-gray-200 rounded-lg">
-                    <Icon icon="mdi:bank" className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                    <p>No bank details added yet</p>
-                    <p className="text-sm">
-                      Click &quot;Add Bank Detail&quot; to add bank information
-                    </p>
-                  </div>
-                ) : (
-                  formData.bankDetailsForm.map((bank) => (
-                    <div key={bank._localId} className="border border-gray-200 rounded-lg p-4 space-y-4">
+                <>
+                  {/* Bank Details repeater - hidden for ADMIN and COMPANY_ADMIN */}
+                  {!(
+                    user?.role === "ADMIN" || isCompanyAdminLikeRole(user?.role)
+                  ) && (
+                    <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-gray-900">Bank Detail</h4>
+                        <h3 className="text-lg font-semibold">Bank Details</h3>
                         <Button
-                          type="button"
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          onClick={() => removeBankDetail(bank._localId)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          type="button"
+                          onClick={addBankDetail}
                         >
-                          <Icon icon="mdi:close" className="w-4 h-4" />
+                          <Plus className="w-4 h-4 mr-1" /> Add Bank Detail
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Bank Name</Label>
-                          <Input
-                            value={bank.bankName}
-                            onChange={(e) => updateBankDetail(bank._localId, "bankName", e.target.value)}
+                      {formData.bankDetailsForm.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500 border border-gray-200 rounded-lg">
+                          <Icon
+                            icon="mdi:bank"
+                            className="w-12 h-12 text-gray-300 mx-auto mb-2"
                           />
+                          <p>No bank details added yet</p>
+                          <p className="text-sm">
+                            Click &quot;Add Bank Detail&quot; to add bank
+                            information
+                          </p>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Branch Name</Label>
-                          <Input
-                            value={bank.branchName}
-                            onChange={(e) => updateBankDetail(bank._localId, "branchName", e.target.value)}
-                          />
-                        </div>
-                      </div>
+                      ) : (
+                        formData.bankDetailsForm.map((bank) => (
+                          <div
+                            key={bank._localId}
+                            className="border border-gray-200 rounded-lg p-4 space-y-4"
+                          >
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-gray-900">
+                                Bank Detail
+                              </h4>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeBankDetail(bank._localId)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Icon icon="mdi:close" className="w-4 h-4" />
+                              </Button>
+                            </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Account No</Label>
-                          <Input
-                            value={bank.accountNo}
-                            onChange={(e) => updateBankDetail(bank._localId, "accountNo", e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>IFSC Code</Label>
-                          <Input
-                            value={bank.ifscCode}
-                            onChange={(e) => updateBankDetail(bank._localId, "ifscCode", e.target.value)}
-                          />
-                        </div>
-                      </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Bank Name</Label>
+                                <Input
+                                  value={bank.bankName}
+                                  onChange={(e) =>
+                                    updateBankDetail(
+                                      bank._localId,
+                                      "bankName",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Branch Name</Label>
+                                <Input
+                                  value={bank.branchName}
+                                  onChange={(e) =>
+                                    updateBankDetail(
+                                      bank._localId,
+                                      "branchName",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Account No</Label>
+                                <Input
+                                  value={bank.accountNo}
+                                  onChange={(e) =>
+                                    updateBankDetail(
+                                      bank._localId,
+                                      "accountNo",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>IFSC Code</Label>
+                                <Input
+                                  value={bank.ifscCode}
+                                  onChange={(e) =>
+                                    updateBankDetail(
+                                      bank._localId,
+                                      "ifscCode",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
-                  ))
-                )}
-              </div>
-              }
-
-              </>
+                  )}
+                </>
               )}
 
               <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
@@ -1813,7 +2133,11 @@ setIsViewing(false);
                 </Button>
                 <Button type="submit" className="" disabled={saving}>
                   <Save className="w-4 h-4 mr-1" />
-                  {saving ? "Saving..." : editingBranch ? "Update Branch" : "Add Branch"}
+                  {saving
+                    ? "Saving..."
+                    : editingBranch
+                      ? "Update Branch"
+                      : "Add Branch"}
                 </Button>
               </div>
             </form>
@@ -1824,7 +2148,9 @@ setIsViewing(false);
       {/* View Details - Drawer */}
       <FormDrawer
         open={Boolean(isViewing && viewBranch)}
-        onOpenChange={function handleViewClose(v: boolean) { if (!v) handleCancel(); }}
+        onOpenChange={function handleViewClose(v: boolean) {
+          if (!v) handleCancel();
+        }}
         title="Branch Details"
         showHeaderCancel
         cancelLabel="Close"
@@ -1856,7 +2182,10 @@ setIsViewing(false);
                 { label: "City", value: viewBranch.city },
                 { label: "Latitude", value: viewBranch.latitude },
                 { label: "Longitude", value: viewBranch.longitude },
-                { label: "Geofence radius (m)", value: viewBranch.geofenchradius },
+                {
+                  label: "Geofence radius (m)",
+                  value: viewBranch.geofenchradius,
+                },
               ]}
             />
             <DetailCard
@@ -1879,17 +2208,30 @@ setIsViewing(false);
                 { label: "ESI", value: viewBranch.esiNo },
                 { label: "LIN", value: viewBranch.linNo },
                 { label: "Shop registration", value: viewBranch.shopRegNo },
-                { label: "Financial year start", value: viewBranch.financialYearStart },
+                {
+                  label: "Financial year start",
+                  value: viewBranch.financialYearStart,
+                },
               ]}
             />
             {viewBranch.bankDetails && viewBranch.bankDetails.length > 0 ? (
-              <DetailCard title="Bank accounts" subtitle="Linked bank details" className="lg:col-span-2">
+              <DetailCard
+                title="Bank accounts"
+                subtitle="Linked bank details"
+                className="lg:col-span-2"
+              >
                 <div className="divide-y divide-border">
                   {viewBranch.bankDetails.map((bd) => (
                     <div key={bd.id} className="py-3 text-sm">
-                      <div className="font-medium">{bd.bankName} — {bd.bankBranchName}</div>
-                      <div className="mt-1 text-muted-foreground">Account: {bd.accountNo}</div>
-                      <div className="text-muted-foreground">IFSC: {bd.ifscCode}</div>
+                      <div className="font-medium">
+                        {bd.bankName} — {bd.bankBranchName}
+                      </div>
+                      <div className="mt-1 text-muted-foreground">
+                        Account: {bd.accountNo}
+                      </div>
+                      <div className="text-muted-foreground">
+                        IFSC: {bd.ifscCode}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1946,7 +2288,11 @@ setIsViewing(false);
                   </Button>
                 )}
 
-                <Button variant="outline" size="sm" onClick={closeBranchAdminPanel}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={closeBranchAdminPanel}
+                >
                   Back
                 </Button>
               </div>
@@ -1955,7 +2301,10 @@ setIsViewing(false);
 
           <CardContent className="space-y-6">
             {branchAdminFormOpen ? (
-              <form onSubmit={saveBranchAdmin} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <form
+                onSubmit={saveBranchAdmin}
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+              >
                 <div className="space-y-2">
                   <Label>Username *</Label>
                   <Input
@@ -1963,7 +2312,10 @@ setIsViewing(false);
                     autoComplete="off"
                     name={`branch-admin-username-${selectedBranch?.id || "new"}`}
                     onChange={(e) =>
-                      setBranchAdminForm((p) => ({ ...p, username: e.target.value }))
+                      setBranchAdminForm((p) => ({
+                        ...p,
+                        username: e.target.value,
+                      }))
                     }
                     required
                   />
@@ -1971,28 +2323,40 @@ setIsViewing(false);
 
                 <div className="space-y-2">
                   <Label>
-                    Password {editingBranchAdmin ? "(leave blank to keep old password)" : "*"}
+                    Password{" "}
+                    {editingBranchAdmin
+                      ? "(leave blank to keep old password)"
+                      : "*"}
                   </Label>
                   <Input
                     type="password"
                     value={branchAdminForm.password}
                     autoComplete="new-password"
                     name={`branch-admin-password-${selectedBranch?.id || "new"}`}
-                    placeholder={editingBranchAdmin ? "Leave blank to keep old password" : "Minimum 6 characters"}
+                    placeholder={
+                      editingBranchAdmin
+                        ? "Leave blank to keep old password"
+                        : "Minimum 6 characters"
+                    }
                     onChange={(e) =>
-                      setBranchAdminForm((p) => ({ ...p, password: e.target.value }))
+                      setBranchAdminForm((p) => ({
+                        ...p,
+                        password: e.target.value,
+                      }))
                     }
                     required={!editingBranchAdmin}
                   />
                 </div>
-
 
                 <div className="space-y-2">
                   <Label>First Name</Label>
                   <Input
                     value={branchAdminForm.firstName}
                     onChange={(e) =>
-                      setBranchAdminForm((p) => ({ ...p, firstName: e.target.value }))
+                      setBranchAdminForm((p) => ({
+                        ...p,
+                        firstName: e.target.value,
+                      }))
                     }
                   />
                 </div>
@@ -2002,19 +2366,23 @@ setIsViewing(false);
                   <Input
                     value={branchAdminForm.lastName}
                     onChange={(e) =>
-                      setBranchAdminForm((p) => ({ ...p, lastName: e.target.value }))
+                      setBranchAdminForm((p) => ({
+                        ...p,
+                        lastName: e.target.value,
+                      }))
                     }
                   />
                 </div>
 
-
                 <div className="space-y-2">
-
                   <Label>Contact No</Label>
                   <Input
                     value={branchAdminForm.contactNo}
                     onChange={(e) =>
-                      setBranchAdminForm((p) => ({ ...p, contactNo: e.target.value }))
+                      setBranchAdminForm((p) => ({
+                        ...p,
+                        contactNo: e.target.value,
+                      }))
                     }
                   />
                 </div>
@@ -2025,12 +2393,13 @@ setIsViewing(false);
                     type="email"
                     value={branchAdminForm.email}
                     onChange={(e) =>
-                      setBranchAdminForm((p) => ({ ...p, email: e.target.value }))
+                      setBranchAdminForm((p) => ({
+                        ...p,
+                        email: e.target.value,
+                      }))
                     }
                   />
                 </div>
-
-
 
                 <div className="space-y-2">
                   <Label>Role</Label>
@@ -2042,7 +2411,10 @@ setIsViewing(false);
                     <Checkbox
                       checked={branchAdminForm.isActive}
                       onCheckedChange={(checked) =>
-                        setBranchAdminForm((p) => ({ ...p, isActive: checked === true }))
+                        setBranchAdminForm((p) => ({
+                          ...p,
+                          isActive: checked === true,
+                        }))
                       }
                     />
                     Active
@@ -2059,7 +2431,6 @@ setIsViewing(false);
                       : editingBranchAdmin
                         ? "Update Branch Admin"
                         : "Create Branch Admin"}
-
                   </Button>
                 </div>
               </form>
@@ -2077,7 +2448,10 @@ setIsViewing(false);
                 <TableBody>
                   {branchAdmins.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-6 text-gray-500">
+                      <TableCell
+                        colSpan={4}
+                        className="text-center py-6 text-gray-500"
+                      >
                         No branch admin users found for this branch
                       </TableCell>
                     </TableRow>
@@ -2094,20 +2468,19 @@ setIsViewing(false);
                         <TableCell>{admin.username}</TableCell>
 
                         <TableCell>
-                          <Badge variant="secondary">
-                            {admin.role}
-                          </Badge>
+                          <Badge variant="secondary">{admin.role}</Badge>
                         </TableCell>
 
                         <TableCell>
-                          <Badge variant={admin.isActive ? "default" : "secondary"}>
+                          <Badge
+                            variant={admin.isActive ? "default" : "secondary"}
+                          >
                             {admin.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
 
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
-
                             <Button
                               variant="ghost"
                               size="sm"
@@ -2124,7 +2497,6 @@ setIsViewing(false);
                             >
                               <Trash2 className="w-3 h-3" />
                             </Button>
-
                           </div>
                         </TableCell>
                       </TableRow>
@@ -2137,49 +2509,51 @@ setIsViewing(false);
         </Card>
       )}
 
-      {!isAddingNew && !isViewing && !showBranchAdminPanel && (<>
-        <FilterBar
-          search={{
-            value: table.search,
-            onChange: table.setSearch,
-            placeholder: "Search code, name, city, state, pincode…",
-          }}
-        />
+      {!isAddingNew && !isViewing && !showBranchAdminPanel && (
+        <>
+          <FilterBar
+            search={{
+              value: table.search,
+              onChange: table.setSearch,
+              placeholder: "Search code, name, city, state, pincode…",
+            }}
+          />
 
-        <EntityListShell
-          title="All branches"
-          columns={branchColumns}
-          rows={filteredBranches}
-          rowKey={(b) => String(b.id)}
-          isLoading={loading}
-          sortBy={table.sortBy}
-          sortDir={table.sortDir}
-          onSort={table.setSort}
-          emptyIcon={GitBranch}
-          emptyTitle="No branches yet"
-          emptyDescription="Add your first branch to start organising your workforce."
-          emptyAction={
-            canCreate ? (
-              <Button
-                onClick={() => {
-                  resetForm();
-                  const activeCtx = getActiveBranchContext();
-                  setFormData((p) => ({
-                    ...p,
-                    serviceProviderID: activeCtx.serviceProviderID,
-                    companyID: activeCtx.companyID,
-                    spAutocomplete: activeCtx.serviceProviderName,
-                    coAutocomplete: activeCtx.companyName,
-                  }));
-                  setIsAddingNew(true);
-                }}
-              >
-                <Plus className="w-4 h-4 mr-1" /> Add Branch
-              </Button>
-            ) : undefined
-          }
-        />
-      </>)}
+          <EntityListShell
+            title="All branches"
+            columns={branchColumns}
+            rows={filteredBranches}
+            rowKey={(b) => String(b.id)}
+            isLoading={loading}
+            sortBy={table.sortBy}
+            sortDir={table.sortDir}
+            onSort={table.setSort}
+            emptyIcon={GitBranch}
+            emptyTitle="No branches yet"
+            emptyDescription="Add your first branch to start organising your workforce."
+            emptyAction={
+              canCreate ? (
+                <Button
+                  onClick={() => {
+                    resetForm();
+                    const activeCtx = getActiveBranchContext();
+                    setFormData((p) => ({
+                      ...p,
+                      serviceProviderID: activeCtx.serviceProviderID,
+                      companyID: activeCtx.companyID,
+                      spAutocomplete: activeCtx.serviceProviderName,
+                      coAutocomplete: activeCtx.companyName,
+                    }));
+                    setIsAddingNew(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add Branch
+                </Button>
+              ) : undefined
+            }
+          />
+        </>
+      )}
     </div>
   );
 }

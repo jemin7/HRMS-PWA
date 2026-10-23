@@ -159,7 +159,7 @@ export function rightsKeysCoveredByProductModules(moduleKeys: string[]): Set<str
 
 function cleanPath(url: string): string {
   const noQuery = String(url || '').split('?')[0];
-  const stripped = noQuery.replace(/^\/backend(?=\/)/, '');
+  const stripped = noQuery.replace(/^\https://hrms-api-test.onrender.com(?=\/)/, '');
   if (stripped.length > 1 && stripped.endsWith('/')) return stripped.slice(0, -1);
   return stripped || '/';
 }

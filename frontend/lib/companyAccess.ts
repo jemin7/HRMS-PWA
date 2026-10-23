@@ -47,12 +47,18 @@ export function clearCompanyAccess() {
 export async function refreshCompanyAccess(token?: string | null) {
   if (typeof window === "undefined") return null;
   const accessToken =
-    token || localStorage.getItem("accessToken") || localStorage.getItem("token") || "";
+    token ||
+    localStorage.getItem("accessToken") ||
+    localStorage.getItem("token") ||
+    "";
   if (!accessToken) return null;
-  const res = await fetch("/backend/employee-permissions/me", {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-  });
+  const res = await fetch(
+    "https://hrms-api-test.onrender.com/employee-permissions/me",
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    },
+  );
   if (!res.ok) return readCompanyAccess();
   const access = await res.json();
   return persistCompanyAccessFromUser({
@@ -65,19 +71,25 @@ export async function refreshCompanyAccess(token?: string | null) {
   });
 }
 
-export function persistCompanyAccessFromUser(user: any): CompanyAccessSnapshot | null {
+export function persistCompanyAccessFromUser(
+  user: any,
+): CompanyAccessSnapshot | null {
   if (!user || (user.role !== "EMPLOYEE" && user.type !== "employee")) {
     clearCompanyAccess();
     return null;
   }
-  const isCompanyOwner = !!(user.isCompanyOwner || user.employee?.isCompanyOwner);
+  const isCompanyOwner = !!(
+    user.isCompanyOwner || user.employee?.isCompanyOwner
+  );
   const permissions: ModulePermission[] = Array.isArray(user.permissions)
     ? user.permissions
     : [];
   const hasAnyCompanyAccess =
     !!user.hasAnyCompanyAccess ||
     isCompanyOwner ||
-    permissions.some((p) => p.canView || p.canCreate || p.canEdit || p.canDelete);
+    permissions.some(
+      (p) => p.canView || p.canCreate || p.canEdit || p.canDelete,
+    );
 
   const snapshot: CompanyAccessSnapshot = {
     isCompanyOwner,
@@ -103,7 +115,10 @@ export function isCompanyAdminLikeRole(role?: string | null): boolean {
   return r === "COMPANY_ADMIN" || r === "MULTI_COMPANY_ADMIN";
 }
 
-export function canModuleAction(moduleKey: string, action: ModuleAction): boolean {
+export function canModuleAction(
+  moduleKey: string,
+  action: ModuleAction,
+): boolean {
   const snap = readCompanyAccess();
   if (!snap?.hasAnyCompanyAccess) return false;
   const row = snap.permissions.find((p) => p.moduleKey === moduleKey);
@@ -202,28 +217,90 @@ export const LEGAL_ENTITY_OPTIONS = [
  * in the tenant form. The first option in each list is the default.
  */
 export const USER_TYPE_OPTIONS_BY_ENTITY: Record<string, string[]> = {
-  SOLE_PROPRIETORSHIP: ["Proprietor", "Owner", "Founder", "Company Administrator", "HR Head"],
-  PARTNERSHIP: ["Partner", "Managing Partner", "Company Administrator", "HR Head"],
-  LLP: ["Designated Partner", "Partner", "Managing Partner", "Company Administrator", "HR Head"],
+  SOLE_PROPRIETORSHIP: [
+    "Proprietor",
+    "Owner",
+    "Founder",
+    "Company Administrator",
+    "HR Head",
+  ],
+  PARTNERSHIP: [
+    "Partner",
+    "Managing Partner",
+    "Company Administrator",
+    "HR Head",
+  ],
+  LLP: [
+    "Designated Partner",
+    "Partner",
+    "Managing Partner",
+    "Company Administrator",
+    "HR Head",
+  ],
   OPC: ["Director", "Owner", "Founder", "Company Administrator", "HR Head"],
-  PRIVATE_LIMITED: ["Director", "Managing Director", "CEO", "Founder", "Company Administrator", "HR Head"],
-  PUBLIC_LIMITED: ["Director", "Chairman", "Managing Director", "CEO", "Company Secretary", "HR Head"],
-  SECTION_8: ["Director", "CEO", "Chairman", "Managing Trustee", "Secretary", "Executive Director", "Company Administrator", "HR Head"],
-  TRUST: ["Managing Trustee", "Trustee", "Secretary", "Company Administrator", "HR Head"],
+  PRIVATE_LIMITED: [
+    "Director",
+    "Managing Director",
+    "CEO",
+    "Founder",
+    "Company Administrator",
+    "HR Head",
+  ],
+  PUBLIC_LIMITED: [
+    "Director",
+    "Chairman",
+    "Managing Director",
+    "CEO",
+    "Company Secretary",
+    "HR Head",
+  ],
+  SECTION_8: [
+    "Director",
+    "CEO",
+    "Chairman",
+    "Managing Trustee",
+    "Secretary",
+    "Executive Director",
+    "Company Administrator",
+    "HR Head",
+  ],
+  TRUST: [
+    "Managing Trustee",
+    "Trustee",
+    "Secretary",
+    "Company Administrator",
+    "HR Head",
+  ],
   SOCIETY: ["Secretary", "President", "Treasurer", "Company Administrator"],
-  GOVERNMENT_PSU: ["HR Officer", "Establishment Officer", "Company Administrator"],
-  COOPERATIVE_SOCIETY: ["Secretary", "President", "Treasurer", "Company Administrator"],
+  GOVERNMENT_PSU: [
+    "HR Officer",
+    "Establishment Officer",
+    "Company Administrator",
+  ],
+  COOPERATIVE_SOCIETY: [
+    "Secretary",
+    "President",
+    "Treasurer",
+    "Company Administrator",
+  ],
 };
 
-export function userTypeOptionsForEntity(legalEntityType?: string | null): string[] {
-  const options = USER_TYPE_OPTIONS_BY_ENTITY[(legalEntityType || "").toUpperCase()] || [];
+export function userTypeOptionsForEntity(
+  legalEntityType?: string | null,
+): string[] {
+  const options =
+    USER_TYPE_OPTIONS_BY_ENTITY[(legalEntityType || "").toUpperCase()] || [];
   return options.includes("Other") ? options : [...options, "Other"];
 }
 
-export function defaultUserTypeForEntity(legalEntityType?: string | null): string {
+export function defaultUserTypeForEntity(
+  legalEntityType?: string | null,
+): string {
   return userTypeOptionsForEntity(legalEntityType)[0] || "Owner";
 }
 
-export function ownerTitleForLegalEntity(legalEntityType?: string | null): string {
+export function ownerTitleForLegalEntity(
+  legalEntityType?: string | null,
+): string {
   return defaultUserTypeForEntity(legalEntityType);
 }

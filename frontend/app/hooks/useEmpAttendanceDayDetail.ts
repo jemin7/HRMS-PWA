@@ -7,13 +7,17 @@ import {
   extractDayPunchTimes,
   type AttendanceLocationRecord,
 } from "../utils/empAttendanceHistory";
-import { buildDaySummary, todayPunchDateKey } from "../utils/attendanceDuration";
+import {
+  buildDaySummary,
+  todayPunchDateKey,
+} from "../utils/attendanceDuration";
 import { extractSiteVisitPunchesFromChats } from "../utils/siteVisitPunches";
 import { taskFetch } from "../utils/taskApi";
 import { useCurrentUser } from "./useCurrentUser";
 import type { TaskChatMessage } from "../components/task/task-types";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export interface SiteVisitTask {
   id: number;
@@ -56,7 +60,10 @@ export function useEmpAttendanceDayDetail() {
   }, [dateKey]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      "";
     if (!token) {
       router.replace("/login");
       return;
@@ -83,7 +90,9 @@ export function useEmpAttendanceDayDetail() {
         });
         setRecords(
           [...dayOnly].sort(
-            (a, b) => new Date(a.checkinTime).getTime() - new Date(b.checkinTime).getTime(),
+            (a, b) =>
+              new Date(a.checkinTime).getTime() -
+              new Date(b.checkinTime).getTime(),
           ),
         );
       })
@@ -123,7 +132,9 @@ export function useEmpAttendanceDayDetail() {
                 `/task-projects/${t.id}`,
                 user,
               );
-              const punches = extractSiteVisitPunchesFromChats(detail.chats || []);
+              const punches = extractSiteVisitPunchesFromChats(
+                detail.chats || [],
+              );
               return { id: t.id, ...punches };
             } catch {
               return {
@@ -158,7 +169,10 @@ export function useEmpAttendanceDayDetail() {
   const summary = useMemo(
     () =>
       records.length
-        ? buildDaySummary(records, { dateKey, live: dateKey === todayPunchDateKey() })
+        ? buildDaySummary(records, {
+            dateKey,
+            live: dateKey === todayPunchDateKey(),
+          })
         : null,
     [records, dateKey],
   );

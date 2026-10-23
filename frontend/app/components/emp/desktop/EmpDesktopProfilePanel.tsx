@@ -47,7 +47,8 @@ import { fmtJoined, useEmpProfile } from "../../../hooks/useEmpProfile";
 import { isCompanyOwnerFlag } from "@/lib/companyAccess";
 import { cn } from "../../../utils/cn";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 type ProfileField = {
   label: string;
@@ -133,7 +134,11 @@ function fmtDob(dateStr: string | undefined | null) {
   try {
     const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T12:00:00`);
     if (Number.isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    return d.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   } catch {
     return dateStr;
   }
@@ -148,7 +153,9 @@ function ProfileFieldRow({ label, value, icon: Icon, href }: ProfileField) {
         <Icon className="size-4 text-muted-foreground" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
         {href && text !== "—" ? (
           <a
             href={href}
@@ -157,7 +164,9 @@ function ProfileFieldRow({ label, value, icon: Icon, href }: ProfileField) {
             {text}
           </a>
         ) : (
-          <p className="mt-1 text-sm font-medium text-foreground break-words">{text}</p>
+          <p className="mt-1 text-sm font-medium text-foreground break-words">
+            {text}
+          </p>
         )}
       </div>
     </div>
@@ -176,10 +185,14 @@ function ProfileRepeaterSection({
   return (
     <section className="overflow-hidden rounded-2xl border border-[#e5eeff] bg-white shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
       <div className="border-b border-[#e5eeff] px-6 py-4">
-        <h3 className="font-display text-base font-semibold text-foreground">{title}</h3>
+        <h3 className="font-display text-base font-semibold text-foreground">
+          {title}
+        </h3>
       </div>
       {children ?? (
-        <p className="px-6 py-8 text-sm text-muted-foreground text-center">{emptyMessage}</p>
+        <p className="px-6 py-8 text-sm text-muted-foreground text-center">
+          {emptyMessage}
+        </p>
       )}
     </section>
   );
@@ -204,11 +217,19 @@ function resolvePolicyName(
   return null;
 }
 
-function ProfileDetailSection({ title, fields }: { title: string; fields: ProfileField[] }) {
+function ProfileDetailSection({
+  title,
+  fields,
+}: {
+  title: string;
+  fields: ProfileField[];
+}) {
   return (
     <section className="overflow-hidden rounded-2xl border border-[#e5eeff] bg-white shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
       <div className="border-b border-[#e5eeff] px-6 py-4">
-        <h3 className="font-display text-base font-semibold text-foreground">{title}</h3>
+        <h3 className="font-display text-base font-semibold text-foreground">
+          {title}
+        </h3>
       </div>
       <div className="divide-y divide-border">
         {fields.map((field) => (
@@ -234,7 +255,9 @@ function ProfileEditField({
         <Icon className="size-4 text-muted-foreground" />
       </div>
       <div className="min-w-0 flex-1 space-y-1.5">
-        <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</Label>
+        <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </Label>
         {children}
       </div>
     </div>
@@ -251,7 +274,9 @@ function ProfileEditableSection({
   return (
     <section className="overflow-hidden rounded-2xl border border-[#e5eeff] bg-white shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
       <div className="border-b border-[#e5eeff] px-6 py-4">
-        <h3 className="font-display text-base font-semibold text-foreground">{title}</h3>
+        <h3 className="font-display text-base font-semibold text-foreground">
+          {title}
+        </h3>
       </div>
       <div className="divide-y divide-border">{children}</div>
     </section>
@@ -310,7 +335,9 @@ function HeroInfoItem({
         <Icon className="size-4 text-[#6B7280]" strokeWidth={1.75} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">{label}</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">
+          {label}
+        </p>
         {href && text !== "—" ? (
           <a
             href={href}
@@ -319,7 +346,9 @@ function HeroInfoItem({
             {text}
           </a>
         ) : (
-          <p className="mt-0.5 truncate text-[15px] font-medium text-[#111827]">{text}</p>
+          <p className="mt-0.5 truncate text-[15px] font-medium text-[#111827]">
+            {text}
+          </p>
         )}
       </div>
     </div>
@@ -359,7 +388,10 @@ function ProfileAvatar({
       )}
       {uploading ? (
         <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-          <Icon icon="solar:refresh-bold-duotone" className="size-6 animate-spin text-white" />
+          <Icon
+            icon="solar:refresh-bold-duotone"
+            className="size-6 animate-spin text-white"
+          />
         </div>
       ) : null}
     </>
@@ -441,17 +473,17 @@ export function EmpDesktopProfilePanel({
     async (u: any, token: string, targetId?: number) => {
       try {
         const empId = targetId ?? u?.employee?.id ?? u?.employeeId ?? u?.id;
-      if (!empId) return;
-      const res = await fetch(`${BACKEND}/manage-emp/${empId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setEmpData(data);
+        if (!empId) return;
+        const res = await fetch(`${BACKEND}/manage-emp/${empId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setEmpData(data);
         if (!targetId) setPageCache("empProfileData", data);
-    } finally {
-      setLoading(false);
-    }
+      } finally {
+        setLoading(false);
+      }
     },
     [],
   );
@@ -466,7 +498,10 @@ export function EmpDesktopProfilePanel({
 
   useEffect(() => {
     try {
-      const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        "";
       if (viewEmployeeId) {
         if (token) void fetchEmpData(null, token, viewEmployeeId);
         else setLoading(false);
@@ -495,34 +530,54 @@ export function EmpDesktopProfilePanel({
       setReportingManager(null);
       return;
     }
-    const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      "";
     if (!token) return;
 
     fetch(`${BACKEND}/manage-emp/${targetId}/linked-employees`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => (r.ok ? r.json() : []))
-      .then((managers: { employeeFirstName?: string; employeeLastName?: string }[]) => {
-        if (!Array.isArray(managers) || managers.length === 0) {
-          setReportingManager(null);
-          return;
-        }
-        const primary = managers[0];
-        const name = [primary.employeeFirstName, primary.employeeLastName].filter(Boolean).join(" ").trim();
-        setReportingManager(name || null);
-      })
+      .then(
+        (
+          managers: { employeeFirstName?: string; employeeLastName?: string }[],
+        ) => {
+          if (!Array.isArray(managers) || managers.length === 0) {
+            setReportingManager(null);
+            return;
+          }
+          const primary = managers[0];
+          const name = [primary.employeeFirstName, primary.employeeLastName]
+            .filter(Boolean)
+            .join(" ")
+            .trim();
+          setReportingManager(name || null);
+        },
+      )
       .catch(() => setReportingManager(null));
   }, [viewEmployeeId, empData?.id, empUser?.employee?.id]);
 
   const emp = isViewingOther ? empData : empData || empUser?.employee || null;
-  const empId = isViewingOther ? viewEmployeeId : emp?.id || empUser?.employee?.id;
+  const empId = isViewingOther
+    ? viewEmployeeId
+    : emp?.id || empUser?.employee?.id;
 
   const isCompanyOwner = useMemo(() => {
     if (isViewingOther || readOnly) return false;
     return (
       isCompanyOwnerFlag() ||
-      !!(emp?.isCompanyOwner || empUser?.isCompanyOwner || empUser?.employee?.isCompanyOwner) ||
-      !!(emp?.ownerTitle || empUser?.ownerTitle || empUser?.employee?.ownerTitle)
+      !!(
+        emp?.isCompanyOwner ||
+        empUser?.isCompanyOwner ||
+        empUser?.employee?.isCompanyOwner
+      ) ||
+      !!(
+        emp?.ownerTitle ||
+        empUser?.ownerTitle ||
+        empUser?.employee?.ownerTitle
+      )
     );
   }, [isViewingOther, readOnly, emp, empUser]);
 
@@ -538,16 +593,22 @@ export function EmpDesktopProfilePanel({
     setEditForm(emptyEditForm());
   }, []);
 
-  const updateEditField = useCallback(<K extends keyof ProfileEditForm>(key: K, value: ProfileEditForm[K]) => {
-    setEditForm((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  const updateEditField = useCallback(
+    <K extends keyof ProfileEditForm>(key: K, value: ProfileEditForm[K]) => {
+      setEditForm((prev) => ({ ...prev, [key]: value }));
+    },
+    [],
+  );
 
   const saveProfile = useCallback(async () => {
     if (!empId) {
       toast.error("Employee record not found");
       return;
     }
-    const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      "";
     if (!token) {
       toast.error("Please sign in again");
       return;
@@ -598,7 +659,9 @@ export function EmpDesktopProfilePanel({
       setEditing(false);
       toast.success("Profile updated");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save profile");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save profile",
+      );
     } finally {
       setSaving(false);
     }
@@ -618,16 +681,23 @@ export function EmpDesktopProfilePanel({
 
   const photoUrl = isViewingOther
     ? empData?.employeePhotoUrl || null
-    : photoProfile.photoUrl || emp?.employeePhotoUrl || getEmpPhoto(String(empId)) || null;
+    : photoProfile.photoUrl ||
+      emp?.employeePhotoUrl ||
+      getEmpPhoto(String(empId)) ||
+      null;
   const imgFailed = isViewingOther ? viewPhotoFailed : photoProfile.imgFailed;
-  const setImgFailed = isViewingOther ? setViewPhotoFailed : photoProfile.setImgFailed;
+  const setImgFailed = isViewingOther
+    ? setViewPhotoFailed
+    : photoProfile.setImgFailed;
   const designation =
     emp?.designations?.designation ||
     emp?.designations?.designationName ||
     emp?.designation ||
     null;
-  const department = emp?.departments?.departmentName || emp?.department || null;
-  const employeeCode = emp?.employeeID || emp?.employeeId || empUser?.username || null;
+  const department =
+    emp?.departments?.departmentName || emp?.department || null;
+  const employeeCode =
+    emp?.employeeID || emp?.employeeId || empUser?.username || null;
   const personalEmail = emp?.personalEmail || null;
   const personalPhone = emp?.personalPhoneNo || null;
   const officialEmail = emp?.businessEmail || null;
@@ -638,12 +708,20 @@ export function EmpDesktopProfilePanel({
     emp?.workShift?.workShiftName ||
     null;
   const branchName =
-    emp?.empBranch?.[0]?.branch?.branchName || emp?.branches?.branchName || null;
-  const officeLocation = branchName || emp?.presentAddress || emp?.permenantAddress || null;
+    emp?.empBranch?.[0]?.branch?.branchName ||
+    emp?.branches?.branchName ||
+    null;
+  const officeLocation =
+    branchName || emp?.presentAddress || emp?.permenantAddress || null;
   const workEmail = officialEmail || personalEmail;
   const phoneNumber = officialPhone || personalPhone;
-  const employmentType = emp?.employmentType || emp?.empType || emp?.typeOfEmployee || null;
-  const ownerTitle = emp?.ownerTitle || (empUser?.employee as any)?.ownerTitle || empUser?.ownerTitle || null;
+  const employmentType =
+    emp?.employmentType || emp?.empType || emp?.typeOfEmployee || null;
+  const ownerTitle =
+    emp?.ownerTitle ||
+    (empUser?.employee as any)?.ownerTitle ||
+    empUser?.ownerTitle ||
+    null;
   // Company owner: show "Sales Manager(Proprietor)" when both designation and user type exist.
   const roleSubtitle =
     designation && ownerTitle
@@ -694,8 +772,16 @@ export function EmpDesktopProfilePanel({
 
   const employeeInfoFields: ProfileField[] = [
     { label: "Employment type", value: emp?.employmentType, icon: Briefcase },
-    { label: "Employment status", value: emp?.employmentStatus, icon: Briefcase },
-    { label: "Employee type", value: emp?.empType || emp?.typeOfEmployee, icon: User },
+    {
+      label: "Employment status",
+      value: emp?.employmentStatus,
+      icon: Briefcase,
+    },
+    {
+      label: "Employee type",
+      value: emp?.empType || emp?.typeOfEmployee,
+      icon: User,
+    },
     { label: "Lifecycle status", value: emp?.lifecycleStatus, icon: Briefcase },
     { label: "Probation period", value: emp?.probationPeriod, icon: Calendar },
     { label: "Joined on", value: fmtJoined(joinedOn), icon: Calendar },
@@ -720,22 +806,42 @@ export function EmpDesktopProfilePanel({
     },
     {
       label: "Leave policy",
-      value: resolvePolicyName(emp, "leavePolicy", "empLeavePolicy", "leavePolicy", "leavePolicyName"),
+      value: resolvePolicyName(
+        emp,
+        "leavePolicy",
+        "empLeavePolicy",
+        "leavePolicy",
+        "leavePolicyName",
+      ),
       icon: Calendar,
     },
   ];
 
-  const educationRows = Array.isArray(emp?.empEduQualification) ? emp.empEduQualification : [];
-  const experienceRows = Array.isArray(emp?.empProfExprience) ? emp.empProfExprience : [];
-  const bankRows = Array.isArray(emp?.employeeBankDetails) ? emp.employeeBankDetails : [];
+  const educationRows = Array.isArray(emp?.empEduQualification)
+    ? emp.empEduQualification
+    : [];
+  const experienceRows = Array.isArray(emp?.empProfExprience)
+    ? emp.empProfExprience
+    : [];
+  const bankRows = Array.isArray(emp?.employeeBankDetails)
+    ? emp.employeeBankDetails
+    : [];
   const primaryBank = bankRows[0];
 
   const nomineeFields: ProfileField[] = [
     { label: "Nominee name", value: emp?.employeeSpouseName, icon: User },
-    { label: "Relationship", value: emp?.employeeSpouseName ? "Spouse" : null, icon: Users },
+    {
+      label: "Relationship",
+      value: emp?.employeeSpouseName ? "Spouse" : null,
+      icon: Users,
+    },
     { label: "Emergency contact", value: emp?.emergancyContact, icon: Phone },
     { label: "Bank name", value: primaryBank?.bankName, icon: Building2 },
-    { label: "Account number", value: primaryBank?.accNumber, icon: CreditCard },
+    {
+      label: "Account number",
+      value: primaryBank?.accNumber,
+      icon: CreditCard,
+    },
   ];
 
   const personalContactFields: ProfileField[] = [
@@ -784,14 +890,18 @@ export function EmpDesktopProfilePanel({
                 setImgFailed={setImgFailed}
                 readOnly={readOnly}
                 uploading={!readOnly ? photoProfile.uploading : false}
-                onPhotoClick={readOnly ? undefined : photoProfile.handlePhotoClick}
+                onPhotoClick={
+                  readOnly ? undefined : photoProfile.handlePhotoClick
+                }
               />
 
               <div className="min-w-0">
                 <h2 className="truncate text-[30px] font-bold leading-tight tracking-tight text-[#111827]">
                   {displayName}
                 </h2>
-                <p className="mt-1 truncate text-base font-medium text-[#6B7280]">{roleSubtitle}</p>
+                <p className="mt-1 truncate text-base font-medium text-[#6B7280]">
+                  {roleSubtitle}
+                </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {employeeCode ? (
                     <span className="inline-flex items-center rounded-full bg-[#EFF6FF] px-3 py-1 text-xs font-semibold text-[#3B82F6]">
@@ -807,7 +917,10 @@ export function EmpDesktopProfilePanel({
               </div>
             </div>
 
-            <div className="hidden h-[120px] w-px shrink-0 bg-[#E5E7EB] xl:block" aria-hidden />
+            <div
+              className="hidden h-[120px] w-px shrink-0 bg-[#E5E7EB] xl:block"
+              aria-hidden
+            />
 
             <div className="grid min-w-0 flex-1 grid-cols-1 gap-x-10 gap-y-5 sm:grid-cols-2">
               {heroInfoItems.map((item) => (
@@ -819,15 +932,28 @@ export function EmpDesktopProfilePanel({
               <div className="flex shrink-0 flex-wrap gap-2 xl:flex-col xl:items-stretch">
                 {editing ? (
                   <>
-                    <Button type="button" onClick={() => void saveProfile()} disabled={saving}>
+                    <Button
+                      type="button"
+                      onClick={() => void saveProfile()}
+                      disabled={saving}
+                    >
                       {saving ? "Saving…" : "Save"}
                     </Button>
-                    <Button type="button" variant="outline" onClick={cancelEditing} disabled={saving}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={cancelEditing}
+                      disabled={saving}
+                    >
                       Cancel
                     </Button>
                   </>
                 ) : (
-                  <Button type="button" variant="outline" onClick={startEditing}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={startEditing}
+                  >
                     <Pencil className="size-4" />
                     Edit
                   </Button>
@@ -837,14 +963,19 @@ export function EmpDesktopProfilePanel({
           </div>
 
           {!readOnly && photoProfile.uploadError ? (
-            <p className="mt-4 text-sm text-destructive">{photoProfile.uploadError}</p>
+            <p className="mt-4 text-sm text-destructive">
+              {photoProfile.uploadError}
+            </p>
           ) : null}
         </section>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ProfileDetailSection title="Work details" fields={workFields} />
-        <ProfileDetailSection title="Employee information" fields={employeeInfoFields} />
+        <ProfileDetailSection
+          title="Employee information"
+          fields={employeeInfoFields}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -854,75 +985,113 @@ export function EmpDesktopProfilePanel({
               <Input
                 type="email"
                 value={editForm.businessEmail}
-                onChange={(e) => updateEditField("businessEmail", e.target.value)}
+                onChange={(e) =>
+                  updateEditField("businessEmail", e.target.value)
+                }
                 placeholder="Business email"
               />
             </ProfileEditField>
             <ProfileEditField label="Official phone" icon={Phone}>
               <Input
                 value={editForm.businessPhoneNo}
-                onChange={(e) => updateEditField("businessPhoneNo", e.target.value)}
+                onChange={(e) =>
+                  updateEditField("businessPhoneNo", e.target.value)
+                }
                 placeholder="Business phone"
               />
             </ProfileEditField>
           </ProfileEditableSection>
         ) : (
-          <ProfileDetailSection title="Official contact" fields={officialContactFields} />
+          <ProfileDetailSection
+            title="Official contact"
+            fields={officialContactFields}
+          />
         )}
-        <ProfileRepeaterSection title="Work experience" emptyMessage="No work experience on file.">
+        <ProfileRepeaterSection
+          title="Work experience"
+          emptyMessage="No work experience on file."
+        >
           {experienceRows.length > 0 ? (
             <div className="divide-y divide-border">
-              {experienceRows.map((exp: Record<string, string | null | undefined>, index: number) => (
-                <div key={exp.id ?? index} className="px-6 py-4 space-y-2">
-                  <div className="flex items-start gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted/80">
-                      <Briefcase className="size-4 text-muted-foreground" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground">
-                        {[exp.designation, exp.orgName].filter(Boolean).join(" at ") || "Experience"}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {[exp.fromDate, exp.toDate].filter(Boolean).join(" – ") || "—"}
-                      </p>
-                      {exp.responsibility ? (
-                        <p className="text-sm text-foreground mt-2">{exp.responsibility}</p>
-                      ) : null}
-                      {exp.skill ? (
-                        <p className="text-xs text-muted-foreground mt-1">Skills: {exp.skill}</p>
-                      ) : null}
+              {experienceRows.map(
+                (
+                  exp: Record<string, string | null | undefined>,
+                  index: number,
+                ) => (
+                  <div key={exp.id ?? index} className="px-6 py-4 space-y-2">
+                    <div className="flex items-start gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted/80">
+                        <Briefcase className="size-4 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-foreground">
+                          {[exp.designation, exp.orgName]
+                            .filter(Boolean)
+                            .join(" at ") || "Experience"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {[exp.fromDate, exp.toDate]
+                            .filter(Boolean)
+                            .join(" – ") || "—"}
+                        </p>
+                        {exp.responsibility ? (
+                          <p className="text-sm text-foreground mt-2">
+                            {exp.responsibility}
+                          </p>
+                        ) : null}
+                        {exp.skill ? (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Skills: {exp.skill}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           ) : null}
         </ProfileRepeaterSection>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <ProfileRepeaterSection title="Education" emptyMessage="No education details on file.">
+        <ProfileRepeaterSection
+          title="Education"
+          emptyMessage="No education details on file."
+        >
           {educationRows.length > 0 ? (
             <div className="divide-y divide-border">
-              {educationRows.map((edu: Record<string, string | null | undefined>, index: number) => (
-                <div key={edu.id ?? index} className="px-6 py-4 space-y-2">
-                  <div className="flex items-start gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted/80">
-                      <GraduationCap className="size-4 text-muted-foreground" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground">
-                        {[edu.degree, edu.instituteName].filter(Boolean).join(" · ") || "Education"}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {[edu.instituteType, edu.pasingYear, edu.marks ? `Marks ${edu.marks}` : null, edu.gpaCgpa ? `GPA ${edu.gpaCgpa}` : null]
-                          .filter(Boolean)
-                          .join(" · ") || "—"}
-                      </p>
+              {educationRows.map(
+                (
+                  edu: Record<string, string | null | undefined>,
+                  index: number,
+                ) => (
+                  <div key={edu.id ?? index} className="px-6 py-4 space-y-2">
+                    <div className="flex items-start gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted/80">
+                        <GraduationCap className="size-4 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-foreground">
+                          {[edu.degree, edu.instituteName]
+                            .filter(Boolean)
+                            .join(" · ") || "Education"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {[
+                            edu.instituteType,
+                            edu.pasingYear,
+                            edu.marks ? `Marks ${edu.marks}` : null,
+                            edu.gpaCgpa ? `GPA ${edu.gpaCgpa}` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || "—"}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           ) : null}
         </ProfileRepeaterSection>
@@ -931,7 +1100,9 @@ export function EmpDesktopProfilePanel({
             <ProfileEditField label="Nominee name" icon={User}>
               <Input
                 value={editForm.employeeSpouseName}
-                onChange={(e) => updateEditField("employeeSpouseName", e.target.value)}
+                onChange={(e) =>
+                  updateEditField("employeeSpouseName", e.target.value)
+                }
                 placeholder="Spouse / nominee name"
               />
             </ProfileEditField>
@@ -943,15 +1114,28 @@ export function EmpDesktopProfilePanel({
             <ProfileEditField label="Emergency contact" icon={Phone}>
               <Input
                 value={editForm.emergancyContact}
-                onChange={(e) => updateEditField("emergancyContact", e.target.value)}
+                onChange={(e) =>
+                  updateEditField("emergancyContact", e.target.value)
+                }
                 placeholder="Emergency contact"
               />
             </ProfileEditField>
-            <ProfileFieldRow label="Bank name" value={primaryBank?.bankName} icon={Building2} />
-            <ProfileFieldRow label="Account number" value={primaryBank?.accNumber} icon={CreditCard} />
+            <ProfileFieldRow
+              label="Bank name"
+              value={primaryBank?.bankName}
+              icon={Building2}
+            />
+            <ProfileFieldRow
+              label="Account number"
+              value={primaryBank?.accNumber}
+              icon={CreditCard}
+            />
           </ProfileEditableSection>
         ) : (
-          <ProfileDetailSection title="Nominee details" fields={nomineeFields} />
+          <ProfileDetailSection
+            title="Nominee details"
+            fields={nomineeFields}
+          />
         )}
       </div>
 
@@ -962,7 +1146,10 @@ export function EmpDesktopProfilePanel({
               <Input
                 value={editForm.aadharNo}
                 onChange={(e) =>
-                  updateEditField("aadharNo", e.target.value.replace(/\D/g, "").slice(0, 12))
+                  updateEditField(
+                    "aadharNo",
+                    e.target.value.replace(/\D/g, "").slice(0, 12),
+                  )
                 }
                 placeholder="12-digit Aadhaar"
                 inputMode="numeric"
@@ -971,17 +1158,37 @@ export function EmpDesktopProfilePanel({
             <ProfileEditField label="PAN number" icon={CreditCard}>
               <Input
                 value={editForm.panNo}
-                onChange={(e) => updateEditField("panNo", e.target.value.toUpperCase().slice(0, 10))}
+                onChange={(e) =>
+                  updateEditField(
+                    "panNo",
+                    e.target.value.toUpperCase().slice(0, 10),
+                  )
+                }
                 placeholder="ABCDE1234F"
                 maxLength={10}
               />
             </ProfileEditField>
-            <ProfileFieldRow label="UAN number" value={emp?.uanNo} icon={Hash} />
-            <ProfileFieldRow label="ESI number" value={emp?.esiNo} icon={Hash} />
-            <ProfileFieldRow label="PF number" value={emp?.pfNumber} icon={Hash} />
+            <ProfileFieldRow
+              label="UAN number"
+              value={emp?.uanNo}
+              icon={Hash}
+            />
+            <ProfileFieldRow
+              label="ESI number"
+              value={emp?.esiNo}
+              icon={Hash}
+            />
+            <ProfileFieldRow
+              label="PF number"
+              value={emp?.pfNumber}
+              icon={Hash}
+            />
           </ProfileEditableSection>
         ) : (
-          <ProfileDetailSection title="Identity information" fields={identityFields} />
+          <ProfileDetailSection
+            title="Identity information"
+            fields={identityFields}
+          />
         )}
         {editing && canEditProfile ? (
           <ProfileEditableSection title="Personal details">
@@ -1032,24 +1239,33 @@ export function EmpDesktopProfilePanel({
             <ProfileEditField label="Father's name" icon={User}>
               <Input
                 value={editForm.employeeFatherName}
-                onChange={(e) => updateEditField("employeeFatherName", e.target.value)}
+                onChange={(e) =>
+                  updateEditField("employeeFatherName", e.target.value)
+                }
               />
             </ProfileEditField>
             <ProfileEditField label="Mother's name" icon={User}>
               <Input
                 value={editForm.employeeMotherName}
-                onChange={(e) => updateEditField("employeeMotherName", e.target.value)}
+                onChange={(e) =>
+                  updateEditField("employeeMotherName", e.target.value)
+                }
               />
             </ProfileEditField>
             <ProfileEditField label="Spouse name" icon={User}>
               <Input
                 value={editForm.employeeSpouseName}
-                onChange={(e) => updateEditField("employeeSpouseName", e.target.value)}
+                onChange={(e) =>
+                  updateEditField("employeeSpouseName", e.target.value)
+                }
               />
             </ProfileEditField>
           </ProfileEditableSection>
         ) : (
-          <ProfileDetailSection title="Personal details" fields={personalFields} />
+          <ProfileDetailSection
+            title="Personal details"
+            fields={personalFields}
+          />
         )}
       </div>
 
@@ -1060,33 +1276,44 @@ export function EmpDesktopProfilePanel({
               <Input
                 type="email"
                 value={editForm.personalEmail}
-                onChange={(e) => updateEditField("personalEmail", e.target.value)}
+                onChange={(e) =>
+                  updateEditField("personalEmail", e.target.value)
+                }
                 placeholder="Personal email"
               />
             </ProfileEditField>
             <ProfileEditField label="Personal phone" icon={Phone}>
               <Input
                 value={editForm.personalPhoneNo}
-                onChange={(e) => updateEditField("personalPhoneNo", e.target.value)}
+                onChange={(e) =>
+                  updateEditField("personalPhoneNo", e.target.value)
+                }
                 placeholder="Personal phone"
               />
             </ProfileEditField>
           </ProfileEditableSection>
         ) : (
-          <ProfileDetailSection title="Personal contact" fields={personalContactFields} />
+          <ProfileDetailSection
+            title="Personal contact"
+            fields={personalContactFields}
+          />
         )}
         {editing && canEditProfile ? (
           <ProfileEditableSection title="Address">
             <ProfileEditField label="Present address" icon={MapPin}>
               <Input
                 value={editForm.presentAddress}
-                onChange={(e) => updateEditField("presentAddress", e.target.value)}
+                onChange={(e) =>
+                  updateEditField("presentAddress", e.target.value)
+                }
               />
             </ProfileEditField>
             <ProfileEditField label="Permanent address" icon={MapPin}>
               <Input
                 value={editForm.permenantAddress}
-                onChange={(e) => updateEditField("permenantAddress", e.target.value)}
+                onChange={(e) =>
+                  updateEditField("permenantAddress", e.target.value)
+                }
               />
             </ProfileEditField>
           </ProfileEditableSection>
@@ -1094,8 +1321,16 @@ export function EmpDesktopProfilePanel({
           <ProfileDetailSection
             title="Address"
             fields={[
-              { label: "Present address", value: emp?.presentAddress, icon: MapPin },
-              { label: "Permanent address", value: emp?.permenantAddress, icon: MapPin },
+              {
+                label: "Present address",
+                value: emp?.presentAddress,
+                icon: MapPin,
+              },
+              {
+                label: "Permanent address",
+                value: emp?.permenantAddress,
+                icon: MapPin,
+              },
             ]}
           />
         )}
@@ -1112,18 +1347,29 @@ export function EmpDesktopProfilePanel({
         className="hidden"
         onChange={photoProfile.handlePhotoChange}
       />
-      <Dialog open={photoProfile.showPhotoActions} onOpenChange={photoProfile.setShowPhotoActions}>
+      <Dialog
+        open={photoProfile.showPhotoActions}
+        onOpenChange={photoProfile.setShowPhotoActions}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Profile picture</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 pt-2">
             {photoUrl && !imgFailed ? (
-              <Button variant="outline" className="w-full justify-start" onClick={photoProfile.handleViewPhotoFromActions}>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={photoProfile.handleViewPhotoFromActions}
+              >
                 View profile picture
               </Button>
             ) : null}
-            <Button variant="outline" className="w-full justify-start" onClick={photoProfile.handleChangePhotoFromActions}>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={photoProfile.handleChangePhotoFromActions}
+            >
               <Camera className="size-4" />
               Change image
             </Button>
@@ -1141,7 +1387,10 @@ export function EmpDesktopProfilePanel({
           </div>
         </DialogContent>
       </Dialog>
-      <Dialog open={photoProfile.showPhotoViewer} onOpenChange={photoProfile.setShowPhotoViewer}>
+      <Dialog
+        open={photoProfile.showPhotoViewer}
+        onOpenChange={photoProfile.setShowPhotoViewer}
+      >
         <DialogContent className="border-none bg-black/95 p-2 sm:max-w-2xl">
           {photoUrl && !imgFailed ? (
             <img
@@ -1166,7 +1415,11 @@ export function EmpDesktopProfilePanel({
   }
 
   return (
-    <EmpDesktopPage title="Profile" description="Your employee information" icon={User}>
+    <EmpDesktopPage
+      title="Profile"
+      description="Your employee information"
+      icon={User}
+    >
       {body}
       {photoDialogs}
     </EmpDesktopPage>

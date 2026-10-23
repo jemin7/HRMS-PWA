@@ -1,4 +1,4 @@
-const BASE = "/backend/geo";
+const BASE = "https://hrms-api-test.onrender.com/geo";
 
 export async function fetchCountries(q: string) {
   const res = await fetch(`${BASE}/countries?q=${encodeURIComponent(q)}`);

@@ -10,9 +10,16 @@ import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
-export function EmpLeaveApplyForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+export function EmpLeaveApplyForm({
+  onSuccess,
+  onCancel,
+}: {
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
   const user = useCurrentUser();
   const isDesktop = useEmpPortalDesktop();
   const DateField = isDesktop ? EmpDateField : EmpMobileDateField;
@@ -24,14 +31,21 @@ export function EmpLeaveApplyForm({ onSuccess, onCancel }: { onSuccess: () => vo
 
   useEffect(() => {
     if (!user?.username) return;
-    fetch(`${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`)
+    fetch(
+      `${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`,
+    )
       .then((r) => (r.ok ? r.json() : null))
       .then(setCreds)
       .catch(() => {});
   }, [user?.username]);
 
   const submit = async () => {
-    if (!creds?.employee?.id || !fromDate || !toDate || purpose.trim().length < 3) {
+    if (
+      !creds?.employee?.id ||
+      !fromDate ||
+      !toDate ||
+      purpose.trim().length < 3
+    ) {
       toast.error("Please fill all required fields.");
       return;
     }
@@ -65,8 +79,18 @@ export function EmpLeaveApplyForm({ onSuccess, onCancel }: { onSuccess: () => vo
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <DateField label="From date" value={fromDate} onChange={setFromDate} max={toDate || undefined} />
-        <DateField label="To date" value={toDate} onChange={setToDate} min={fromDate || undefined} />
+        <DateField
+          label="From date"
+          value={fromDate}
+          onChange={setFromDate}
+          max={toDate || undefined}
+        />
+        <DateField
+          label="To date"
+          value={toDate}
+          onChange={setToDate}
+          min={fromDate || undefined}
+        />
       </div>
       <div className="space-y-2">
         <Label>Reason</Label>
@@ -78,7 +102,12 @@ export function EmpLeaveApplyForm({ onSuccess, onCancel }: { onSuccess: () => vo
         />
       </div>
       <div className="flex flex-wrap gap-2 pt-2">
-        <Button type="button" size="lg" onClick={() => void submit()} disabled={submitting}>
+        <Button
+          type="button"
+          size="lg"
+          onClick={() => void submit()}
+          disabled={submitting}
+        >
           {submitting ? "Submitting…" : "Submit request"}
         </Button>
       </div>

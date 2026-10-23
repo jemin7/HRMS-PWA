@@ -6,10 +6,14 @@ import { taskFetch } from "../../../utils/taskApi";
 import { fetchGPSOnUserGesture } from "../../../utils/empGeolocation";
 import { uploadPunchPhoto } from "../../../hooks/useEmpPunch";
 import { visitComplianceCopy } from "../../../utils/taskSiteVisit";
-import { EmpPhotoPunchCapture, type EmpPhotoPunchCaptureHandle } from "../../emp/EmpPhotoPunchCapture";
+import {
+  EmpPhotoPunchCapture,
+  type EmpPhotoPunchCaptureHandle,
+} from "../../emp/EmpPhotoPunchCapture";
 import type { CurrentUserLike } from "../../../utils/taskApi";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 const FIELD_REASONS = [
   "Office Work",
@@ -79,7 +83,11 @@ async function resolveAddress(latitude: number, longitude: number) {
   }
 }
 
-export function FieldVisitDayPanel({ user }: { user: CurrentUserLike | null | undefined }) {
+export function FieldVisitDayPanel({
+  user,
+}: {
+  user: CurrentUserLike | null | undefined;
+}) {
   const photoRef = useRef<EmpPhotoPunchCaptureHandle>(null);
   const pendingRef = useRef<{ visit: DayVisit; kind: VisitKind } | null>(null);
   const pendingField = useRef<(typeof FIELD_REASONS)[number] | null>(null);
@@ -89,13 +97,18 @@ export function FieldVisitDayPanel({ user }: { user: CurrentUserLike | null | un
   const [sending, setSending] = useState(false);
   const [reason, setReason] = useState<(typeof FIELD_REASONS)[number] | "">("");
   const [fieldStatus, setFieldStatus] = useState<string | null>(null);
-  const [exception, setException] = useState<(GpsBody & { visit: DayVisit; kind: VisitKind }) | null>(null);
+  const [exception, setException] = useState<
+    (GpsBody & { visit: DayVisit; kind: VisitKind }) | null
+  >(null);
   const [exceptionReason, setExceptionReason] = useState("");
 
   const load = useCallback(async () => {
     if (!user) return;
     try {
-      const data = await taskFetch<{ hasVisitToday: boolean; visits: DayVisit[] }>("/task-projects/my-day", user);
+      const data = await taskFetch<{
+        hasVisitToday: boolean;
+        visits: DayVisit[];
+      }>("/task-projects/my-day", user);
       setHasVisitToday(!!data.hasVisitToday);
       setVisits(data.visits || []);
     } catch {
@@ -131,7 +144,10 @@ export function FieldVisitDayPanel({ user }: { user: CurrentUserLike | null | un
   const finishVisit = (kind: VisitKind, exceptionRequested?: boolean) => {
     if (exceptionRequested) toast.success("Pending Approval");
     else if (kind === "day_signout") toast.success("Signed out for the day");
-    else toast.success(kind === "checkin" ? "Check-in recorded" : "Check-out recorded");
+    else
+      toast.success(
+        kind === "checkin" ? "Check-in recorded" : "Check-out recorded",
+      );
     setException(null);
     setExceptionReason("");
     void load();
@@ -145,7 +161,9 @@ export function FieldVisitDayPanel({ user }: { user: CurrentUserLike | null | un
     if (needsSelfie && !gps?.selfieUrl) {
       pendingField.current = null;
       pendingRef.current = { visit, kind };
-      photoRef.current?.startFromGesture(kind === "day_signout" ? "CHECK_OUT" : "CHECK_IN");
+      photoRef.current?.startFromGesture(
+        kind === "day_signout" ? "CHECK_OUT" : "CHECK_IN",
+      );
       return;
     }
     setSending(true);
@@ -165,7 +183,11 @@ export function FieldVisitDayPanel({ user }: { user: CurrentUserLike | null | un
       finishVisit(kind, body.exceptionRequested);
     } catch (err: unknown) {
       const error = err as Error & { code?: string };
-      if (error.code === "OUTSIDE_GEOFENCE" && kind === "checkin" && gps?.selfieUrl) {
+      if (
+        error.code === "OUTSIDE_GEOFENCE" &&
+        kind === "checkin" &&
+        gps?.selfieUrl
+      ) {
         setException({ visit, kind, ...gps });
         return;
       }
@@ -187,7 +209,10 @@ export function FieldVisitDayPanel({ user }: { user: CurrentUserLike | null | un
     let selfieUrl = "";
     try {
       selfieUrl = await uploadPunchPhoto(file);
-      const address = await resolveAddress(location.latitude, location.longitude);
+      const address = await resolveAddress(
+        location.latitude,
+        location.longitude,
+      );
       const gps: GpsBody = {
         latitude: location.latitude,
         longitude: location.longitude,
@@ -199,7 +224,11 @@ export function FieldVisitDayPanel({ user }: { user: CurrentUserLike | null | un
       finishVisit(pending.kind);
     } catch (err: unknown) {
       const error = err as Error & { code?: string };
-      if (error.code === "OUTSIDE_GEOFENCE" && pending.kind === "checkin" && selfieUrl) {
+      if (
+        error.code === "OUTSIDE_GEOFENCE" &&
+        pending.kind === "checkin" &&
+        selfieUrl
+      ) {
         setException({
           visit: pending.visit,
           kind: pending.kind,
@@ -233,7 +262,9 @@ export function FieldVisitDayPanel({ user }: { user: CurrentUserLike | null | un
       });
       finishVisit(exception.kind, true);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Could not request an exception");
+      toast.error(
+        err instanceof Error ? err.message : "Could not request an exception",
+      );
     } finally {
       setSending(false);
     }
@@ -291,60 +322,89 @@ export function FieldVisitDayPanel({ user }: { user: CurrentUserLike | null | un
     <>
       <div className="px-3 pt-3 space-y-2">
         {visits.map((visit, index) => {
-              const compliance = visitComplianceCopy(visit.complianceStatus);
-              const sequence = visit.visitSequence || index + 1;
-              const outLabel = visit.signOutForTheDay ? "Sign Out for the Day" : "Check-out";
-              return (
-                <div key={`${visit.taskId}-${sequence}`} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-3 space-y-1 text-[13px]">
-                  <p className="font-semibold text-gray-900">Visit {sequence}</p>
-                  <p className="text-gray-700">{visit.taskName}</p>
-                  <p>
-                    <span className="text-gray-400">Scheduled:</span> {fmtWhen(visit.scheduledArrival)}
-                  </p>
-                  {(visit.customerName || visit.siteName) ? (
-                    <p className="text-gray-600">{[visit.customerName, visit.siteName].filter(Boolean).join(" · ")}</p>
+          const compliance = visitComplianceCopy(visit.complianceStatus);
+          const sequence = visit.visitSequence || index + 1;
+          const outLabel = visit.signOutForTheDay
+            ? "Sign Out for the Day"
+            : "Check-out";
+          return (
+            <div
+              key={`${visit.taskId}-${sequence}`}
+              className="rounded-2xl bg-white border border-gray-100 shadow-sm p-3 space-y-1 text-[13px]"
+            >
+              <p className="font-semibold text-gray-900">Visit {sequence}</p>
+              <p className="text-gray-700">{visit.taskName}</p>
+              <p>
+                <span className="text-gray-400">Scheduled:</span>{" "}
+                {fmtWhen(visit.scheduledArrival)}
+              </p>
+              {visit.customerName || visit.siteName ? (
+                <p className="text-gray-600">
+                  {[visit.customerName, visit.siteName]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              ) : null}
+              <p>
+                <span className="text-gray-400">Check-in:</span>{" "}
+                {fmtWhen(visit.checkInAt)}
+              </p>
+              <p>
+                <span className="text-gray-400">Check-out:</span>{" "}
+                {fmtWhen(visit.checkOutAt)}
+              </p>
+              {compliance ? (
+                <p>
+                  <span className="font-semibold">{compliance.label}</span>
+                  {compliance.note ? (
+                    <span className="text-amber-700"> · {compliance.note}</span>
                   ) : null}
-                  <p>
-                    <span className="text-gray-400">Check-in:</span> {fmtWhen(visit.checkInAt)}
-                  </p>
-                  <p>
-                    <span className="text-gray-400">Check-out:</span> {fmtWhen(visit.checkOutAt)}
-                  </p>
-                  {compliance ? (
-                    <p>
-                      <span className="font-semibold">{compliance.label}</span>
-                      {compliance.note ? <span className="text-amber-700"> · {compliance.note}</span> : null}
-                    </p>
-                  ) : null}
-                  {visit.exceptionStatus ? <p className="text-gray-600">{visit.exceptionStatus}</p> : null}
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      type="button"
-                      disabled={sending}
-                      onClick={() => void runVisit(visit, "checkin")}
-                      className="flex-1 rounded-xl bg-[#2563eb] text-white font-semibold text-sm py-2.5 disabled:opacity-60"
-                    >
-                      Check-in
-                    </button>
-                    <button
-                      type="button"
-                      disabled={sending}
-                      onClick={() => void runVisit(visit, visit.signOutForTheDay ? "day_signout" : "checkout")}
-                      className="flex-1 rounded-xl border border-gray-200 bg-white text-gray-800 font-semibold text-sm py-2.5 disabled:opacity-60"
-                    >
-                      {outLabel}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                </p>
+              ) : null}
+              {visit.exceptionStatus ? (
+                <p className="text-gray-600">{visit.exceptionStatus}</p>
+              ) : null}
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  disabled={sending}
+                  onClick={() => void runVisit(visit, "checkin")}
+                  className="flex-1 rounded-xl bg-[#2563eb] text-white font-semibold text-sm py-2.5 disabled:opacity-60"
+                >
+                  Check-in
+                </button>
+                <button
+                  type="button"
+                  disabled={sending}
+                  onClick={() =>
+                    void runVisit(
+                      visit,
+                      visit.signOutForTheDay ? "day_signout" : "checkout",
+                    )
+                  }
+                  className="flex-1 rounded-xl border border-gray-200 bg-white text-gray-800 font-semibold text-sm py-2.5 disabled:opacity-60"
+                >
+                  {outLabel}
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
       {exception ? (
         <>
-          <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setException(null)} />
+          <div
+            className="fixed inset-0 z-50 bg-black/40"
+            onClick={() => setException(null)}
+          />
           <div className="fixed inset-x-4 top-[18%] z-50 bg-white rounded-2xl shadow-xl p-5">
-            <h3 className="text-[17px] font-bold text-gray-900 mb-1">Request Exception</h3>
-            <p className="text-[12px] text-gray-500 mb-3">You are outside the visit location. Add a reason to send the same location and selfie for approval.</p>
+            <h3 className="text-[17px] font-bold text-gray-900 mb-1">
+              Request Exception
+            </h3>
+            <p className="text-[12px] text-gray-500 mb-3">
+              You are outside the visit location. Add a reason to send the same
+              location and selfie for approval.
+            </p>
             <textarea
               value={exceptionReason}
               onChange={(e) => setExceptionReason(e.target.value)}
@@ -363,7 +423,12 @@ export function FieldVisitDayPanel({ user }: { user: CurrentUserLike | null | un
           </div>
         </>
       ) : null}
-      <EmpPhotoPunchCapture ref={photoRef} submitting={sending} onSubmit={onPhotoOrField} onError={(message) => toast.error(message)} />
+      <EmpPhotoPunchCapture
+        ref={photoRef}
+        submitting={sending}
+        onSubmit={onPhotoOrField}
+        onError={(message) => toast.error(message)}
+      />
     </>
   );
 }

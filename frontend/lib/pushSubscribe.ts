@@ -7,7 +7,7 @@ import {
 
 export const PUSH_BACKEND =
   (typeof process !== "undefined" && process.env.NEXT_PUBLIC_BACKEND_URL) ||
-  "/backend";
+  "https://hrms-api-test.onrender.com";
 
 export type PushSubscribeResult =
   | { ok: true; employeeID: number }
@@ -72,7 +72,9 @@ function hasValidSubscriptionKeys(sub: PushSubscription): boolean {
 function getAuthHeaders(): Record<string, string> {
   const token =
     localStorage.getItem("accessToken") || localStorage.getItem("token");
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
@@ -109,8 +111,7 @@ export function getEmployeeIdFromStorage(): number | null {
       String(user?.role || "").toUpperCase() === "EMPLOYEE";
     if (!isEmployee) return null;
 
-    const raw =
-      user?.employee?.id ?? user?.employeeId ?? user?.id ?? null;
+    const raw = user?.employee?.id ?? user?.employeeId ?? user?.id ?? null;
     if (raw == null) return null;
     const id = Number(raw);
     return Number.isFinite(id) && id > 0 ? id : null;
@@ -206,7 +207,10 @@ async function registerPushSubscriptionInner(
   }
 
   try {
-    const reg = await ensureServiceWorkerReady({ allowReload: true, maxWaitMs: 25000 });
+    const reg = await ensureServiceWorkerReady({
+      allowReload: true,
+      maxWaitMs: 25000,
+    });
     const keyRes = await withTimeout(
       fetch(`${PUSH_BACKEND}/push-notifications/vapid-public-key`, {
         headers: getAuthHeaders(),
@@ -227,7 +231,10 @@ async function registerPushSubscriptionInner(
     }
 
     const applicationServerKey = urlBase64ToUint8Array(publicKey);
-    const subscription = await ensurePushSubscription(reg, applicationServerKey);
+    const subscription = await ensurePushSubscription(
+      reg,
+      applicationServerKey,
+    );
     const subJson = subscription.toJSON();
     if (!subJson.endpoint || !subJson.keys?.p256dh || !subJson.keys?.auth) {
       const reason = "Invalid push subscription from browser";
@@ -275,9 +282,11 @@ export function registerPushSubscription(
 ): Promise<PushSubscribeResult> {
   if (registerLock) return registerLock;
 
-  registerLock = registerPushSubscriptionInner(requestPermission).finally(() => {
-    registerLock = null;
-  });
+  registerLock = registerPushSubscriptionInner(requestPermission).finally(
+    () => {
+      registerLock = null;
+    },
+  );
 
   return registerLock;
 }

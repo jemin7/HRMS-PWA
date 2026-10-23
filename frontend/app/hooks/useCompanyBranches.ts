@@ -1,10 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getActiveCompanyId, getSidebarContext } from "@/app/utils/sidebarContext";
+import {
+  getActiveCompanyId,
+  getSidebarContext,
+} from "@/app/utils/sidebarContext";
 import { authHeaders } from "@/lib/auth";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export type CompanyBranch = {
   id: number;
@@ -46,8 +50,8 @@ export function useCompanyBranches(companyID?: number | null) {
       const scopedCompanyID =
         companyID != null && Number(companyID) > 0
           ? Number(companyID)
-          : getActiveCompanyId() ??
-            (ctx?.companyID != null ? Number(ctx.companyID) : null);
+          : (getActiveCompanyId() ??
+            (ctx?.companyID != null ? Number(ctx.companyID) : null));
 
       const res = await fetch(`${BACKEND}/branches`, {
         headers: authHeaders(),
@@ -58,9 +62,13 @@ export function useCompanyBranches(companyID?: number | null) {
         return;
       }
       const data = await res.json();
-      let list: CompanyBranch[] = Array.isArray(data) ? data : data?.data ?? [];
+      let list: CompanyBranch[] = Array.isArray(data)
+        ? data
+        : (data?.data ?? []);
       if (scopedCompanyID != null) {
-        list = list.filter((b) => Number(b.companyID) === Number(scopedCompanyID));
+        list = list.filter(
+          (b) => Number(b.companyID) === Number(scopedCompanyID),
+        );
       }
       setBranches(dedupeBranches(list));
     } catch {

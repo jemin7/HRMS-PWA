@@ -14,13 +14,18 @@ import {
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { getActiveCompanyId, getSidebarContext } from "../utils/sidebarContext";
 import { resolveScopedCompanyId } from "../utils/scopeContext";
-import { hasCompanyAccessFlag, isCompanyOwnerFlag, isCompanyAdminLikeRole } from "@/lib/companyAccess";
+import {
+  hasCompanyAccessFlag,
+  isCompanyOwnerFlag,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
 import { isDesktopManagerFlagSet } from "@/lib/desktopManager";
 import { TableBodySkeleton } from "@/app/components/ui/TableBodySkeleton";
 import { authHeaders } from "@/lib/auth";
 import { EmpDesktopPage } from "../components/emp/desktop/EmpDesktopPage";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 interface NewJoinerRow {
   id: number;
@@ -92,7 +97,9 @@ export default function NewJoinersPage() {
       fetch(`${BACKEND}/users`, { headers: authHeaders(), cache: "no-store" })
         .then((r) => (r.ok ? r.json() : []))
         .then((users) => {
-          const me = users.find((u: { username?: string }) => u.username === user.username);
+          const me = users.find(
+            (u: { username?: string }) => u.username === user.username,
+          );
           setCurrentUserMapping(me || null);
         })
         .catch(() => setCurrentUserMapping(null));
@@ -142,10 +149,13 @@ export default function NewJoinersPage() {
     }
 
     setLoading(true);
-    fetch(`${BACKEND}/dashboard-overview/new-joiners${params.toString() ? `?${params}` : ""}`, {
-      headers: authHeaders(),
-      cache: "no-store",
-    })
+    fetch(
+      `${BACKEND}/dashboard-overview/new-joiners${params.toString() ? `?${params}` : ""}`,
+      {
+        headers: authHeaders(),
+        cache: "no-store",
+      },
+    )
       .then(async (r) => {
         if (!r.ok) throw new Error("Failed to load");
         return r.json();
@@ -182,7 +192,9 @@ export default function NewJoinersPage() {
     >
       <div className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          <span className="text-sm font-semibold text-gray-800">{countLabel}</span>
+          <span className="text-sm font-semibold text-gray-800">
+            {countLabel}
+          </span>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -216,31 +228,51 @@ export default function NewJoinersPage() {
                 <TableBodySkeleton cols={7} />
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-12 text-center text-sm text-gray-400">
+                  <TableCell
+                    colSpan={7}
+                    className="py-12 text-center text-sm text-gray-400"
+                  >
                     No new joiners this month
                   </TableCell>
                 </TableRow>
               ) : (
                 rows.map((e, i) => (
-                  <TableRow key={e.id} className="border-[#f5f5f5] hover:bg-[#fafafa]/80">
-                    <TableCell className="text-sm font-medium text-gray-500">{i + 1}</TableCell>
+                  <TableRow
+                    key={e.id}
+                    className="border-[#f5f5f5] hover:bg-[#fafafa]/80"
+                  >
+                    <TableCell className="text-sm font-medium text-gray-500">
+                      {i + 1}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2.5">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-600 text-[10px] font-bold text-white">
                           {e.employeeFirstName?.charAt(0)?.toUpperCase() || "?"}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-[13px] font-semibold text-gray-800">{e.name}</p>
+                          <p className="truncate text-[13px] font-semibold text-gray-800">
+                            {e.name}
+                          </p>
                           {e.email ? (
-                            <p className="truncate text-[11px] text-gray-500">{e.email}</p>
+                            <p className="truncate text-[11px] text-gray-500">
+                              {e.email}
+                            </p>
                           ) : null}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm text-gray-600">{e.employeeCode || "—"}</TableCell>
-                    <TableCell className="text-sm text-gray-600">{e.departmentName || "—"}</TableCell>
-                    <TableCell className="text-sm text-gray-600">{e.designationName || "—"}</TableCell>
-                    <TableCell className="text-sm text-gray-600">{e.branchName || "—"}</TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {e.employeeCode || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {e.departmentName || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {e.designationName || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {e.branchName || "—"}
+                    </TableCell>
                     <TableCell className="text-sm tabular-nums text-gray-600">
                       {formatCreatedAt(e.createdAt)}
                     </TableCell>

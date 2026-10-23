@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { hasModuleWriteAccess, isCompanyAdminLikeRole } from "@/lib/companyAccess";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  hasModuleWriteAccess,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -14,7 +22,10 @@ import { EntityListShell } from "../components/app/entity-list-shell";
 import type { DataTableColumn } from "../components/app/data-table";
 import { EntityRowActions } from "../components/app/entity-row-actions";
 import { DetailCard } from "../components/app/detail-card";
-import { EntityDetailHero, EntityDetailLayout } from "../components/app/entity-detail-layout";
+import {
+  EntityDetailHero,
+  EntityDetailLayout,
+} from "../components/app/entity-detail-layout";
 import { FormSectionNav } from "../components/app/form-section-nav";
 import { useClientTable, sortRows } from "../hooks/use-client-table";
 import { NoticeBanner } from "../components/ui/notice-banner";
@@ -125,12 +136,12 @@ interface ContractorRateCard {
 // Config & helpers
 // ---------------------------
 const API = {
-  contractors: "/backend/contractors",
-  serviceProviders: "/backend/service-provider",
-  companies: "/backend/company",
-  upload: "/backend/files/upload",
-  branches: "/backend/branches",
-  users: "/backend/users",
+  contractors: "https://hrms-api-test.onrender.com/contractors",
+  serviceProviders: "https://hrms-api-test.onrender.com/service-provider",
+  companies: "https://hrms-api-test.onrender.com/company",
+  upload: "https://hrms-api-test.onrender.com/files/upload",
+  branches: "https://hrms-api-test.onrender.com/branches",
+  users: "https://hrms-api-test.onrender.com/users",
 };
 
 const MIN_CHARS = 0;
@@ -150,7 +161,9 @@ async function uploadFile(file: File): Promise<string> {
   if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
   // return absolute URL if backend returns relative
-  return data.url?.startsWith("http") ? data.url : `/backend${data.url}`;
+  return data.url?.startsWith("http")
+    ? data.url
+    : `https://hrms-api-test.onrender.com${data.url}`;
 }
 
 // ---------------------------
@@ -163,7 +176,13 @@ export function ContractorManagement() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const user = useCurrentUser();
-  const canManage = user?.role === "SUPERADMIN" || user?.role === "SERVICE_PROVIDER" || isCompanyAdminLikeRole(user?.role) || user?.role === "BRANCH_ADMIN" || canDesktopManagerManage(user) || hasModuleWriteAccess("CONTRACTORS")
+  const canManage =
+    user?.role === "SUPERADMIN" ||
+    user?.role === "SERVICE_PROVIDER" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "BRANCH_ADMIN" ||
+    canDesktopManagerManage(user) ||
+    hasModuleWriteAccess("CONTRACTORS");
   const isEmployee = user?.role === "EMPLOYEE";
 
   const canManageContractorAdmins =
@@ -173,26 +192,52 @@ export function ContractorManagement() {
 
   // Rate card state
   const [isRateCardOpen, setIsRateCardOpen] = useState(false);
-  const [rateCardContractor, setRateCardContractor] = useState<ContractorRead | null>(null);
+  const [rateCardContractor, setRateCardContractor] =
+    useState<ContractorRead | null>(null);
   const [rateCards, setRateCards] = useState<ContractorRateCard[]>([]);
 
   // Rate card dropdown data
-  const [rcDepartments, setRcDepartments] = useState<{ id: number; departmentName: string }[]>([]);
-  const [rcDesignations, setRcDesignations] = useState<{ id: number; designation: string; departmentID?: number }[]>([]);
-  const [rcWorkShifts, setRcWorkShifts] = useState<{ id: number; workShiftName: string }[]>([]);
+  const [rcDepartments, setRcDepartments] = useState<
+    { id: number; departmentName: string }[]
+  >([]);
+  const [rcDesignations, setRcDesignations] = useState<
+    { id: number; designation: string; departmentID?: number }[]
+  >([]);
+  const [rcWorkShifts, setRcWorkShifts] = useState<
+    { id: number; workShiftName: string }[]
+  >([]);
 
   const uid = () => Math.random().toString(36).slice(2, 10);
 
   const addRateCardRow = () => {
-    setRateCards(prev => [...prev, { _localId: uid(), contractorName: rateCardContractor?.contractorName || "", departmentName: "", designation: "", workShiftName: "", perMinuteRate: "", perHourRate: "", perDayRate: "", perMonthRate: "" }]);
+    setRateCards((prev) => [
+      ...prev,
+      {
+        _localId: uid(),
+        contractorName: rateCardContractor?.contractorName || "",
+        departmentName: "",
+        designation: "",
+        workShiftName: "",
+        perMinuteRate: "",
+        perHourRate: "",
+        perDayRate: "",
+        perMonthRate: "",
+      },
+    ]);
   };
 
-  const updateRateCardRow = (localId: string, field: keyof Omit<ContractorRateCard, "_localId">, value: string) => {
-    setRateCards(prev => prev.map(r => r._localId === localId ? { ...r, [field]: value } : r));
+  const updateRateCardRow = (
+    localId: string,
+    field: keyof Omit<ContractorRateCard, "_localId">,
+    value: string,
+  ) => {
+    setRateCards((prev) =>
+      prev.map((r) => (r._localId === localId ? { ...r, [field]: value } : r)),
+    );
   };
 
   const removeRateCardRow = (localId: string) => {
-    setRateCards(prev => prev.filter(r => r._localId !== localId));
+    setRateCards((prev) => prev.filter((r) => r._localId !== localId));
   };
 
   const handleOpenRateCard = async (contractor: ContractorRead) => {
@@ -201,20 +246,20 @@ export function ContractorManagement() {
     // Fetch departments, designations, and work shifts for dropdowns
     try {
       const [deptRes, desigRes, wsRes] = await Promise.all([
-        fetchJSONSafe<any[]>("/backend/departments"),
-        fetchJSONSafe<any[]>("/backend/designations"),
-        fetchJSONSafe<any[]>("/backend/work-shift"),
+        fetchJSONSafe<any[]>("https://hrms-api-test.onrender.com/departments"),
+        fetchJSONSafe<any[]>("https://hrms-api-test.onrender.com/designations"),
+        fetchJSONSafe<any[]>("https://hrms-api-test.onrender.com/work-shift"),
       ]);
       // Filter by contractor's company context if available
       const cid = contractor.companyID;
       setRcDepartments(
-        (deptRes || []).filter((d: any) => !cid || d.companyID === cid)
+        (deptRes || []).filter((d: any) => !cid || d.companyID === cid),
       );
       setRcDesignations(
-        (desigRes || []).filter((d: any) => !cid || d.companyID === cid)
+        (desigRes || []).filter((d: any) => !cid || d.companyID === cid),
       );
       setRcWorkShifts(
-        (wsRes || []).filter((w: any) => !cid || w.companyID === cid)
+        (wsRes || []).filter((w: any) => !cid || w.companyID === cid),
       );
     } catch {
       setRcDepartments([]);
@@ -223,28 +268,56 @@ export function ContractorManagement() {
     }
 
     try {
-      const existing = await fetchJSONSafe<any[]>(`${API.contractors}/${contractor.id}/rate-cards`);
+      const existing = await fetchJSONSafe<any[]>(
+        `${API.contractors}/${contractor.id}/rate-cards`,
+      );
       if (existing && existing.length > 0) {
-        setRateCards(existing.map((rc: any) => ({
-          _localId: uid(),
-          contractorName: rc.contractorName || contractor.contractorName || "",
-          departmentName: rc.departmentName || "",
-          designation: rc.designation || "",
-          workShiftName: rc.workShiftName || "",
-          perMinuteRate: rc.perMinuteRate?.toString() || "",
-          perHourRate: rc.perHourRate?.toString() || "",
-          perDayRate: rc.perDayRate?.toString() || "",
-          perMonthRate: rc.perMonthRate?.toString() || "",
-        })));
+        setRateCards(
+          existing.map((rc: any) => ({
+            _localId: uid(),
+            contractorName:
+              rc.contractorName || contractor.contractorName || "",
+            departmentName: rc.departmentName || "",
+            designation: rc.designation || "",
+            workShiftName: rc.workShiftName || "",
+            perMinuteRate: rc.perMinuteRate?.toString() || "",
+            perHourRate: rc.perHourRate?.toString() || "",
+            perDayRate: rc.perDayRate?.toString() || "",
+            perMonthRate: rc.perMonthRate?.toString() || "",
+          })),
+        );
       } else {
-        setRateCards([{ _localId: uid(), contractorName: contractor.contractorName || "", departmentName: "", designation: "", workShiftName: "", perMinuteRate: "", perHourRate: "", perDayRate: "", perMonthRate: "" }]);
+        setRateCards([
+          {
+            _localId: uid(),
+            contractorName: contractor.contractorName || "",
+            departmentName: "",
+            designation: "",
+            workShiftName: "",
+            perMinuteRate: "",
+            perHourRate: "",
+            perDayRate: "",
+            perMonthRate: "",
+          },
+        ]);
       }
     } catch {
-      setRateCards([{ _localId: uid(), contractorName: contractor.contractorName || "", departmentName: "", designation: "", workShiftName: "", perMinuteRate: "", perHourRate: "", perDayRate: "", perMonthRate: "" }]);
+      setRateCards([
+        {
+          _localId: uid(),
+          contractorName: contractor.contractorName || "",
+          departmentName: "",
+          designation: "",
+          workShiftName: "",
+          perMinuteRate: "",
+          perHourRate: "",
+          perDayRate: "",
+          perMonthRate: "",
+        },
+      ]);
     }
     setIsRateCardOpen(true);
   };
-
 
   // UI
   const table = useClientTable("contractorName");
@@ -261,10 +334,14 @@ export function ContractorManagement() {
 
   const CONTRACTOR_ADMIN_ROLE = "CONTRACTOR_ADMIN";
 
-  const [showContractorAdminPanel, setShowContractorAdminPanel] = useState(false);
-  const [selectedContractor, setSelectedContractor] = useState<ContractorRead | null>(null);
+  const [showContractorAdminPanel, setShowContractorAdminPanel] =
+    useState(false);
+  const [selectedContractor, setSelectedContractor] =
+    useState<ContractorRead | null>(null);
   const [contractorAdmins, setContractorAdmins] = useState<any[]>([]);
-  const [editingContractorAdmin, setEditingContractorAdmin] = useState<any | null>(null);
+  const [editingContractorAdmin, setEditingContractorAdmin] = useState<
+    any | null
+  >(null);
   const [contractorAdminSaving, setContractorAdminSaving] = useState(false);
 
   const [contractorAdminForm, setContractorAdminForm] = useState({
@@ -354,7 +431,7 @@ export function ContractorManagement() {
 
       if (activeCompanyID) {
         filtered = filtered.filter(
-          (b) => Number(b.companyID) === Number(activeCompanyID)
+          (b) => Number(b.companyID) === Number(activeCompanyID),
         );
       }
 
@@ -362,7 +439,7 @@ export function ContractorManagement() {
         const branchesID = currentUserMapping?.branchesID ?? user?.branchesID;
         if (branchesID) {
           filtered = filtered.filter(
-            (b) => Number(b.id) === Number(branchesID)
+            (b) => Number(b.id) === Number(branchesID),
           );
           setBranchFilter(String(branchesID));
         }
@@ -377,7 +454,6 @@ export function ContractorManagement() {
     }
   };
 
-
   const fetchRows = async () => {
     try {
       setLoading(true);
@@ -389,10 +465,7 @@ export function ContractorManagement() {
       const ctx = getSidebarContext();
 
       const activeCompanyID =
-        ctx?.companyID ??
-        user?.companyID ??
-        mapping?.companyID ??
-        null;
+        ctx?.companyID ?? user?.companyID ?? mapping?.companyID ?? null;
 
       let visibleRows = Array.isArray(all) ? all : [];
 
@@ -406,8 +479,9 @@ export function ContractorManagement() {
 
           const branchCompanyMatch = Array.isArray(r.contractorBranches)
             ? r.contractorBranches.some(
-              (cb: any) => Number(cb.branch?.companyID) === Number(activeCompanyID)
-            )
+                (cb: any) =>
+                  Number(cb.branch?.companyID) === Number(activeCompanyID),
+              )
             : false;
 
           return directCompanyMatch || branchCompanyMatch;
@@ -434,55 +508,58 @@ export function ContractorManagement() {
   }, [user]);
 
   const closeContractorPagePanels = () => {
-  resetForm();
+    resetForm();
 
-  setIsDialogOpen(false);
-  setIsViewDialogOpen(false);
-  setViewRow(null);
+    setIsDialogOpen(false);
+    setIsViewDialogOpen(false);
+    setViewRow(null);
 
-  setShowContractorAdminPanel(false);
-  setSelectedContractor(null);
-  setContractorAdmins([]);
-  setEditingContractorAdmin(null);
-  resetContractorAdminForm();
+    setShowContractorAdminPanel(false);
+    setSelectedContractor(null);
+    setContractorAdmins([]);
+    setEditingContractorAdmin(null);
+    resetContractorAdminForm();
 
-  setIsRateCardOpen(false);
-  setRateCardContractor(null);
-  setRateCards([]);
+    setIsRateCardOpen(false);
+    setRateCardContractor(null);
+    setRateCards([]);
 
-  setSpList([]);
-  setCoList([]);
-};
-
- useEffect(() => {
-  const handler = () => {
-    if (user) {
-      fetchRows();
-      fetchBranchFilterList();
-    }
+    setSpList([]);
+    setCoList([]);
   };
 
-  const sidebarPageClickHandler = (e: any) => {
-    if (e.detail?.path === "/contractors") {
-      closeContractorPagePanels();
-
+  useEffect(() => {
+    const handler = () => {
       if (user) {
         fetchRows();
         fetchBranchFilterList();
       }
-    }
-  };
+    };
 
-  window.addEventListener("sidebar-context-changed", handler);
-  window.addEventListener("app-data-refresh", handler);
-  window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler);
+    const sidebarPageClickHandler = (e: any) => {
+      if (e.detail?.path === "/contractors") {
+        closeContractorPagePanels();
 
-  return () => {
-    window.removeEventListener("sidebar-context-changed", handler);
-    window.removeEventListener("app-data-refresh", handler);
-    window.removeEventListener("sidebar-main-page-click", sidebarPageClickHandler);
-  };
-}, [user]);
+        if (user) {
+          fetchRows();
+          fetchBranchFilterList();
+        }
+      }
+    };
+
+    window.addEventListener("sidebar-context-changed", handler);
+    window.addEventListener("app-data-refresh", handler);
+    window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler);
+
+    return () => {
+      window.removeEventListener("sidebar-context-changed", handler);
+      window.removeEventListener("app-data-refresh", handler);
+      window.removeEventListener(
+        "sidebar-main-page-click",
+        sidebarPageClickHandler,
+      );
+    };
+  }, [user]);
 
   // Fetch all companies once on component mount
   useEffect(() => {
@@ -513,13 +590,17 @@ export function ContractorManagement() {
       spAbortRef.current = ctrl;
       setSpLoading(true);
       try {
-        const all = await fetchJSONSafe<ServiceProvider[]>(API.serviceProviders, ctrl.signal);
-        const filtered = (all || []).filter(sp =>
-          (sp.companyName ?? "").toLowerCase().includes(query.toLowerCase())
+        const all = await fetchJSONSafe<ServiceProvider[]>(
+          API.serviceProviders,
+          ctrl.signal,
+        );
+        const filtered = (all || []).filter((sp) =>
+          (sp.companyName ?? "").toLowerCase().includes(query.toLowerCase()),
         );
         setSpList(filtered.slice(0, 20));
       } catch (e) {
-        if ((e as any).name !== "AbortError") console.error("SP fetch error:", e);
+        if ((e as any).name !== "AbortError")
+          console.error("SP fetch error:", e);
       } finally {
         setSpLoading(false);
       }
@@ -544,19 +625,20 @@ export function ContractorManagement() {
 
         // If a service provider is selected, filter companies by serviceProviderID
         if (formData.serviceProviderID) {
-          filteredCompanies = allCompanies.filter(co =>
-            co.serviceProviderID === formData.serviceProviderID
+          filteredCompanies = allCompanies.filter(
+            (co) => co.serviceProviderID === formData.serviceProviderID,
           );
         }
 
         // Further filter by search query
-        const filtered = filteredCompanies.filter(co =>
-          (co.companyName ?? "").toLowerCase().includes(query.toLowerCase())
+        const filtered = filteredCompanies.filter((co) =>
+          (co.companyName ?? "").toLowerCase().includes(query.toLowerCase()),
         );
 
         setCoList(filtered.slice(0, 20));
       } catch (e) {
-        if ((e as any).name !== "AbortError") console.error("Company fetch error:", e);
+        if ((e as any).name !== "AbortError")
+          console.error("Company fetch error:", e);
       } finally {
         setCoLoading(false);
       }
@@ -566,8 +648,10 @@ export function ContractorManagement() {
   // Close suggestion popovers on outside click
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
-      if (spRef.current && !spRef.current.contains(e.target as any)) setSpList([]);
-      if (coRef.current && !coRef.current.contains(e.target as any)) setCoList([]);
+      if (spRef.current && !spRef.current.contains(e.target as any))
+        setSpList([]);
+      if (coRef.current && !coRef.current.contains(e.target as any))
+        setCoList([]);
     };
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
@@ -587,10 +671,10 @@ export function ContractorManagement() {
   useEffect(() => {
     if (formData.serviceProviderID) {
       // Clear company selection when SP changes
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         companyID: null,
-        coAutocomplete: ""
+        coAutocomplete: "",
       }));
       setCoList([]);
 
@@ -642,8 +726,10 @@ export function ContractorManagement() {
     if (user?.role === "SERVICE_PROVIDER" && currentUserMapping) {
       baseFormData.serviceProviderID = currentUserMapping.serviceProviderID;
       baseFormData.companyID = currentUserMapping.companyID;
-      baseFormData.spAutocomplete = currentUserMapping.serviceProvider?.companyName || "";
-      baseFormData.coAutocomplete = currentUserMapping.company?.companyName || "";
+      baseFormData.spAutocomplete =
+        currentUserMapping.serviceProvider?.companyName || "";
+      baseFormData.coAutocomplete =
+        currentUserMapping.company?.companyName || "";
     } else if (user?.role === "SUPERADMIN") {
       const ctx = getSidebarContext();
       if (ctx) {
@@ -652,12 +738,27 @@ export function ContractorManagement() {
         baseFormData.spAutocomplete = ctx.serviceProviderName;
         baseFormData.coAutocomplete = ctx.companyName;
       }
-    } else if (isCompanyAdminLikeRole(user?.role) || user?.role === "BRANCH_ADMIN") {
+    } else if (
+      isCompanyAdminLikeRole(user?.role) ||
+      user?.role === "BRANCH_ADMIN"
+    ) {
       const ctx = getSidebarContext();
-      baseFormData.serviceProviderID = ctx?.serviceProviderID ?? user?.serviceProviderID ?? currentUserMapping?.serviceProviderID ?? null;
-      baseFormData.companyID = ctx?.companyID ?? user?.companyID ?? currentUserMapping?.companyID ?? null;
-      baseFormData.spAutocomplete = ctx?.serviceProviderName ?? currentUserMapping?.serviceProvider?.companyName ?? "";
-      baseFormData.coAutocomplete = ctx?.companyName ?? currentUserMapping?.company?.companyName ?? "";
+      baseFormData.serviceProviderID =
+        ctx?.serviceProviderID ??
+        user?.serviceProviderID ??
+        currentUserMapping?.serviceProviderID ??
+        null;
+      baseFormData.companyID =
+        ctx?.companyID ??
+        user?.companyID ??
+        currentUserMapping?.companyID ??
+        null;
+      baseFormData.spAutocomplete =
+        ctx?.serviceProviderName ??
+        currentUserMapping?.serviceProvider?.companyName ??
+        "";
+      baseFormData.coAutocomplete =
+        ctx?.companyName ?? currentUserMapping?.company?.companyName ?? "";
     }
 
     setFormData(baseFormData);
@@ -673,7 +774,8 @@ export function ContractorManagement() {
     setEditing(r);
 
     // For MANAGER, use their mapped IDs instead of the contractor's IDs
-    let finalServiceProviderID = r.serviceProviderID ?? r.serviceProvider?.id ?? null;
+    let finalServiceProviderID =
+      r.serviceProviderID ?? r.serviceProvider?.id ?? null;
     let finalCompanyID = r.companyID ?? r.company?.id ?? null;
     let spName = "";
     let coName = "";
@@ -690,12 +792,9 @@ export function ContractorManagement() {
       coName = r.company?.companyName ?? r.companyName ?? "";
     }
 
-    const mappedBranches =
-      Array.isArray((r as any).contractorBranches)
-        ? (r as any).contractorBranches
-          .map((x: any) => x.branch)
-          .filter(Boolean)
-        : [];
+    const mappedBranches = Array.isArray((r as any).contractorBranches)
+      ? (r as any).contractorBranches.map((x: any) => x.branch).filter(Boolean)
+      : [];
 
     setFormData({
       serviceProviderID: finalServiceProviderID,
@@ -767,13 +866,15 @@ export function ContractorManagement() {
 
     if (activeCompanyID) {
       filtered = filtered.filter(
-        (b) => Number(b.companyID) === Number(activeCompanyID)
+        (b) => Number(b.companyID) === Number(activeCompanyID),
       );
     }
 
     if (q) {
       filtered = filtered.filter((b) =>
-        String(b.branchName || "").toLowerCase().includes(q)
+        String(b.branchName || "")
+          .toLowerCase()
+          .includes(q),
       );
     }
 
@@ -783,13 +884,13 @@ export function ContractorManagement() {
     return filtered
       .filter((b) => {
         const id = Number(b.id);
-        if (!Number.isFinite(id) || seen.has(id) || selectedIds.has(id)) return false;
+        if (!Number.isFinite(id) || seen.has(id) || selectedIds.has(id))
+          return false;
         seen.add(id);
         return true;
       })
       .slice(0, 20);
   };
-
 
   const addContractorBranch = (branch: Branch) => {
     if (!branch?.id) return;
@@ -804,7 +905,8 @@ export function ContractorManagement() {
         ...p,
         branchSearch: "",
         companyID: p.companyID || branch.companyID || null,
-        serviceProviderID: p.serviceProviderID || branch.serviceProviderID || null,
+        serviceProviderID:
+          p.serviceProviderID || branch.serviceProviderID || null,
         branchIDs: [...p.branchIDs, Number(branch.id)],
         selectedBranches: [...p.selectedBranches, branch],
       };
@@ -816,12 +918,10 @@ export function ContractorManagement() {
       ...p,
       branchIDs: p.branchIDs.filter((id) => Number(id) !== Number(branchID)),
       selectedBranches: p.selectedBranches.filter(
-        (b) => Number(b.id) !== Number(branchID)
+        (b) => Number(b.id) !== Number(branchID),
       ),
     }));
   };
-
-
 
   // ---------------------------
   // Submit (Create/Update)
@@ -831,9 +931,10 @@ export function ContractorManagement() {
 
     // Validation
     const validationErrors: string[] = [];
-    if (!formData.contractorName?.trim()) validationErrors.push("Contractor Name is required");
+    if (!formData.contractorName?.trim())
+      validationErrors.push("Contractor Name is required");
     if (validationErrors.length > 0) {
-      validationErrors.forEach(msg => toast.error(msg));
+      validationErrors.forEach((msg) => toast.error(msg));
       return;
     }
 
@@ -849,16 +950,17 @@ export function ContractorManagement() {
     if (selectedBranchFirst) {
       finalServiceProviderID =
         finalServiceProviderID || selectedBranchFirst.serviceProviderID || null;
-      finalCompanyID =
-        finalCompanyID || selectedBranchFirst.companyID || null;
+      finalCompanyID = finalCompanyID || selectedBranchFirst.companyID || null;
     }
 
     if (user?.role === "SERVICE_PROVIDER" && currentUserMapping) {
       finalServiceProviderID =
         finalServiceProviderID || currentUserMapping.serviceProviderID;
-      finalCompanyID =
-        finalCompanyID || currentUserMapping.companyID;
-    } else if ((isCompanyAdminLikeRole(user?.role) || user?.role === "BRANCH_ADMIN") && !finalCompanyID) {
+      finalCompanyID = finalCompanyID || currentUserMapping.companyID;
+    } else if (
+      (isCompanyAdminLikeRole(user?.role) || user?.role === "BRANCH_ADMIN") &&
+      !finalCompanyID
+    ) {
       const ctx = getSidebarContext();
       finalServiceProviderID =
         finalServiceProviderID ||
@@ -874,7 +976,6 @@ export function ContractorManagement() {
         currentUserMapping?.companyID ||
         null;
     }
-
 
     try {
       // upload files if chosen
@@ -1019,7 +1120,10 @@ export function ContractorManagement() {
       return;
     }
 
-    if (contractorAdminForm.password && contractorAdminForm.password.length < 6) {
+    if (
+      contractorAdminForm.password &&
+      contractorAdminForm.password.length < 6
+    ) {
       toast.error("Password must be at least 6 characters");
       return;
     }
@@ -1052,7 +1156,7 @@ export function ContractorManagement() {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       if (!res.ok) throw new Error(await res.text());
@@ -1060,7 +1164,7 @@ export function ContractorManagement() {
       toast.success(
         isEdit
           ? "Contractor admin user updated successfully"
-          : "Contractor admin user created successfully"
+          : "Contractor admin user created successfully",
       );
 
       setEditingContractorAdmin(null);
@@ -1118,13 +1222,12 @@ export function ContractorManagement() {
     let list = rows.filter((r) => {
       const contractorBranchIds = Array.isArray((r as any).contractorBranches)
         ? (r as any).contractorBranches
-          .map((cb: any) => String(cb.branchID ?? cb.branch?.id ?? ""))
-          .filter(Boolean)
+            .map((cb: any) => String(cb.branchID ?? cb.branch?.id ?? ""))
+            .filter(Boolean)
         : [];
 
       const matchesBranch =
-        branchFilter === "ALL" ||
-        contractorBranchIds.includes(branchFilter);
+        branchFilter === "ALL" || contractorBranchIds.includes(branchFilter);
 
       const matchesSearch =
         !t ||
@@ -1143,8 +1246,8 @@ export function ContractorManagement() {
           coNameOf(r),
           ...(Array.isArray((r as any).contractorBranches)
             ? (r as any).contractorBranches.map(
-              (cb: any) => cb.branch?.branchName
-            )
+                (cb: any) => cb.branch?.branchName,
+              )
             : []),
         ]
           .filter(Boolean)
@@ -1182,81 +1285,93 @@ export function ContractorManagement() {
     MPC: "ManPower",
   };
 
-  const contractorColumns = useMemo((): DataTableColumn<ContractorRead>[] => [
-    {
-      key: "contractorName",
-      header: "Contractor",
-      sortable: true,
-      colSpan: 3,
-      cell: (r) => <span className="font-medium">{r.contractorName || "—"}</span>,
-    },
-    {
-      key: "contractorType",
-      header: "Type",
-      sortable: true,
-      colSpan: 2,
-      cell: (r) => (
-        <>
-          {(r.contractorType || "").split(",").filter(Boolean).map((t) => (
-            <Badge key={t} variant="secondary" className="mr-1 text-xs">
-              {contractorTypeLabels[t] || t}
-            </Badge>
-          ))}
-          {!r.contractorType && "—"}
-        </>
-      ),
-    },
-    {
-      key: "emailAdd",
-      header: "Email",
-      sortable: true,
-      colSpan: 3,
-      cell: (r) => r.emailAdd || "—",
-    },
-    {
-      key: "contactNo",
-      header: "Contact",
-      sortable: true,
-      colSpan: 2,
-      cell: (r) => r.contactNo || "—",
-    },
-    {
-      key: "gstNo",
-      header: "GST",
-      sortable: true,
-      colSpan: 2,
-      cell: (r) => r.gstNo || "—",
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      colSpan: 2,
-      align: "right",
-      cell: (r) => (
-        <EntityRowActions
-          onView={() => handleView(r)}
-          onEdit={canManage ? () => handleEdit(r) : undefined}
-          onDelete={canManage ? () => handleDelete(r.id) : undefined}
-          extra={
-            canManageContractorAdmins
-              ? [{
-                  icon: UserPlus,
-                  title: "Manage Contractor Admin Users",
-                  onClick: () => openContractorAdminPanel(r),
-                  className: "text-indigo-600",
-                }]
-              : undefined
-          }
-        />
-      ),
-    },
-  ], [canManage, canManageContractorAdmins]);
+  const contractorColumns = useMemo(
+    (): DataTableColumn<ContractorRead>[] => [
+      {
+        key: "contractorName",
+        header: "Contractor",
+        sortable: true,
+        colSpan: 3,
+        cell: (r) => (
+          <span className="font-medium">{r.contractorName || "—"}</span>
+        ),
+      },
+      {
+        key: "contractorType",
+        header: "Type",
+        sortable: true,
+        colSpan: 2,
+        cell: (r) => (
+          <>
+            {(r.contractorType || "")
+              .split(",")
+              .filter(Boolean)
+              .map((t) => (
+                <Badge key={t} variant="secondary" className="mr-1 text-xs">
+                  {contractorTypeLabels[t] || t}
+                </Badge>
+              ))}
+            {!r.contractorType && "—"}
+          </>
+        ),
+      },
+      {
+        key: "emailAdd",
+        header: "Email",
+        sortable: true,
+        colSpan: 3,
+        cell: (r) => r.emailAdd || "—",
+      },
+      {
+        key: "contactNo",
+        header: "Contact",
+        sortable: true,
+        colSpan: 2,
+        cell: (r) => r.contactNo || "—",
+      },
+      {
+        key: "gstNo",
+        header: "GST",
+        sortable: true,
+        colSpan: 2,
+        cell: (r) => r.gstNo || "—",
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        colSpan: 2,
+        align: "right",
+        cell: (r) => (
+          <EntityRowActions
+            onView={() => handleView(r)}
+            onEdit={canManage ? () => handleEdit(r) : undefined}
+            onDelete={canManage ? () => handleDelete(r.id) : undefined}
+            extra={
+              canManageContractorAdmins
+                ? [
+                    {
+                      icon: UserPlus,
+                      title: "Manage Contractor Admin Users",
+                      onClick: () => openContractorAdminPanel(r),
+                      className: "text-indigo-600",
+                    },
+                  ]
+                : undefined
+            }
+          />
+        ),
+      },
+    ],
+    [canManage, canManageContractorAdmins],
+  );
 
   // ---------------------------
   // Helpers for table names
   // ---------------------------
-  const spName = (r: ContractorRead) => r.serviceProvider?.companyName ?? r.serviceProviderName ?? "—";
-  const coName = (r: ContractorRead) => r.company?.companyName ?? r.companyName ?? "—";
+  const spName = (r: ContractorRead) =>
+    r.serviceProvider?.companyName ?? r.serviceProviderName ?? "—";
+  const coName = (r: ContractorRead) =>
+    r.company?.companyName ?? r.companyName ?? "—";
 
   return (
     <div className="space-y-6 w-full max-w-none animate-fade-in page-content-enter">
@@ -1265,8 +1380,16 @@ export function ContractorManagement() {
         title="Contractors"
         description="Manage contractor records"
         actions={
-          canManage && !isDialogOpen && !isViewDialogOpen && !showContractorAdminPanel ? (
-            <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+          canManage &&
+          !isDialogOpen &&
+          !isViewDialogOpen &&
+          !showContractorAdminPanel ? (
+            <Button
+              onClick={() => {
+                resetForm();
+                setIsDialogOpen(true);
+              }}
+            >
               <Plus className="w-4 h-4 mr-1" /> Add Contractor
             </Button>
           ) : null
@@ -1274,14 +1397,18 @@ export function ContractorManagement() {
       />
 
       <FormDrawer
-  open={isDialogOpen}
-  onOpenChange={(v) => {
-    setIsDialogOpen(v);
-    if (!v) closeContractorPagePanels();
-  }}
-  title={editing ? "Edit Contractor" : "Add New Contractor"}
-  description={editing ? "Update contractor details below." : "Fill in details to add a new contractor."}
->
+        open={isDialogOpen}
+        onOpenChange={(v) => {
+          setIsDialogOpen(v);
+          if (!v) closeContractorPagePanels();
+        }}
+        title={editing ? "Edit Contractor" : "Add New Contractor"}
+        description={
+          editing
+            ? "Update contractor details below."
+            : "Fill in details to add a new contractor."
+        }
+      >
         {error && (
           <NoticeBanner variant="error" compact className="mb-4">
             {error}
@@ -1301,343 +1428,491 @@ export function ContractorManagement() {
           />
 
           {contractorFormTab === "basic" && (
-          <>
-          {/* Service Provider - auto-filled from sidebar */}
-          {false && (
-            <div ref={spRef} className="space-y-2 relative">
-              <Label>Service Provider *</Label>
-              <Input
-                value={formData.spAutocomplete}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFormData((p) => ({ ...p, spAutocomplete: val, serviceProviderID: null }));
-                  runFetchServiceProviders(val);
-                }}
-                onFocus={() => {
-                  // Only show suggestions on focus if no selection yet
-                  if (!formData.serviceProviderID && formData.spAutocomplete.length >= MIN_CHARS) {
-                    runFetchServiceProviders(formData.spAutocomplete);
-                  }
-                }}
-                placeholder="Start typing service provider..."
-                autoComplete="off"
-                required
-              />
-              {spList.length > 0 && (
-                <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
-                  {spLoading && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
-                  {spList.map((sp) => (
-                    <div
-                      key={sp.id}
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => {
-                        setFormData((p) => ({
-                          ...p,
-                          serviceProviderID: sp.id,
-                          spAutocomplete: sp.companyName,
-                        }));
-                        setSpList([]);
-                      }}
-                    >
-                      {sp.companyName}
+            <>
+              {/* Service Provider - auto-filled from sidebar */}
+              {false && (
+                <div ref={spRef} className="space-y-2 relative">
+                  <Label>Service Provider *</Label>
+                  <Input
+                    value={formData.spAutocomplete}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData((p) => ({
+                        ...p,
+                        spAutocomplete: val,
+                        serviceProviderID: null,
+                      }));
+                      runFetchServiceProviders(val);
+                    }}
+                    onFocus={() => {
+                      // Only show suggestions on focus if no selection yet
+                      if (
+                        !formData.serviceProviderID &&
+                        formData.spAutocomplete.length >= MIN_CHARS
+                      ) {
+                        runFetchServiceProviders(formData.spAutocomplete);
+                      }
+                    }}
+                    placeholder="Start typing service provider..."
+                    autoComplete="off"
+                    required
+                  />
+                  {spList.length > 0 && (
+                    <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
+                      {spLoading && (
+                        <div className="px-3 py-2 text-sm text-gray-500">
+                          Loading…
+                        </div>
+                      )}
+                      {spList.map((sp) => (
+                        <div
+                          key={sp.id}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setFormData((p) => ({
+                              ...p,
+                              serviceProviderID: sp.id,
+                              spAutocomplete: sp.companyName,
+                            }));
+                            setSpList([]);
+                          }}
+                        >
+                          {sp.companyName}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Company - auto-filled from sidebar */}
-          {false && (
-            <div ref={coRef} className="space-y-2 relative">
-              <Label>Company *</Label>
-              <Input
-                value={formData.coAutocomplete}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFormData((p) => ({ ...p, coAutocomplete: val, companyID: null }));
-                  runFetchCompanies(val);
-                }}
-                onFocus={() => {
-                  if (!formData.companyID && formData.coAutocomplete.length >= MIN_CHARS) {
-                    runFetchCompanies(formData.coAutocomplete);
-                  }
-                }}
-                placeholder={formData.serviceProviderID ? "Start typing company..." : "Please select a service provider first"}
-                autoComplete="off"
-                required
-                disabled={!formData.serviceProviderID} // Disable if no SP selected
-              />
-              {coList.length > 0 && (
-                <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
-                  {coLoading && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
-                  {coList.map((co) => (
-                    <div
-                      key={co.id}
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => {
-                        setFormData((p) => ({
-                          ...p,
-                          companyID: co.id,
-                          coAutocomplete: co.companyName,
-                        }));
-                        setCoList([]);
-                      }}
-                    >
-                      {co.companyName}
+              {/* Company - auto-filled from sidebar */}
+              {false && (
+                <div ref={coRef} className="space-y-2 relative">
+                  <Label>Company *</Label>
+                  <Input
+                    value={formData.coAutocomplete}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData((p) => ({
+                        ...p,
+                        coAutocomplete: val,
+                        companyID: null,
+                      }));
+                      runFetchCompanies(val);
+                    }}
+                    onFocus={() => {
+                      if (
+                        !formData.companyID &&
+                        formData.coAutocomplete.length >= MIN_CHARS
+                      ) {
+                        runFetchCompanies(formData.coAutocomplete);
+                      }
+                    }}
+                    placeholder={
+                      formData.serviceProviderID
+                        ? "Start typing company..."
+                        : "Please select a service provider first"
+                    }
+                    autoComplete="off"
+                    required
+                    disabled={!formData.serviceProviderID} // Disable if no SP selected
+                  />
+                  {coList.length > 0 && (
+                    <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
+                      {coLoading && (
+                        <div className="px-3 py-2 text-sm text-gray-500">
+                          Loading…
+                        </div>
+                      )}
+                      {coList.map((co) => (
+                        <div
+                          key={co.id}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setFormData((p) => ({
+                              ...p,
+                              companyID: co.id,
+                              coAutocomplete: co.companyName,
+                            }));
+                            setCoList([]);
+                          }}
+                        >
+                          {co.companyName}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+                  {!formData.serviceProviderID && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Please select a service provider first to see available
+                      companies
+                    </p>
+                  )}
                 </div>
               )}
-              {!formData.serviceProviderID && (
-                <p className="text-xs text-amber-600 mt-1">Please select a service provider first to see available companies</p>
-              )}
-            </div>
-          )}
 
+              {/* Core fields */}
+              <div className="space-y-3 rounded-xl border bg-gray-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Assign Branches</Label>
+                    <p className="text-xs text-gray-500">
+                      Search and add branches under the selected company
+                    </p>
+                  </div>
 
-          {/* Core fields */}
-          <div className="space-y-3 rounded-xl border bg-gray-50 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Assign Branches</Label>
-                <p className="text-xs text-gray-500">
-                  Search and add branches under the selected company
-                </p>
+                  <Badge variant="secondary">
+                    {formData.selectedBranches.length} selected
+                  </Badge>
+                </div>
+
+                <SearchSuggestInput
+                  label=""
+                  placeholder="Search branch and click to add..."
+                  value={formData.branchSearch}
+                  onChange={(v) =>
+                    setFormData((p) => ({ ...p, branchSearch: v }))
+                  }
+                  onSelect={({ item }) => addContractorBranch(item)}
+                  fetchData={fetchBranchSuggestions}
+                  displayField="branchName"
+                  valueField="id"
+                  autoSelectIfSingle
+                />
+
+                <div className="flex flex-wrap gap-2">
+                  {formData.selectedBranches.length === 0 ? (
+                    <p className="text-sm text-gray-500">
+                      No branches selected. Contractor will not be mapped to any
+                      branch.
+                    </p>
+                  ) : (
+                    formData.selectedBranches.map((branch) => (
+                      <Badge
+                        key={branch.id}
+                        variant="secondary"
+                        className="flex items-center gap-2 px-3 py-1"
+                      >
+                        {branch.branchName}
+                        <button
+                          type="button"
+                          onClick={() => removeContractorBranch(branch.id)}
+                          className="text-red-600 hover:text-red-700 font-bold"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))
+                  )}
+                </div>
               </div>
 
-              <Badge variant="secondary">
-                {formData.selectedBranches.length} selected
-              </Badge>
-            </div>
+              <div className="space-y-2">
+                <Label>Contractor Name</Label>
+                <Input
+                  value={formData.contractorName}
+                  onChange={(e) =>
+                    setFormData((p) => ({
+                      ...p,
+                      contractorName: e.target.value,
+                    }))
+                  }
+                  required
+                />
+              </div>
 
-            <SearchSuggestInput
-              label=""
-              placeholder="Search branch and click to add..."
-              value={formData.branchSearch}
-              onChange={(v) => setFormData((p) => ({ ...p, branchSearch: v }))}
-              onSelect={({ item }) => addContractorBranch(item)}
-              fetchData={fetchBranchSuggestions}
-              displayField="branchName"
-              valueField="id"
-              autoSelectIfSingle
-            />
+              <div className="space-y-2">
+                <Label>Contractor Type (Select Multiple)</Label>
+                {(() => {
+                  const CONTRACTOR_TYPES = [
+                    {
+                      value: "MSP",
+                      label: "Managed Service Provider",
+                      hint: "Contractor pays Employee Salary",
+                    },
+                    {
+                      value: "CA",
+                      label: "Commission Agent",
+                      hint: "Company pays Employee Salary and gives commission to contractor",
+                    },
+                  ];
+                  const selected = (formData.contractorType || "")
+                    .split(",")
+                    .filter(Boolean);
+                  const toggle = (val: string) => {
+                    const next = selected.includes(val)
+                      ? selected.filter((v) => v !== val)
+                      : [...selected, val];
+                    setFormData((p) => ({
+                      ...p,
+                      contractorType: next.join(","),
+                    }));
+                  };
+                  return (
+                    <div className="space-y-2">
+                      {CONTRACTOR_TYPES.map((ct) => (
+                        <label
+                          key={ct.value}
+                          className="flex items-start gap-2 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(ct.value)}
+                            onChange={() => toggle(ct.value)}
+                            className="mt-1 h-4 w-4 rounded border-gray-300"
+                          />
+                          <div>
+                            <span className="text-sm font-medium">
+                              {ct.label}
+                            </span>
+                            <p className="text-xs text-gray-500">{ct.hint}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
 
-            <div className="flex flex-wrap gap-2">
-              {formData.selectedBranches.length === 0 ? (
-                <p className="text-sm text-gray-500">
-                  No branches selected. Contractor will not be mapped to any branch.
-                </p>
-              ) : (
-                formData.selectedBranches.map((branch) => (
-                  <Badge
-                    key={branch.id}
-                    variant="secondary"
-                    className="flex items-center gap-2 px-3 py-1"
-                  >
-                    {branch.branchName}
-                    <button
-                      type="button"
-                      onClick={() => removeContractorBranch(branch.id)}
-                      className="text-red-600 hover:text-red-700 font-bold"
-                    >
-                      ×
-                    </button>
-                  </Badge>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Contractor Name</Label>
-            <Input
-              value={formData.contractorName}
-              onChange={(e) => setFormData((p) => ({ ...p, contractorName: e.target.value }))}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Contractor Type (Select Multiple)</Label>
-            {(() => {
-              const CONTRACTOR_TYPES = [
-                { value: "MSP", label: "Managed Service Provider", hint: "Contractor pays Employee Salary" },
-                { value: "CA", label: "Commission Agent", hint: "Company pays Employee Salary and gives commission to contractor" },
-              ];
-              const selected = (formData.contractorType || "").split(",").filter(Boolean);
-              const toggle = (val: string) => {
-                const next = selected.includes(val)
-                  ? selected.filter((v) => v !== val)
-                  : [...selected, val];
-                setFormData((p) => ({ ...p, contractorType: next.join(",") }));
-              };
-              return (
-                <div className="space-y-2">
-                  {CONTRACTOR_TYPES.map((ct) => (
-                    <label key={ct.value} className="flex items-start gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selected.includes(ct.value)}
-                        onChange={() => toggle(ct.value)}
-                        className="mt-1 h-4 w-4 rounded border-gray-300"
-                      />
-                      <div>
-                        <span className="text-sm font-medium">{ct.label}</span>
-                        <p className="text-xs text-gray-500">{ct.hint}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              );
-            })()}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Address</Label>
-            <Textarea
-              value={formData.address}
-              onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))}
-              rows={3}
-            />
-          </div>
-
-          </>
+              <div className="space-y-2">
+                <Label>Address</Label>
+                <Textarea
+                  value={formData.address}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, address: e.target.value }))
+                  }
+                  rows={3}
+                />
+              </div>
+            </>
           )}
 
           {contractorFormTab === "location" && (
-          <>
-          <LocationFields
-            values={{
-              city: formData.city,
-              state: formData.state,
-              pincode: formData.pincode,
-              country: formData.country,
-              currency: formData.currency,
-            }}
-            onChange={(patch) => setFormData((p) => ({ ...p, ...patch }))}
-            showCurrency={false}
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Time Zone</Label>
-              <TimezoneSelect
-                value={formData.timeZone || ""}
-                onChange={(value) => setFormData((p) => ({ ...p, timeZone: value }))}
+            <>
+              <LocationFields
+                values={{
+                  city: formData.city,
+                  state: formData.state,
+                  pincode: formData.pincode,
+                  country: formData.country,
+                  currency: formData.currency,
+                }}
+                onChange={(patch) => setFormData((p) => ({ ...p, ...patch }))}
+                showCurrency={false}
               />
-            </div>
-            <SearchSuggestInput
-              label="Currency"
-              placeholder="Type currency code…"
-              value={formData.currency}
-              onChange={(v) => setFormData((p) => ({ ...p, currency: v }))}
-              onSelect={({ display }) => setFormData((p) => ({ ...p, currency: display }))}
-              fetchData={fetchCurrencies}
-              displayField="code"
-              valueField="code"
-            />
-          </div>
 
-          </>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Time Zone</Label>
+                  <TimezoneSelect
+                    value={formData.timeZone || ""}
+                    onChange={(value) =>
+                      setFormData((p) => ({ ...p, timeZone: value }))
+                    }
+                  />
+                </div>
+                <SearchSuggestInput
+                  label="Currency"
+                  placeholder="Type currency code…"
+                  value={formData.currency}
+                  onChange={(v) => setFormData((p) => ({ ...p, currency: v }))}
+                  onSelect={({ display }) =>
+                    setFormData((p) => ({ ...p, currency: display }))
+                  }
+                  fetchData={fetchCurrencies}
+                  displayField="code"
+                  valueField="code"
+                />
+              </div>
+            </>
           )}
 
           {contractorFormTab === "compliance" && (
-          <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-2"><Label>PF No</Label><Input value={formData.pfNo} onChange={(e) => setFormData((p) => ({ ...p, pfNo: e.target.value }))} /></div>
-            <div className="space-y-2"><Label>TAN No</Label><Input value={formData.tanNo} onChange={(e) => setFormData((p) => ({ ...p, tanNo: e.target.value }))} /></div>
-            <div className="space-y-2"><Label>ESI No</Label><Input value={formData.esiNo} onChange={(e) => setFormData((p) => ({ ...p, esiNo: e.target.value }))} /></div>
-            <div className="space-y-2"><Label>LIN No</Label><Input value={formData.linNo} onChange={(e) => setFormData((p) => ({ ...p, linNo: e.target.value }))} /></div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label>GST No</Label>
-              <Input value={formData.gstNo} onChange={(e) => setFormData((p) => ({ ...p, gstNo: e.target.value }))} />
-              <PdfUploadField label="GST certificate (PDF)" value={formData.gstCertUrl} onChange={(url) => setFormData((p) => ({ ...p, gstCertUrl: url ?? "" }))} />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Shop Reg No</Label>
-              <Input value={formData.shopRegNo} onChange={(e) => setFormData((p) => ({ ...p, shopRegNo: e.target.value }))} />
-              <PdfUploadField label="Shop registration (PDF)" value={formData.shopRegCertUrl} onChange={(url) => setFormData((p) => ({ ...p, shopRegCertUrl: url ?? "" }))} />
-            </div>
-          </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>PF No</Label>
+                  <Input
+                    value={formData.pfNo}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, pfNo: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>TAN No</Label>
+                  <Input
+                    value={formData.tanNo}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, tanNo: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>ESI No</Label>
+                  <Input
+                    value={formData.esiNo}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, esiNo: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>LIN No</Label>
+                  <Input
+                    value={formData.linNo}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, linNo: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>GST No</Label>
+                  <Input
+                    value={formData.gstNo}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, gstNo: e.target.value }))
+                    }
+                  />
+                  <PdfUploadField
+                    label="GST certificate (PDF)"
+                    value={formData.gstCertUrl}
+                    onChange={(url) =>
+                      setFormData((p) => ({ ...p, gstCertUrl: url ?? "" }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Shop Reg No</Label>
+                  <Input
+                    value={formData.shopRegNo}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, shopRegNo: e.target.value }))
+                    }
+                  />
+                  <PdfUploadField
+                    label="Shop registration (PDF)"
+                    value={formData.shopRegCertUrl}
+                    onChange={(url) =>
+                      setFormData((p) => ({ ...p, shopRegCertUrl: url ?? "" }))
+                    }
+                  />
+                </div>
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Financial Year Start</Label>
-              <select
-                value={formData.financialYearStart || ""}
-                onChange={(e) => setFormData((p) => ({ ...p, financialYearStart: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-sm border-[#d0d0d0] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/15 focus-visible:border-[#b0b0b0]"
-              >
-                <option value="">Select financial year start</option>
-                <option value="1st Jan">1st Jan</option>
-                <option value="1st April">1st April</option>
-              </select>
-            </div>
-          </div>
-
-          </>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Financial Year Start</Label>
+                  <select
+                    value={formData.financialYearStart || ""}
+                    onChange={(e) =>
+                      setFormData((p) => ({
+                        ...p,
+                        financialYearStart: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm border-[#d0d0d0] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/15 focus-visible:border-[#b0b0b0]"
+                  >
+                    <option value="">Select financial year start</option>
+                    <option value="1st Jan">1st Jan</option>
+                    <option value="1st April">1st April</option>
+                  </select>
+                </div>
+              </div>
+            </>
           )}
 
           {contractorFormTab === "contact" && (
-          <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Contact Number</Label>
-              <Input value={formData.contactNo} onChange={(e) => setFormData((p) => ({ ...p, contactNo: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Email Address</Label>
-              <Input type="email" value={formData.emailAdd} onChange={(e) => setFormData((p) => ({ ...p, emailAdd: e.target.value }))} />
-            </div>
-          </div>
-
-          {/* Uploads */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Company Logo</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Paste logo URL or use Browse"
-                  value={formData.companyLogoUrl}
-                  onChange={(e) => setFormData((p) => ({ ...p, companyLogoUrl: e.target.value }))}
-                />
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-                />
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Contact Number</Label>
+                  <Input
+                    value={formData.contactNo}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, contactNo: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email Address</Label>
+                  <Input
+                    type="email"
+                    value={formData.emailAdd}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, emailAdd: e.target.value }))
+                    }
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>Signature Upload</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Paste signature URL or use Browse"
-                  value={formData.SignatureUrl}
-                  onChange={(e) => setFormData((p) => ({ ...p, SignatureUrl: e.target.value }))}
-                />
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setSignatureFile(e.target.files?.[0] || null)}
-                />
+              {/* Uploads */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Company Logo</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Paste logo URL or use Browse"
+                      value={formData.companyLogoUrl}
+                      onChange={(e) =>
+                        setFormData((p) => ({
+                          ...p,
+                          companyLogoUrl: e.target.value,
+                        }))
+                      }
+                    />
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Signature Upload</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Paste signature URL or use Browse"
+                      value={formData.SignatureUrl}
+                      onChange={(e) =>
+                        setFormData((p) => ({
+                          ...p,
+                          SignatureUrl: e.target.value,
+                        }))
+                      }
+                    />
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) =>
+                        setSignatureFile(e.target.files?.[0] || null)
+                      }
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-
-          </>
+            </>
           )}
 
           <div className="border-t border-gray-200 pt-4">
             <div className="flex items-center justify-end">
               <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
                 <Button type="submit" className="" disabled={saving}>
-                  {saving ? "Saving..." : editing ? "Update Contractor" : "Add Contractor"}
+                  {saving
+                    ? "Saving..."
+                    : editing
+                      ? "Update Contractor"
+                      : "Add Contractor"}
                 </Button>
               </div>
             </div>
@@ -1699,19 +1974,36 @@ export function ContractorManagement() {
                 { label: "LIN", value: viewRow.linNo },
                 { label: "GST", value: viewRow.gstNo },
                 { label: "Shop registration", value: viewRow.shopRegNo },
-                { label: "Financial year start", value: viewRow.financialYearStart },
+                {
+                  label: "Financial year start",
+                  value: viewRow.financialYearStart,
+                },
               ]}
             />
-            {(viewRow.companyLogoUrl || viewRow.SignatureUrl) ? (
-              <DetailCard title="Branding" subtitle="Logo and signature" className="lg:col-span-2">
+            {viewRow.companyLogoUrl || viewRow.SignatureUrl ? (
+              <DetailCard
+                title="Branding"
+                subtitle="Logo and signature"
+                className="lg:col-span-2"
+              >
                 <div className="flex flex-wrap gap-4">
                   {viewRow.companyLogoUrl ? (
-                    <a href={viewRow.companyLogoUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline text-sm">
+                    <a
+                      href={viewRow.companyLogoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline-offset-2 hover:underline text-sm"
+                    >
                       View logo
                     </a>
                   ) : null}
                   {viewRow.SignatureUrl ? (
-                    <a href={viewRow.SignatureUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline text-sm">
+                    <a
+                      href={viewRow.SignatureUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline-offset-2 hover:underline text-sm"
+                    >
                       View signature
                     </a>
                   ) : null}
@@ -1731,14 +2023,21 @@ export function ContractorManagement() {
                 Contractor Admin Users - {selectedContractor.contractorName}
               </span>
 
-              <Button variant="outline" size="sm" onClick={closeContractorAdminPanel}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={closeContractorAdminPanel}
+              >
                 Back
               </Button>
             </CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <form onSubmit={saveContractorAdmin} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form
+              onSubmit={saveContractorAdmin}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+            >
               <div className="space-y-2">
                 <Label>Username *</Label>
                 <Input
@@ -1746,7 +2045,10 @@ export function ContractorManagement() {
                   autoComplete="off"
                   name={`contractor-admin-username-${selectedContractor.id}`}
                   onChange={(e) =>
-                    setContractorAdminForm((p) => ({ ...p, username: e.target.value }))
+                    setContractorAdminForm((p) => ({
+                      ...p,
+                      username: e.target.value,
+                    }))
                   }
                   required
                 />
@@ -1754,16 +2056,26 @@ export function ContractorManagement() {
 
               <div className="space-y-2">
                 <Label>
-                  Password {editingContractorAdmin ? "(leave blank to keep old password)" : "*"}
+                  Password{" "}
+                  {editingContractorAdmin
+                    ? "(leave blank to keep old password)"
+                    : "*"}
                 </Label>
                 <Input
                   type="password"
                   value={contractorAdminForm.password}
                   autoComplete="new-password"
                   name={`contractor-admin-password-${selectedContractor.id}`}
-                  placeholder={editingContractorAdmin ? "Leave blank to keep old password" : "Minimum 6 characters"}
+                  placeholder={
+                    editingContractorAdmin
+                      ? "Leave blank to keep old password"
+                      : "Minimum 6 characters"
+                  }
                   onChange={(e) =>
-                    setContractorAdminForm((p) => ({ ...p, password: e.target.value }))
+                    setContractorAdminForm((p) => ({
+                      ...p,
+                      password: e.target.value,
+                    }))
                   }
                   required={!editingContractorAdmin}
                 />
@@ -1774,7 +2086,10 @@ export function ContractorManagement() {
                 <Input
                   value={contractorAdminForm.firstName}
                   onChange={(e) =>
-                    setContractorAdminForm((p) => ({ ...p, firstName: e.target.value }))
+                    setContractorAdminForm((p) => ({
+                      ...p,
+                      firstName: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -1784,7 +2099,10 @@ export function ContractorManagement() {
                 <Input
                   value={contractorAdminForm.lastName}
                   onChange={(e) =>
-                    setContractorAdminForm((p) => ({ ...p, lastName: e.target.value }))
+                    setContractorAdminForm((p) => ({
+                      ...p,
+                      lastName: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -1794,7 +2112,10 @@ export function ContractorManagement() {
                 <Input
                   value={contractorAdminForm.contactNo}
                   onChange={(e) =>
-                    setContractorAdminForm((p) => ({ ...p, contactNo: e.target.value }))
+                    setContractorAdminForm((p) => ({
+                      ...p,
+                      contactNo: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -1805,14 +2126,21 @@ export function ContractorManagement() {
                   type="email"
                   value={contractorAdminForm.email}
                   onChange={(e) =>
-                    setContractorAdminForm((p) => ({ ...p, email: e.target.value }))
+                    setContractorAdminForm((p) => ({
+                      ...p,
+                      email: e.target.value,
+                    }))
                   }
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Role</Label>
-                <Input value={CONTRACTOR_ADMIN_ROLE} readOnly className="bg-gray-50" />
+                <Input
+                  value={CONTRACTOR_ADMIN_ROLE}
+                  readOnly
+                  className="bg-gray-50"
+                />
               </div>
 
               <div className="space-y-2">
@@ -1822,7 +2150,10 @@ export function ContractorManagement() {
                     type="checkbox"
                     checked={contractorAdminForm.isActive}
                     onChange={(e) =>
-                      setContractorAdminForm((p) => ({ ...p, isActive: e.target.checked }))
+                      setContractorAdminForm((p) => ({
+                        ...p,
+                        isActive: e.target.checked,
+                      }))
                     }
                   />
                   Active
@@ -1856,7 +2187,10 @@ export function ContractorManagement() {
               <TableBody>
                 {contractorAdmins.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-6 text-gray-500">
+                    <TableCell
+                      colSpan={4}
+                      className="text-center py-6 text-gray-500"
+                    >
                       No contractor admin users found for this contractor
                     </TableCell>
                   </TableRow>
@@ -1864,7 +2198,11 @@ export function ContractorManagement() {
                   contractorAdmins.map((admin) => (
                     <TableRow
                       key={admin.id}
-                      className={editingContractorAdmin?.id === admin.id ? "bg-indigo-50" : ""}
+                      className={
+                        editingContractorAdmin?.id === admin.id
+                          ? "bg-indigo-50"
+                          : ""
+                      }
                     >
                       <TableCell>{admin.username}</TableCell>
 
@@ -1873,7 +2211,9 @@ export function ContractorManagement() {
                       </TableCell>
 
                       <TableCell>
-                        <Badge variant={admin.isActive ? "default" : "secondary"}>
+                        <Badge
+                          variant={admin.isActive ? "default" : "secondary"}
+                        >
                           {admin.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
@@ -1891,7 +2231,9 @@ export function ContractorManagement() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteContractorAdmin(admin.id)}
+                            onClick={() =>
+                              handleDeleteContractorAdmin(admin.id)
+                            }
                             className="text-red-600"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -1907,46 +2249,53 @@ export function ContractorManagement() {
         </Card>
       )}
 
-      {!isDialogOpen && !isViewDialogOpen && !showContractorAdminPanel && (<>
-        <FilterBar
-          search={{
-            value: table.search,
-            onChange: table.setSearch,
-            placeholder: "Search contractors…",
-          }}
-          filters={
-            <FilterSelect
-              id="contractors-branch"
-              value={branchFilter}
-              onChange={setBranchFilter}
-              options={branchFilterOptions}
-              width="w-56"
-              ariaLabel="Filter by branch"
-            />
-          }
-        />
+      {!isDialogOpen && !isViewDialogOpen && !showContractorAdminPanel && (
+        <>
+          <FilterBar
+            search={{
+              value: table.search,
+              onChange: table.setSearch,
+              placeholder: "Search contractors…",
+            }}
+            filters={
+              <FilterSelect
+                id="contractors-branch"
+                value={branchFilter}
+                onChange={setBranchFilter}
+                options={branchFilterOptions}
+                width="w-56"
+                ariaLabel="Filter by branch"
+              />
+            }
+          />
 
-        <EntityListShell
-          title="All contractors"
-          columns={contractorColumns}
-          rows={filtered}
-          rowKey={(r) => String(r.id)}
-          isLoading={loading}
-          sortBy={table.sortBy}
-          sortDir={table.sortDir}
-          onSort={table.setSort}
-          emptyIcon={Briefcase}
-          emptyTitle="No contractors found"
-          emptyDescription="Try adjusting your search or branch filter."
-          emptyAction={
-            canManage ? (
-              <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
-                <Plus className="w-4 h-4 mr-1" /> Add Contractor
-              </Button>
-            ) : undefined
-          }
-        />
-      </>)}
+          <EntityListShell
+            title="All contractors"
+            columns={contractorColumns}
+            rows={filtered}
+            rowKey={(r) => String(r.id)}
+            isLoading={loading}
+            sortBy={table.sortBy}
+            sortDir={table.sortDir}
+            onSort={table.setSort}
+            emptyIcon={Briefcase}
+            emptyTitle="No contractors found"
+            emptyDescription="Try adjusting your search or branch filter."
+            emptyAction={
+              canManage ? (
+                <Button
+                  onClick={() => {
+                    resetForm();
+                    setIsDialogOpen(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add Contractor
+                </Button>
+              ) : undefined
+            }
+          />
+        </>
+      )}
     </div>
   );
 }

@@ -33,7 +33,8 @@ import {
 } from "../../../utils/empAttendanceHistory";
 import { cn } from "@/app/utils/cn";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 type RegularizationRow = {
   attendanceDate?: string;
@@ -158,11 +159,16 @@ function StatCard({
           <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-[#111827]">
             {value}
             {suffix ? (
-              <span className="ml-1 text-sm font-normal text-[#6B7280]">{suffix}</span>
+              <span className="ml-1 text-sm font-normal text-[#6B7280]">
+                {suffix}
+              </span>
             ) : null}
           </p>
         </div>
-        <Icon className="size-4 shrink-0 text-[#9CA3AF] transition-colors group-hover:text-[#6B7280]" strokeWidth={1.75} />
+        <Icon
+          className="size-4 shrink-0 text-[#9CA3AF] transition-colors group-hover:text-[#6B7280]"
+          strokeWidth={1.75}
+        />
       </div>
     </div>
   );
@@ -170,7 +176,8 @@ function StatCard({
 
 function PunchTimeline({ records }: { records: AttendanceLocationRecord[] }) {
   const sorted = [...records].sort(
-    (a, b) => new Date(a.checkinTime).getTime() - new Date(b.checkinTime).getTime(),
+    (a, b) =>
+      new Date(a.checkinTime).getTime() - new Date(b.checkinTime).getTime(),
   );
   const checkIns = sorted.filter((r) => r.checkType === "CHECK_IN");
   const checkOuts = sorted.filter((r) => r.checkType === "CHECK_OUT");
@@ -201,7 +208,9 @@ function PunchTimeline({ records }: { records: AttendanceLocationRecord[] }) {
         <span className="absolute bottom-full mb-1 whitespace-nowrap text-[11px] font-medium tabular-nums leading-none text-[#6B7280]">
           {time}
         </span>
-        <span className={cn("size-2 rounded-full ring-2 ring-white", dotClass)} />
+        <span
+          className={cn("size-2 rounded-full ring-2 ring-white", dotClass)}
+        />
       </div>
     </div>
   );
@@ -233,25 +242,33 @@ async function resolveWorkShiftName(
 ): Promise<string> {
   if (!emp) return "—";
 
-  const promotion = Array.isArray(emp.empPromotion) ? emp.empPromotion[0] : null;
+  const promotion = Array.isArray(emp.empPromotion)
+    ? emp.empPromotion[0]
+    : null;
   const empShift = Array.isArray(emp.empWorkShift) ? emp.empWorkShift[0] : null;
 
   const direct =
-    (empShift as { workShift?: { workShiftName?: string } })?.workShift?.workShiftName ||
+    (empShift as { workShift?: { workShiftName?: string } })?.workShift
+      ?.workShiftName ||
     (emp.workShift as { workShiftName?: string } | undefined)?.workShiftName ||
-    (promotion as { workShift?: { workShiftName?: string } })?.workShift?.workShiftName;
+    (promotion as { workShift?: { workShiftName?: string } })?.workShift
+      ?.workShiftName;
 
   if (direct) return direct;
 
   const workShiftID =
-    (empShift as { workShiftID?: number; workShift?: { id?: number } })?.workShiftID ??
+    (empShift as { workShiftID?: number; workShift?: { id?: number } })
+      ?.workShiftID ??
     (empShift as { workShift?: { id?: number } })?.workShift?.id ??
     (emp.workShiftID as number | undefined) ??
     (promotion as { workShiftID?: number })?.workShiftID;
 
   if (workShiftID) {
     try {
-      const wsRes = await fetch(`${BACKEND}/work-shift/${workShiftID}`, { headers, cache: "no-store" });
+      const wsRes = await fetch(`${BACKEND}/work-shift/${workShiftID}`, {
+        headers,
+        cache: "no-store",
+      });
       if (wsRes.ok) {
         const ws = await wsRes.json();
         if (ws?.workShiftName) return ws.workShiftName;
@@ -274,16 +291,23 @@ function PunchLocationBlock({
   const { address, coordinates } = formatLocationLines(punch);
   return (
     <div className="rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
+        {label}
+      </p>
       <p className="mt-2 text-lg font-semibold tabular-nums text-[#111827]">
         {punch ? formatPunchTime(punch.checkinTime) : "—"}
       </p>
       <div className="mt-3 flex items-start gap-2 text-sm text-[#374151]">
-        <MapPin className="mt-0.5 size-4 shrink-0 text-[#9CA3AF]" strokeWidth={1.75} />
+        <MapPin
+          className="mt-0.5 size-4 shrink-0 text-[#9CA3AF]"
+          strokeWidth={1.75}
+        />
         <div className="min-w-0">
           <p>{address || "Location not recorded"}</p>
           {coordinates ? (
-            <p className="mt-1 font-mono text-xs text-[#6B7280]">{coordinates}</p>
+            <p className="mt-1 font-mono text-xs text-[#6B7280]">
+              {coordinates}
+            </p>
           ) : null}
         </div>
       </div>
@@ -291,104 +315,128 @@ function PunchLocationBlock({
   );
 }
 
-export function EmpProfileAttendanceView({ employeeId: viewEmployeeId }: { employeeId?: number } = {}) {
+export function EmpProfileAttendanceView({
+  employeeId: viewEmployeeId,
+}: { employeeId?: number } = {}) {
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`;
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth() + 1);
   const [loading, setLoading] = useState(true);
-  const [dayMap, setDayMap] = useState<Map<string, AttendanceDaySummary>>(new Map());
-  const [regularizedDates, setRegularizedDates] = useState<Set<string>>(new Set());
+  const [dayMap, setDayMap] = useState<Map<string, AttendanceDaySummary>>(
+    new Map(),
+  );
+  const [regularizedDates, setRegularizedDates] = useState<Set<string>>(
+    new Set(),
+  );
   const [workShiftName, setWorkShiftName] = useState<string>("—");
   const [employeeId, setEmployeeId] = useState<number | null>(null);
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const monthInputRef = useRef<HTMLInputElement>(null);
 
-  const loadMonth = useCallback(async (year: number, month: number) => {
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
-        : "";
-    if (!token) return;
-    setLoading(true);
-    const { from, to } = monthRange(year, month);
-    const headers = { Authorization: `Bearer ${token}` };
+  const loadMonth = useCallback(
+    async (year: number, month: number) => {
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("token") ||
+            localStorage.getItem("accessToken") ||
+            ""
+          : "";
+      if (!token) return;
+      setLoading(true);
+      const { from, to } = monthRange(year, month);
+      const headers = { Authorization: `Bearer ${token}` };
 
-    try {
-      let empId = viewEmployeeId ?? employeeId;
-      if (!empId) {
-        const userRaw = localStorage.getItem("user");
-        if (userRaw) {
-          const user = JSON.parse(userRaw);
-          empId = user?.employee?.id ?? null;
-          if (empId) setEmployeeId(empId);
-        }
-      } else {
-        setEmployeeId(empId);
-      }
-
-      const attUrl = viewEmployeeId
-        ? `${BACKEND}/emp-manager-scope/member/${viewEmployeeId}/attendance-history?from=${from}&to=${to}`
-        : `${BACKEND}/emp-location-attendance/my?from=${from}&to=${to}`;
-
-      const [attRes, regRes, empRes] = await Promise.all([
-        fetch(attUrl, { headers, cache: "no-store" }),
-        fetch(`${BACKEND}/emp-attendance-regularise`, { headers, cache: "no-store" }),
-        empId
-          ? fetch(`${BACKEND}/manage-emp/${empId}`, { headers, cache: "no-store" })
-          : Promise.resolve(null),
-      ]);
-
-      if (attRes.ok) {
-        const data = await attRes.json();
-        let records: AttendanceLocationRecord[] = [];
-        if (Array.isArray(data)) {
-          records = data;
-        } else if (Array.isArray(data?.records)) {
-          records = data.records;
-        }
-        const grouped = groupAttendanceByDay(records);
-        setDayMap(new Map(grouped.map((d) => [d.dateKey, d])));
-      } else {
-        setDayMap(new Map());
-      }
-
-      if (regRes.ok) {
-        const regs: RegularizationRow[] = await regRes.json();
-        const approved = new Set<string>();
-        (Array.isArray(regs) ? regs : []).forEach((r) => {
-          if (!r.attendanceDate || !empId) return;
-          if (Number((r as { manageEmployeeID?: number }).manageEmployeeID) !== Number(empId)) return;
-          const status = String(r.status || "").toLowerCase();
-          if (status === "approved" || status === "regularized") {
-            approved.add(r.attendanceDate.slice(0, 10));
+      try {
+        let empId = viewEmployeeId ?? employeeId;
+        if (!empId) {
+          const userRaw = localStorage.getItem("user");
+          if (userRaw) {
+            const user = JSON.parse(userRaw);
+            empId = user?.employee?.id ?? null;
+            if (empId) setEmployeeId(empId);
           }
-        });
-        setRegularizedDates(approved);
-      } else {
-        setRegularizedDates(new Set());
-      }
+        } else {
+          setEmployeeId(empId);
+        }
 
-      if (empRes && "ok" in empRes && empRes.ok) {
-        const emp = await empRes.json();
-        setWorkShiftName(await resolveWorkShiftName(emp, headers));
+        const attUrl = viewEmployeeId
+          ? `${BACKEND}/emp-manager-scope/member/${viewEmployeeId}/attendance-history?from=${from}&to=${to}`
+          : `${BACKEND}/emp-location-attendance/my?from=${from}&to=${to}`;
+
+        const [attRes, regRes, empRes] = await Promise.all([
+          fetch(attUrl, { headers, cache: "no-store" }),
+          fetch(`${BACKEND}/emp-attendance-regularise`, {
+            headers,
+            cache: "no-store",
+          }),
+          empId
+            ? fetch(`${BACKEND}/manage-emp/${empId}`, {
+                headers,
+                cache: "no-store",
+              })
+            : Promise.resolve(null),
+        ]);
+
+        if (attRes.ok) {
+          const data = await attRes.json();
+          let records: AttendanceLocationRecord[] = [];
+          if (Array.isArray(data)) {
+            records = data;
+          } else if (Array.isArray(data?.records)) {
+            records = data.records;
+          }
+          const grouped = groupAttendanceByDay(records);
+          setDayMap(new Map(grouped.map((d) => [d.dateKey, d])));
+        } else {
+          setDayMap(new Map());
+        }
+
+        if (regRes.ok) {
+          const regs: RegularizationRow[] = await regRes.json();
+          const approved = new Set<string>();
+          (Array.isArray(regs) ? regs : []).forEach((r) => {
+            if (!r.attendanceDate || !empId) return;
+            if (
+              Number((r as { manageEmployeeID?: number }).manageEmployeeID) !==
+              Number(empId)
+            )
+              return;
+            const status = String(r.status || "").toLowerCase();
+            if (status === "approved" || status === "regularized") {
+              approved.add(r.attendanceDate.slice(0, 10));
+            }
+          });
+          setRegularizedDates(approved);
+        } else {
+          setRegularizedDates(new Set());
+        }
+
+        if (empRes && "ok" in empRes && empRes.ok) {
+          const emp = await empRes.json();
+          setWorkShiftName(await resolveWorkShiftName(emp, headers));
+        }
+      } catch {
+        setDayMap(new Map());
+        setRegularizedDates(new Set());
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setDayMap(new Map());
-      setRegularizedDates(new Set());
-    } finally {
-      setLoading(false);
-    }
-  }, [employeeId, viewEmployeeId]);
+    },
+    [employeeId, viewEmployeeId],
+  );
 
   useEffect(() => {
     void loadMonth(viewYear, viewMonth);
   }, [viewYear, viewMonth, loadMonth]);
 
-  const monthLabel = new Date(viewYear, viewMonth - 1, 1).toLocaleDateString("en-IN", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = new Date(viewYear, viewMonth - 1, 1).toLocaleDateString(
+    "en-IN",
+    {
+      month: "long",
+      year: "numeric",
+    },
+  );
 
   const monthRows = useMemo(() => {
     const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
@@ -401,7 +449,9 @@ export function EmpProfileAttendanceView({ employeeId: viewEmployeeId }: { emplo
     return rows.reverse();
   }, [viewYear, viewMonth, dayMap, todayKey]);
 
-  const selectedDay = selectedDateKey ? dayMap.get(selectedDateKey) ?? null : null;
+  const selectedDay = selectedDateKey
+    ? (dayMap.get(selectedDateKey) ?? null)
+    : null;
   const selectedPunches = selectedDay?.records?.length
     ? extractDayPunchTimes(selectedDay.records)
     : null;
@@ -423,7 +473,9 @@ export function EmpProfileAttendanceView({ employeeId: viewEmployeeId }: { emplo
       else if (status.kind === "absent") absent++;
     });
 
-    const workingDays = monthRows.filter(({ dateKey }) => !isWeekend(dateKey)).length;
+    const workingDays = monthRows.filter(
+      ({ dateKey }) => !isWeekend(dateKey),
+    ).length;
     const hours = Math.floor(totalHours / 3600);
     const mins = Math.floor((totalHours % 3600) / 60);
 
@@ -453,11 +505,36 @@ export function EmpProfileAttendanceView({ employeeId: viewEmployeeId }: { emplo
   };
 
   const statCards = [
-    { label: "Present", value: summary.present, suffix: summary.present === 1 ? "Day" : "Days", icon: CheckCircle },
-    { label: "Absent", value: summary.absent, suffix: summary.absent === 1 ? "Day" : "Days", icon: Circle },
-    { label: "Weekend", value: summary.weekend, suffix: summary.weekend === 1 ? "Day" : "Days", icon: CalendarDays },
-    { label: "Partial", value: summary.partial, suffix: summary.partial === 1 ? "Day" : "Days", icon: Clock3 },
-    { label: "Total working days", value: summary.workingDays, suffix: "", icon: Timer },
+    {
+      label: "Present",
+      value: summary.present,
+      suffix: summary.present === 1 ? "Day" : "Days",
+      icon: CheckCircle,
+    },
+    {
+      label: "Absent",
+      value: summary.absent,
+      suffix: summary.absent === 1 ? "Day" : "Days",
+      icon: Circle,
+    },
+    {
+      label: "Weekend",
+      value: summary.weekend,
+      suffix: summary.weekend === 1 ? "Day" : "Days",
+      icon: CalendarDays,
+    },
+    {
+      label: "Partial",
+      value: summary.partial,
+      suffix: summary.partial === 1 ? "Day" : "Days",
+      icon: Clock3,
+    },
+    {
+      label: "Total working days",
+      value: summary.workingDays,
+      suffix: "",
+      icon: Timer,
+    },
   ];
 
   return (
@@ -491,8 +568,12 @@ export function EmpProfileAttendanceView({ employeeId: viewEmployeeId }: { emplo
               <Calendar className="size-4" strokeWidth={1.75} />
             </Button>
             <div>
-              <h3 className="text-lg font-semibold tracking-tight text-[#111827]">{monthLabel}</h3>
-              <p className="mt-0.5 text-[13px] text-[#6B7280]">{summary.hoursLabel} logged this month</p>
+              <h3 className="text-lg font-semibold tracking-tight text-[#111827]">
+                {monthLabel}
+              </h3>
+              <p className="mt-0.5 text-[13px] text-[#6B7280]">
+                {summary.hoursLabel} logged this month
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -536,14 +617,24 @@ export function EmpProfileAttendanceView({ employeeId: viewEmployeeId }: { emplo
 
       <div className="overflow-hidden rounded-xl border border-[#E5E7EB] bg-white">
         {loading ? (
-          <div className="py-20 text-center text-sm text-[#6B7280]">Loading attendance…</div>
+          <div className="py-20 text-center text-sm text-[#6B7280]">
+            Loading attendance…
+          </div>
         ) : (
           <>
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[#E5E7EB]">
-                    {["Date", "Day", "In / Out", "Hours", "Work shift", "Regularize", "Status"].map((header) => (
+                    {[
+                      "Date",
+                      "Day",
+                      "In / Out",
+                      "Hours",
+                      "Work shift",
+                      "Regularize",
+                      "Status",
+                    ].map((header) => (
                       <th
                         key={header}
                         className={cn(
@@ -586,7 +677,9 @@ export function EmpProfileAttendanceView({ employeeId: viewEmployeeId }: { emplo
                         <td className="px-6 py-4 text-sm font-medium tabular-nums text-[#111827]">
                           {fullDateLabel(dateKey)}
                         </td>
-                        <td className="px-6 py-4 text-sm text-[#6B7280]">{dayName(dateKey)}</td>
+                        <td className="px-6 py-4 text-sm text-[#6B7280]">
+                          {dayName(dateKey)}
+                        </td>
                         <td className="px-6 py-4">
                           {day?.records?.length ? (
                             <PunchTimeline records={day.records} />
@@ -597,11 +690,16 @@ export function EmpProfileAttendanceView({ employeeId: viewEmployeeId }: { emplo
                         <td className="px-6 py-4 text-sm tabular-nums text-[#111827]">
                           {day?.workLabel ?? "—"}
                         </td>
-                        <td className="px-6 py-4 text-sm text-[#6B7280]">{workShiftName}</td>
+                        <td className="px-6 py-4 text-sm text-[#6B7280]">
+                          {workShiftName}
+                        </td>
                         <td className="px-6 py-4 text-sm text-[#6B7280]">
                           {isRegularized ? (
                             <span className="inline-flex items-center gap-1.5 text-[#111827]">
-                              <CheckCircle className="size-3.5 text-[#6B7280]" strokeWidth={1.75} />
+                              <CheckCircle
+                                className="size-3.5 text-[#6B7280]"
+                                strokeWidth={1.75}
+                              />
                               Regularized
                             </span>
                           ) : (
@@ -640,7 +738,9 @@ export function EmpProfileAttendanceView({ employeeId: viewEmployeeId }: { emplo
                       <div className="min-w-0">
                         <p className="text-sm font-medium tabular-nums text-[#111827]">
                           {fullDateLabel(dateKey)}
-                          <span className="ml-2 font-normal text-[#6B7280]">{dayName(dateKey)}</span>
+                          <span className="ml-2 font-normal text-[#6B7280]">
+                            {dayName(dateKey)}
+                          </span>
                         </p>
                         <p className="mt-1 text-[13px] text-[#6B7280]">
                           {day?.workLabel ?? "—"} · {workShiftName}
@@ -662,7 +762,12 @@ export function EmpProfileAttendanceView({ employeeId: viewEmployeeId }: { emplo
         )}
       </div>
 
-      <Dialog open={!!selectedDateKey} onOpenChange={(open) => { if (!open) setSelectedDateKey(null); }}>
+      <Dialog
+        open={!!selectedDateKey}
+        onOpenChange={(open) => {
+          if (!open) setSelectedDateKey(null);
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
@@ -673,8 +778,14 @@ export function EmpProfileAttendanceView({ employeeId: viewEmployeeId }: { emplo
           </DialogHeader>
           {selectedPunches?.checkIn || selectedPunches?.checkOut ? (
             <div className="grid gap-3 sm:grid-cols-2">
-              <PunchLocationBlock label="Check-in" punch={selectedPunches.checkIn} />
-              <PunchLocationBlock label="Check-out" punch={selectedPunches.checkOut} />
+              <PunchLocationBlock
+                label="Check-in"
+                punch={selectedPunches.checkIn}
+              />
+              <PunchLocationBlock
+                label="Check-out"
+                punch={selectedPunches.checkOut}
+              />
             </div>
           ) : (
             <p className="text-sm text-muted-foreground py-4 text-center">
@@ -692,7 +803,22 @@ export const ATTENDANCE_STATUS_PRESETS: Record<
   Extract<AttendanceStatusKind, "leave" | "holiday" | "wfh">,
   AttendanceStatusMeta
 > = {
-  leave: { kind: "leave", label: "Leave", icon: Briefcase, iconClassName: "text-[#6B7280]" },
-  holiday: { kind: "holiday", label: "Holiday", icon: Flag, iconClassName: "text-[#6B7280]" },
-  wfh: { kind: "wfh", label: "Work From Home", icon: Home, iconClassName: "text-[#6B7280]" },
+  leave: {
+    kind: "leave",
+    label: "Leave",
+    icon: Briefcase,
+    iconClassName: "text-[#6B7280]",
+  },
+  holiday: {
+    kind: "holiday",
+    label: "Holiday",
+    icon: Flag,
+    iconClassName: "text-[#6B7280]",
+  },
+  wfh: {
+    kind: "wfh",
+    label: "Work From Home",
+    icon: Home,
+    iconClassName: "text-[#6B7280]",
+  },
 };

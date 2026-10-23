@@ -5,13 +5,17 @@ import {
   extractDayPunchTimes,
   type AttendanceLocationRecord,
 } from "../utils/empAttendanceHistory";
-import { buildDaySummary, todayPunchDateKey } from "../utils/attendanceDuration";
+import {
+  buildDaySummary,
+  todayPunchDateKey,
+} from "../utils/attendanceDuration";
 import { extractSiteVisitPunchesFromChats } from "../utils/siteVisitPunches";
 import { taskFetch } from "../utils/taskApi";
 import { useCurrentUser } from "./useCurrentUser";
 import type { TaskChatMessage } from "../components/task/task-types";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export interface CalendarDayTask {
   id: number;
@@ -66,14 +70,20 @@ export function useEmpCalendarDayDetail(dateKey: string | null) {
       return;
     }
 
-    const token = localStorage.getItem("token") || localStorage.getItem("accessToken") || "";
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      "";
     if (!token) return;
 
     setLoading(true);
-    fetch(`${BACKEND}/emp-location-attendance/my?from=${dateKey}&to=${dateKey}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    })
+    fetch(
+      `${BACKEND}/emp-location-attendance/my?from=${dateKey}&to=${dateKey}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      },
+    )
       .then((r) => (r.ok ? r.json() : []))
       .then((data: AttendanceLocationRecord[]) => {
         const list = Array.isArray(data) ? data : [];
@@ -84,7 +94,9 @@ export function useEmpCalendarDayDetail(dateKey: string | null) {
         });
         setRecords(
           [...dayOnly].sort(
-            (a, b) => new Date(a.checkinTime).getTime() - new Date(b.checkinTime).getTime(),
+            (a, b) =>
+              new Date(a.checkinTime).getTime() -
+              new Date(b.checkinTime).getTime(),
           ),
         );
       })
@@ -105,7 +117,10 @@ export function useEmpCalendarDayDetail(dateKey: string | null) {
     })
       .then((data) => {
         const items = data.items || [];
-        const dayTasks = items.filter((t) => t.scheduleDateTime && taskDateKey(t.scheduleDateTime) === dateKey);
+        const dayTasks = items.filter(
+          (t) =>
+            t.scheduleDateTime && taskDateKey(t.scheduleDateTime) === dateKey,
+        );
         setTasks(dayTasks);
 
         const visits = dayTasks.filter((t) => {
@@ -129,7 +144,9 @@ export function useEmpCalendarDayDetail(dateKey: string | null) {
                 `/task-projects/${t.id}`,
                 user,
               );
-              const punches = extractSiteVisitPunchesFromChats(detail.chats || []);
+              const punches = extractSiteVisitPunchesFromChats(
+                detail.chats || [],
+              );
               return { id: t.id, ...punches };
             } catch {
               return {
@@ -167,7 +184,10 @@ export function useEmpCalendarDayDetail(dateKey: string | null) {
   const summary = useMemo(
     () =>
       records.length && dateKey
-        ? buildDaySummary(records, { dateKey, live: dateKey === todayPunchDateKey() })
+        ? buildDaySummary(records, {
+            dateKey,
+            live: dateKey === todayPunchDateKey(),
+          })
         : null,
     [records, dateKey],
   );
@@ -177,7 +197,9 @@ export function useEmpCalendarDayDetail(dateKey: string | null) {
     () =>
       tasks.filter((t) => {
         const type = (t.taskType || "").toLowerCase();
-        return !(type.includes("site visit") || type.includes("customer visit"));
+        return !(
+          type.includes("site visit") || type.includes("customer visit")
+        );
       }),
     [tasks],
   );
@@ -187,7 +209,11 @@ export function useEmpCalendarDayDetail(dateKey: string | null) {
       nonSiteTasks.filter((t) => {
         const type = (t.taskType || "").toLowerCase();
         const status = (t.status || "").toLowerCase();
-        return type.includes("todo") || type.includes("to-do") || status.includes("todo");
+        return (
+          type.includes("todo") ||
+          type.includes("to-do") ||
+          status.includes("todo")
+        );
       }),
     [nonSiteTasks],
   );
@@ -197,7 +223,11 @@ export function useEmpCalendarDayDetail(dateKey: string | null) {
       nonSiteTasks.filter((t) => {
         const type = (t.taskType || "").toLowerCase();
         const status = (t.status || "").toLowerCase();
-        return !(type.includes("todo") || type.includes("to-do") || status.includes("todo"));
+        return !(
+          type.includes("todo") ||
+          type.includes("to-do") ||
+          status.includes("todo")
+        );
       }),
     [nonSiteTasks],
   );

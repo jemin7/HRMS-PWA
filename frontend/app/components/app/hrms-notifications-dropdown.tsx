@@ -2,7 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Activity, Bell, CalendarClock, Gift, HardDrive, Server, Shield, UserPlus, Wallet } from "lucide-react";
+import {
+  Activity,
+  Bell,
+  CalendarClock,
+  Gift,
+  HardDrive,
+  Server,
+  Shield,
+  UserPlus,
+  Wallet,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,11 +23,23 @@ import { authHeaders } from "@/lib/auth";
 import { getSidebarContext } from "@/app/utils/sidebarContext";
 import { cn } from "@/app/utils/cn";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 const VIEWED_FEED_KEY = "_hrms_admin_bell_feed";
 const SUPERADMIN_FEED_KEY = "_hrms_superadmin_bell_feed";
 
-type NoticeIcon = "leave" | "reimb" | "advance" | "birthday" | "join" | "task" | "health" | "storage" | "backend" | "security" | "api";
+type NoticeIcon =
+  | "leave"
+  | "reimb"
+  | "advance"
+  | "birthday"
+  | "join"
+  | "task"
+  | "health"
+  | "storage"
+  | "backend"
+  | "security"
+  | "api";
 
 type AdminNotice = {
   id: string;
@@ -113,7 +135,9 @@ function markFeedSeen(superAdmin: boolean, fingerprint: string) {
 
 function systemNotices(metrics: any, maps: any): AdminNotice[] {
   const next: AdminNotice[] = [];
-  const codes: string[] = Array.isArray(metrics?.health?.alerts) ? metrics.health.alerts : [];
+  const codes: string[] = Array.isArray(metrics?.health?.alerts)
+    ? metrics.health.alerts
+    : [];
   for (const code of codes) {
     const copy = SYSTEM_ALERTS[code];
     if (!copy) continue;
@@ -123,7 +147,9 @@ function systemNotices(metrics: any, maps: any): AdminNotice[] {
     const disks = Array.isArray(metrics?.disk?.all) ? metrics.disk.all : [];
     const hot = disks.filter((disk: any) => Number(disk?.usagePercent) >= 85);
     if (hot.length) {
-      const names = hot.map((disk: any) => disk.mount || disk.filesystem || "disk").join(", ");
+      const names = hot
+        .map((disk: any) => disk.mount || disk.filesystem || "disk")
+        .join(", ");
       next.push({
         id: `disk-${names}`,
         title: "Storage nearly full",
@@ -185,10 +211,14 @@ function systemNotices(metrics: any, maps: any): AdminNotice[] {
 function iconFor(kind: AdminNotice["icon"]) {
   switch (kind) {
     case "leave":
-      return <CalendarClock className="size-4 text-amber-600 dark:text-amber-400" />;
+      return (
+        <CalendarClock className="size-4 text-amber-600 dark:text-amber-400" />
+      );
     case "reimb":
     case "advance":
-      return <Wallet className="size-4 text-emerald-600 dark:text-emerald-400" />;
+      return (
+        <Wallet className="size-4 text-emerald-600 dark:text-emerald-400" />
+      );
     case "birthday":
       return <Gift className="size-4 text-pink-600 dark:text-pink-400" />;
     case "join":
@@ -196,7 +226,9 @@ function iconFor(kind: AdminNotice["icon"]) {
     case "health":
       return <Activity className="size-4 text-amber-600 dark:text-amber-400" />;
     case "storage":
-      return <HardDrive className="size-4 text-amber-600 dark:text-amber-400" />;
+      return (
+        <HardDrive className="size-4 text-amber-600 dark:text-amber-400" />
+      );
     case "backend":
       return <Server className="size-4 text-red-600 dark:text-red-400" />;
     case "security":
@@ -218,7 +250,11 @@ function companyQuery() {
   return companyID ? `?companyID=${companyID}` : "";
 }
 
-export function HrmsNotificationsDropdown({ user }: { user?: { role?: string } | null }) {
+export function HrmsNotificationsDropdown({
+  user,
+}: {
+  user?: { role?: string } | null;
+}) {
   const isSuperAdmin = String(user?.role || "").toUpperCase() === "SUPERADMIN";
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -233,8 +269,14 @@ export function HrmsNotificationsDropdown({ user }: { user?: { role?: string } |
     setLoading(true);
     try {
       const [liveRes, mapsRes] = await Promise.all([
-        fetch(`${BACKEND}/system-dashboard/live`, { headers: authHeaders(), cache: "no-store" }),
-        fetch(`${BACKEND}/external-apis/google-maps`, { headers: authHeaders(), cache: "no-store" }),
+        fetch(`${BACKEND}/system-dashboard/live`, {
+          headers: authHeaders(),
+          cache: "no-store",
+        }),
+        fetch(`${BACKEND}/external-apis/google-maps`, {
+          headers: authHeaders(),
+          cache: "no-store",
+        }),
       ]);
       if (!liveRes.ok) {
         setItems([
@@ -315,10 +357,13 @@ export function HrmsNotificationsDropdown({ user }: { user?: { role?: string } |
         });
       }
 
-      for (const ev of Array.isArray(data?.upcomingEvents) ? data.upcomingEvents : []) {
+      for (const ev of Array.isArray(data?.upcomingEvents)
+        ? data.upcomingEvents
+        : []) {
         next.push({
           id: String(ev.id || `ev-${ev.label}`),
-          title: ev.kind === "birthday" ? "Upcoming birthday" : "Work anniversary",
+          title:
+            ev.kind === "birthday" ? "Upcoming birthday" : "Work anniversary",
           body: `${ev.label || "Team member"} · ${ev.when || "Soon"}`,
           href: "/manage-employees",
           icon: "birthday",
@@ -344,7 +389,11 @@ export function HrmsNotificationsDropdown({ user }: { user?: { role?: string } |
   }, [isSuperAdmin, loadSystem, user?.role]);
 
   const fingerprint = useMemo(
-    () => items.map((i) => i.id).sort().join("|"),
+    () =>
+      items
+        .map((i) => i.id)
+        .sort()
+        .join("|"),
     [items],
   );
 
@@ -399,18 +448,26 @@ export function HrmsNotificationsDropdown({ user }: { user?: { role?: string } |
         <div className="border-b border-border px-4 py-3">
           <p className="text-sm font-semibold text-foreground">Notifications</p>
           <p className="text-[11px] text-muted-foreground">
-            {isSuperAdmin ? "System health, security, and API alerts" : "Company updates and pending actions"}
+            {isSuperAdmin
+              ? "System health, security, and API alerts"
+              : "Company updates and pending actions"}
           </p>
         </div>
         <div className="max-h-[min(420px,60vh)] overflow-y-auto">
           {loading && items.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">Loading…</p>
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Loading…
+            </p>
           ) : items.length === 0 ? (
             <div className="px-4 py-10 text-center">
               <Bell className="mx-auto mb-2 size-5 text-muted-foreground" />
-              <p className="text-sm font-medium text-foreground">You&apos;re all caught up</p>
+              <p className="text-sm font-medium text-foreground">
+                You&apos;re all caught up
+              </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {isSuperAdmin ? "No system alerts." : "No notifications right now."}
+                {isSuperAdmin
+                  ? "No system alerts."
+                  : "No notifications right now."}
               </p>
             </div>
           ) : (
@@ -426,8 +483,12 @@ export function HrmsNotificationsDropdown({ user }: { user?: { role?: string } |
                       {iconFor(n.icon)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-semibold text-foreground">{n.title}</p>
-                      <p className="mt-0.5 line-clamp-2 text-[12px] text-muted-foreground">{n.body}</p>
+                      <p className="truncate text-[13px] font-semibold text-foreground">
+                        {n.title}
+                      </p>
+                      <p className="mt-0.5 line-clamp-2 text-[12px] text-muted-foreground">
+                        {n.body}
+                      </p>
                     </div>
                   </Link>
                 </li>
@@ -443,8 +504,13 @@ export function HrmsNotificationsDropdown({ user }: { user?: { role?: string } |
               className={cn("h-9 w-full justify-center text-xs font-semibold")}
               asChild
             >
-              <Link href={isSuperAdmin ? "/superdashboard" : "/leave-applications"} onClick={() => setOpen(false)}>
-                {isSuperAdmin ? "Open system dashboard" : "Review pending requests"}
+              <Link
+                href={isSuperAdmin ? "/superdashboard" : "/leave-applications"}
+                onClick={() => setOpen(false)}
+              >
+                {isSuperAdmin
+                  ? "Open system dashboard"
+                  : "Review pending requests"}
               </Link>
             </Button>
           </div>

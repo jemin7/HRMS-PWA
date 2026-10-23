@@ -14,7 +14,10 @@ import {
   getDisplayLeaveType,
 } from "../../utils/leaveDisplay";
 import { useEmpManagerScope } from "../../hooks/useEmpManagerScope";
-import { isTeamMemberId, nameForEmployeeId } from "../../utils/empManagerDisplay";
+import {
+  isTeamMemberId,
+  nameForEmployeeId,
+} from "../../utils/empManagerDisplay";
 import { toast } from "sonner";
 import { splitPreviewRecords } from "../../utils/empListLimit";
 import { EmpRecordHistorySheet } from "./EmpRecordHistorySheet";
@@ -25,14 +28,22 @@ import { cn } from "@/app/utils/cn";
 import { formatDateShort } from "../../utils/leaveDisplay";
 import { EmpPortalPage, empListClass, empPageRootClass } from "./EmpPortalPage";
 import { useEmpPortalDesktop } from "../layout/EmpPortalShell";
-import { EmpDesktopLeaveBalance, EmpDesktopLeaveGrid, EmpDesktopLeaveTable } from "./desktop/EmpDesktopLeaveList";
+import {
+  EmpDesktopLeaveBalance,
+  EmpDesktopLeaveGrid,
+  EmpDesktopLeaveTable,
+} from "./desktop/EmpDesktopLeaveList";
 import { EmpDesktopPage } from "./desktop/EmpDesktopPage";
-import { EmpTeamStyleDataSection, useTeamListControls } from "./desktop/EmpTeamStyleDataSection";
+import {
+  EmpTeamStyleDataSection,
+  useTeamListControls,
+} from "./desktop/EmpTeamStyleDataSection";
 import { EmpLeaveApplyForm } from "./EmpLeaveApplyForm";
 import { FormModal } from "../ui/form-modal";
 import { Calendar } from "lucide-react";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 function getUsernameFromStorage(): string | undefined {
   if (typeof window === "undefined") return undefined;
@@ -62,7 +73,10 @@ function readLeaveBalanceVisibility(username?: string): boolean | null {
 
 function writeLeaveBalanceVisibility(username: string, visible: boolean) {
   try {
-    localStorage.setItem(`empPwaShowLeaveBalance_${username}`, visible ? "1" : "0");
+    localStorage.setItem(
+      `empPwaShowLeaveBalance_${username}`,
+      visible ? "1" : "0",
+    );
   } catch {
     /* ignore */
   }
@@ -98,8 +112,14 @@ export function EmpLeaveMobile({
   const isPortalDesktop = useEmpPortalDesktop();
   const inWorkspace = !!desktopTab;
   const { scope, isManagerView } = useEmpManagerScope();
-  const { cards, loading: balanceLoading, load: loadBalance } = useEmpLeaveBalance();
-  const [apps, setApps] = useState<LeaveAppRow[]>(() => getPageCache<LeaveAppRow[]>("empLeaveApps") ?? []);
+  const {
+    cards,
+    loading: balanceLoading,
+    load: loadBalance,
+  } = useEmpLeaveBalance();
+  const [apps, setApps] = useState<LeaveAppRow[]>(
+    () => getPageCache<LeaveAppRow[]>("empLeaveApps") ?? [],
+  );
   const [employeeId, setEmployeeId] = useState<number | null>(null);
   const [companyId, setCompanyId] = useState<number | null>(null);
   /** null = not yet known; do not render balance cards until true/false is resolved */
@@ -111,26 +131,42 @@ export function EmpLeaveMobile({
   const [approvalApp, setApprovalApp] = useState<LeaveAppRow | null>(null);
   const [applyOpen, setApplyOpen] = useState(false);
   const listControls = useTeamListControls("emp-profile-leave-view");
-  const { viewMode, selectViewMode, searchOpen, searchQuery, setSearchQuery, toggleSearch, filterOpen, toggleFilter } =
-    listControls;
+  const {
+    viewMode,
+    selectViewMode,
+    searchOpen,
+    searchQuery,
+    setSearchQuery,
+    toggleSearch,
+    filterOpen,
+    toggleFilter,
+  } = listControls;
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const loadApps = useCallback(async (empId: number, fetchBalance: boolean) => {
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
-        : "";
-    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-    try {
-      const data = await fetch(`${BACKEND}/leave-application/employee/${empId}`, {
-        cache: "no-store",
-        headers,
-      }).then((r) => (r.ok ? r.json() : []));
-      const mapped = (Array.isArray(data) ? data : []).map((a: any) => ({
+  const loadApps = useCallback(
+    async (empId: number, fetchBalance: boolean) => {
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("token") ||
+            localStorage.getItem("accessToken") ||
+            ""
+          : "";
+      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+      try {
+        const data = await fetch(
+          `${BACKEND}/leave-application/employee/${empId}`,
+          {
+            cache: "no-store",
+            headers,
+          },
+        ).then((r) => (r.ok ? r.json() : []));
+        const mapped = (Array.isArray(data) ? data : []).map((a: any) => ({
           id: String(a.id),
           manageEmployeeID: a.manageEmployeeID,
           manageEmployee: a.manageEmployee,
-          fromDate: a.fromDate ? new Date(a.fromDate).toISOString().slice(0, 10) : "",
+          fromDate: a.fromDate
+            ? new Date(a.fromDate).toISOString().slice(0, 10)
+            : "",
           toDate: a.toDate ? new Date(a.toDate).toISOString().slice(0, 10) : "",
           purpose: a.purpose,
           status: a.status || "Pending",
@@ -141,20 +177,24 @@ export function EmpLeaveMobile({
           companyID: a.companyID,
           branchesID: a.branchesID,
         }));
-      setPageCache("empLeaveApps", mapped);
-      setApps(mapped);
-      if (fetchBalance) loadBalance(empId);
-    } catch {
-      setApps([]);
-    }
-  }, [loadBalance]);
+        setPageCache("empLeaveApps", mapped);
+        setApps(mapped);
+        if (fetchBalance) loadBalance(empId);
+      } catch {
+        setApps([]);
+      }
+    },
+    [loadBalance],
+  );
 
   useEffect(() => {
     if (!user?.username) return;
     const cached = readLeaveBalanceVisibility(user.username);
     if (cached !== null) setShowLeaveBalance(cached);
 
-    fetch(`${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`)
+    fetch(
+      `${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`,
+    )
       .then((r) => (r.ok ? r.json() : null))
       .then((creds) => {
         const id = creds?.employee?.id ?? creds?.employeeID;
@@ -183,10 +223,13 @@ export function EmpLeaveMobile({
   }, [employeeId, showLeaveBalance, loadApps]);
 
   const statusClass = (label: string) => {
-    if (label === "Approved") return "text-emerald-700 bg-emerald-50 border-emerald-100";
+    if (label === "Approved")
+      return "text-emerald-700 bg-emerald-50 border-emerald-100";
     if (label === "Rejected") return "text-red-700 bg-red-50 border-red-100";
-    if (label === "Partially Approved") return "text-amber-700 bg-amber-50 border-amber-100";
-    if (label === "Approval Pending") return "text-blue-700 bg-blue-50 border-blue-100";
+    if (label === "Partially Approved")
+      return "text-amber-700 bg-amber-50 border-amber-100";
+    if (label === "Approval Pending")
+      return "text-blue-700 bg-blue-50 border-blue-100";
     return "text-gray-600 bg-gray-50 border-gray-100";
   };
 
@@ -197,11 +240,18 @@ export function EmpLeaveMobile({
     setMenuId(null);
   };
 
-  const { preview: previewApps, history: historyApps, hasHistory } = splitPreviewRecords(apps);
+  const {
+    preview: previewApps,
+    history: historyApps,
+    hasHistory,
+  } = splitPreviewRecords(apps);
 
   const employeeNameForRow = (app: LeaveAppRow) => {
     if (app.manageEmployee) {
-      const n = [app.manageEmployee.employeeFirstName, app.manageEmployee.employeeLastName]
+      const n = [
+        app.manageEmployee.employeeFirstName,
+        app.manageEmployee.employeeLastName,
+      ]
         .filter(Boolean)
         .join(" ")
         .trim();
@@ -234,13 +284,16 @@ export function EmpLeaveMobile({
                 <span className="text-gray-400">Request:</span> {requestDate}
               </p>
               <p>
-                <span className="text-gray-400">Applied:</span> {getAppliedDateRange(app)}
+                <span className="text-gray-400">Applied:</span>{" "}
+                {getAppliedDateRange(app)}
               </p>
               <p>
-                <span className="text-gray-400">Approved:</span> {getApprovedDateRange(app)}
+                <span className="text-gray-400">Approved:</span>{" "}
+                {getApprovedDateRange(app)}
               </p>
               <p>
-                <span className="text-gray-400">Type:</span> {getDisplayLeaveType(app)}
+                <span className="text-gray-400">Type:</span>{" "}
+                {getDisplayLeaveType(app)}
               </p>
             </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
@@ -290,15 +343,17 @@ export function EmpLeaveMobile({
                 Delete Request
               </button>
             )}
-            {!teamLeave && (displayStatus === "Approved" || displayStatus === "Partially Approved") && (
-              <button
-                type="button"
-                className="text-[12px] font-semibold text-amber-700 px-3 py-2"
-                onClick={() => handleCancel(app)}
-              >
-                Cancel Leave
-              </button>
-            )}
+            {!teamLeave &&
+              (displayStatus === "Approved" ||
+                displayStatus === "Partially Approved") && (
+                <button
+                  type="button"
+                  className="text-[12px] font-semibold text-amber-700 px-3 py-2"
+                  onClick={() => handleCancel(app)}
+                >
+                  Cancel Leave
+                </button>
+              )}
           </div>
         )}
       </div>
@@ -318,11 +373,18 @@ export function EmpLeaveMobile({
   };
 
   const balanceVisible = showLeaveBalance === true;
-  const showBalance = balanceVisible && (!inWorkspace || desktopTab === "overview" || desktopTab === "balance");
-  const showList = !inWorkspace || desktopTab === "overview" || desktopTab === "history" || desktopTab === "approvals";
-  const listApps = desktopTab === "approvals"
-    ? previewApps.filter((a) => isTeamMemberId(scope, a.manageEmployeeID))
-    : previewApps;
+  const showBalance =
+    balanceVisible &&
+    (!inWorkspace || desktopTab === "overview" || desktopTab === "balance");
+  const showList =
+    !inWorkspace ||
+    desktopTab === "overview" ||
+    desktopTab === "history" ||
+    desktopTab === "approvals";
+  const listApps =
+    desktopTab === "approvals"
+      ? previewApps.filter((a) => isTeamMemberId(scope, a.manageEmployeeID))
+      : previewApps;
 
   const filteredListApps = useMemo(() => {
     return listApps.filter((app) => {
@@ -339,7 +401,13 @@ export function EmpLeaveMobile({
     });
   }, [listApps, statusFilter, searchQuery]);
 
-  const leaveStatusFilters = ["all", "Approval Pending", "Approved", "Partially Approved", "Rejected"];
+  const leaveStatusFilters = [
+    "all",
+    "Approval Pending",
+    "Approved",
+    "Partially Approved",
+    "Rejected",
+  ];
 
   if (inWorkspace) {
     const pageTitle =
@@ -350,10 +418,9 @@ export function EmpLeaveMobile({
           : desktopTab === "history"
             ? "Leave history"
             : "Leave overview";
-    const pageDesc =
-      isManagerView
-        ? "Review team leave requests and balances"
-        : "Your leave balance and application history";
+    const pageDesc = isManagerView
+      ? "Review team leave requests and balances"
+      : "Your leave balance and application history";
 
     const inner = (
       <>
@@ -379,11 +446,19 @@ export function EmpLeaveMobile({
               <EmpTeamStyleDataSection
                 leading={
                   showBalance ? (
-                    <EmpDesktopLeaveBalance cards={cards} loading={balanceLoading} compact={compactBalance} />
+                    <EmpDesktopLeaveBalance
+                      cards={cards}
+                      loading={balanceLoading}
+                      compact={compactBalance}
+                    />
                   ) : undefined
                 }
                 actions={
-                  <Button type="button" size="sm" onClick={() => setApplyOpen(true)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setApplyOpen(true)}
+                  >
                     <Plus className="size-4" />
                     Apply leave
                   </Button>
@@ -443,7 +518,10 @@ export function EmpLeaveMobile({
               />
             )}
             {hasHistory ? (
-              <EmpListViewMoreButton count={historyApps.length} onClick={() => setHistoryOpen(true)} />
+              <EmpListViewMoreButton
+                count={historyApps.length}
+                onClick={() => setHistoryOpen(true)}
+              />
             ) : null}
           </div>
         ) : null}
@@ -506,58 +584,85 @@ export function EmpLeaveMobile({
           </Link>
         </div>
       ) : !inWorkspace ? (
-      <>
-      <div className="px-4 pt-5 pb-3">
-        <h1 className="text-[22px] font-bold text-gray-900">Leave</h1>
-        <p className="text-[12px] text-gray-500 mt-0.5">
-          {isManagerView
-            ? "Team leave requests — approve or review"
-            : balanceVisible
-              ? "Available balance & requests"
-              : "Leave requests"}
-        </p>
-      </div>
-      </>
+        <>
+          <div className="px-4 pt-5 pb-3">
+            <h1 className="text-[22px] font-bold text-gray-900">Leave</h1>
+            <p className="text-[12px] text-gray-500 mt-0.5">
+              {isManagerView
+                ? "Team leave requests — approve or review"
+                : balanceVisible
+                  ? "Available balance & requests"
+                  : "Leave requests"}
+            </p>
+          </div>
+        </>
       ) : null}
 
       {showBalance && (
-      <div className={`${isPortalDesktop ? "" : "px-4"} grid grid-cols-3 gap-2 mb-4`}>
-        {(cards.length ? cards : [
-          { key: "sick", label: "Sick", remaining: 0, total: 0 },
-          { key: "casual", label: "Casual", remaining: 0, total: 0 },
-          { key: "privileged", label: "Privilege", remaining: 0, total: 0 },
-        ]).map((c) => (
-          <div
-            key={c.key}
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center"
-          >
-            <p className="text-[18px] font-bold text-gray-900 tabular-nums leading-none">
-              {balanceLoading ? "…" : `${c.remaining}/${c.total}`}
-            </p>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-1.5">
-              {c.label}
-            </p>
-          </div>
-        ))}
-      </div>
+        <div
+          className={`${isPortalDesktop ? "" : "px-4"} grid grid-cols-3 gap-2 mb-4`}
+        >
+          {(cards.length
+            ? cards
+            : [
+                { key: "sick", label: "Sick", remaining: 0, total: 0 },
+                { key: "casual", label: "Casual", remaining: 0, total: 0 },
+                {
+                  key: "privileged",
+                  label: "Privilege",
+                  remaining: 0,
+                  total: 0,
+                },
+              ]
+          ).map((c) => (
+            <div
+              key={c.key}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center"
+            >
+              <p className="text-[18px] font-bold text-gray-900 tabular-nums leading-none">
+                {balanceLoading ? "…" : `${c.remaining}/${c.total}`}
+              </p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-1.5">
+                {c.label}
+              </p>
+            </div>
+          ))}
+        </div>
       )}
 
       {showList && (
-      <div className={`${isPortalDesktop && !inWorkspace ? "" : inWorkspace ? "" : "px-4"} flex-1`}>
-        <p className={`${isPortalDesktop ? "text-xs font-semibold text-gray-500 uppercase tracking-wide" : "text-[11px] font-bold text-gray-400 uppercase tracking-wider"} mb-2`}>
-          {isManagerView ? "Team leave requests" : "Leave requests"}
-        </p>
-        {apps.length === 0 ? (
-          <p className="text-[13px] text-gray-400 text-center py-10">No leave requests yet</p>
-        ) : (
-          <>
-            <div className={inWorkspace ? "emp-ws-table-list" : empListClass(isPortalDesktop)}>{listApps.map(renderLeaveCard)}</div>
-            {hasHistory && (
-              <EmpListViewMoreButton count={historyApps.length} onClick={() => setHistoryOpen(true)} />
-            )}
-          </>
-        )}
-      </div>
+        <div
+          className={`${isPortalDesktop && !inWorkspace ? "" : inWorkspace ? "" : "px-4"} flex-1`}
+        >
+          <p
+            className={`${isPortalDesktop ? "text-xs font-semibold text-gray-500 uppercase tracking-wide" : "text-[11px] font-bold text-gray-400 uppercase tracking-wider"} mb-2`}
+          >
+            {isManagerView ? "Team leave requests" : "Leave requests"}
+          </p>
+          {apps.length === 0 ? (
+            <p className="text-[13px] text-gray-400 text-center py-10">
+              No leave requests yet
+            </p>
+          ) : (
+            <>
+              <div
+                className={
+                  inWorkspace
+                    ? "emp-ws-table-list"
+                    : empListClass(isPortalDesktop)
+                }
+              >
+                {listApps.map(renderLeaveCard)}
+              </div>
+              {hasHistory && (
+                <EmpListViewMoreButton
+                  count={historyApps.length}
+                  onClick={() => setHistoryOpen(true)}
+                />
+              )}
+            </>
+          )}
+        </div>
       )}
 
       <EmpRecordHistorySheet
@@ -581,7 +686,11 @@ export function EmpLeaveMobile({
       <Link
         href="/empLeaveApplication/new"
         className={`mobile-fab fixed right-4 z-40 w-14 h-14 rounded-full bg-[#2563eb] text-white shadow-lg flex items-center justify-center active:scale-90 ${isPortalDesktop ? "emp-portal-fab-hidden" : ""}`}
-        style={isPortalDesktop ? undefined : { bottom: "calc(64px + env(safe-area-inset-bottom))" }}
+        style={
+          isPortalDesktop
+            ? undefined
+            : { bottom: "calc(64px + env(safe-area-inset-bottom))" }
+        }
         aria-label="New leave request"
       >
         <Plus className="w-6 h-6" strokeWidth={2.5} />

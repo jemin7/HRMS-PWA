@@ -1,7 +1,20 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo, useCallback, Fragment, type ReactNode } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+  Fragment,
+  type ReactNode,
+} from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -234,7 +247,8 @@ type ReportMasterData = {
 
 // ==================== CONSTANTS ====================
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 const getStoredActiveCompanyID = (): number | null => {
   if (typeof window === "undefined") return null;
@@ -244,7 +258,9 @@ const getStoredActiveCompanyID = (): number | null => {
     if (sessionId) return sessionId;
 
     const userData = JSON.parse(localStorage.getItem("user") || "{}");
-    const localId = Number(userData?.activeCompanyID || userData?.companyID || 0);
+    const localId = Number(
+      userData?.activeCompanyID || userData?.companyID || 0,
+    );
 
     return localId || null;
   } catch {
@@ -286,7 +302,7 @@ const LEFT_WIDTHS = {
   company: 140,
   branch: 130,
   dept: 120,
-  emp: 160
+  emp: 160,
 };
 
 // Mobile responsive widths - much narrower for better horizontal scrolling
@@ -295,7 +311,7 @@ const LEFT_WIDTHS_MOBILE = {
   company: 0, // Hide on mobile
   branch: 0, // Hide on mobile
   dept: 0, // Hide on mobile
-  emp: 110
+  emp: 110,
 };
 
 // Global cache for status calculations
@@ -304,7 +320,9 @@ const globalStatusCache = new Map<string, any>();
 // ==================== HELPER FUNCTIONS ====================
 
 /** Device punches are stored as UTC wall-clock; do not use local getHours(). */
-const parsePunchTime = (punchTime: string): { dateKey: string; timeStr: string } | null => {
+const parsePunchTime = (
+  punchTime: string,
+): { dateKey: string; timeStr: string } | null => {
   const formatted = formatDevicePunchForDisplay(punchTime);
   if (!formatted) return null;
   return { dateKey: formatted.dateKey, timeStr: formatted.timeStr };
@@ -312,8 +330,8 @@ const parsePunchTime = (punchTime: string): { dateKey: string; timeStr: string }
 
 const timeToMinutes = (timeStr: string): number => {
   if (!timeStr) return 0;
-  const cleanTime = timeStr.includes(':') ? timeStr : timeStr + ':00';
-  const parts = cleanTime.split(':');
+  const cleanTime = timeStr.includes(":") ? timeStr : timeStr + ":00";
+  const parts = cleanTime.split(":");
   const hours = parseInt(parts[0]) || 0;
   const minutes = parseInt(parts[1]) || 0;
   const seconds = parseInt(parts[2]) || 0;
@@ -334,23 +352,34 @@ const addDaysToIso = (date: string, days: number): string => {
 const normalizeWorkShift = (shift: any): WorkShift => ({
   ...shift,
   workShiftName: shift?.workShiftName || shift?.shiftName || "",
-  workShiftDay: (shift?.workShiftDay || shift?.factualWorkShiftDay || []).map((day: any) => ({
-    ...day,
-    workShiftID: day?.workShiftID ?? day?.factualWorkShiftID ?? shift?.id ?? 0,
-  })),
+  workShiftDay: (shift?.workShiftDay || shift?.factualWorkShiftDay || []).map(
+    (day: any) => ({
+      ...day,
+      workShiftID:
+        day?.workShiftID ?? day?.factualWorkShiftID ?? shift?.id ?? 0,
+    }),
+  ),
 });
 
-const normalizeRosterEmployee = (rosterEmployee: any, shiftById: Map<number, WorkShift>): RosterEmployee => ({
+const normalizeRosterEmployee = (
+  rosterEmployee: any,
+  shiftById: Map<number, WorkShift>,
+): RosterEmployee => ({
   ...rosterEmployee,
   days: (rosterEmployee?.days || []).map((day: any) => {
     const workShiftID = day?.workShiftID ?? day?.factualWorkShiftID ?? null;
-    const relatedShift = workShiftID != null
-      ? shiftById.get(workShiftID) || normalizeWorkShift(day?.workShift || day?.factualWorkShift)
-      : null;
+    const relatedShift =
+      workShiftID != null
+        ? shiftById.get(workShiftID) ||
+          normalizeWorkShift(day?.workShift || day?.factualWorkShift)
+        : null;
 
     return {
       ...day,
-      rosterEmployeeID: day?.rosterEmployeeID ?? day?.factualRosterEmployeeID ?? rosterEmployee?.id,
+      rosterEmployeeID:
+        day?.rosterEmployeeID ??
+        day?.factualRosterEmployeeID ??
+        rosterEmployee?.id,
       workShiftID,
       workShift: relatedShift,
     };
@@ -360,42 +389,56 @@ const normalizeRosterEmployee = (rosterEmployee: any, shiftById: Map<number, Wor
 const extractEmpWorkShiftMappings = (
   employees: any[],
   isFactualMode: boolean,
-  shiftById: Map<number, WorkShift>
+  shiftById: Map<number, WorkShift>,
 ): EmpWorkShift[] => {
   const mappingKey = isFactualMode ? "empFactualWorkShift" : "empWorkShift";
   const shiftKey = isFactualMode ? "factualWorkShift" : "workShift";
 
   return employees.flatMap((employee: any) => {
-    const mappings = Array.isArray(employee?.[mappingKey]) ? employee[mappingKey] : [];
+    const mappings = Array.isArray(employee?.[mappingKey])
+      ? employee[mappingKey]
+      : [];
     if (mappings.length === 0 && employee?.workShiftID) {
-      const fallbackShift = shiftById.get(employee.workShiftID) || normalizeWorkShift(employee?.workShift);
+      const fallbackShift =
+        shiftById.get(employee.workShiftID) ||
+        normalizeWorkShift(employee?.workShift);
       if (fallbackShift?.id) {
-        return [{
-          id: Number(employee.id),
-          manageEmployeeID: employee.id,
-          workShiftID: employee.workShiftID,
-          workShift: fallbackShift,
-        }];
+        return [
+          {
+            id: Number(employee.id),
+            manageEmployeeID: employee.id,
+            workShiftID: employee.workShiftID,
+            workShift: fallbackShift,
+          },
+        ];
       }
     }
 
     return mappings
       .map((mapping: any) => {
-        const workShiftID = mapping?.workShiftID ?? mapping?.factualWorkShiftID ?? mapping?.[shiftKey]?.id;
+        const workShiftID =
+          mapping?.workShiftID ??
+          mapping?.factualWorkShiftID ??
+          mapping?.[shiftKey]?.id;
         if (!workShiftID) return null;
 
         return {
           id: mapping.id,
           manageEmployeeID: mapping.manageEmployeeID ?? employee.id,
           workShiftID,
-          workShift: shiftById.get(workShiftID) || normalizeWorkShift(mapping?.[shiftKey]),
+          workShift:
+            shiftById.get(workShiftID) ||
+            normalizeWorkShift(mapping?.[shiftKey]),
         };
       })
       .filter(Boolean) as EmpWorkShift[];
   });
 };
 
-const parseRuleCount = (value: string | number | undefined, fallback: number): number => {
+const parseRuleCount = (
+  value: string | number | undefined,
+  fallback: number,
+): number => {
   const parsed = Number.parseInt(String(value ?? ""), 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
@@ -430,8 +473,11 @@ const isoDatePrefix = (value: any): string => {
   return d.toISOString().split("T")[0];
 };
 
-const buildStatusCacheKey = (date: string, employeeID: number, punches: string[]) =>
-  `${date}-${employeeID}-${punches.join(",")}`;
+const buildStatusCacheKey = (
+  date: string,
+  employeeID: number,
+  punches: string[],
+) => `${date}-${employeeID}-${punches.join(",")}`;
 
 const formatSummaryPunchTime = (timeStr: string) => {
   if (!timeStr) return "";
@@ -444,11 +490,20 @@ const getSummaryStatusBadge = (status: AttendanceStatus) => {
     case "ABSENT":
       return { badge: "A", badgeClass: "bg-red-100 text-red-800" };
     case "WEEK_OFF":
-      return { badge: status.label === "WO-P" ? "WO-P" : "WO", badgeClass: "bg-orange-100 text-orange-800" };
+      return {
+        badge: status.label === "WO-P" ? "WO-P" : "WO",
+        badgeClass: "bg-orange-100 text-orange-800",
+      };
     case "HOLIDAY":
-      return { badge: status.label === "PH-P" ? "PH-P" : "PH", badgeClass: "bg-purple-100 text-purple-800" };
+      return {
+        badge: status.label === "PH-P" ? "PH-P" : "PH",
+        badgeClass: "bg-purple-100 text-purple-800",
+      };
     case "LEAVE":
-      return { badge: status.label === "Leave-P" ? "L-P" : "L", badgeClass: "bg-pink-100 text-pink-800" };
+      return {
+        badge: status.label === "Leave-P" ? "L-P" : "L",
+        badgeClass: "bg-pink-100 text-pink-800",
+      };
     case "HALF_DAY":
       return { badge: "HD", badgeClass: "bg-yellow-100 text-yellow-800" };
     case "LATE_MARK":
@@ -470,7 +525,12 @@ const getSummaryStatusBadge = (status: AttendanceStatus) => {
 };
 
 const formatMarkingExcelCell = (status: AttendanceStatus): string => {
-  if (status.type === "OT" && status.workedMinutes && status.totalShiftMinutes && status.otMinutes) {
+  if (
+    status.type === "OT" &&
+    status.workedMinutes &&
+    status.totalShiftMinutes &&
+    status.otMinutes
+  ) {
     return `P (${formatWorkedDuration(status.totalShiftMinutes)} + ${formatWorkedDuration(status.otMinutes)} OT)`;
   }
   if (status.type === "PRESENT" && status.workedMinutes) {
@@ -482,19 +542,30 @@ const formatMarkingExcelCell = (status: AttendanceStatus): string => {
   if (status.type === "LATE_MARK" && status.workedMinutes) {
     return `L (${formatWorkedDuration(status.workedMinutes)})`;
   }
-  if ((status.type === "WEEK_OFF" || status.type === "HOLIDAY" || status.type === "LEAVE") && status.workedMinutes) {
+  if (
+    (status.type === "WEEK_OFF" ||
+      status.type === "HOLIDAY" ||
+      status.type === "LEAVE") &&
+    status.workedMinutes
+  ) {
     return `${status.label}\n${formatWorkedDuration(status.workedMinutes)}`;
   }
   return status.label;
 };
 
-const formatSummaryExcelCell = (punches: string[], status: AttendanceStatus): string => {
+const formatSummaryExcelCell = (
+  punches: string[],
+  status: AttendanceStatus,
+): string => {
   const { badge } = getSummaryStatusBadge(status);
   const lines: string[] = [`Marking: ${badge}`];
 
   if (punches.length > 0) {
     const first = formatSummaryPunchTime(punches[0]);
-    const last = punches.length >= 2 ? formatSummaryPunchTime(punches[punches.length - 1]) : "--:--";
+    const last =
+      punches.length >= 2
+        ? formatSummaryPunchTime(punches[punches.length - 1])
+        : "--:--";
     lines.push(`FILO: ${first} - ${last}`);
   }
 
@@ -542,15 +613,22 @@ const isPunchLogReport = (reportType?: string) =>
 type PunchPhoto = { time: string; url: string; checkType: string };
 type DayPhotos = { ins: PunchPhoto[]; outs: PunchPhoto[] };
 
-const photoDayKey = (employeeId: number, date: string) => `${employeeId}|${date}`;
+const photoDayKey = (employeeId: number, date: string) =>
+  `${employeeId}|${date}`;
 
-function photoFromLocationLog(log: ProcessAttLog): { url: string; checkType: string } | null {
+function photoFromLocationLog(
+  log: ProcessAttLog,
+): { url: string; checkType: string } | null {
   if (String(log.device_sn || "") !== "LOCATION_APP") return null;
   const raw = String(log.raw_body || "").trim();
   if (!raw.startsWith("{")) return null;
   try {
-    const parsed = JSON.parse(raw) as { photoUrl?: unknown; checkType?: unknown };
-    const url = typeof parsed?.photoUrl === "string" ? parsed.photoUrl.trim() : "";
+    const parsed = JSON.parse(raw) as {
+      photoUrl?: unknown;
+      checkType?: unknown;
+    };
+    const url =
+      typeof parsed?.photoUrl === "string" ? parsed.photoUrl.trim() : "";
     if (!url) return null;
     return { url, checkType: String(parsed.checkType || "") };
   } catch {
@@ -576,14 +654,21 @@ function addPhotoToDay(
 
 function photoRowsFromPayload(payload: unknown): any[] {
   if (Array.isArray(payload)) return payload;
-  if (payload && typeof payload === "object" && Array.isArray((payload as { data?: unknown }).data)) {
+  if (
+    payload &&
+    typeof payload === "object" &&
+    Array.isArray((payload as { data?: unknown }).data)
+  ) {
     return (payload as { data: any[] }).data;
   }
   return [];
 }
 
 /** Even punches are IN, odd punches are OUT. FILO uses first IN / last OUT only. */
-const splitInOutPunches = (punches: string[], reportType?: string): { ins: string[]; outs: string[] } => {
+const splitInOutPunches = (
+  punches: string[],
+  reportType?: string,
+): { ins: string[]; outs: string[] } => {
   if (!punches.length) return { ins: [], outs: [] };
   if (reportType === "FILO Punches Logs") {
     return {
@@ -600,7 +685,9 @@ const splitInOutPunches = (punches: string[], reportType?: string): { ins: strin
   return { ins, outs };
 };
 
-const punchDayStatusLabel = (status: any | null | undefined): { label: string; className: string } | null => {
+const punchDayStatusLabel = (
+  status: any | null | undefined,
+): { label: string; className: string } | null => {
   if (!status) return null;
   if (status.type === "WEEK_OFF") {
     return { label: "WO", className: "bg-orange-100 text-orange-800" };
@@ -658,7 +745,8 @@ function PunchLogDayCells({
   photos?: DayPhotos | null;
   onOpenPhotos?: (photos: DayPhotos) => void;
 }) {
-  const splitType = reportType === "Photo Report" ? "All Punches Logs" : reportType;
+  const splitType =
+    reportType === "Photo Report" ? "All Punches Logs" : reportType;
   const photoButton = (kind: "in" | "out") =>
     reportType === "Photo Report" &&
     photos &&
@@ -697,8 +785,13 @@ function PunchLogDayCells({
   }
   const dayStatus = punchDayStatusLabel(status);
   return (
-    <td colSpan={2} className="px-2 py-1 border-b border-l min-w-[140px] text-center align-top">
-      <span className={`inline-block px-2 py-0.5 text-[9px] font-medium rounded-full ${dayStatus?.className || ""}`}>
+    <td
+      colSpan={2}
+      className="px-2 py-1 border-b border-l min-w-[140px] text-center align-top"
+    >
+      <span
+        className={`inline-block px-2 py-0.5 text-[9px] font-medium rounded-full ${dayStatus?.className || ""}`}
+      >
         {dayStatus?.label || "Absent"}
       </span>
     </td>
@@ -707,67 +800,78 @@ function PunchLogDayCells({
 
 // ==================== MULTI SELECT COMPONENT ====================
 
-const MultiSelect = ({ options, selectedValues, onChange, placeholder, disabled = false }: { 
-  options: { value: string; label: string }[], 
-  selectedValues: string[], 
-  onChange: (values: string[]) => void, 
-  placeholder: string,
-  disabled?: boolean
+const MultiSelect = ({
+  options,
+  selectedValues,
+  onChange,
+  placeholder,
+  disabled = false,
+}: {
+  options: { value: string; label: string }[];
+  selectedValues: string[];
+  onChange: (values: string[]) => void;
+  placeholder: string;
+  disabled?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  
-  const filteredOptions = options.filter(opt => 
-    String(opt.label || "").toLowerCase().includes(searchTerm.toLowerCase())
+
+  const filteredOptions = options.filter((opt) =>
+    String(opt.label || "")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase()),
   );
-  
+
   const toggleOption = (value: string) => {
     if (selectedValues.includes(value)) {
-      onChange(selectedValues.filter(v => v !== value));
+      onChange(selectedValues.filter((v) => v !== value));
     } else {
       onChange([...selectedValues, value]);
     }
   };
-  
+
   const selectAll = () => {
-    const allValues = filteredOptions.map(opt => opt.value);
+    const allValues = filteredOptions.map((opt) => opt.value);
     onChange([...new Set([...selectedValues, ...allValues])]);
   };
-  
+
   const clearAll = () => {
     onChange([]);
   };
-  
+
   const getSelectedLabels = () => {
     if (selectedValues.length === 0) return placeholder;
     if (selectedValues.length === 1) {
-      const opt = options.find(o => o.value === selectedValues[0]);
+      const opt = options.find((o) => o.value === selectedValues[0]);
       return opt?.label || placeholder;
     }
     return `${selectedValues.length} selected`;
   };
-  
+
   return (
     <div className="relative" ref={dropdownRef}>
-      <div 
-        className={`w-full px-3 py-2 border rounded-md bg-white ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'cursor-pointer'} flex items-center justify-between`}
+      <div
+        className={`w-full px-3 py-2 border rounded-md bg-white ${disabled ? "bg-gray-100 cursor-not-allowed" : "cursor-pointer"} flex items-center justify-between`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
         <span className="text-sm truncate">{getSelectedLabels()}</span>
         <ChevronDown className="w-4 h-4 text-gray-400" />
       </div>
-      
+
       {isOpen && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-80 overflow-hidden">
           <div className="p-2 border-b">
@@ -781,15 +885,34 @@ const MultiSelect = ({ options, selectedValues, onChange, placeholder, disabled 
             />
           </div>
           <div className="flex gap-2 p-2 border-b">
-            <Button type="button" variant="outline" size="sm" onClick={selectAll}>Select All</Button>
-            <Button type="button" variant="outline" size="sm" onClick={clearAll}>Clear</Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={selectAll}
+            >
+              Select All
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={clearAll}
+            >
+              Clear
+            </Button>
           </div>
           <div className="max-h-48 overflow-auto">
             {filteredOptions.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-gray-500">No options available</div>
+              <div className="px-3 py-2 text-sm text-gray-500">
+                No options available
+              </div>
             ) : (
-              filteredOptions.map(opt => (
-                <label key={opt.value} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
+              filteredOptions.map((opt) => (
+                <label
+                  key={opt.value}
+                  className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     checked={selectedValues.includes(opt.value)}
@@ -802,19 +925,34 @@ const MultiSelect = ({ options, selectedValues, onChange, placeholder, disabled 
             )}
           </div>
           <div className="p-2 border-t">
-            <Button type="button" size="sm" className="w-full" onClick={() => setIsOpen(false)}>Done</Button>
+            <Button
+              type="button"
+              size="sm"
+              className="w-full"
+              onClick={() => setIsOpen(false)}
+            >
+              Done
+            </Button>
           </div>
         </div>
       )}
-      
+
       {selectedValues.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
-          {selectedValues.slice(0, 2).map(v => {
-            const opt = options.find(o => o.value === v);
+          {selectedValues.slice(0, 2).map((v) => {
+            const opt = options.find((o) => o.value === v);
             return opt ? (
-              <span key={v} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
-                {opt.label.length > 20 ? opt.label.substring(0, 20) + '...' : opt.label}
-                <X className="w-3 h-3 cursor-pointer hover:text-blue-600" onClick={() => toggleOption(v)} />
+              <span
+                key={v}
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full"
+              >
+                {opt.label.length > 20
+                  ? opt.label.substring(0, 20) + "..."
+                  : opt.label}
+                <X
+                  className="w-3 h-3 cursor-pointer hover:text-blue-600"
+                  onClick={() => toggleOption(v)}
+                />
               </span>
             ) : null;
           })}
@@ -831,15 +969,27 @@ const MultiSelect = ({ options, selectedValues, onChange, placeholder, disabled 
 
 // ==================== DATE CELL COMPONENT ====================
 
-const DateCell = ({ punches, date, employeeID, formData, reportData, selectedCompanyID, selectedBranchID, getComprehensiveStatus, photos, onOpenPhotos }: any) => {
-  const punchesKey = punches.join(',');
+const DateCell = ({
+  punches,
+  date,
+  employeeID,
+  formData,
+  reportData,
+  selectedCompanyID,
+  selectedBranchID,
+  getComprehensiveStatus,
+  photos,
+  onOpenPhotos,
+}: any) => {
+  const punchesKey = punches.join(",");
   const cacheKey = buildStatusCacheKey(date, employeeID, punches);
   const cached = globalStatusCache.get(cacheKey);
   const [status, setStatus] = useState<any>(cached ?? null);
 
   const isPunchOnlyReport = isPunchLogReport(formData.reportType);
   const hasPhotos = !!(photos?.ins?.length || photos?.outs?.length);
-  const canPaintPunchesImmediately = isPunchOnlyReport && (punches.length > 0 || hasPhotos);
+  const canPaintPunchesImmediately =
+    isPunchOnlyReport && (punches.length > 0 || hasPhotos);
 
   useEffect(() => {
     if (canPaintPunchesImmediately) return;
@@ -849,58 +999,123 @@ const DateCell = ({ punches, date, employeeID, formData, reportData, selectedCom
         if (!cancelled) setStatus(globalStatusCache.get(cacheKey));
         return;
       }
-        const statusesMap = new Map<string, string>();
-        const result = await getComprehensiveStatus(date, employeeID, punches, selectedCompanyID, selectedBranchID, statusesMap);
-        globalStatusCache.set(cacheKey, result);
+      const statusesMap = new Map<string, string>();
+      const result = await getComprehensiveStatus(
+        date,
+        employeeID,
+        punches,
+        selectedCompanyID,
+        selectedBranchID,
+        statusesMap,
+      );
+      globalStatusCache.set(cacheKey, result);
       if (!cancelled) setStatus(result);
     };
     fetchStatus();
-    return () => { cancelled = true; };
-  }, [canPaintPunchesImmediately, cacheKey, date, employeeID, punchesKey, selectedCompanyID, selectedBranchID]);
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canPaintPunchesImmediately,
+    cacheKey,
+    date,
+    employeeID,
+    punchesKey,
+    selectedCompanyID,
+    selectedBranchID,
+  ]);
 
   // Fast path: punch times are already in props — paint immediately (no "...").
   if (canPaintPunchesImmediately) {
-    return <PunchLogDayCells punches={punches} reportType={formData.reportType} photos={photos} onOpenPhotos={onOpenPhotos} />;
+    return (
+      <PunchLogDayCells
+        punches={punches}
+        reportType={formData.reportType}
+        photos={photos}
+        onOpenPhotos={onOpenPhotos}
+      />
+    );
   }
 
   if (isPunchOnlyReport && !status) {
-    return <PunchLogDayCells punches={punches} reportType={formData.reportType} status={null} photos={photos} onOpenPhotos={onOpenPhotos} />;
+    return (
+      <PunchLogDayCells
+        punches={punches}
+        reportType={formData.reportType}
+        status={null}
+        photos={photos}
+        onOpenPhotos={onOpenPhotos}
+      />
+    );
   }
 
   if (!status) {
-    return <td className="px-2 py-1 border-b min-w-[80px] text-center align-top"><div className="text-[10px] text-gray-400">...</div></td>;
+    return (
+      <td className="px-2 py-1 border-b min-w-[80px] text-center align-top">
+        <div className="text-[10px] text-gray-400">...</div>
+      </td>
+    );
   }
 
   // ALL PUNCHES / FILO — separate IN and OUT columns
   if (isPunchOnlyReport) {
-    return <PunchLogDayCells punches={punches} reportType={formData.reportType} status={status} photos={photos} onOpenPhotos={onOpenPhotos} />;
+    return (
+      <PunchLogDayCells
+        punches={punches}
+        reportType={formData.reportType}
+        status={status}
+        photos={photos}
+        onOpenPhotos={onOpenPhotos}
+      />
+    );
   }
 
   // ATTENDANCE MARKING LOGS
   if (formData.reportType === "Attendance Marking Logs") {
     let statusClass = "";
-    if (status.type === "WEEK_OFF") statusClass = "bg-orange-100 text-orange-800";
-    else if (status.type === "HOLIDAY") statusClass = "bg-purple-100 text-purple-800";
+    if (status.type === "WEEK_OFF")
+      statusClass = "bg-orange-100 text-orange-800";
+    else if (status.type === "HOLIDAY")
+      statusClass = "bg-purple-100 text-purple-800";
     else if (status.type === "LEAVE") statusClass = "bg-pink-100 text-pink-800";
-    else if (status.type === "REGULARIZATION") statusClass = "bg-teal-100 text-teal-800";
-    else if (status.type === "SANDWICH") statusClass = "bg-amber-100 text-amber-800";
+    else if (status.type === "REGULARIZATION")
+      statusClass = "bg-teal-100 text-teal-800";
+    else if (status.type === "SANDWICH")
+      statusClass = "bg-amber-100 text-amber-800";
     else if (status.type === "ABSENT") statusClass = "bg-red-100 text-red-800";
-    else if (status.type === "PRESENT") statusClass = "bg-green-100 text-green-800";
-    else if (status.type === "HALF_DAY") statusClass = "bg-yellow-100 text-yellow-800";
-    else if (status.type === "LATE_MARK") statusClass = "bg-blue-100 text-blue-800";
-    else if (status.type === "LATE_MARK_LIMIT") statusClass = "bg-red-200 text-red-900";
-    else if (status.type === "OT") statusClass = "bg-indigo-100 text-indigo-800";
-    else if (status.type === "SINGLE_PUNCH") statusClass = "bg-gray-100 text-gray-800";
+    else if (status.type === "PRESENT")
+      statusClass = "bg-green-100 text-green-800";
+    else if (status.type === "HALF_DAY")
+      statusClass = "bg-yellow-100 text-yellow-800";
+    else if (status.type === "LATE_MARK")
+      statusClass = "bg-blue-100 text-blue-800";
+    else if (status.type === "LATE_MARK_LIMIT")
+      statusClass = "bg-red-200 text-red-900";
+    else if (status.type === "OT")
+      statusClass = "bg-indigo-100 text-indigo-800";
+    else if (status.type === "SINGLE_PUNCH")
+      statusClass = "bg-gray-100 text-gray-800";
     else statusClass = "bg-gray-100 text-gray-800";
 
     // Special status with punches - show status + working hours (WO-P, PH-P, Leave-P)
-    if (status.hasPunches && punches.length > 0 && 
-        (status.type === "WEEK_OFF" || status.type === "HOLIDAY" || status.type === "LEAVE")) {
+    if (
+      status.hasPunches &&
+      punches.length > 0 &&
+      (status.type === "WEEK_OFF" ||
+        status.type === "HOLIDAY" ||
+        status.type === "LEAVE")
+    ) {
       const workedMinutes = status.workedMinutes || 0;
       return (
         <td className="px-2 py-1 border-b min-w-[100px] text-center align-top">
-          <div className={`text-[9px] font-bold py-1 px-2 rounded mb-1 ${statusClass}`}>{status.label}</div>
-          <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full">{formatWorkedDuration(workedMinutes)}</div>
+          <div
+            className={`text-[9px] font-bold py-1 px-2 rounded mb-1 ${statusClass}`}
+          >
+            {status.label}
+          </div>
+          <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full">
+            {formatWorkedDuration(workedMinutes)}
+          </div>
         </td>
       );
     }
@@ -909,38 +1124,70 @@ const DateCell = ({ punches, date, employeeID, formData, reportData, selectedCom
     if (status.type === "REGULARIZATION") {
       const workedMinutes = status.workedMinutes || 0;
       const regLabel = status.label || "P";
-      const regStatusClass = regLabel === "P" ? "bg-green-100 text-green-800"
-        : regLabel === "HD" ? "bg-yellow-100 text-yellow-800"
-        : regLabel === "A" ? "bg-red-100 text-red-800"
-        : "bg-teal-100 text-teal-800";
+      const regStatusClass =
+        regLabel === "P"
+          ? "bg-green-100 text-green-800"
+          : regLabel === "HD"
+            ? "bg-yellow-100 text-yellow-800"
+            : regLabel === "A"
+              ? "bg-red-100 text-red-800"
+              : "bg-teal-100 text-teal-800";
       return (
         <td className="px-2 py-1 border-b min-w-[100px] text-center align-top">
-          <div className="inline-block px-2 py-0.5 bg-teal-100 text-teal-800 text-[9px] font-bold rounded-full mb-1">AR</div>
-          <div className={`inline-block px-2 py-0.5 text-[9px] font-medium rounded-full mb-1 ${regStatusClass}`}>{regLabel}</div>
-          {workedMinutes > 0 && <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full">{formatWorkedDuration(workedMinutes)}</div>}
+          <div className="inline-block px-2 py-0.5 bg-teal-100 text-teal-800 text-[9px] font-bold rounded-full mb-1">
+            AR
+          </div>
+          <div
+            className={`inline-block px-2 py-0.5 text-[9px] font-medium rounded-full mb-1 ${regStatusClass}`}
+          >
+            {regLabel}
+          </div>
+          {workedMinutes > 0 && (
+            <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full">
+              {formatWorkedDuration(workedMinutes)}
+            </div>
+          )}
         </td>
       );
     }
-    
+
     // OT - show total worked hours → OT badge → OT hours
     if (status.type === "OT") {
       return (
         <td className="px-2 py-1 border-b min-w-[100px] text-center align-top">
-          <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full mb-1">{formatWorkedDuration(status.workedMinutes || 0)}</div>
-          <div className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-800 text-[9px] font-medium rounded-full mb-1">OT</div>
-          <div className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[9px] font-medium rounded-full">+{formatWorkedDuration(status.otMinutes || 0)}</div>
-          {status.rosterShiftName && <div className="block mt-0.5 text-[8px] font-medium text-gray-500">{status.rosterShiftName}</div>}
+          <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full mb-1">
+            {formatWorkedDuration(status.workedMinutes || 0)}
+          </div>
+          <div className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-800 text-[9px] font-medium rounded-full mb-1">
+            OT
+          </div>
+          <div className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[9px] font-medium rounded-full">
+            +{formatWorkedDuration(status.otMinutes || 0)}
+          </div>
+          {status.rosterShiftName && (
+            <div className="block mt-0.5 text-[8px] font-medium text-gray-500">
+              {status.rosterShiftName}
+            </div>
+          )}
         </td>
       );
     }
-    
+
     // Present - show P badge + working hours
     if (status.type === "PRESENT" && status.workedMinutes) {
       return (
         <td className="px-2 py-1 border-b min-w-[80px] text-center align-top">
-          <div className="inline-block px-2 py-0.5 bg-green-100 text-green-800 text-[9px] font-medium rounded-full mb-1">P</div>
-          <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full">{formatWorkedDuration(status.workedMinutes)}</div>
-          {status.rosterShiftName && <div className="block mt-0.5 text-[8px] font-medium text-gray-500">{status.rosterShiftName}</div>}
+          <div className="inline-block px-2 py-0.5 bg-green-100 text-green-800 text-[9px] font-medium rounded-full mb-1">
+            P
+          </div>
+          <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full">
+            {formatWorkedDuration(status.workedMinutes)}
+          </div>
+          {status.rosterShiftName && (
+            <div className="block mt-0.5 text-[8px] font-medium text-gray-500">
+              {status.rosterShiftName}
+            </div>
+          )}
         </td>
       );
     }
@@ -949,20 +1196,36 @@ const DateCell = ({ punches, date, employeeID, formData, reportData, selectedCom
     if (status.type === "HALF_DAY" && status.workedMinutes) {
       return (
         <td className="px-2 py-1 border-b min-w-[80px] text-center align-top">
-          <div className="inline-block px-2 py-0.5 bg-yellow-100 text-yellow-800 text-[9px] font-medium rounded-full mb-1">HD</div>
-          <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full">{formatWorkedDuration(status.workedMinutes)}</div>
-          {status.rosterShiftName && <div className="block mt-0.5 text-[8px] font-medium text-gray-500">{status.rosterShiftName}</div>}
+          <div className="inline-block px-2 py-0.5 bg-yellow-100 text-yellow-800 text-[9px] font-medium rounded-full mb-1">
+            HD
+          </div>
+          <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full">
+            {formatWorkedDuration(status.workedMinutes)}
+          </div>
+          {status.rosterShiftName && (
+            <div className="block mt-0.5 text-[8px] font-medium text-gray-500">
+              {status.rosterShiftName}
+            </div>
+          )}
         </td>
       );
     }
-    
+
     // Late Mark - show L badge + working hours
     if (status.type === "LATE_MARK") {
       return (
         <td className="px-2 py-1 border-b min-w-[80px] text-center align-top">
-          <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full mb-1">L</div>
-          <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full">{formatWorkedDuration(status.workedMinutes || 0)}</div>
-          {status.rosterShiftName && <div className="block mt-0.5 text-[8px] font-medium text-gray-500">{status.rosterShiftName}</div>}
+          <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full mb-1">
+            L
+          </div>
+          <div className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-medium rounded-full">
+            {formatWorkedDuration(status.workedMinutes || 0)}
+          </div>
+          {status.rosterShiftName && (
+            <div className="block mt-0.5 text-[8px] font-medium text-gray-500">
+              {status.rosterShiftName}
+            </div>
+          )}
         </td>
       );
     }
@@ -971,46 +1234,62 @@ const DateCell = ({ punches, date, employeeID, formData, reportData, selectedCom
     if (status.type === "SINGLE_PUNCH" && punches.length > 0) {
       return (
         <td className="px-2 py-1 border-b min-w-[80px] text-center align-top">
-          <div className="inline-block px-2 py-0.5 bg-gray-100 text-gray-800 text-[9px] font-medium rounded-full">{punches[0]}</div>
+          <div className="inline-block px-2 py-0.5 bg-gray-100 text-gray-800 text-[9px] font-medium rounded-full">
+            {punches[0]}
+          </div>
         </td>
       );
     }
-    
+
     // Sandwich - show Absent + SW badge
     if (status.type === "SANDWICH") {
       return (
         <td className="px-2 py-1 border-b min-w-[80px] text-center align-top">
-          <div className="inline-block px-2 py-0.5 bg-red-100 text-red-800 text-[9px] font-medium rounded-full mb-1">Absent</div>
-          <div className="inline-block px-2 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-bold rounded-full">SW</div>
+          <div className="inline-block px-2 py-0.5 bg-red-100 text-red-800 text-[9px] font-medium rounded-full mb-1">
+            Absent
+          </div>
+          <div className="inline-block px-2 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-bold rounded-full">
+            SW
+          </div>
         </td>
       );
     }
 
     return (
       <td className="px-2 py-1 border-b min-w-[80px] text-center align-top">
-        <div className={`text-[10px] font-bold py-1 px-2 rounded ${statusClass}`}>{status.label}</div>
+        <div
+          className={`text-[10px] font-bold py-1 px-2 rounded ${statusClass}`}
+        >
+          {status.label}
+        </div>
       </td>
     );
   }
 
   // ==================== ATTENDANCE SUMMARY LOGS (ENHANCED FOR PAYROLL) ====================
   if (formData.reportType === "Attendance Summary Logs") {
-    const firstPunch = punches.length > 0 ? formatSummaryPunchTime(punches[0]) : "";
-    const lastPunch = punches.length >= 2 ? formatSummaryPunchTime(punches[punches.length - 1]) : "";
+    const firstPunch =
+      punches.length > 0 ? formatSummaryPunchTime(punches[0]) : "";
+    const lastPunch =
+      punches.length >= 2
+        ? formatSummaryPunchTime(punches[punches.length - 1])
+        : "";
     const workedMinutes = status.workedMinutes || 0;
     const otMinutes = status.otMinutes || 0;
     const { badge: statusBadge, badgeClass } = getSummaryStatusBadge(status);
-    
+
     return (
       <td className="px-2 py-1 border-b min-w-[140px] text-center align-top bg-white">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center justify-center">
-            <span className={`inline-block px-2 py-0.5 ${badgeClass} text-[9px] font-bold rounded-full`}>
+            <span
+              className={`inline-block px-2 py-0.5 ${badgeClass} text-[9px] font-bold rounded-full`}
+            >
               {statusBadge}
             </span>
             <span className="text-[8px] text-gray-400 ml-1">Marking</span>
           </div>
-          
+
           {/* Row 2: FILO Punches (First In - Last Out) */}
           {punches.length > 0 && (
             <div className="flex items-center justify-center gap-1">
@@ -1023,19 +1302,23 @@ const DateCell = ({ punches, date, employeeID, formData, reportData, selectedCom
               </span>
             </div>
           )}
-          
+
           {/* Row 3: Working Hours (in minutes) */}
-          {status.type !== "ABSENT" && status.type !== "WEEK_OFF" && status.type !== "HOLIDAY" && 
-           status.type !== "LEAVE" && !(status.type === "WEEK_OFF" && !status.hasPunches) && 
-           !(status.type === "HOLIDAY" && !status.hasPunches) && workedMinutes > 0 && (
-            <div className="flex items-center justify-center">
-              <span className="text-[9px] font-semibold text-blue-700">
-                {formatWorkedDuration(workedMinutes)}
-              </span>
-              <span className="text-[7px] text-gray-400 ml-1">Work</span>
-            </div>
-          )}
-          
+          {status.type !== "ABSENT" &&
+            status.type !== "WEEK_OFF" &&
+            status.type !== "HOLIDAY" &&
+            status.type !== "LEAVE" &&
+            !(status.type === "WEEK_OFF" && !status.hasPunches) &&
+            !(status.type === "HOLIDAY" && !status.hasPunches) &&
+            workedMinutes > 0 && (
+              <div className="flex items-center justify-center">
+                <span className="text-[9px] font-semibold text-blue-700">
+                  {formatWorkedDuration(workedMinutes)}
+                </span>
+                <span className="text-[7px] text-gray-400 ml-1">Work</span>
+              </div>
+            )}
+
           {/* Row 4: OT Hours (in minutes) - Only show if OT exists */}
           {otMinutes > 0 && (
             <div className="flex items-center justify-center">
@@ -1045,37 +1328,52 @@ const DateCell = ({ punches, date, employeeID, formData, reportData, selectedCom
               <span className="text-[7px] text-gray-400 ml-1">OT</span>
             </div>
           )}
-          
+
           {/* Row 5: Total Payable Hours (Work + OT) - For payroll quick reference */}
-          {workedMinutes > 0 && status.type !== "WEEK_OFF" && status.type !== "HOLIDAY" && status.type !== "LEAVE" && (
-            <div className="flex items-center justify-center border-t border-gray-200 pt-0.5 mt-0.5">
-              <span className="text-[8px] font-bold text-gray-600">
-                Total: {formatWorkedDuration(workedMinutes + otMinutes)}
-              </span>
-            </div>
-          )}
-          
+          {workedMinutes > 0 &&
+            status.type !== "WEEK_OFF" &&
+            status.type !== "HOLIDAY" &&
+            status.type !== "LEAVE" && (
+              <div className="flex items-center justify-center border-t border-gray-200 pt-0.5 mt-0.5">
+                <span className="text-[8px] font-bold text-gray-600">
+                  Total: {formatWorkedDuration(workedMinutes + otMinutes)}
+                </span>
+              </div>
+            )}
+
           {/* Show label for non-working days without punches */}
           {punches.length === 0 && (
             <div className="text-[9px] text-gray-500 font-medium">
-              {status.type === "WEEK_OFF" ? "Weekly Off" : 
-               status.type === "HOLIDAY" ? "Holiday" : 
-               status.type === "LEAVE" ? status.label : 
-               status.type === "ABSENT" ? "Absent" : ""}
+              {status.type === "WEEK_OFF"
+                ? "Weekly Off"
+                : status.type === "HOLIDAY"
+                  ? "Holiday"
+                  : status.type === "LEAVE"
+                    ? status.label
+                    : status.type === "ABSENT"
+                      ? "Absent"
+                      : ""}
             </div>
           )}
-          
         </div>
       </td>
     );
   }
 
-  return <td className="px-2 py-1 border-b min-w-[100px] text-center align-top"><div className="text-[10px] text-gray-400"></div></td>;
+  return (
+    <td className="px-2 py-1 border-b min-w-[100px] text-center align-top">
+      <div className="text-[10px] text-gray-400"></div>
+    </td>
+  );
 };
 
 // ==================== MAIN COMPONENT ====================
 
-export function AttendanceReportsManagement({ mode = "actual" }: { mode?: ReportMode }) {
+export function AttendanceReportsManagement({
+  mode = "actual",
+}: {
+  mode?: ReportMode;
+}) {
   const user = useCurrentUser();
   const isFactualMode = mode === "factual";
   const [searchTerm, setSearchTerm] = useState("");
@@ -1088,20 +1386,31 @@ export function AttendanceReportsManagement({ mode = "actual" }: { mode?: Report
   const [allBranches, setAllBranches] = useState<Branch[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
   const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
-  
+
   const [publicHolidays, setPublicHolidays] = useState<PublicHoliday[]>([]);
   const [workShifts, setWorkShifts] = useState<WorkShift[]>([]);
-  const [attendanceRegularizations, setAttendanceRegularizations] = useState<AttendanceRegularize[]>([]);
-  const [leaveApplications, setLeaveApplications] = useState<LeaveApplication[]>([]);
+  const [attendanceRegularizations, setAttendanceRegularizations] = useState<
+    AttendanceRegularize[]
+  >([]);
+  const [leaveApplications, setLeaveApplications] = useState<
+    LeaveApplication[]
+  >([]);
   const [rosters, setRosters] = useState<RosterEmployee[]>([]);
-  const [attendancePolicy, setAttendancePolicy] = useState<AttendancePolicy | null>(null);
+  const [attendancePolicy, setAttendancePolicy] =
+    useState<AttendancePolicy | null>(null);
   const [empWorkShifts, setEmpWorkShifts] = useState<EmpWorkShift[]>([]);
-  const [sandwichOverrides, setSandwichOverrides] = useState<Map<number, Set<string>>>(new Map());
-  const [factualWeekoffOverrides, setFactualWeekoffOverrides] = useState<Map<number, Set<string>>>(new Map());
+  const [sandwichOverrides, setSandwichOverrides] = useState<
+    Map<number, Set<string>>
+  >(new Map());
+  const [factualWeekoffOverrides, setFactualWeekoffOverrides] = useState<
+    Map<number, Set<string>>
+  >(new Map());
 
   const [managerData, setManagerData] = useState<any>(null);
   const [empCreds, setEmpCreds] = useState<any>(null);
-  const [photoByDay, setPhotoByDay] = useState<Map<string, DayPhotos>>(new Map());
+  const [photoByDay, setPhotoByDay] = useState<Map<string, DayPhotos>>(
+    new Map(),
+  );
   const [photoViewer, setPhotoViewer] = useState<{
     name: string;
     date: string;
@@ -1114,11 +1423,13 @@ export function AttendanceReportsManagement({ mode = "actual" }: { mode?: Report
     branchName: "",
     reportType: "All Punches Logs",
     dateFrom: getFirstDayOfMonth(),
-    dateTo: getTodayStr()
+    dateTo: getTodayStr(),
   });
-  
+
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [selectedDesignations, setSelectedDesignations] = useState<string[]>([]);
+  const [selectedDesignations, setSelectedDesignations] = useState<string[]>(
+    [],
+  );
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -1127,10 +1438,10 @@ export function AttendanceReportsManagement({ mode = "actual" }: { mode?: Report
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768); // md breakpoint
     };
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   // Get responsive widths based on viewport
@@ -1142,10 +1453,19 @@ export function AttendanceReportsManagement({ mode = "actual" }: { mode?: Report
   const canGenerateReports = !user
     ? true
     : isFactualMode
-      ? ["SUPERADMIN", "COMPANY_ADMIN", "MULTI_COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN"].includes(user.role) ||
-        canViewModule("REPORTS")
-      : ["SUPERADMIN", "COMPANY_ADMIN", "MULTI_COMPANY_ADMIN", "BRANCH_ADMIN"].includes(user.role) ||
-        canViewModule("REPORTS");
+      ? [
+          "SUPERADMIN",
+          "COMPANY_ADMIN",
+          "MULTI_COMPANY_ADMIN",
+          "BRANCH_ADMIN",
+          "ADMIN",
+        ].includes(user.role) || canViewModule("REPORTS")
+      : [
+          "SUPERADMIN",
+          "COMPANY_ADMIN",
+          "MULTI_COMPANY_ADMIN",
+          "BRANCH_ADMIN",
+        ].includes(user.role) || canViewModule("REPORTS");
 
   const getActiveReportContext = () => {
     const ctx = getSidebarContext();
@@ -1164,10 +1484,7 @@ export function AttendanceReportsManagement({ mode = "actual" }: { mode?: Report
     let companyID: number | null = null;
 
     if (user?.role === "SUPERADMIN") {
-      companyID =
-        formData.companyID ??
-        ctx?.companyID ??
-        null;
+      companyID = formData.companyID ?? ctx?.companyID ?? null;
     } else if (isCompanyScopedUser) {
       if (
         hasMultiCompany &&
@@ -1193,7 +1510,8 @@ export function AttendanceReportsManagement({ mode = "actual" }: { mode?: Report
     } else if (user?.role === "EMPLOYEE") {
       companyID = empCreds?.companyID ?? user?.companyID ?? null;
     } else {
-      companyID = formData.companyID ?? ctx?.companyID ?? user?.companyID ?? null;
+      companyID =
+        formData.companyID ?? ctx?.companyID ?? user?.companyID ?? null;
     }
 
     let branchID: number | null =
@@ -1211,41 +1529,43 @@ export function AttendanceReportsManagement({ mode = "actual" }: { mode?: Report
     };
   };
 
-  // ==================== LOAD BRANCH DATA ON SELECTION ====================  
- useEffect(() => {
-  const loadBranchData = async () => {
-    if (!formData.branchName || !formData.companyID) return;
-    
-    const branch = branches.find(b => b.branchName === formData.branchName);
-    if (!branch) return;
+  // ==================== LOAD BRANCH DATA ON SELECTION ====================
+  useEffect(() => {
+    const loadBranchData = async () => {
+      if (!formData.branchName || !formData.companyID) return;
 
-    try {
-      const deptsRes = await fetch(`${BACKEND_URL}/departments`);
-      const deptsData = await deptsRes.json();
-      const branchDepts = deptsData.filter((d: Department) => 
-        d.branchesID === branch.id && d.companyID === formData.companyID
-      );
-      setDepartments(branchDepts);
+      const branch = branches.find((b) => b.branchName === formData.branchName);
+      if (!branch) return;
 
-      const desigsRes = await fetch(`${BACKEND_URL}/designations`);
-      const desigsData = await desigsRes.json();
-      const branchDesigs = desigsData.filter((d: Designation) => 
-        d.branchesID === branch.id && d.companyID === formData.companyID
-      );
-      setDesignations(branchDesigs);
+      try {
+        const deptsRes = await fetch(`${BACKEND_URL}/departments`);
+        const deptsData = await deptsRes.json();
+        const branchDepts = deptsData.filter(
+          (d: Department) =>
+            d.branchesID === branch.id && d.companyID === formData.companyID,
+        );
+        setDepartments(branchDepts);
 
-      const empsRes = await fetch(`${BACKEND_URL}/manage-emp`);
-      const empsData = await empsRes.json();
-      const branchEmps = empsData.filter((e: Employee) => 
-        e.branchesID === branch.id && e.companyID === formData.companyID
-      );
-      setAllEmployees(branchEmps);
+        const desigsRes = await fetch(`${BACKEND_URL}/designations`);
+        const desigsData = await desigsRes.json();
+        const branchDesigs = desigsData.filter(
+          (d: Designation) =>
+            d.branchesID === branch.id && d.companyID === formData.companyID,
+        );
+        setDesignations(branchDesigs);
 
-    } catch (error) {}
-  };
+        const empsRes = await fetch(`${BACKEND_URL}/manage-emp`);
+        const empsData = await empsRes.json();
+        const branchEmps = empsData.filter(
+          (e: Employee) =>
+            e.branchesID === branch.id && e.companyID === formData.companyID,
+        );
+        setAllEmployees(branchEmps);
+      } catch (error) {}
+    };
 
-  loadBranchData();
-}, [formData.branchName, formData.companyID, branches]);
+    loadBranchData();
+  }, [formData.branchName, formData.companyID, branches]);
 
   // ==================== LOAD MASTER DATA ====================
 
@@ -1271,13 +1591,20 @@ export function AttendanceReportsManagement({ mode = "actual" }: { mode?: Report
     if (!user) return;
     const loadUserData = async () => {
       try {
-        if (user.role === "SERVICE_PROVIDER" || isCompanyAdminLikeRole(user.role) || user.role === "ADMIN" || user.role === "BRANCH_ADMIN") {
+        if (
+          user.role === "SERVICE_PROVIDER" ||
+          isCompanyAdminLikeRole(user.role) ||
+          user.role === "ADMIN" ||
+          user.role === "BRANCH_ADMIN"
+        ) {
           const usersRes = await fetch(`${BACKEND_URL}/users`);
           const users = await usersRes.json();
           const me = users.find((u: any) => u.username === user.username);
           setManagerData(me || null);
         } else if (user.role === "EMPLOYEE") {
-          const credsRes = await fetch(`${BACKEND_URL}/manage-emp/credentials/all`);
+          const credsRes = await fetch(
+            `${BACKEND_URL}/manage-emp/credentials/all`,
+          );
           const creds = await credsRes.json();
           const me = creds.find((u: any) => u.username === user.username);
           setEmpCreds(me || null);
@@ -1302,7 +1629,9 @@ export function AttendanceReportsManagement({ mode = "actual" }: { mode?: Report
     }
 
     if (user.role === "BRANCH_ADMIN" && managerData?.branchesID) {
-      data = data.filter((b) => Number(b.id) === Number(managerData.branchesID));
+      data = data.filter(
+        (b) => Number(b.id) === Number(managerData.branchesID),
+      );
     }
 
     if (user.role === "EMPLOYEE" && empCreds?.branchesID) {
@@ -1328,163 +1657,183 @@ export function AttendanceReportsManagement({ mode = "actual" }: { mode?: Report
     allBranches,
   ]);
 
-const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-  const branchName = e.target.value;
-  const branch = branches.find((b) => b.branchName === branchName);
+  const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const branchName = e.target.value;
+    const branch = branches.find((b) => b.branchName === branchName);
 
-  setFormData(prev => ({
-    ...prev,
-    branchName,
-    companyID: branch?.companyID ? Number(branch.companyID) : prev.companyID,
-  }));
+    setFormData((prev) => ({
+      ...prev,
+      branchName,
+      companyID: branch?.companyID ? Number(branch.companyID) : prev.companyID,
+    }));
 
-  // Clear filters and data — loadBranchData will repopulate for the new branch
-  setDepartments([]);
-  setDesignations([]);
-  setAllEmployees([]);
-  setSelectedDepartments([]);
-  setSelectedDesignations([]);
-  setSelectedEmployees([]);
-};
+    // Clear filters and data — loadBranchData will repopulate for the new branch
+    setDepartments([]);
+    setDesignations([]);
+    setAllEmployees([]);
+    setSelectedDepartments([]);
+    setSelectedDesignations([]);
+    setSelectedEmployees([]);
+  };
 
   // ==================== FILTERED OPTIONS ====================
 
-const filteredDesignations = designations.filter((d: Designation) => 
-  selectedDepartments.length === 0 ||
-  (d.departmentID != null && selectedDepartments.includes(String(d.departmentID)))
-);
+  const filteredDesignations = designations.filter(
+    (d: Designation) =>
+      selectedDepartments.length === 0 ||
+      (d.departmentID != null &&
+        selectedDepartments.includes(String(d.departmentID))),
+  );
 
-const filteredEmployees = allEmployees.filter((e: Employee) => {
-  if (selectedDesignations.length > 0) {
-    if (e.designationID == null || !selectedDesignations.includes(String(e.designationID))) {
-      return false;
+  const filteredEmployees = allEmployees.filter((e: Employee) => {
+    if (selectedDesignations.length > 0) {
+      if (
+        e.designationID == null ||
+        !selectedDesignations.includes(String(e.designationID))
+      ) {
+        return false;
+      }
     }
-  }
-  if (selectedDepartments.length > 0) {
-    if (e.departmentNameID == null || !selectedDepartments.includes(String(e.departmentNameID))) {
-      return false;
+    if (selectedDepartments.length > 0) {
+      if (
+        e.departmentNameID == null ||
+        !selectedDepartments.includes(String(e.departmentNameID))
+      ) {
+        return false;
+      }
     }
-  }
-  return true;
-});
+    return true;
+  });
 
-const departmentOptions = departments
-  .filter((d: Department) => d.id != null)
-  .map((d: Department) => ({
-    value: String(d.id),
-    label: d.departmentName || `Department ${d.id}`,
-  }));
-const designationOptions = filteredDesignations
-  .filter((d: Designation) => d.id != null)
-  .map((d: Designation) => ({
-    value: String(d.id),
-    label: d.designation || `Designation ${d.id}`,
-  }));
+  const departmentOptions = departments
+    .filter((d: Department) => d.id != null)
+    .map((d: Department) => ({
+      value: String(d.id),
+      label: d.departmentName || `Department ${d.id}`,
+    }));
+  const designationOptions = filteredDesignations
+    .filter((d: Designation) => d.id != null)
+    .map((d: Designation) => ({
+      value: String(d.id),
+      label: d.designation || `Designation ${d.id}`,
+    }));
 
-const employeeOptions = filteredEmployees
-  .filter((e: Employee) => e.id != null)
-  .map((e: Employee) => ({
-    value: String(e.id),
-    label: `${e.employeeFirstName || ""} ${e.employeeLastName || ""} (${e.employeeID || e.id})`.trim(),
-}));
+  const employeeOptions = filteredEmployees
+    .filter((e: Employee) => e.id != null)
+    .map((e: Employee) => ({
+      value: String(e.id),
+      label:
+        `${e.employeeFirstName || ""} ${e.employeeLastName || ""} (${e.employeeID || e.id})`.trim(),
+    }));
 
   // ==================== CALCULATION FUNCTIONS ====================
 
   const calculateWorkedMinutes = (
-    punches: string[], 
-    shiftStart: string, 
-    shiftEnd: string, 
+    punches: string[],
+    shiftStart: string,
+    shiftEnd: string,
     workBreak: { breakStart: string; breakEnd: string },
-    policy: AttendancePolicy | null, 
-    isFlexible: boolean
+    policy: AttendancePolicy | null,
+    isFlexible: boolean,
   ): number => {
     if (punches.length < 2) return 0;
-    
+
     const firstPunch = punches[0];
     const lastPunch = punches[punches.length - 1];
-    
+
     let startTime = timeToMinutes(firstPunch);
     let endTime = timeToMinutes(lastPunch);
-    
+
     if (!isFlexible && policy) {
       const shiftStartMin = timeToMinutes(shiftStart);
       const shiftEndMin = timeToMinutes(shiftEnd);
-      
+
       // Cap early check-in
       if (startTime < shiftStartMin - (policy.checkin_begin_before_min || 0)) {
         startTime = shiftStartMin;
       }
-      
+
       // Cap late check-out if OT not applicable
       if (!policy.overtimeApplicable) {
         const maxEndTime = shiftEndMin + (policy.checkout_end_after_min || 0);
         if (endTime > maxEndTime) endTime = maxEndTime;
       }
     }
-    
+
     let workedMinutes = endTime - startTime;
     if (workedMinutes < 0) workedMinutes += 24 * 60;
-    
+
     const breakStartMin = timeToMinutes(workBreak.breakStart);
     const breakEndMin = timeToMinutes(workBreak.breakEnd);
-    
+
     if (breakStartMin > 0 && breakEndMin > 0) {
       const breakDuration = breakEndMin - breakStartMin;
       if (startTime <= breakStartMin && endTime >= breakEndMin) {
         workedMinutes -= breakDuration;
       }
     }
-    
+
     if (!isFlexible && policy) {
-      workedMinutes -= (policy.trimPreshiftMin || 0);
-      workedMinutes -= (policy.trimPostshiftMin || 0);
+      workedMinutes -= policy.trimPreshiftMin || 0;
+      workedMinutes -= policy.trimPostshiftMin || 0;
     }
-    
+
     return Math.round(Math.max(0, workedMinutes));
   };
 
   const calculateOTMinutes = (
-    punches: string[], 
-    shiftEndTime: string, 
-    otConfig: { startTime: string; endTime: string; breakStart: string; breakEnd: string },
-    policy: AttendancePolicy
+    punches: string[],
+    shiftEndTime: string,
+    otConfig: {
+      startTime: string;
+      endTime: string;
+      breakStart: string;
+      breakEnd: string;
+    },
+    policy: AttendancePolicy,
   ): number => {
     if (punches.length < 2) return 0;
     if (!policy.overtimeApplicable) return 0;
     if (!otConfig.startTime || !otConfig.endTime) return 0;
-    
+
     const lastPunch = punches[punches.length - 1];
     const lastPunchMin = timeToMinutes(lastPunch);
     const shiftEndMin = timeToMinutes(shiftEndTime);
-    
+
     const checkoutBuffer = policy.checkout_end_after_min || 0;
     if (lastPunchMin <= shiftEndMin + checkoutBuffer) return 0;
-    
+
     let otStartMin = Math.max(shiftEndMin, timeToMinutes(otConfig.startTime));
     let otEndMin = Math.min(lastPunchMin, timeToMinutes(otConfig.endTime));
     let totalOTMinutes = otEndMin - otStartMin;
-    
+
     // Deduct OT break time
     if (policy.breakTimeForOT > 0) {
       totalOTMinutes -= policy.breakTimeForOT;
     }
-    
+
     // Apply OT meal break deduction
     if (policy.otMealApply && policy.minsForBreakTimeForMeal > 0) {
       totalOTMinutes -= policy.minsForBreakTimeForMeal;
     }
-    
+
     // Apply overtime trimming
-    if (policy.overtimeTrimmingApply && policy.checkoutGracePeriodForOvertimeTrimming > 0) {
-      totalOTMinutes = Math.max(0, totalOTMinutes - policy.checkoutGracePeriodForOvertimeTrimming);
+    if (
+      policy.overtimeTrimmingApply &&
+      policy.checkoutGracePeriodForOvertimeTrimming > 0
+    ) {
+      totalOTMinutes = Math.max(
+        0,
+        totalOTMinutes - policy.checkoutGracePeriodForOvertimeTrimming,
+      );
     }
-    
+
     // Apply min/max OT limits
     if (totalOTMinutes < (policy.minOvertimeHrs || 0)) return 0;
     if (policy.maxOvertimeHrs > 0 && totalOTMinutes > policy.maxOvertimeHrs) {
       totalOTMinutes = policy.maxOvertimeHrs;
     }
-    
+
     return Math.max(0, totalOTMinutes);
   };
 
@@ -1496,23 +1845,31 @@ const employeeOptions = filteredEmployees
     localShifts: EmpWorkShift[],
     localLeaves: LeaveApplication[],
     localHolidays: PublicHoliday[],
-    localRosters: RosterEmployee[]
+    localRosters: RosterEmployee[],
   ): Set<string> => {
     const result = new Set<string>();
 
     const isWODay = (date: string): boolean => {
-      const empShift = localShifts.find(ws => ws.manageEmployeeID === row.employee.id);
+      const empShift = localShifts.find(
+        (ws) => ws.manageEmployeeID === row.employee.id,
+      );
       const workShift = empShift?.workShift;
       if (!workShift?.workShiftDay?.length) return false;
       if (workShift.isRotating) {
-        const roster = localRosters.find(r => r.employeeID === row.employee.id);
-        const rosterDay = roster?.days?.find((d: RosterDay) => new Date(d.workDate).toISOString().split('T')[0] === date);
+        const roster = localRosters.find(
+          (r) => r.employeeID === row.employee.id,
+        );
+        const rosterDay = roster?.days?.find(
+          (d: RosterDay) =>
+            new Date(d.workDate).toISOString().split("T")[0] === date,
+        );
         return rosterDay?.dayType === "WEEKLY_OFF";
       }
       const dayOfWeekName = weekdayNameForDateKey(date);
       const shiftDay = workShift.workShiftDay.find(
         (d: WorkShiftDay) =>
-          (d.weekDay || "").trim().toLowerCase() === dayOfWeekName && d.shiftType === "WORK"
+          (d.weekDay || "").trim().toLowerCase() === dayOfWeekName &&
+          d.shiftType === "WORK",
       );
       return shiftDay?.weeklyOff === true;
     };
@@ -1528,10 +1885,11 @@ const employeeOptions = filteredEmployees
     const isSandwichTrigger = (date: string): boolean => {
       if (isWODay(date) || isPHDay(date)) return false;
       const punches = row.punches[date] || [];
-      const hasLeave = localLeaves.some((l: LeaveApplication) =>
-        l.manageEmployeeID === row.employee.id &&
-        date >= new Date(l.fromDate).toISOString().split('T')[0] &&
-        date <= new Date(l.toDate).toISOString().split('T')[0]
+      const hasLeave = localLeaves.some(
+        (l: LeaveApplication) =>
+          l.manageEmployeeID === row.employee.id &&
+          date >= new Date(l.fromDate).toISOString().split("T")[0] &&
+          date <= new Date(l.toDate).toISOString().split("T")[0],
       );
       return punches.length === 0 || hasLeave;
     };
@@ -1564,19 +1922,25 @@ const employeeOptions = filteredEmployees
     row: ReportData,
     dates: string[],
     localShifts: EmpWorkShift[],
-    localRosters: RosterEmployee[]
+    localRosters: RosterEmployee[],
   ): Set<string> => {
     const result = new Set<string>();
     if (!isFactualMode) return result;
 
     for (const date of dates) {
-      const empShift = localShifts.find(ws => ws.manageEmployeeID === row.employee.id);
+      const empShift = localShifts.find(
+        (ws) => ws.manageEmployeeID === row.employee.id,
+      );
       const workShift = empShift?.workShift;
       if (!workShift) continue;
 
       if (workShift.isRotating) {
-        const roster = localRosters.find(r => r.employeeID === row.employee.id);
-        const rosterDay = roster?.days?.find((day: RosterDay) => toIsoDate(day.workDate) === date);
+        const roster = localRosters.find(
+          (r) => r.employeeID === row.employee.id,
+        );
+        const rosterDay = roster?.days?.find(
+          (day: RosterDay) => toIsoDate(day.workDate) === date,
+        );
         if (rosterDay?.dayType === "WEEKLY_OFF") {
           result.add(date);
         }
@@ -1588,7 +1952,8 @@ const employeeOptions = filteredEmployees
       const dayOfWeekName = weekdayNameForDateKey(date);
       const shiftDay = workShift.workShiftDay.find(
         (day: WorkShiftDay) =>
-          (day.weekDay || "").trim().toLowerCase() === dayOfWeekName && day.shiftType === "WORK"
+          (day.weekDay || "").trim().toLowerCase() === dayOfWeekName &&
+          day.shiftType === "WORK",
       );
       if (shiftDay?.weeklyOff) {
         result.add(date);
@@ -1599,26 +1964,33 @@ const employeeOptions = filteredEmployees
   };
 
   const applySandwichRule = (
-    date: string, 
-    employeeID: number, 
-    statuses: Map<string, string>
+    date: string,
+    employeeID: number,
+    statuses: Map<string, string>,
   ): string | null => {
     if (!attendancePolicy?.leaveAroundHolidayCounted) return null;
-    
+
     const currentDate = new Date(date);
-    const prevDate = new Date(currentDate); prevDate.setDate(prevDate.getDate() - 1);
-    const nextDate = new Date(currentDate); nextDate.setDate(nextDate.getDate() + 1);
-    
-    const prevDateStr = prevDate.toISOString().split('T')[0];
-    const nextDateStr = nextDate.toISOString().split('T')[0];
-    
+    const prevDate = new Date(currentDate);
+    prevDate.setDate(prevDate.getDate() - 1);
+    const nextDate = new Date(currentDate);
+    nextDate.setDate(nextDate.getDate() + 1);
+
+    const prevDateStr = prevDate.toISOString().split("T")[0];
+    const nextDateStr = nextDate.toISOString().split("T")[0];
+
     const prevStatus = statuses.get(prevDateStr) || "";
     const nextStatus = statuses.get(nextDateStr) || "";
-    
-    const isLeaveOrAbsent = (s: string) => 
-      s.includes("Leave") || s.includes("SL") || s.includes("CL") || 
-      s.includes("PL") || s.includes("LOP") || s === "Absent" || s === "A";
-    
+
+    const isLeaveOrAbsent = (s: string) =>
+      s.includes("Leave") ||
+      s.includes("SL") ||
+      s.includes("CL") ||
+      s.includes("PL") ||
+      s.includes("LOP") ||
+      s === "Absent" ||
+      s === "A";
+
     if (isLeaveOrAbsent(prevStatus) && isLeaveOrAbsent(nextStatus)) {
       return "CL (Sandwich)";
     }
@@ -1626,14 +1998,14 @@ const employeeOptions = filteredEmployees
   };
 
   // ==================== COMPREHENSIVE STATUS CALCULATION ====================
-  
+
   const getComprehensiveStatus = async (
-    date: string, 
-    employeeID: number, 
-    punches: string[], 
-    selectedCompanyID: number, 
+    date: string,
+    employeeID: number,
+    punches: string[],
+    selectedCompanyID: number,
     selectedBranchID: number,
-    statusesMap: Map<string, string>
+    statusesMap: Map<string, string>,
   ): Promise<AttendanceStatus> => {
     const md = masterDataRef.current;
     const dataSource = md?.reportRows ?? reportData;
@@ -1641,44 +2013,64 @@ const employeeOptions = filteredEmployees
     const sourceWorkShifts = md?.workShifts ?? workShifts;
     const sourceRosters = md?.rosters ?? rosters;
     const sourcePublicHolidays = md?.publicHolidays ?? publicHolidays;
-    const sourceRegularizations = md?.attendanceRegularizations ?? attendanceRegularizations;
+    const sourceRegularizations =
+      md?.attendanceRegularizations ?? attendanceRegularizations;
     const sourceLeaveApplications = md?.leaveApplications ?? leaveApplications;
     const sourceAttendancePolicy =
       md?.empAttendancePolicies?.get(employeeID) ??
       md?.attendancePolicy ??
       attendancePolicy;
-    const sourceFactualWeekoffOverrides = md?.factualWeekoffOverrides ?? factualWeekoffOverrides;
+    const sourceFactualWeekoffOverrides =
+      md?.factualWeekoffOverrides ?? factualWeekoffOverrides;
     const sourceIsFactualMode = md?.isFactualMode ?? isFactualMode;
-    
+
     const hasPunches = punches.length > 0;
-    
+
     if (!dataSource || dataSource.length === 0) {
-      if (!hasPunches) return { type: "ABSENT", label: "Absent", hasPunches: false };
-      if (punches.length === 1) return { type: "SINGLE_PUNCH", label: "no checkout", hasPunches: true };
+      if (!hasPunches)
+        return { type: "ABSENT", label: "Absent", hasPunches: false };
+      if (punches.length === 1)
+        return { type: "SINGLE_PUNCH", label: "no checkout", hasPunches: true };
       return { type: "PRESENT", label: "P", hasPunches: true };
     }
-    
-    const employee = dataSource.find(r => r.employee.id === employeeID)?.employee;
-    if (!employee) return { type: "ABSENT", label: "Absent", hasPunches: false };
+
+    const employee = dataSource.find(
+      (r) => r.employee.id === employeeID,
+    )?.employee;
+    if (!employee)
+      return { type: "ABSENT", label: "Absent", hasPunches: false };
 
     // Get work shift
-    const empShift = sourceEmpWorkShifts.find(ws => ws.manageEmployeeID === employeeID);
+    const empShift = sourceEmpWorkShifts.find(
+      (ws) => ws.manageEmployeeID === employeeID,
+    );
     let workShift: WorkShift | undefined = empShift?.workShift;
-    
-    if (workShift && (!workShift.workShiftDay || workShift.workShiftDay.length === 0)) {
+
+    if (
+      workShift &&
+      (!workShift.workShiftDay || workShift.workShiftDay.length === 0)
+    ) {
       const fullShift = sourceWorkShifts.find((ws) => ws.id === workShift!.id);
       if (fullShift) workShift = fullShift;
     }
 
     // Check roster for a date-specific work shift override.
     // rosters state is already flattened to RosterEmployee[] in generateReport.
-    const rosterEmp = sourceRosters.find(r => r.employeeID === employeeID);
-    const rosterDayEntry = rosterEmp?.days?.find((d: RosterDay) => new Date(d.workDate).toISOString().split('T')[0] === date);
+    const rosterEmp = sourceRosters.find((r) => r.employeeID === employeeID);
+    const rosterDayEntry = rosterEmp?.days?.find(
+      (d: RosterDay) =>
+        new Date(d.workDate).toISOString().split("T")[0] === date,
+    );
     let rosterShiftName: string | undefined;
-    if (rosterDayEntry?.dayType === "WORK" && rosterDayEntry?.workShiftID != null) {
+    if (
+      rosterDayEntry?.dayType === "WORK" &&
+      rosterDayEntry?.workShiftID != null
+    ) {
       // Prefer the fully-enriched shift from workShifts state (has workShiftDay loaded).
       // workShifts state is populated from /work-shift in generateReport.
-      const overrideShift = sourceWorkShifts.find(ws => ws.id === rosterDayEntry.workShiftID);
+      const overrideShift = sourceWorkShifts.find(
+        (ws) => ws.id === rosterDayEntry.workShiftID,
+      );
       if (overrideShift) {
         workShift = overrideShift;
         rosterShiftName = overrideShift.workShiftName;
@@ -1689,22 +2081,41 @@ const employeeOptions = filteredEmployees
     }
 
     const isRotating = workShift?.isRotating || false;
-    const isFlexible = !!(workShift?.isFlexible || String(sourceAttendancePolicy?.workingHoursType || "").toLowerCase().includes("flex"));
+    const isFlexible = !!(
+      workShift?.isFlexible ||
+      String(sourceAttendancePolicy?.workingHoursType || "")
+        .toLowerCase()
+        .includes("flex")
+    );
     const dayOfWeekName = weekdayNameForDateKey(date);
-    const dayConfig = workShift?.workShiftDay?.find((d) => (d.weekDay || "").trim().toLowerCase() === dayOfWeekName);
+    const dayConfig = workShift?.workShiftDay?.find(
+      (d) => (d.weekDay || "").trim().toLowerCase() === dayOfWeekName,
+    );
     const shiftDay =
       dayConfig?.shiftType === "WORK"
         ? dayConfig
         : workShift?.workShiftDay?.find(
-            (d) => (d.weekDay || "").trim().toLowerCase() === dayOfWeekName && d.shiftType === "WORK",
+            (d) =>
+              (d.weekDay || "").trim().toLowerCase() === dayOfWeekName &&
+              d.shiftType === "WORK",
           );
     const otDay = workShift?.workShiftDay?.find(
-      (d) => (d.weekDay || "").trim().toLowerCase() === dayOfWeekName && d.shiftType === "OT",
+      (d) =>
+        (d.weekDay || "").trim().toLowerCase() === dayOfWeekName &&
+        d.shiftType === "OT",
     );
     const defaultWorkedMinutes = shiftDay?.totalMinutes || 480;
 
-    if (sourceIsFactualMode && sourceFactualWeekoffOverrides.get(employeeID)?.has(date)) {
-      return { type: "WEEK_OFF", label: "WO", hasPunches: false, workedMinutes: defaultWorkedMinutes };
+    if (
+      sourceIsFactualMode &&
+      sourceFactualWeekoffOverrides.get(employeeID)?.has(date)
+    ) {
+      return {
+        type: "WEEK_OFF",
+        label: "WO",
+        hasPunches: false,
+        workedMinutes: defaultWorkedMinutes,
+      };
     }
 
     // For night shifts that span midnight, include next-day punches (checkout is on next calendar date).
@@ -1716,42 +2127,65 @@ const employeeOptions = filteredEmployees
     if (shiftSpansMidnight) {
       const nextDateObj = new Date(date);
       nextDateObj.setDate(nextDateObj.getDate() + 1);
-      const nextDateKey = nextDateObj.toISOString().split('T')[0];
-      const empRow = dataSource.find((r: ReportData) => r.employee.id === employeeID);
+      const nextDateKey = nextDateObj.toISOString().split("T")[0];
+      const empRow = dataSource.find(
+        (r: ReportData) => r.employee.id === employeeID,
+      );
       nextDayShiftPunches = empRow?.punches[nextDateKey] || [];
       effectivePunchesForDate = [...punches, ...nextDayShiftPunches];
     }
     const hasPunchesEffective = effectivePunchesForDate.length > 0;
 
     // PRIORITY 1: Approved Regularization — placed here so we have shiftDay to compute actual hours
-    const regularization = sourceRegularizations.find(reg =>
-      reg.manageEmployeeID === employeeID &&
-      reg.status === "Approved" &&
-      new Date(reg.attendanceDate).toISOString().split('T')[0] === date
+    const regularization = sourceRegularizations.find(
+      (reg) =>
+        reg.manageEmployeeID === employeeID &&
+        reg.status === "Approved" &&
+        new Date(reg.attendanceDate).toISOString().split("T")[0] === date,
     );
     if (regularization) {
       let regWorkedMinutes: number | undefined;
       if (hasPunches && shiftDay && punches.length >= 2) {
         const sortedP = [...punches].sort();
         regWorkedMinutes = calculateWorkedMinutes(
-          sortedP, shiftDay.startTime, shiftDay.endTime,
-          { breakStart: shiftDay.breakStart || "", breakEnd: shiftDay.breakEnd || "" },
-          null, isFlexible
+          sortedP,
+          shiftDay.startTime,
+          shiftDay.endTime,
+          {
+            breakStart: shiftDay.breakStart || "",
+            breakEnd: shiftDay.breakEnd || "",
+          },
+          null,
+          isFlexible,
         );
       } else {
         regWorkedMinutes = hasPunches ? undefined : defaultWorkedMinutes;
       }
       const reqStatus = regularization.requestedStatus;
-      const regLabel = reqStatus === "PRESENT" ? "P" : reqStatus === "Half Day" ? "HD" : reqStatus === "Absent" ? "A" : reqStatus;
-      return { type: "REGULARIZATION", label: regLabel, hasPunches, workedMinutes: regWorkedMinutes };
+      const regLabel =
+        reqStatus === "PRESENT"
+          ? "P"
+          : reqStatus === "Half Day"
+            ? "HD"
+            : reqStatus === "Absent"
+              ? "A"
+              : reqStatus;
+      return {
+        type: "REGULARIZATION",
+        label: regLabel,
+        hasPunches,
+        workedMinutes: regWorkedMinutes,
+      };
     }
 
     // Week off check
     const isWeekOff = (): boolean => {
       if (!workShift) return false;
       if (isRotating) {
-        const roster = sourceRosters.find(r => r.employeeID === employeeID);
-        const rosterDay = roster?.days?.find(d => new Date(d.workDate).toISOString().split('T')[0] === date);
+        const roster = sourceRosters.find((r) => r.employeeID === employeeID);
+        const rosterDay = roster?.days?.find(
+          (d) => new Date(d.workDate).toISOString().split("T")[0] === date,
+        );
         return rosterDay?.dayType === "WEEKLY_OFF";
       }
       if (dayConfig?.weeklyOff) return true;
@@ -1760,10 +2194,12 @@ const employeeOptions = filteredEmployees
 
     // Public holiday check
     const isPublicHolidayDay = (): boolean => {
-      return sourcePublicHolidays.some(holiday => {
-        if (Number(holiday.companyID) !== Number(selectedCompanyID)) return false;
+      return sourcePublicHolidays.some((holiday) => {
+        if (Number(holiday.companyID) !== Number(selectedCompanyID))
+          return false;
         if (holiday.branchesID != null && String(holiday.branchesID) !== "") {
-          if (Number(holiday.branchesID) !== Number(selectedBranchID)) return false;
+          if (Number(holiday.branchesID) !== Number(selectedBranchID))
+            return false;
         }
         const holidayStart = isoDatePrefix(holiday.startDate);
         const holidayEnd = isoDatePrefix(holiday.endDate) || holidayStart;
@@ -1772,80 +2208,114 @@ const employeeOptions = filteredEmployees
     };
 
     // Leave check
-// Leave check - supports dayStatuses also
-const getLeaveDay = (): { leave: LeaveApplication; leaveLabel: string } | null => {
-  const leave = sourceLeaveApplications.find((leave) => {
-    if (
-      Number(leave.manageEmployeeID) !== Number(employeeID) ||
-      leave.status !== "Approved"
-    ) {
-      return false;
-    }
+    // Leave check - supports dayStatuses also
+    const getLeaveDay = (): {
+      leave: LeaveApplication;
+      leaveLabel: string;
+    } | null => {
+      const leave = sourceLeaveApplications.find((leave) => {
+        if (
+          Number(leave.manageEmployeeID) !== Number(employeeID) ||
+          leave.status !== "Approved"
+        ) {
+          return false;
+        }
 
-    const dayStatusMatch = leave.dayStatuses?.find((d) => d.date === date);
-    if (dayStatusMatch) return true;
+        const dayStatusMatch = leave.dayStatuses?.find((d) => d.date === date);
+        if (dayStatusMatch) return true;
 
-    const from = new Date(leave.fromDate).toISOString().split("T")[0];
-    const to = new Date(leave.toDate).toISOString().split("T")[0];
+        const from = new Date(leave.fromDate).toISOString().split("T")[0];
+        const to = new Date(leave.toDate).toISOString().split("T")[0];
 
-    return date >= from && date <= to;
-  });
+        return date >= from && date <= to;
+      });
 
-  if (!leave) return null;
+      if (!leave) return null;
 
-  const dayStatus = leave.dayStatuses?.find((d) => d.date === date);
+      const dayStatus = leave.dayStatuses?.find((d) => d.date === date);
 
-  return {
-    leave,
-    leaveLabel: dayStatus?.status || leave.appliedLeaveType || "Leave",
-  };
-};
+      return {
+        leave,
+        leaveLabel: dayStatus?.status || leave.appliedLeaveType || "Leave",
+      };
+    };
 
     // PRIORITY 2: Public Holiday (before week-off so a working Saturday PH is paid)
     if (isPublicHolidayDay()) {
       let workedMinutes = 0;
       if (hasPunches && shiftDay) {
-        workedMinutes = calculateWorkedMinutes(punches, shiftDay.startTime, shiftDay.endTime, 
-          { breakStart: shiftDay.breakStart || "", breakEnd: shiftDay.breakEnd || "" }, sourceAttendancePolicy, isFlexible);
+        workedMinutes = calculateWorkedMinutes(
+          punches,
+          shiftDay.startTime,
+          shiftDay.endTime,
+          {
+            breakStart: shiftDay.breakStart || "",
+            breakEnd: shiftDay.breakEnd || "",
+          },
+          sourceAttendancePolicy,
+          isFlexible,
+        );
       }
-      return { type: "HOLIDAY", label: hasPunches ? "PH-P" : "PH", hasPunches, workedMinutes: workedMinutes || defaultWorkedMinutes };
+      return {
+        type: "HOLIDAY",
+        label: hasPunches ? "PH-P" : "PH",
+        hasPunches,
+        workedMinutes: workedMinutes || defaultWorkedMinutes,
+      };
     }
 
     // PRIORITY 3: Week Off
     if (isWeekOff()) {
-      return { type: "WEEK_OFF", label: "WO", hasPunches: false, workedMinutes: defaultWorkedMinutes };
+      return {
+        type: "WEEK_OFF",
+        label: "WO",
+        hasPunches: false,
+        workedMinutes: defaultWorkedMinutes,
+      };
     }
 
- // PRIORITY 4: Approved Leave
-const approvedLeave = getLeaveDay();
-if (approvedLeave) {
-  return {
-    type: "LEAVE",
-    label: hasPunchesEffective ? `${approvedLeave.leaveLabel}-P` : approvedLeave.leaveLabel,
-    hasPunches: hasPunchesEffective,
-    workedMinutes: hasPunchesEffective ? undefined : defaultWorkedMinutes,
-  };
-}
+    // PRIORITY 4: Approved Leave
+    const approvedLeave = getLeaveDay();
+    if (approvedLeave) {
+      return {
+        type: "LEAVE",
+        label: hasPunchesEffective
+          ? `${approvedLeave.leaveLabel}-P`
+          : approvedLeave.leaveLabel,
+        hasPunches: hasPunchesEffective,
+        workedMinutes: hasPunchesEffective ? undefined : defaultWorkedMinutes,
+      };
+    }
 
-// PRIORITY 5: Calculate based on punches
+    // PRIORITY 5: Calculate based on punches
     // Use effectivePunchesForDate (includes next-day punches for night shifts) for presence check.
-    if (!hasPunchesEffective) return { type: "ABSENT", label: "Absent", hasPunches: false };
-    
+    if (!hasPunchesEffective)
+      return { type: "ABSENT", label: "Absent", hasPunches: false };
+
     let policy = sourceAttendancePolicy;
     // Policy is loaded once in generateReport — never N+1 fetch per cell.
 
     // Handle single punch (No Check-out Punch Rule with count conditioning)
-    if (!hasPunchesEffective) return { type: "ABSENT", label: "Absent", hasPunches: false };
+    if (!hasPunchesEffective)
+      return { type: "ABSENT", label: "Absent", hasPunches: false };
     if (effectivePunchesForDate.length === 1) {
       if (policy) {
         const monthKey = `${employeeID}-${date.substring(0, 7)}`;
         const currentTracker = noCheckoutTracker.current;
         const maxNoCheckoutCount = parseRuleCount(policy.lateMarkCount, 3);
-        const shouldApplyNoCheckoutRule = incrementTrackerAndShouldApply(currentTracker, monthKey, maxNoCheckoutCount);
+        const shouldApplyNoCheckoutRule = incrementTrackerAndShouldApply(
+          currentTracker,
+          monthKey,
+          maxNoCheckoutCount,
+        );
 
         if (shouldApplyNoCheckoutRule) {
           const markAs = policy.markAs || "Half Day";
-          return { type: markAs === "Absent" ? "ABSENT" : "HALF_DAY", label: markAs, hasPunches: true };
+          return {
+            type: markAs === "Absent" ? "ABSENT" : "HALF_DAY",
+            label: markAs,
+            hasPunches: true,
+          };
         }
       }
 
@@ -1861,11 +2331,10 @@ if (approvedLeave) {
       const shiftEndMinRaw = timeToMinutes(shiftDay.endTime);
       const earliestInMin = shiftStartMinRaw - checkinBeginBefore;
       // If OT applicable and an OT shift exists for this day, allow punches up to OT end
-      const otEndMin = (policy.overtimeApplicable && otDay)
-        ? timeToMinutes(otDay.endTime)
-        : 0;
+      const otEndMin =
+        policy.overtimeApplicable && otDay ? timeToMinutes(otDay.endTime) : 0;
       const latestOutMin = shiftSpansMidnight
-        ? shiftEndMinRaw + checkoutEndAfter       // e.g. 05:00 + 120min = 07:00 (420)
+        ? shiftEndMinRaw + checkoutEndAfter // e.g. 05:00 + 120min = 07:00 (420)
         : Math.max(shiftEndMinRaw + checkoutEndAfter, otEndMin);
       // For night shifts, filter each part separately to avoid the previous night's checkout
       // (stored under the current calendar date key) from polluting this shift's window.
@@ -1876,25 +2345,36 @@ if (approvedLeave) {
       //   - zero current-day punches → need next-day data
       // Even current-day count means the punches are already paired (check-in + check-out on same night),
       // so the next-day punch would be from a different shift and must NOT be included.
-      const currentDayFiltered = punches.filter((p: string) => timeToMinutes(p) >= earliestInMin);
-      const nextDayFiltered = nextDayShiftPunches.filter((p: string) => timeToMinutes(p) <= latestOutMin);
-      const needsNextDayCheckout = currentDayFiltered.length === 0 || currentDayFiltered.length % 2 !== 0;
+      const currentDayFiltered = punches.filter(
+        (p: string) => timeToMinutes(p) >= earliestInMin,
+      );
+      const nextDayFiltered = nextDayShiftPunches.filter(
+        (p: string) => timeToMinutes(p) <= latestOutMin,
+      );
+      const needsNextDayCheckout =
+        currentDayFiltered.length === 0 || currentDayFiltered.length % 2 !== 0;
       const filteredPunches: string[] = shiftSpansMidnight
-        ? [...currentDayFiltered, ...(needsNextDayCheckout ? nextDayFiltered : [])]
-        : effectivePunchesForDate.filter(p => {
+        ? [
+            ...currentDayFiltered,
+            ...(needsNextDayCheckout ? nextDayFiltered : []),
+          ]
+        : effectivePunchesForDate.filter((p) => {
             const t = timeToMinutes(p);
             return t >= earliestInMin && t <= latestOutMin;
           });
       // Sort: for night shifts, times after midnight (0-latestOut) are logically AFTER times before midnight
       const sortedFiltered = shiftSpansMidnight
         ? [...filteredPunches].sort((a, b) => {
-            const ta = timeToMinutes(a), tb = timeToMinutes(b);
+            const ta = timeToMinutes(a),
+              tb = timeToMinutes(b);
             // Times < earliestInMin are post-midnight (next day), treat as +1440
             const wa = ta < earliestInMin ? ta + 1440 : ta;
             const wb = tb < earliestInMin ? tb + 1440 : tb;
             return wa - wb;
           })
-        : [...filteredPunches].sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
+        : [...filteredPunches].sort(
+            (a, b) => timeToMinutes(a) - timeToMinutes(b),
+          );
       let effectivePunchesList = sortedFiltered;
       if (effectivePunchesForDate.length >= 2 && sortedFiltered.length < 2) {
         effectivePunchesList = [
@@ -1913,52 +2393,105 @@ if (approvedLeave) {
 
       // For night shifts, compute firstPunch/lastPunch in a way that spans midnight correctly.
       // Times in [0..latestOut] are post-midnight → add 1440 for comparison purposes.
-      const toNightAwareMinutes = (t: number) => shiftSpansMidnight && t < earliestInMin ? t + 1440 : t;
-      const firstPunch = toNightAwareMinutes(timeToMinutes(effectivePunches[0] ?? effectivePunchesForDate[0]));
-      const lastPunch = toNightAwareMinutes(timeToMinutes(effectivePunches[effectivePunches.length - 1] ?? effectivePunchesForDate[effectivePunchesForDate.length - 1]));
+      const toNightAwareMinutes = (t: number) =>
+        shiftSpansMidnight && t < earliestInMin ? t + 1440 : t;
+      const firstPunch = toNightAwareMinutes(
+        timeToMinutes(effectivePunches[0] ?? effectivePunchesForDate[0]),
+      );
+      const lastPunch = toNightAwareMinutes(
+        timeToMinutes(
+          effectivePunches[effectivePunches.length - 1] ??
+            effectivePunchesForDate[effectivePunchesForDate.length - 1],
+        ),
+      );
       // For night shift, shiftEnd in night-aware minutes is e.g. 05:00 → 300 + 1440 = 1740
       const shiftStartMin = shiftStartMinRaw;
-      const shiftEndMin = shiftSpansMidnight ? shiftEndMinRaw + 1440 : shiftEndMinRaw;
-      
+      const shiftEndMin = shiftSpansMidnight
+        ? shiftEndMinRaw + 1440
+        : shiftEndMinRaw;
+
       const graceTime = policy.checkin_grace_time_min || 0;
       const maxLateWindowAfterGrace = policy.max_late_check_in_time || 0;
       const graceEnd = shiftStartMin + graceTime;
       const maxLateCutoffInclusive = graceEnd + maxLateWindowAfterGrace;
-      const isBeyondMaxLate = !isFlexible && firstPunch > maxLateCutoffInclusive;
+      const isBeyondMaxLate =
+        !isFlexible && firstPunch > maxLateCutoffInclusive;
 
-      const workedMinutes = calculateWorkedMinutes(effectivePunches, shiftDay.startTime, shiftDay.endTime, 
-        { breakStart: shiftDay.breakStart || "", breakEnd: shiftDay.breakEnd || "" }, policy, isFlexible);
-      
+      const workedMinutes = calculateWorkedMinutes(
+        effectivePunches,
+        shiftDay.startTime,
+        shiftDay.endTime,
+        {
+          breakStart: shiftDay.breakStart || "",
+          breakEnd: shiftDay.breakEnd || "",
+        },
+        policy,
+        isFlexible,
+      );
+
       const totalShiftMinutes = shiftDay.totalMinutes;
       const halfDayMin = policy.min_work_hours_half_day_min || 0;
       const requiredFullDayMinutes = isFlexible
         ? totalShiftMinutes
         : Math.max(totalShiftMinutes - graceTime, halfDayMin);
 
-      const isLate = !isFlexible && 
-                     firstPunch > graceEnd && 
-                     firstPunch <= maxLateCutoffInclusive;
+      const isLate =
+        !isFlexible &&
+        firstPunch > graceEnd &&
+        firstPunch <= maxLateCutoffInclusive;
 
       let otMinutes = 0;
       if (otDay && policy.overtimeApplicable) {
-        otMinutes = calculateOTMinutes(effectivePunches, shiftDay.endTime, {
-          startTime: otDay.startTime, endTime: otDay.endTime,
-          breakStart: otDay.breakStart || "", breakEnd: otDay.breakEnd || ""
-        }, policy);
+        otMinutes = calculateOTMinutes(
+          effectivePunches,
+          shiftDay.endTime,
+          {
+            startTime: otDay.startTime,
+            endTime: otDay.endTime,
+            breakStart: otDay.breakStart || "",
+            breakEnd: otDay.breakEnd || "",
+          },
+          policy,
+        );
       }
 
       if (workedMinutes < halfDayMin) {
-        return { type: "ABSENT", label: "Absent", hasPunches: true, workedMinutes };
+        return {
+          type: "ABSENT",
+          label: "Absent",
+          hasPunches: true,
+          workedMinutes,
+        };
       }
 
       if (isFlexible) {
         if (workedMinutes < requiredFullDayMinutes) {
-          return { type: "HALF_DAY", label: "Half Day", hasPunches: true, workedMinutes, rosterShiftName };
+          return {
+            type: "HALF_DAY",
+            label: "Half Day",
+            hasPunches: true,
+            workedMinutes,
+            rosterShiftName,
+          };
         }
         if (otMinutes > 0) {
-          return { type: "OT", label: "OT", hasPunches: true, workedMinutes, otMinutes, totalShiftMinutes, rosterShiftName };
+          return {
+            type: "OT",
+            label: "OT",
+            hasPunches: true,
+            workedMinutes,
+            otMinutes,
+            totalShiftMinutes,
+            rosterShiftName,
+          };
         }
-        return { type: "PRESENT", label: "P", hasPunches: true, workedMinutes, rosterShiftName };
+        return {
+          type: "PRESENT",
+          label: "P",
+          hasPunches: true,
+          workedMinutes,
+          rosterShiftName,
+        };
       }
 
       if (isBeyondMaxLate) {
@@ -1970,34 +2503,67 @@ if (approvedLeave) {
           workedMinutes,
         };
       }
-      
+
       const earlyCheckoutWindow = policy.earlyCheckoutBeforeEndMin || 0;
-      if (effectivePunches.length >= 2 && lastPunch < shiftEndMin - earlyCheckoutWindow) {
-        return { type: "HALF_DAY", label: "Half Day", hasPunches: true, workedMinutes, rosterShiftName };
+      if (
+        effectivePunches.length >= 2 &&
+        lastPunch < shiftEndMin - earlyCheckoutWindow
+      ) {
+        return {
+          type: "HALF_DAY",
+          label: "Half Day",
+          hasPunches: true,
+          workedMinutes,
+          rosterShiftName,
+        };
       }
-      
+
       if (isLate) {
         const monthKey = `${employeeID}-${date.substring(0, 7)}`;
         const currentTracker = lateMarkTracker.current;
         const maxLateCount = parseRuleCount(policy.lateMarkMarkCount, 3);
-        const shouldApplyLateMarkRule = incrementTrackerAndShouldApply(currentTracker, monthKey, maxLateCount);
+        const shouldApplyLateMarkRule = incrementTrackerAndShouldApply(
+          currentTracker,
+          monthKey,
+          maxLateCount,
+        );
 
         if (shouldApplyLateMarkRule) {
           const markAs = policy.lateMarkMarkAs || policy.markAs || "Half Day";
-          return { 
-            type: markAs === "Absent" ? "ABSENT" : "HALF_DAY", 
-            label: markAs, 
-            hasPunches: true, 
-            workedMinutes 
+          return {
+            type: markAs === "Absent" ? "ABSENT" : "HALF_DAY",
+            label: markAs,
+            hasPunches: true,
+            workedMinutes,
           };
         }
-        return { type: "LATE_MARK", label: "Late Mark", hasPunches: true, workedMinutes, rosterShiftName };
+        return {
+          type: "LATE_MARK",
+          label: "Late Mark",
+          hasPunches: true,
+          workedMinutes,
+          rosterShiftName,
+        };
       }
 
       if (otMinutes > 0) {
-        return { type: "OT", label: "OT", hasPunches: true, workedMinutes, otMinutes, totalShiftMinutes, rosterShiftName };
+        return {
+          type: "OT",
+          label: "OT",
+          hasPunches: true,
+          workedMinutes,
+          otMinutes,
+          totalShiftMinutes,
+          rosterShiftName,
+        };
       }
-        return { type: "PRESENT", label: "P", hasPunches: true, workedMinutes, rosterShiftName };
+      return {
+        type: "PRESENT",
+        label: "P",
+        hasPunches: true,
+        workedMinutes,
+        rosterShiftName,
+      };
     }
 
     return { type: "PRESENT", label: "P", hasPunches: true };
@@ -2016,14 +2582,24 @@ if (approvedLeave) {
     lateMarkTracker.current.clear();
     noCheckoutTracker.current.clear();
 
-    const getDisplayPunches = (employeeID: number, date: string, punches: string[]) =>
-      isFactualMode && weekoffOverrides.get(employeeID)?.has(date) ? [] : punches;
+    const getDisplayPunches = (
+      employeeID: number,
+      date: string,
+      punches: string[],
+    ) =>
+      isFactualMode && weekoffOverrides.get(employeeID)?.has(date)
+        ? []
+        : punches;
 
     await Promise.all(
       rows.map(async (row) => {
         const empStatuses = new Map<string, string>();
         for (const date of dateColumns) {
-          const punches = getDisplayPunches(row.employee.id, date, row.punches[date] || []);
+          const punches = getDisplayPunches(
+            row.employee.id,
+            date,
+            row.punches[date] || [],
+          );
           const status = await getComprehensiveStatus(
             date,
             row.employee.id,
@@ -2033,7 +2609,10 @@ if (approvedLeave) {
             empStatuses,
           );
           empStatuses.set(date, status.label);
-          globalStatusCache.set(buildStatusCacheKey(date, row.employee.id, punches), status);
+          globalStatusCache.set(
+            buildStatusCacheKey(date, row.employee.id, punches),
+            status,
+          );
         }
       }),
     );
@@ -2070,7 +2649,7 @@ if (approvedLeave) {
           branches.find(
             (b) =>
               b.branchName === formData.branchName &&
-              Number(b.companyID) === Number(selectedCompanyID)
+              Number(b.companyID) === Number(selectedCompanyID),
           )?.id || null;
       }
 
@@ -2086,7 +2665,18 @@ if (approvedLeave) {
       const rosterEndpoint = "rosters";
       const policyEndpoint = "attendance-policy";
 
-      const [holidaysRes, shiftsRes, regRes, leavesRes, rostersRes, policyRes, empShiftRes, companiesRes, branchesRes, departmentsRes] = await Promise.all([
+      const [
+        holidaysRes,
+        shiftsRes,
+        regRes,
+        leavesRes,
+        rostersRes,
+        policyRes,
+        empShiftRes,
+        companiesRes,
+        branchesRes,
+        departmentsRes,
+      ] = await Promise.all([
         fetch(`${BACKEND_URL}/public-holiday`),
         fetch(`${BACKEND_URL}/${shiftEndpoint}`),
         fetch(`${BACKEND_URL}/emp-attendance-regularise`),
@@ -2118,24 +2708,39 @@ if (approvedLeave) {
       const branchesData = await branchesRes.json();
       const departmentsData = await departmentsRes.json();
 
-      const matchesCompanyBranch = (companyID?: number | null, branchesID?: number | null) => {
+      const matchesCompanyBranch = (
+        companyID?: number | null,
+        branchesID?: number | null,
+      ) => {
         if (Number(companyID) !== Number(selectedCompanyID)) return false;
-        return Number(branchesID) === Number(selectedBranchID) || branchesID == null;
+        return (
+          Number(branchesID) === Number(selectedBranchID) || branchesID == null
+        );
       };
 
       let companyShifts = (safeShiftsData as any[])
         .map(normalizeWorkShift)
-        .filter((shift: WorkShift) => Number(shift.companyID) === Number(selectedCompanyID));
+        .filter(
+          (shift: WorkShift) =>
+            Number(shift.companyID) === Number(selectedCompanyID),
+        );
 
       if (isFactualMode) {
         try {
           const actualShiftsRes = await fetch(`${BACKEND_URL}/work-shift`);
           if (actualShiftsRes.ok) {
             const actualShiftsData = await actualShiftsRes.json();
-            const actualShifts = (Array.isArray(actualShiftsData) ? actualShiftsData : [])
+            const actualShifts = (
+              Array.isArray(actualShiftsData) ? actualShiftsData : []
+            )
               .map(normalizeWorkShift)
-              .filter((shift: WorkShift) => Number(shift.companyID) === Number(selectedCompanyID));
-            const actualById = new Map<number, WorkShift>(actualShifts.map((shift: WorkShift) => [shift.id, shift]));
+              .filter(
+                (shift: WorkShift) =>
+                  Number(shift.companyID) === Number(selectedCompanyID),
+              );
+            const actualById = new Map<number, WorkShift>(
+              actualShifts.map((shift: WorkShift) => [shift.id, shift]),
+            );
             companyShifts = companyShifts.map((shift: WorkShift) => {
               if ((shift.workShiftDay?.length || 0) > 0) return shift;
               return actualById.get(shift.id) || shift;
@@ -2144,42 +2749,72 @@ if (approvedLeave) {
         } catch (err) {}
       }
 
-      const shiftById = new Map<number, WorkShift>(companyShifts.map((shift: WorkShift) => [shift.id, shift]));
+      const shiftById = new Map<number, WorkShift>(
+        companyShifts.map((shift: WorkShift) => [shift.id, shift]),
+      );
       const normalizedShifts = companyShifts;
 
-      const relevantRosters = (safeRostersData as any[]).filter((roster: any) =>
-        Number(roster.companyID) === Number(selectedCompanyID) && Number(roster.branchesID) === Number(selectedBranchID)
+      const relevantRosters = (safeRostersData as any[]).filter(
+        (roster: any) =>
+          Number(roster.companyID) === Number(selectedCompanyID) &&
+          Number(roster.branchesID) === Number(selectedBranchID),
       );
       const flatRosterEmployees = relevantRosters
         .flatMap((roster: any) => roster.employees ?? [])
         .map((employee: any) => normalizeRosterEmployee(employee, shiftById));
 
       const companyPolicies = (safePolicyData as AttendancePolicy[]).filter(
-        (policy: AttendancePolicy) => Number(policy.companyID) === Number(selectedCompanyID)
+        (policy: AttendancePolicy) =>
+          Number(policy.companyID) === Number(selectedCompanyID),
       );
       const selectedPolicy =
-        companyPolicies.find((policy: AttendancePolicy) => matchesCompanyBranch(policy.companyID, policy.branchesID)) ||
+        companyPolicies.find((policy: AttendancePolicy) =>
+          matchesCompanyBranch(policy.companyID, policy.branchesID),
+        ) ||
         companyPolicies[0] ||
         null;
 
       const policyById = new Map<number, AttendancePolicy>(
-        (safePolicyData as AttendancePolicy[]).map((policy) => [Number(policy.id), policy]),
+        (safePolicyData as AttendancePolicy[]).map((policy) => [
+          Number(policy.id),
+          policy,
+        ]),
       );
       const empAttendancePolicies = new Map<number, AttendancePolicy | null>();
       for (const emp of safeEmpData as Employee[]) {
-        const mappings = Array.isArray(emp.empAttendancePolicy) ? emp.empAttendancePolicy : [];
-        const mappedId = mappings[mappings.length - 1]?.attendancePolicyID ?? emp.attendancePolicyID;
+        const mappings = Array.isArray(emp.empAttendancePolicy)
+          ? emp.empAttendancePolicy
+          : [];
+        const mappedId =
+          mappings[mappings.length - 1]?.attendancePolicyID ??
+          emp.attendancePolicyID;
         empAttendancePolicies.set(
           Number(emp.id),
-          (mappedId != null ? policyById.get(Number(mappedId)) : undefined) ?? selectedPolicy,
+          (mappedId != null ? policyById.get(Number(mappedId)) : undefined) ??
+            selectedPolicy,
         );
       }
 
       const shifts = extractEmpWorkShiftMappings(safeEmpData, false, shiftById);
 
-      const filteredHolidays = safeHolidays.filter((h: PublicHoliday) => Number(h.companyID) === Number(selectedCompanyID) && (h.branchesID == null || Number(h.branchesID) === Number(selectedBranchID)));
-      const filteredRegularizations = safeRegData.filter((r: AttendanceRegularize) => Number(r.companyID) === Number(selectedCompanyID) && Number(r.branchesID) === Number(selectedBranchID) && r.status === "Approved");
-      const filteredLeaves = safeLeavesData.filter((l: LeaveApplication) => Number(l.companyID) === Number(selectedCompanyID) && Number(l.branchesID) === Number(selectedBranchID) && l.status === "Approved");
+      const filteredHolidays = safeHolidays.filter(
+        (h: PublicHoliday) =>
+          Number(h.companyID) === Number(selectedCompanyID) &&
+          (h.branchesID == null ||
+            Number(h.branchesID) === Number(selectedBranchID)),
+      );
+      const filteredRegularizations = safeRegData.filter(
+        (r: AttendanceRegularize) =>
+          Number(r.companyID) === Number(selectedCompanyID) &&
+          Number(r.branchesID) === Number(selectedBranchID) &&
+          r.status === "Approved",
+      );
+      const filteredLeaves = safeLeavesData.filter(
+        (l: LeaveApplication) =>
+          Number(l.companyID) === Number(selectedCompanyID) &&
+          Number(l.branchesID) === Number(selectedBranchID) &&
+          l.status === "Approved",
+      );
 
       setPublicHolidays(filteredHolidays);
       setWorkShifts(normalizedShifts);
@@ -2187,24 +2822,26 @@ if (approvedLeave) {
       setLeaveApplications(filteredLeaves);
       setRosters(flatRosterEmployees);
       setAttendancePolicy(selectedPolicy);
-      
+
       const fromDate = new Date(formData.dateFrom);
       const toDate = new Date(formData.dateTo);
       fromDate.setHours(0, 0, 0, 0);
       toDate.setHours(23, 59, 59, 999);
-      
+
       const queryParams = new URLSearchParams({
         dateFrom: formData.dateFrom,
         dateTo: formData.dateTo,
-        limit: '10000'
+        limit: "10000",
       });
-      
-      const logsResponse = await fetch(`${BACKEND_URL}/process-att-logs?${queryParams}`);
-      
+
+      const logsResponse = await fetch(
+        `${BACKEND_URL}/process-att-logs?${queryParams}`,
+      );
+
       if (!logsResponse.ok) {
-        throw new Error('Failed to fetch logs');
+        throw new Error("Failed to fetch logs");
       }
-      
+
       const result = await logsResponse.json();
       const allLogs = result.data || result;
 
@@ -2233,16 +2870,28 @@ if (approvedLeave) {
             const checkType = String(row.checkType || "");
             const empId = Number(row.employee?.id ?? row.employeeId);
             const empCode = Number(row.employee?.employeeID);
-            addPhotoToDay(nextPhotoByDay, empId, parsed.dateKey, item, checkType);
+            addPhotoToDay(
+              nextPhotoByDay,
+              empId,
+              parsed.dateKey,
+              item,
+              checkType,
+            );
             if (Number.isFinite(empCode) && empCode > 0 && empCode !== empId) {
-              addPhotoToDay(nextPhotoByDay, empCode, parsed.dateKey, item, checkType);
+              addPhotoToDay(
+                nextPhotoByDay,
+                empCode,
+                parsed.dateKey,
+                item,
+                checkType,
+              );
             }
           }
         } catch {
           /* Logs below still supply LOCATION_APP photos. */
         }
       }
-      
+
       const logsData = allLogs.filter((log: ProcessAttLog) => {
         const parsed = parsePunchTime(log.punch_time);
         if (!parsed) return false;
@@ -2251,8 +2900,16 @@ if (approvedLeave) {
         if (logDate < fromDate || logDate > toDate) return false;
 
         // Strict company/branch guard from log itself when available
-        if ((log as any).companyID && Number((log as any).companyID) !== Number(selectedCompanyID)) return false;
-        if ((log as any).branchesID && Number((log as any).branchesID) !== Number(selectedBranchID)) return false;
+        if (
+          (log as any).companyID &&
+          Number((log as any).companyID) !== Number(selectedCompanyID)
+        )
+          return false;
+        if (
+          (log as any).branchesID &&
+          Number((log as any).branchesID) !== Number(selectedBranchID)
+        )
+          return false;
 
         return true;
       });
@@ -2261,17 +2918,21 @@ if (approvedLeave) {
       const logEmployeeIdSet = new Set(
         logsData
           .filter((log: ProcessAttLog) => log.manage_employee_id != null)
-          .map((log: ProcessAttLog) => Number(log.manage_employee_id))
+          .map((log: ProcessAttLog) => Number(log.manage_employee_id)),
       );
 
       // Use Number() coercion to handle string vs number type mismatches from API responses
-      const byCompanyBranch = safeEmpData.filter((e: Employee) =>
-        Number(e.companyID) === Number(selectedCompanyID) && Number(e.branchesID) === Number(selectedBranchID)
+      const byCompanyBranch = safeEmpData.filter(
+        (e: Employee) =>
+          Number(e.companyID) === Number(selectedCompanyID) &&
+          Number(e.branchesID) === Number(selectedBranchID),
       );
-      const byCompanyBranchIds = new Set(byCompanyBranch.map((e: Employee) => Number(e.id)));
+      const byCompanyBranchIds = new Set(
+        byCompanyBranch.map((e: Employee) => Number(e.id)),
+      );
 
       // Also include employees that appear in the returned logs (covers name-mismatch scenarios)
-          // Strict report scope: do NOT include employees from logs if they are outside selected company/branch.
+      // Strict report scope: do NOT include employees from logs if they are outside selected company/branch.
       const filteredEmpData: Employee[] = [...byCompanyBranch];
 
       setAllEmployees(filteredEmpData);
@@ -2280,12 +2941,16 @@ if (approvedLeave) {
 
       if (selectedDepartments.length > 0) {
         finalFilteredEmployees = finalFilteredEmployees.filter(
-          (e) => e.departmentNameID != null && selectedDepartments.includes(String(e.departmentNameID)),
+          (e) =>
+            e.departmentNameID != null &&
+            selectedDepartments.includes(String(e.departmentNameID)),
         );
       }
       if (selectedDesignations.length > 0) {
         finalFilteredEmployees = finalFilteredEmployees.filter(
-          (e) => e.designationID != null && selectedDesignations.includes(String(e.designationID)),
+          (e) =>
+            e.designationID != null &&
+            selectedDesignations.includes(String(e.designationID)),
         );
       }
       if (selectedEmployees.length > 0) {
@@ -2296,14 +2961,17 @@ if (approvedLeave) {
 
       // Group logs by employee
       const logsByEmployee = new Map<number, ProcessAttLog[]>();
-      const employeeIdSet = new Set(finalFilteredEmployees.map((e: Employee) => Number(e.id)));
+      const employeeIdSet = new Set(
+        finalFilteredEmployees.map((e: Employee) => Number(e.id)),
+      );
       logsData.forEach((log: ProcessAttLog) => {
-          const employeeId = Number(log.manage_employee_id);
+        const employeeId = Number(log.manage_employee_id);
         if (employeeId && employeeIdSet.has(employeeId)) {
-            if (!logsByEmployee.has(employeeId)) logsByEmployee.set(employeeId, []);
-            logsByEmployee.get(employeeId)!.push(log);
-          }
-        });
+          if (!logsByEmployee.has(employeeId))
+            logsByEmployee.set(employeeId, []);
+          logsByEmployee.get(employeeId)!.push(log);
+        }
+      });
 
       const rows = finalFilteredEmployees.map((emp: Employee) => {
         const empLogs = logsByEmployee.get(Number(emp.id)) || [];
@@ -2312,7 +2980,8 @@ if (approvedLeave) {
         empLogs.forEach((log: ProcessAttLog) => {
           const parsed = parsePunchTime(log.punch_time);
           if (parsed) {
-            if (!punchesByDate[parsed.dateKey]) punchesByDate[parsed.dateKey] = [];
+            if (!punchesByDate[parsed.dateKey])
+              punchesByDate[parsed.dateKey] = [];
             punchesByDate[parsed.dateKey].push(parsed.timeStr);
             if (formData.reportType === "Photo Report") {
               const selfie = photoFromLocationLog(log);
@@ -2321,7 +2990,11 @@ if (approvedLeave) {
                   nextPhotoByDay,
                   Number(emp.id),
                   parsed.dateKey,
-                  { time: parsed.timeStr, url: selfie.url, checkType: selfie.checkType },
+                  {
+                    time: parsed.timeStr,
+                    url: selfie.url,
+                    checkType: selfie.checkType,
+                  },
                   selfie.checkType,
                 );
               }
@@ -2329,26 +3002,36 @@ if (approvedLeave) {
           }
         });
 
-        Object.keys(punchesByDate).forEach(date => punchesByDate[date].sort());
+        Object.keys(punchesByDate).forEach((date) =>
+          punchesByDate[date].sort(),
+        );
 
-        const company = companiesData.find((c: Company) => Number(c.id) === Number(emp.companyID));
-        const branch = branchesData.find((b: Branch) => Number(b.id) === Number(emp.branchesID));
-        const dept = departmentsData.find((d: Department) => Number(d.id) === Number(emp.departmentNameID));
+        const company = companiesData.find(
+          (c: Company) => Number(c.id) === Number(emp.companyID),
+        );
+        const branch = branchesData.find(
+          (b: Branch) => Number(b.id) === Number(emp.branchesID),
+        );
+        const dept = departmentsData.find(
+          (d: Department) => Number(d.id) === Number(emp.departmentNameID),
+        );
 
         return {
           employee: emp,
           punches: punchesByDate,
           companyName: company?.companyName || "N/A",
           branchName: branch?.branchName || "N/A",
-          departmentName: dept?.departmentName || "N/A"
+          departmentName: dept?.departmentName || "N/A",
         };
       });
 
       const dateColumnsFull = buildDateRangeColumns();
 
-      const enrichedShifts = shifts.map(s => {
+      const enrichedShifts = shifts.map((s) => {
         if (!s.workShift?.workShiftDay?.length) {
-          const fullShift = normalizedShifts.find((ws: WorkShift) => ws.id === s.workShiftID) || shiftById.get(s.workShiftID);
+          const fullShift =
+            normalizedShifts.find((ws: WorkShift) => ws.id === s.workShiftID) ||
+            shiftById.get(s.workShiftID);
           if (fullShift) return { ...s, workShift: fullShift };
         }
         return s;
@@ -2358,8 +3041,17 @@ if (approvedLeave) {
       const newFactualWeekoffOverrides = new Map<number, Set<string>>();
       if (isFactualMode) {
         for (const row of rows) {
-          const weekoffDates = detectFactualWeekoffDates(row, dateColumnsFull, enrichedShifts, flatRosterEmployees);
-          if (weekoffDates.size > 0) newFactualWeekoffOverrides.set(Number(row.employee.id), weekoffDates);
+          const weekoffDates = detectFactualWeekoffDates(
+            row,
+            dateColumnsFull,
+            enrichedShifts,
+            flatRosterEmployees,
+          );
+          if (weekoffDates.size > 0)
+            newFactualWeekoffOverrides.set(
+              Number(row.employee.id),
+              weekoffDates,
+            );
         }
       }
 
@@ -2414,15 +3106,41 @@ if (approvedLeave) {
 
     const dateColumns = buildDateRangeColumns();
     const reportType = formData.reportType;
-    const getDisplayPunches = (employeeID: number, date: string, punches: string[]) =>
-      isFactualMode && factualWeekoffOverrides.get(employeeID)?.has(date) ? [] : punches;
-    
-    const metaLabels = ["S.NO", "Employee ID", "Employee Name", "Company", "Branch", "Department"];
+    const getDisplayPunches = (
+      employeeID: number,
+      date: string,
+      punches: string[],
+    ) =>
+      isFactualMode && factualWeekoffOverrides.get(employeeID)?.has(date)
+        ? []
+        : punches;
+
+    const metaLabels = [
+      "S.NO",
+      "Employee ID",
+      "Employee Name",
+      "Company",
+      "Branch",
+      "Department",
+    ];
     const metaCount = metaLabels.length;
 
     const formatExcelDateHeader = (iso: string) => {
       const d = new Date(`${iso}T00:00:00`);
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
       const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       return {
         dateLabel: `${d.getDate()}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`,
@@ -2432,11 +3150,15 @@ if (approvedLeave) {
 
     const punchSplit = isPunchLogReport(reportType);
 
-    const dayStatusExcelValue = (punches: string[], status: AttendanceStatus | undefined): string => {
+    const dayStatusExcelValue = (
+      punches: string[],
+      status: AttendanceStatus | undefined,
+    ): string => {
       if (punches.length > 0) return "";
       if (status?.type === "LEAVE") return status.label;
       if (status?.type === "WEEK_OFF") return "WO";
-      if (status?.type === "HOLIDAY") return status.label === "PH-P" ? "PH-P" : "PH";
+      if (status?.type === "HOLIDAY")
+        return status.label === "PH-P" ? "PH-P" : "PH";
       if (status?.type === "ABSENT") return "Absent";
       return "";
     };
@@ -2481,7 +3203,10 @@ if (approvedLeave) {
         ];
 
     const rowPunchCounts: number[] = [];
-    const dayMerges: Array<{ s: { r: number; c: number }; e: { r: number; c: number } }> = [];
+    const dayMerges: Array<{
+      s: { r: number; c: number };
+      e: { r: number; c: number };
+    }> = [];
 
     for (let index = 0; index < filteredReportData.length; index++) {
       const row = filteredReportData[index];
@@ -2497,14 +3222,23 @@ if (approvedLeave) {
       let maxPunches = 1;
       for (let d = 0; d < dateColumns.length; d++) {
         const date = dateColumns[d];
-        const punches = getDisplayPunches(row.employee.id, date, row.punches[date] || []);
+        const punches = getDisplayPunches(
+          row.employee.id,
+          date,
+          row.punches[date] || [],
+        );
         const cacheKey = buildStatusCacheKey(date, row.employee.id, punches);
-        const status = globalStatusCache.get(cacheKey) as AttendanceStatus | undefined;
+        const status = globalStatusCache.get(cacheKey) as
+          | AttendanceStatus
+          | undefined;
         if (punchSplit) {
           if (punches.length > 0) {
-            const splitType = reportType === "Photo Report" ? "All Punches Logs" : reportType;
+            const splitType =
+              reportType === "Photo Report" ? "All Punches Logs" : reportType;
             const { ins, outs } = splitInOutPunches(punches, splitType);
-            const photos = photoByDay.get(photoDayKey(Number(row.employee.id), date));
+            const photos = photoByDay.get(
+              photoDayKey(Number(row.employee.id), date),
+            );
             const inLines = [...ins];
             const outLines = [...outs];
             if (reportType === "Photo Report") {
@@ -2516,12 +3250,20 @@ if (approvedLeave) {
               }
             }
             dataRow.push(inLines.join("\n"), outLines.join("\n"));
-            maxPunches = Math.max(maxPunches, inLines.length, outLines.length, 1);
-        } else {
+            maxPunches = Math.max(
+              maxPunches,
+              inLines.length,
+              outLines.length,
+              1,
+            );
+          } else {
             dataRow.push(dayStatusExcelValue(punches, status), "");
             const excelRow = index + 2;
             const col = metaCount + d * 2;
-            dayMerges.push({ s: { r: excelRow, c: col }, e: { r: excelRow, c: col + 1 } });
+            dayMerges.push({
+              s: { r: excelRow, c: col },
+              e: { r: excelRow, c: col + 1 },
+            });
           }
         } else {
           const value = cellValueForDate(punches, status);
@@ -2556,16 +3298,21 @@ if (approvedLeave) {
       bottom: { style: "thin", color: { rgb: "000000" } },
       right: { style: "thin", color: { rgb: "000000" } },
     };
-    const solidFill = (rgb: string) => ({ patternType: "solid", fgColor: { rgb } });
+    const solidFill = (rgb: string) => ({
+      patternType: "solid",
+      fgColor: { rgb },
+    });
     const looksLikePunchTimes = (cv: string) =>
-      /\d{1,2}:\d{2}(:\d{2})?/.test(cv) && !cv.includes("Absent") && !cv.includes("Marking: A");
+      /\d{1,2}:\d{2}(:\d{2})?/.test(cv) &&
+      !cv.includes("Absent") &&
+      !cv.includes("Marking: A");
 
     // Soft pastel fills matching reference Excel (light pink / light green, black text)
     const ABSENT_FILL = "FCE4E4";
     const PRESENT_FILL = "E2EFDA";
     const HEADER_FILL = "F2F2F2";
     const TEXT_BLACK = "000000";
-    
+
     for (let R = range.s.r; R <= range.e.r; R++) {
       for (let C = range.s.c; C <= range.e.c; C++) {
         const cellRef = XLSX.utils.encode_cell({ c: C, r: R });
@@ -2608,7 +3355,7 @@ if (approvedLeave) {
 
         if (!isDateCol) continue;
 
-            const cv = ws[cellRef].v?.toString() || "";
+        const cv = ws[cellRef].v?.toString() || "";
         if (!cv) continue;
 
         if (punchSplit && looksLikePunchTimes(cv)) {
@@ -2625,7 +3372,12 @@ if (approvedLeave) {
 
         if (cv.includes("Absent") || cv === "A" || cv.includes("Marking: A")) {
           ws[cellRef].s.fill = solidFill(ABSENT_FILL);
-          ws[cellRef].s.font = { name: "Calibri", sz: 9, bold: false, color: { rgb: TEXT_BLACK } };
+          ws[cellRef].s.font = {
+            name: "Calibri",
+            sz: 9,
+            bold: false,
+            color: { rgb: TEXT_BLACK },
+          };
         } else if (
           cv.includes("Present") ||
           cv.includes("P (") ||
@@ -2633,28 +3385,84 @@ if (approvedLeave) {
           looksLikePunchTimes(cv)
         ) {
           ws[cellRef].s.fill = solidFill(PRESENT_FILL);
-          ws[cellRef].s.font = { name: "Calibri", sz: 9, bold: false, color: { rgb: TEXT_BLACK } };
-        } else if (cv.includes("Half Day") || cv.includes("Marking: HD") || (cv.includes("HD") && !cv.includes("PHD"))) {
+          ws[cellRef].s.font = {
+            name: "Calibri",
+            sz: 9,
+            bold: false,
+            color: { rgb: TEXT_BLACK },
+          };
+        } else if (
+          cv.includes("Half Day") ||
+          cv.includes("Marking: HD") ||
+          (cv.includes("HD") && !cv.includes("PHD"))
+        ) {
           ws[cellRef].s.fill = solidFill("FFF2CC");
-          ws[cellRef].s.font = { name: "Calibri", sz: 9, bold: false, color: { rgb: TEXT_BLACK } };
-        } else if (cv.includes("WO") || cv.includes("Weekly Off") || cv.includes("Marking: WO")) {
+          ws[cellRef].s.font = {
+            name: "Calibri",
+            sz: 9,
+            bold: false,
+            color: { rgb: TEXT_BLACK },
+          };
+        } else if (
+          cv.includes("WO") ||
+          cv.includes("Weekly Off") ||
+          cv.includes("Marking: WO")
+        ) {
           ws[cellRef].s.fill = solidFill("FCE4D6");
-          ws[cellRef].s.font = { name: "Calibri", sz: 9, bold: false, color: { rgb: TEXT_BLACK } };
+          ws[cellRef].s.font = {
+            name: "Calibri",
+            sz: 9,
+            bold: false,
+            color: { rgb: TEXT_BLACK },
+          };
         } else if (cv.includes("Leave") || cv.includes("Marking: L-")) {
           ws[cellRef].s.fill = solidFill("FCE4EC");
-          ws[cellRef].s.font = { name: "Calibri", sz: 9, bold: false, color: { rgb: TEXT_BLACK } };
-        } else if (cv.includes("Late Mark") || cv.includes("Marking: L") || cv.startsWith("L (")) {
+          ws[cellRef].s.font = {
+            name: "Calibri",
+            sz: 9,
+            bold: false,
+            color: { rgb: TEXT_BLACK },
+          };
+        } else if (
+          cv.includes("Late Mark") ||
+          cv.includes("Marking: L") ||
+          cv.startsWith("L (")
+        ) {
           ws[cellRef].s.fill = solidFill("DDEBF7");
-          ws[cellRef].s.font = { name: "Calibri", sz: 9, bold: false, color: { rgb: TEXT_BLACK } };
-        } else if (cv.includes("PH") || cv.includes("Public Holiday") || cv.includes("Marking: PH")) {
+          ws[cellRef].s.font = {
+            name: "Calibri",
+            sz: 9,
+            bold: false,
+            color: { rgb: TEXT_BLACK },
+          };
+        } else if (
+          cv.includes("PH") ||
+          cv.includes("Public Holiday") ||
+          cv.includes("Marking: PH")
+        ) {
           ws[cellRef].s.fill = solidFill("E2D5F1");
-          ws[cellRef].s.font = { name: "Calibri", sz: 9, bold: false, color: { rgb: TEXT_BLACK } };
+          ws[cellRef].s.font = {
+            name: "Calibri",
+            sz: 9,
+            bold: false,
+            color: { rgb: TEXT_BLACK },
+          };
         } else if (cv.includes("OT") || cv.includes("Marking: OT")) {
           ws[cellRef].s.fill = solidFill("D6DCE4");
-          ws[cellRef].s.font = { name: "Calibri", sz: 9, bold: false, color: { rgb: TEXT_BLACK } };
+          ws[cellRef].s.font = {
+            name: "Calibri",
+            sz: 9,
+            bold: false,
+            color: { rgb: TEXT_BLACK },
+          };
         } else if (cv.includes("Regularized")) {
           ws[cellRef].s.fill = solidFill("D0F0E8");
-          ws[cellRef].s.font = { name: "Calibri", sz: 9, bold: false, color: { rgb: TEXT_BLACK } };
+          ws[cellRef].s.font = {
+            name: "Calibri",
+            sz: 9,
+            bold: false,
+            color: { rgb: TEXT_BLACK },
+          };
         }
       }
     }
@@ -2683,7 +3491,7 @@ if (approvedLeave) {
       ...rowPunchCounts.map((count) => ({ hpt: Math.max(22, count * 14) })),
     ];
     ws["!freeze"] = { x: metaCount, y: 2 };
-    
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
     XLSX.writeFile(
@@ -2706,11 +3514,14 @@ if (approvedLeave) {
     const start = parseInputDate(formData.dateFrom);
     const end = parseInputDate(formData.dateTo);
     if (isNaN(start.getTime()) || isNaN(end.getTime())) return [];
-    start.setHours(0, 0, 0, 0); end.setHours(0, 0, 0, 0);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
     const dates: string[] = [];
     const cur = new Date(start);
     while (cur <= end) {
-      dates.push(`${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`);
+      dates.push(
+        `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`,
+      );
       cur.setDate(cur.getDate() + 1);
     }
     return dates;
@@ -2718,7 +3529,18 @@ if (approvedLeave) {
 
   const formatHeaderDate = (iso: string) => {
     const d = new Date(iso);
-    return { dayName: d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(), dateStr: d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase() };
+    return {
+      dayName: d
+        .toLocaleDateString("en-US", { weekday: "short" })
+        .toUpperCase(),
+      dateStr: d
+        .toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+        .toUpperCase(),
+    };
   };
 
   const dateColumns = buildDateRangeColumns();
@@ -2728,76 +3550,121 @@ if (approvedLeave) {
   const filteredReportData = useMemo(() => {
     const q = searchTerm.toLowerCase();
     return reportData.filter((row) => {
-      const fullName = `${row.employee.employeeFirstName || ""} ${row.employee.employeeLastName || ""}`.toLowerCase();
+      const fullName =
+        `${row.employee.employeeFirstName || ""} ${row.employee.employeeLastName || ""}`.toLowerCase();
       return (
         fullName.includes(q) ||
-        String(row.employee.employeeID || "").toLowerCase().includes(q) ||
-        String(row.companyName || "").toLowerCase().includes(q) ||
-        String(row.branchName || "").toLowerCase().includes(q) ||
-        String(row.departmentName || "").toLowerCase().includes(q)
+        String(row.employee.employeeID || "")
+          .toLowerCase()
+          .includes(q) ||
+        String(row.companyName || "")
+          .toLowerCase()
+          .includes(q) ||
+        String(row.branchName || "")
+          .toLowerCase()
+          .includes(q) ||
+        String(row.departmentName || "")
+          .toLowerCase()
+          .includes(q)
       );
     });
   }, [reportData, searchTerm]);
 
-  const renderDateCell = useCallback((punches: string[], date: string, employeeID: number) => {
-    const activeCtx = getActiveReportContext();
-    const selectedCompanyID = activeCtx.companyID;
-    
-    const selectedBranch = branches.find(
-      (b) =>
-        b.branchName === formData.branchName &&
-        Number(b.companyID) === Number(selectedCompanyID)
-    );
+  const renderDateCell = useCallback(
+    (punches: string[], date: string, employeeID: number) => {
+      const activeCtx = getActiveReportContext();
+      const selectedCompanyID = activeCtx.companyID;
 
-    const displayPunches = isFactualMode && factualWeekoffOverrides.get(employeeID)?.has(date) ? [] : punches;
-    const photos = photoByDay.get(photoDayKey(employeeID, date));
-    const employeeRow = reportData.find((row: ReportData) => Number(row.employee.id) === Number(employeeID));
-    const employeeName = employeeRow
-      ? `${employeeRow.employee.employeeFirstName || ""} ${employeeRow.employee.employeeLastName || ""}`.trim()
-      : "";
-    return (
-      <DateCell
-        punches={displayPunches}
-        date={date}
-        employeeID={employeeID}
-        formData={formData}
-        reportData={reportData}
-        selectedCompanyID={selectedCompanyID}
-        selectedBranchID={selectedBranch?.id || 0}
-        getComprehensiveStatus={getComprehensiveStatus}
-        photos={photos}
-        onOpenPhotos={(day: DayPhotos) =>
-          setPhotoViewer({ name: employeeName, date, ins: day.ins, outs: day.outs })
-        }
-      />
-    );
-  }, [formData, user, managerData, branches, reportData, isFactualMode, factualWeekoffOverrides, photoByDay]);
+      const selectedBranch = branches.find(
+        (b) =>
+          b.branchName === formData.branchName &&
+          Number(b.companyID) === Number(selectedCompanyID),
+      );
 
-  const renderDateHeaders = () => dateColumns.map(date => {
-    const { dayName, dateStr } = formatHeaderDate(date);
-    if (punchSplit) {
-    return (
+      const displayPunches =
+        isFactualMode && factualWeekoffOverrides.get(employeeID)?.has(date)
+          ? []
+          : punches;
+      const photos = photoByDay.get(photoDayKey(employeeID, date));
+      const employeeRow = reportData.find(
+        (row: ReportData) => Number(row.employee.id) === Number(employeeID),
+      );
+      const employeeName = employeeRow
+        ? `${employeeRow.employee.employeeFirstName || ""} ${employeeRow.employee.employeeLastName || ""}`.trim()
+        : "";
+      return (
+        <DateCell
+          punches={displayPunches}
+          date={date}
+          employeeID={employeeID}
+          formData={formData}
+          reportData={reportData}
+          selectedCompanyID={selectedCompanyID}
+          selectedBranchID={selectedBranch?.id || 0}
+          getComprehensiveStatus={getComprehensiveStatus}
+          photos={photos}
+          onOpenPhotos={(day: DayPhotos) =>
+            setPhotoViewer({
+              name: employeeName,
+              date,
+              ins: day.ins,
+              outs: day.outs,
+            })
+          }
+        />
+      );
+    },
+    [
+      formData,
+      user,
+      managerData,
+      branches,
+      reportData,
+      isFactualMode,
+      factualWeekoffOverrides,
+      photoByDay,
+    ],
+  );
+
+  const renderDateHeaders = () =>
+    dateColumns.map((date) => {
+      const { dayName, dateStr } = formatHeaderDate(date);
+      if (punchSplit) {
+        return (
+          <th
+            key={date}
+            colSpan={2}
+            className="px-2 py-1 text-center min-w-[140px] border-l border-teal-100 text-[11px] bg-teal-50 text-teal-900"
+          >
+            <div className="font-semibold">{dateStr}</div>
+            <div className="text-[10px] opacity-80 mt-1">{dayName}</div>
+          </th>
+        );
+      }
+      return (
         <th
           key={date}
-          colSpan={2}
-          className="px-2 py-1 text-center min-w-[140px] border-l border-teal-100 text-[11px] bg-teal-50 text-teal-900"
+          className="px-2 py-1 text-center min-w-[90px] border-l border-teal-100 text-[11px] bg-teal-50 text-teal-900"
         >
           <div className="font-semibold">{dateStr}</div>
           <div className="text-[10px] opacity-80 mt-1">{dayName}</div>
         </th>
       );
-    }
-    return (
-      <th key={date} className="px-2 py-1 text-center min-w-[90px] border-l border-teal-100 text-[11px] bg-teal-50 text-teal-900">
-        <div className="font-semibold">{dateStr}</div>
-        <div className="text-[10px] opacity-80 mt-1">{dayName}</div>
-      </th>
-    );
-  });
+    });
 
   const resetForm = () => {
-    setFormData(prev => ({ ...prev, dateFrom: getFirstDayOfMonth(), dateTo: getTodayStr(), branchName: "", companyID: user?.role === "SUPERADMIN" ? null : prev.companyID }));
-    setReportData([]); setSearchTerm(""); setSelectedDepartments([]); setSelectedDesignations([]); setSelectedEmployees([]);
+    setFormData((prev) => ({
+      ...prev,
+      dateFrom: getFirstDayOfMonth(),
+      dateTo: getTodayStr(),
+      branchName: "",
+      companyID: user?.role === "SUPERADMIN" ? null : prev.companyID,
+    }));
+    setReportData([]);
+    setSearchTerm("");
+    setSelectedDepartments([]);
+    setSelectedDesignations([]);
+    setSelectedEmployees([]);
     setSandwichOverrides(new Map());
     setFactualWeekoffOverrides(new Map());
     setPhotoByDay(new Map());
@@ -2806,7 +3673,9 @@ if (approvedLeave) {
     globalStatusCache.clear();
   };
 
-  const showLegend = formData.reportType === "Attendance Marking Logs" || formData.reportType === "Attendance Summary Logs";
+  const showLegend =
+    formData.reportType === "Attendance Marking Logs" ||
+    formData.reportType === "Attendance Summary Logs";
 
   // ==================== RENDER ====================
 
@@ -2832,135 +3701,305 @@ if (approvedLeave) {
             {user?.role === "SUPERADMIN" && (
               <div className="space-y-2">
                 <Label>Company</Label>
-<select
-  className="w-full px-3 py-2 border rounded-md bg-white"
-  value={formData.companyID ?? ""}
-  onChange={(e) => {
-    const companyID = e.target.value ? Number(e.target.value) : null;
+                <select
+                  className="w-full px-3 py-2 border rounded-md bg-white"
+                  value={formData.companyID ?? ""}
+                  onChange={(e) => {
+                    const companyID = e.target.value
+                      ? Number(e.target.value)
+                      : null;
 
-    setFormData((prev) => ({
-      ...prev,
-      companyID,
-      branchName: "",
-    }));
+                    setFormData((prev) => ({
+                      ...prev,
+                      companyID,
+                      branchName: "",
+                    }));
 
-    setReportData([]);
-    setDepartments([]);
-    setDesignations([]);
-    setAllEmployees([]);
-    setSelectedDepartments([]);
-    setSelectedDesignations([]);
-    setSelectedEmployees([]);
-  }}
->                  <option value="">Select company</option>
-                  {companies.map(c => <option key={c.id} value={c.id}>{c.companyName}</option>)}
+                    setReportData([]);
+                    setDepartments([]);
+                    setDesignations([]);
+                    setAllEmployees([]);
+                    setSelectedDepartments([]);
+                    setSelectedDesignations([]);
+                    setSelectedEmployees([]);
+                  }}
+                >
+                  {" "}
+                  <option value="">Select company</option>
+                  {companies.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.companyName}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
             <div className="space-y-2">
               <Label>Branch</Label>
-              <select className="w-full px-3 py-2 border rounded-md bg-white" value={formData.branchName} onChange={handleBranchChange}>
+              <select
+                className="w-full px-3 py-2 border rounded-md bg-white"
+                value={formData.branchName}
+                onChange={handleBranchChange}
+              >
                 <option value="">Select branch</option>
-                {branches.map(b => <option key={b.id} value={b.branchName}>{b.branchName}</option>)}
+                {branches.map((b) => (
+                  <option key={b.id} value={b.branchName}>
+                    {b.branchName}
+                  </option>
+                ))}
               </select>
             </div>
-            <div className="space-y-2"><Label>Departments</Label><MultiSelect options={departmentOptions} selectedValues={selectedDepartments} onChange={setSelectedDepartments} placeholder="All departments" /></div>
-            <div className="space-y-2"><Label>Designations</Label><MultiSelect options={designationOptions} selectedValues={selectedDesignations} onChange={setSelectedDesignations} placeholder="All designations" /></div>
+            <div className="space-y-2">
+              <Label>Departments</Label>
+              <MultiSelect
+                options={departmentOptions}
+                selectedValues={selectedDepartments}
+                onChange={setSelectedDepartments}
+                placeholder="All departments"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Designations</Label>
+              <MultiSelect
+                options={designationOptions}
+                selectedValues={selectedDesignations}
+                onChange={setSelectedDesignations}
+                placeholder="All designations"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div className="space-y-2"><Label>Employees</Label><MultiSelect options={employeeOptions} selectedValues={selectedEmployees} onChange={setSelectedEmployees} placeholder="All employees" /></div>
+            <div className="space-y-2">
+              <Label>Employees</Label>
+              <MultiSelect
+                options={employeeOptions}
+                selectedValues={selectedEmployees}
+                onChange={setSelectedEmployees}
+                placeholder="All employees"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div className="space-y-2">
               <Label>Report Type</Label>
-              <select className="w-full px-3 py-2 border rounded-md bg-white" value={formData.reportType} onChange={e => setFormData(prev => ({ ...prev, reportType: e.target.value }))}>
-                <option value="All Punches Logs">All Punches Logs</option><option value="FILO Punches Logs">FILO Punches Logs</option>
-                <option value="Attendance Marking Logs">Attendance Marking Logs</option>
-                <option value="Attendance Summary Logs">Attendance Summary Logs</option>
+              <select
+                className="w-full px-3 py-2 border rounded-md bg-white"
+                value={formData.reportType}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    reportType: e.target.value,
+                  }))
+                }
+              >
+                <option value="All Punches Logs">All Punches Logs</option>
+                <option value="FILO Punches Logs">FILO Punches Logs</option>
+                <option value="Attendance Marking Logs">
+                  Attendance Marking Logs
+                </option>
+                <option value="Attendance Summary Logs">
+                  Attendance Summary Logs
+                </option>
                 <option value="Photo Report">Photo Report</option>
               </select>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div className="space-y-2"><Label>Date From</Label><Input type="date" value={formData.dateFrom} onChange={e => setFormData(prev => ({ ...prev, dateFrom: e.target.value }))} /></div>
-            <div className="space-y-2"><Label>Date To</Label><Input type="date" value={formData.dateTo} onChange={e => setFormData(prev => ({ ...prev, dateTo: e.target.value }))} /></div>
+            <div className="space-y-2">
+              <Label>Date From</Label>
+              <Input
+                type="date"
+                value={formData.dateFrom}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, dateFrom: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Date To</Label>
+              <Input
+                type="date"
+                value={formData.dateTo}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, dateTo: e.target.value }))
+                }
+              />
+            </div>
             <div className="col-span-2 flex items-end gap-3">
-              <Button onClick={generateReport} disabled={loading}>{loading ? "Generating..." : "Generate Report"}</Button>
-              <Button variant="outline" onClick={resetForm}>Reset</Button>
-              <Button variant="outline" onClick={downloadExcel} disabled={reportData.length === 0}><Download className="w-4 h-4 mr-2" />Excel</Button>
+              <Button onClick={generateReport} disabled={loading}>
+                {loading ? "Generating..." : "Generate Report"}
+              </Button>
+              <Button variant="outline" onClick={resetForm}>
+                Reset
+              </Button>
+              <Button
+                variant="outline"
+                onClick={downloadExcel}
+                disabled={reportData.length === 0}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Excel
+              </Button>
             </div>
           </div>
           {showLegend && (
             <div className="mt-4 p-3 bg-gray-50 rounded-md">
               <p className="text-xs font-semibold mb-2">Legend:</p>
               <div className="flex flex-wrap gap-3 text-[10px]">
-                <div className="flex items-center gap-1"><div className="w-3 h-3 bg-green-100 rounded"></div><span>P = Present</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 bg-yellow-100 rounded"></div><span>HD = Half Day</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-100 rounded"></div><span>L = Late Mark</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 bg-indigo-100 rounded"></div><span>OT = Overtime</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 bg-red-100 rounded"></div><span>A = Absent</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 bg-purple-100 rounded"></div><span>PH = Public Holiday</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 bg-orange-100 rounded"></div><span>WO = Weekly Off</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 bg-teal-100 rounded"></div><span>AR = Regularized</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 bg-pink-100 rounded"></div><span>Leave</span></div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-100 rounded"></div>
+                  <span>P = Present</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-yellow-100 rounded"></div>
+                  <span>HD = Half Day</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-blue-100 rounded"></div>
+                  <span>L = Late Mark</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-indigo-100 rounded"></div>
+                  <span>OT = Overtime</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-red-100 rounded"></div>
+                  <span>A = Absent</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-purple-100 rounded"></div>
+                  <span>PH = Public Holiday</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-orange-100 rounded"></div>
+                  <span>WO = Weekly Off</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-teal-100 rounded"></div>
+                  <span>AR = Regularized</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-pink-100 rounded"></div>
+                  <span>Leave</span>
+                </div>
               </div>
-              <p className="text-[10px] text-gray-500 mt-2">Note: WO-P / PH-P / Leave-P means employee punched on Week Off/Holiday/Leave</p>
+              <p className="text-[10px] text-gray-500 mt-2">
+                Note: WO-P / PH-P / Leave-P means employee punched on Week
+                Off/Holiday/Leave
+              </p>
             </div>
           )}
-          <p className="text-xs text-gray-500 mt-2">Logs are filtered by company, branch, department (if selected) and date range. Only logs from AT devices are included.</p>
+          <p className="text-xs text-gray-500 mt-2">
+            Logs are filtered by company, branch, department (if selected) and
+            date range. Only logs from AT devices are included.
+          </p>
         </CardContent>
       </Card>
 
-      {reportData.length === 0 && !loading && <Card><CardContent className="py-6 text-center text-sm text-gray-500">No logs found. Click Generate Report to load data.</CardContent></Card>}
+      {reportData.length === 0 && !loading && (
+        <Card>
+          <CardContent className="py-6 text-center text-sm text-gray-500">
+            No logs found. Click Generate Report to load data.
+          </CardContent>
+        </Card>
+      )}
 
       {reportData.length > 0 && (
         <Card className="mt-4">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold"><FileText className="w-5 h-5" />{formData.reportType} – {filteredReportData.length} users</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <FileText className="w-5 h-5" />
+                {formData.reportType} – {filteredReportData.length} users
+              </CardTitle>
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+                <Input
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto w-full border-t border-gray-200">
               <table className="min-w-full border-collapse text-xs">
-                <thead data-hrms-report-header className="bg-teal-50 text-teal-900 sticky top-0 z-20 border-b border-teal-100">
+                <thead
+                  data-hrms-report-header
+                  className="bg-teal-50 text-teal-900 sticky top-0 z-20 border-b border-teal-100"
+                >
                   <tr>
-                    <th 
+                    <th
                       rowSpan={headerRowSpan}
-                      className="sticky left-0 z-30 bg-teal-50 text-teal-900 px-2 py-2 text-center border-r border-teal-100" 
-                      style={{ left: 0, width: responsiveLeftWidths.sno, minWidth: responsiveLeftWidths.sno }}
+                      className="sticky left-0 z-30 bg-teal-50 text-teal-900 px-2 py-2 text-center border-r border-teal-100"
+                      style={{
+                        left: 0,
+                        width: responsiveLeftWidths.sno,
+                        minWidth: responsiveLeftWidths.sno,
+                      }}
                     >
                       S.NO
                     </th>
-                    {!isMobile && <th 
+                    {!isMobile && (
+                      <th
+                        rowSpan={headerRowSpan}
+                        className="sticky z-30 bg-teal-50 text-teal-900 px-2 py-2 text-left border-r border-teal-100"
+                        style={{
+                          left: responsiveLeftWidths.sno,
+                          width: responsiveLeftWidths.company,
+                          minWidth: responsiveLeftWidths.company,
+                        }}
+                      >
+                        COMPANY
+                      </th>
+                    )}
+                    {!isMobile && (
+                      <th
+                        rowSpan={headerRowSpan}
+                        className="sticky z-30 bg-teal-50 text-teal-900 px-2 py-2 text-left border-r border-teal-100"
+                        style={{
+                          left:
+                            responsiveLeftWidths.sno +
+                            responsiveLeftWidths.company,
+                          width: responsiveLeftWidths.branch,
+                          minWidth: responsiveLeftWidths.branch,
+                        }}
+                      >
+                        BRANCH
+                      </th>
+                    )}
+                    {!isMobile && (
+                      <th
+                        rowSpan={headerRowSpan}
+                        className="sticky z-30 bg-teal-50 text-teal-900 px-2 py-2 text-left border-r border-teal-100"
+                        style={{
+                          left:
+                            responsiveLeftWidths.sno +
+                            responsiveLeftWidths.company +
+                            responsiveLeftWidths.branch,
+                          width: responsiveLeftWidths.dept,
+                          minWidth: responsiveLeftWidths.dept,
+                        }}
+                      >
+                        DEPT
+                      </th>
+                    )}
+                    <th
                       rowSpan={headerRowSpan}
-                      className="sticky z-30 bg-teal-50 text-teal-900 px-2 py-2 text-left border-r border-teal-100" 
-                      style={{ left: responsiveLeftWidths.sno, width: responsiveLeftWidths.company, minWidth: responsiveLeftWidths.company }}
-                    >
-                      COMPANY
-                    </th>}
-                    {!isMobile && <th 
-                      rowSpan={headerRowSpan}
-                      className="sticky z-30 bg-teal-50 text-teal-900 px-2 py-2 text-left border-r border-teal-100" 
-                      style={{ left: responsiveLeftWidths.sno + responsiveLeftWidths.company, width: responsiveLeftWidths.branch, minWidth: responsiveLeftWidths.branch }}
-                    >
-                      BRANCH
-                    </th>}
-                    {!isMobile && <th 
-                      rowSpan={headerRowSpan}
-                      className="sticky z-30 bg-teal-50 text-teal-900 px-2 py-2 text-left border-r border-teal-100" 
-                      style={{ left: responsiveLeftWidths.sno + responsiveLeftWidths.company + responsiveLeftWidths.branch, width: responsiveLeftWidths.dept, minWidth: responsiveLeftWidths.dept }}
-                    >
-                      DEPT
-                    </th>}
-                    <th 
-                      rowSpan={headerRowSpan}
-                      className="sticky z-30 bg-teal-50 text-teal-900 px-2 py-2 text-left border-r border-teal-100" 
-                      style={{ left: responsiveLeftWidths.sno + (isMobile ? 0 : responsiveLeftWidths.company + responsiveLeftWidths.branch + responsiveLeftWidths.dept), width: responsiveLeftWidths.emp, minWidth: responsiveLeftWidths.emp }}
+                      className="sticky z-30 bg-teal-50 text-teal-900 px-2 py-2 text-left border-r border-teal-100"
+                      style={{
+                        left:
+                          responsiveLeftWidths.sno +
+                          (isMobile
+                            ? 0
+                            : responsiveLeftWidths.company +
+                              responsiveLeftWidths.branch +
+                              responsiveLeftWidths.dept),
+                        width: responsiveLeftWidths.emp,
+                        minWidth: responsiveLeftWidths.emp,
+                      }}
                     >
                       EMPLOYEE
                     </th>
@@ -2984,38 +4023,88 @@ if (approvedLeave) {
                 <tbody>
                   {filteredReportData.map((row, index) => (
                     <tr key={row.employee.id} className="odd:bg-gray-50">
-                      <td 
-                        className="sticky left-0 bg-white px-2 py-2 border-b border-r text-center text-[11px] z-10" 
-                        style={{ left: 0, width: responsiveLeftWidths.sno, minWidth: responsiveLeftWidths.sno }}
+                      <td
+                        className="sticky left-0 bg-white px-2 py-2 border-b border-r text-center text-[11px] z-10"
+                        style={{
+                          left: 0,
+                          width: responsiveLeftWidths.sno,
+                          minWidth: responsiveLeftWidths.sno,
+                        }}
                       >
                         {index + 1}
                       </td>
-                      {!isMobile && <td 
-                        className="sticky bg-white px-2 py-2 border-b border-r text-[11px] z-10 align-top" 
-                        style={{ left: responsiveLeftWidths.sno, width: responsiveLeftWidths.company, minWidth: responsiveLeftWidths.company }}
+                      {!isMobile && (
+                        <td
+                          className="sticky bg-white px-2 py-2 border-b border-r text-[11px] z-10 align-top"
+                          style={{
+                            left: responsiveLeftWidths.sno,
+                            width: responsiveLeftWidths.company,
+                            minWidth: responsiveLeftWidths.company,
+                          }}
+                        >
+                          <div className="truncate">{row.companyName}</div>
+                        </td>
+                      )}
+                      {!isMobile && (
+                        <td
+                          className="sticky bg-white px-2 py-2 border-b border-r text-[11px] z-10 align-top"
+                          style={{
+                            left:
+                              responsiveLeftWidths.sno +
+                              responsiveLeftWidths.company,
+                            width: responsiveLeftWidths.branch,
+                            minWidth: responsiveLeftWidths.branch,
+                          }}
+                        >
+                          <div className="truncate">{row.branchName}</div>
+                        </td>
+                      )}
+                      {!isMobile && (
+                        <td
+                          className="sticky bg-white px-2 py-2 border-b border-r text-[11px] z-10 align-top"
+                          style={{
+                            left:
+                              responsiveLeftWidths.sno +
+                              responsiveLeftWidths.company +
+                              responsiveLeftWidths.branch,
+                            width: responsiveLeftWidths.dept,
+                            minWidth: responsiveLeftWidths.dept,
+                          }}
+                        >
+                          <div className="truncate">
+                            {row.departmentName || "N/A"}
+                          </div>
+                        </td>
+                      )}
+                      <td
+                        className="sticky bg-white px-2 py-2 border-b border-r text-[11px] z-10 align-top"
+                        style={{
+                          left:
+                            responsiveLeftWidths.sno +
+                            (isMobile
+                              ? 0
+                              : responsiveLeftWidths.company +
+                                responsiveLeftWidths.branch +
+                                responsiveLeftWidths.dept),
+                          width: responsiveLeftWidths.emp,
+                          minWidth: responsiveLeftWidths.emp,
+                        }}
                       >
-                        <div className="truncate">{row.companyName}</div>
-                      </td>}
-                      {!isMobile && <td 
-                        className="sticky bg-white px-2 py-2 border-b border-r text-[11px] z-10 align-top" 
-                        style={{ left: responsiveLeftWidths.sno + responsiveLeftWidths.company, width: responsiveLeftWidths.branch, minWidth: responsiveLeftWidths.branch }}
-                      >
-                        <div className="truncate">{row.branchName}</div>
-                      </td>}
-                      {!isMobile && <td 
-                        className="sticky bg-white px-2 py-2 border-b border-r text-[11px] z-10 align-top" 
-                        style={{ left: responsiveLeftWidths.sno + responsiveLeftWidths.company + responsiveLeftWidths.branch, width: responsiveLeftWidths.dept, minWidth: responsiveLeftWidths.dept }}
-                      >
-                        <div className="truncate">{row.departmentName || "N/A"}</div>
-                      </td>}
-                      <td 
-                        className="sticky bg-white px-2 py-2 border-b border-r text-[11px] z-10 align-top" 
-                        style={{ left: responsiveLeftWidths.sno + (isMobile ? 0 : responsiveLeftWidths.company + responsiveLeftWidths.branch + responsiveLeftWidths.dept), width: responsiveLeftWidths.emp, minWidth: responsiveLeftWidths.emp }}
-                      >
-                        <div className="truncate">{row.employee.employeeFirstName} {row.employee.employeeLastName}</div>
-                        <div className="text-[10px] text-gray-500 truncate">({row.employee.employeeID})</div>
+                        <div className="truncate">
+                          {row.employee.employeeFirstName}{" "}
+                          {row.employee.employeeLastName}
+                        </div>
+                        <div className="text-[10px] text-gray-500 truncate">
+                          ({row.employee.employeeID})
+                        </div>
                       </td>
-                      {dateColumns.map(date => renderDateCell(row.punches[date] || [], date, row.employee.id))}
+                      {dateColumns.map((date) =>
+                        renderDateCell(
+                          row.punches[date] || [],
+                          date,
+                          row.employee.id,
+                        ),
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -3027,11 +4116,16 @@ if (approvedLeave) {
 
       {photoViewer ? (
         <>
-          <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setPhotoViewer(null)} />
+          <div
+            className="fixed inset-0 z-50 bg-black/50"
+            onClick={() => setPhotoViewer(null)}
+          />
           <div className="fixed inset-x-4 top-[8%] z-[51] mx-auto max-w-3xl rounded-2xl bg-white p-5 shadow-xl max-h-[84vh] overflow-y-auto">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Punch photos</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Punch photos
+                </h3>
                 <p className="text-sm text-gray-500">
                   {photoViewer.name} · {photoViewer.date}
                 </p>
@@ -3046,23 +4140,42 @@ if (approvedLeave) {
               </button>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              {([
-                { label: "IN", items: photoViewer.ins, tone: "text-green-700" },
-                { label: "OUT", items: photoViewer.outs, tone: "text-red-700" },
-              ] as const).map((group) => (
+              {(
+                [
+                  {
+                    label: "IN",
+                    items: photoViewer.ins,
+                    tone: "text-green-700",
+                  },
+                  {
+                    label: "OUT",
+                    items: photoViewer.outs,
+                    tone: "text-red-700",
+                  },
+                ] as const
+              ).map((group) => (
                 <div key={group.label} className="space-y-2">
-                  <p className={`text-xs font-bold uppercase ${group.tone}`}>{group.label}</p>
+                  <p className={`text-xs font-bold uppercase ${group.tone}`}>
+                    {group.label}
+                  </p>
                   {group.items.length === 0 ? (
-                    <p className="text-sm text-gray-400">No {group.label.toLowerCase()} photo</p>
+                    <p className="text-sm text-gray-400">
+                      No {group.label.toLowerCase()} photo
+                    </p>
                   ) : (
                     group.items.map((photo, idx) => (
-                      <div key={`${group.label}-${idx}`} className="rounded-xl border border-gray-100 overflow-hidden">
+                      <div
+                        key={`${group.label}-${idx}`}
+                        className="rounded-xl border border-gray-100 overflow-hidden"
+                      >
                         <img
                           src={resolveUploadUrl(photo.url)}
                           alt={`${group.label} photo ${photo.time}`}
                           className="w-full max-h-80 object-cover bg-gray-50"
                         />
-                        <p className="px-3 py-2 text-sm text-gray-700">{photo.time}</p>
+                        <p className="px-3 py-2 text-sm text-gray-700">
+                          {photo.time}
+                        </p>
                       </div>
                     ))
                   )}

@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { hasModuleWriteAccess, isCompanyAdminLikeRole } from "@/lib/companyAccess";
+import {
+  hasModuleWriteAccess,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
 import { getSidebarContext } from "../utils/sidebarContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -16,13 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import {
-  Plus,
-  X,
-  Save,
-  CheckCircle2,
-  UserCog,
-} from "lucide-react";
+import { Plus, X, Save, CheckCircle2, UserCog } from "lucide-react";
 import { NoticeBanner } from "../components/ui/notice-banner";
 import {
   Dialog,
@@ -93,13 +90,17 @@ interface Termination {
 }
 
 const API = {
-  employees: "/backend/manage-emp/list",
-  terminations: "/backend/termination",
-  branches: "/backend/branches",
-  departments: "/backend/departments",
+  employees: "https://hrms-api-test.onrender.com/manage-emp/list",
+  terminations: "https://hrms-api-test.onrender.com/termination",
+  branches: "https://hrms-api-test.onrender.com/branches",
+  departments: "https://hrms-api-test.onrender.com/departments",
 };
 
-const EXIT_TYPES_WITHOUT_NOTICE = new Set(["TERMINATION", "DEATH", "ABSCONDING"]);
+const EXIT_TYPES_WITHOUT_NOTICE = new Set([
+  "TERMINATION",
+  "DEATH",
+  "ABSCONDING",
+]);
 
 function exitTypeRequiresNotice(exitType: string) {
   return Boolean(exitType) && !EXIT_TYPES_WITHOUT_NOTICE.has(exitType);
@@ -107,7 +108,13 @@ function exitTypeRequiresNotice(exitType: string) {
 
 export default function TerminationManagement() {
   const user = useCurrentUser();
-  const canManage = user?.role === "SUPERADMIN" || user?.role === "SERVICE_PROVIDER" || isCompanyAdminLikeRole(user?.role) || user?.role === "BRANCH_ADMIN" || user?.role === "ADMIN" || hasModuleWriteAccess("OFFBOARDING");
+  const canManage =
+    user?.role === "SUPERADMIN" ||
+    user?.role === "SERVICE_PROVIDER" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "BRANCH_ADMIN" ||
+    user?.role === "ADMIN" ||
+    hasModuleWriteAccess("OFFBOARDING");
 
   const [terminations, setTerminations] = useState<Termination[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -121,14 +128,14 @@ export default function TerminationManagement() {
   // Employee autocomplete
   const [empSearch, setEmpSearch] = useState("");
   const [empList, setEmpList] = useState<Employee[]>([]);
- const [empLoading, setEmpLoading] = useState(false);
+  const [empLoading, setEmpLoading] = useState(false);
 
-const [branchList, setBranchList] = useState<Branch[]>([]);
-const [departmentList, setDepartmentList] = useState<Department[]>([]);
-const [selectedBranchID, setSelectedBranchID] = useState("");
-const [selectedDepartmentID, setSelectedDepartmentID] = useState("");
+  const [branchList, setBranchList] = useState<Branch[]>([]);
+  const [departmentList, setDepartmentList] = useState<Department[]>([]);
+  const [selectedBranchID, setSelectedBranchID] = useState("");
+  const [selectedDepartmentID, setSelectedDepartmentID] = useState("");
 
-const empRef = useRef<HTMLDivElement>(null);
+  const empRef = useRef<HTMLDivElement>(null);
 
   const empTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -156,7 +163,7 @@ const empRef = useRef<HTMLDivElement>(null);
   // Load Data
   // -------------------
 
-    const getActiveCompanyID = () => {
+  const getActiveCompanyID = () => {
     const ctx = getSidebarContext();
     return ctx?.companyID ?? user?.companyID ?? null;
   };
@@ -176,28 +183,30 @@ const empRef = useRef<HTMLDivElement>(null);
       const brRaw = await brRes.json();
       const deptRaw = await deptRes.json();
 
-      let branches: Branch[] = Array.isArray(brRaw) ? brRaw : brRaw?.data ?? [];
+      let branches: Branch[] = Array.isArray(brRaw)
+        ? brRaw
+        : (brRaw?.data ?? []);
       let departments: Department[] = Array.isArray(deptRaw)
         ? deptRaw
-        : deptRaw?.data ?? [];
+        : (deptRaw?.data ?? []);
 
       const companyID = getActiveCompanyID();
 
       if (companyID) {
         branches = branches.filter(
-          (b) => Number(b.companyID) === Number(companyID)
+          (b) => Number(b.companyID) === Number(companyID),
         );
         departments = departments.filter(
-          (d) => Number(d.companyID) === Number(companyID)
+          (d) => Number(d.companyID) === Number(companyID),
         );
       }
 
       if (user?.role === "BRANCH_ADMIN" && user?.branchesID) {
         branches = branches.filter(
-          (b) => Number(b.id) === Number(user.branchesID)
+          (b) => Number(b.id) === Number(user.branchesID),
         );
         departments = departments.filter(
-          (d) => Number(d.branchesID) === Number(user.branchesID)
+          (d) => Number(d.branchesID) === Number(user.branchesID),
         );
         setSelectedBranchID(String(user.branchesID));
         setBranchFilter(String(user.branchesID));
@@ -216,7 +225,7 @@ const empRef = useRef<HTMLDivElement>(null);
     if (!selectedBranchID) return [];
 
     return departmentList.filter(
-      (d) => Number(d.branchesID) === Number(selectedBranchID)
+      (d) => Number(d.branchesID) === Number(selectedBranchID),
     );
   }, [departmentList, selectedBranchID]);
 
@@ -227,9 +236,9 @@ const empRef = useRef<HTMLDivElement>(null);
           (t) =>
             t.exitStatus === "DRAFT" ||
             t.exitStatus === "APPROVED" ||
-            t.exitStatus === "NOTICE_RUNNING"
+            t.exitStatus === "NOTICE_RUNNING",
         )
-        .map((t) => t.employeeId)
+        .map((t) => t.employeeId),
     );
 
     return employees.filter((e) => {
@@ -248,34 +257,38 @@ const empRef = useRef<HTMLDivElement>(null);
     });
   }, [employees, terminations, selectedBranchID, selectedDepartmentID]);
 
-
   const fetchData = async () => {
     try {
       setLoading(true);
 
       const empRes = await fetch(`${API.employees}?status=ACTIVE`);
       const empRaw = await empRes.json();
-      let empData = Array.isArray(empRaw) ? empRaw : empRaw?.data ?? [];
+      let empData = Array.isArray(empRaw) ? empRaw : (empRaw?.data ?? []);
       // Filter by company from sidebar context
       const ctx = getSidebarContext();
       const companyID = ctx?.companyID ?? user?.companyID;
-     if (companyID) {
-  empData = empData.filter((e: any) => Number(e.companyID) === Number(companyID));
-}
+      if (companyID) {
+        empData = empData.filter(
+          (e: any) => Number(e.companyID) === Number(companyID),
+        );
+      }
 
-if (user?.role === "BRANCH_ADMIN" && user?.branchesID) {
-  empData = empData.filter(
-    (e: any) => Number(e.branchesID) === Number(user.branchesID)
-  );
-}
+      if (user?.role === "BRANCH_ADMIN" && user?.branchesID) {
+        empData = empData.filter(
+          (e: any) => Number(e.branchesID) === Number(user.branchesID),
+        );
+      }
 
       setEmployees(empData);
 
       const termRes = await fetch(API.terminations);
       const raw = await termRes.json();
-      let termData = Array.isArray(raw) ? raw : raw?.data ?? [];
+      let termData = Array.isArray(raw) ? raw : (raw?.data ?? []);
       if (companyID) {
-        termData = termData.filter((t: any) => t.employee?.companyID === companyID || t.companyID === companyID);
+        termData = termData.filter(
+          (t: any) =>
+            t.employee?.companyID === companyID || t.companyID === companyID,
+        );
       }
       setTerminations(termData);
     } catch (e) {
@@ -285,93 +298,97 @@ if (user?.role === "BRANCH_ADMIN" && user?.branchesID) {
     }
   };
 
-
   const closeTerminationPagePanels = () => {
-  setIsAdding(false);
+    setIsAdding(false);
 
-  setEmpSearch("");
-  setEmpList([]);
+    setEmpSearch("");
+    setEmpList([]);
 
-  setSelectedDepartmentID("");
+    setSelectedDepartmentID("");
 
-  if (user?.role !== "BRANCH_ADMIN") {
-    setSelectedBranchID("");
-  }
-
-  setForm({
-    employeeId: "",
-    exitType: "",
-    reasonCategory: "",
-    resignationDate: "",
-    initiatedOn: new Date().toISOString().split("T")[0],
-    noticePeriod: "",
-    noticeStartDate: new Date().toISOString().split("T")[0],
-  });
-
-  setApproveModalOpen(false);
-  setSelectedTermination(null);
-  setApprovalForm({
-    lastWorkingDay: "",
-    noticeDays: "",
-    disableLoginOn: "",
-  });
-};
-
-useEffect(() => {
-  const load = () => {
-    if (user) {
-      fetchData();
-      fetchBranchAndDepartmentLookups();
-    }
-  };
-
-  load();
-
-  const sidebarPageClickHandler = (e: any) => {
-    if (e.detail?.path === "/termination") {
-      closeTerminationPagePanels();
-      load();
-    }
-  };
-
-  window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler);
-  window.addEventListener("sidebar-context-changed", load);
-  window.addEventListener("app-data-refresh", load);
-
-  return () => {
-    window.removeEventListener("sidebar-main-page-click", sidebarPageClickHandler);
-    window.removeEventListener("sidebar-context-changed", load);
-    window.removeEventListener("app-data-refresh", load);
-  };
-}, [user]);
-
-  const runFetchEmp = (q: string) => {
-  if (empTimerRef.current) clearTimeout(empTimerRef.current);
-
-  empTimerRef.current = setTimeout(() => {
-    if (!selectedBranchID || !selectedDepartmentID) {
-      setEmpList([]);
-      return;
+    if (user?.role !== "BRANCH_ADMIN") {
+      setSelectedBranchID("");
     }
 
-    const ql = q.toLowerCase();
-
-    const filtered = visibleEmployeesForTermination.filter((e) => {
-      const name = `${e.employeeFirstName ?? ""} ${e.employeeLastName ?? ""}`.toLowerCase();
-      const eid = (e.employeeID ?? "").toLowerCase();
-
-      if (!ql) return true;
-
-      return name.includes(ql) || eid.includes(ql);
+    setForm({
+      employeeId: "",
+      exitType: "",
+      reasonCategory: "",
+      resignationDate: "",
+      initiatedOn: new Date().toISOString().split("T")[0],
+      noticePeriod: "",
+      noticeStartDate: new Date().toISOString().split("T")[0],
     });
 
-    setEmpList(filtered.slice(0, 20));
-  }, 150);
-};
+    setApproveModalOpen(false);
+    setSelectedTermination(null);
+    setApprovalForm({
+      lastWorkingDay: "",
+      noticeDays: "",
+      disableLoginOn: "",
+    });
+  };
+
+  useEffect(() => {
+    const load = () => {
+      if (user) {
+        fetchData();
+        fetchBranchAndDepartmentLookups();
+      }
+    };
+
+    load();
+
+    const sidebarPageClickHandler = (e: any) => {
+      if (e.detail?.path === "/termination") {
+        closeTerminationPagePanels();
+        load();
+      }
+    };
+
+    window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler);
+    window.addEventListener("sidebar-context-changed", load);
+    window.addEventListener("app-data-refresh", load);
+
+    return () => {
+      window.removeEventListener(
+        "sidebar-main-page-click",
+        sidebarPageClickHandler,
+      );
+      window.removeEventListener("sidebar-context-changed", load);
+      window.removeEventListener("app-data-refresh", load);
+    };
+  }, [user]);
+
+  const runFetchEmp = (q: string) => {
+    if (empTimerRef.current) clearTimeout(empTimerRef.current);
+
+    empTimerRef.current = setTimeout(() => {
+      if (!selectedBranchID || !selectedDepartmentID) {
+        setEmpList([]);
+        return;
+      }
+
+      const ql = q.toLowerCase();
+
+      const filtered = visibleEmployeesForTermination.filter((e) => {
+        const name =
+          `${e.employeeFirstName ?? ""} ${e.employeeLastName ?? ""}`.toLowerCase();
+        const eid = (e.employeeID ?? "").toLowerCase();
+
+        if (!ql) return true;
+
+        return name.includes(ql) || eid.includes(ql);
+      });
+
+      setEmpList(filtered.slice(0, 20));
+    }, 150);
+  };
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (empRef.current && !empRef.current.contains(e.target as Node)) setEmpList([]);
+      if (empRef.current && !empRef.current.contains(e.target as Node))
+        setEmpList([]);
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
@@ -389,15 +406,16 @@ useEffect(() => {
       const createRes = await fetch(API.terminations, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-       body: JSON.stringify({
-  employeeId: Number(form.employeeId),
-  serviceProviderID: getActiveServiceProviderID(),
-  companyID: getActiveCompanyID(),
-  branchesID: Number(selectedBranchID),
-  exitType: form.exitType,
+        body: JSON.stringify({
+          employeeId: Number(form.employeeId),
+          serviceProviderID: getActiveServiceProviderID(),
+          companyID: getActiveCompanyID(),
+          branchesID: Number(selectedBranchID),
+          exitType: form.exitType,
           reasonCategory: form.reasonCategory,
           resignationDate: form.resignationDate || undefined,
-          noticeStartDate: form.noticeStartDate || form.initiatedOn || undefined,
+          noticeStartDate:
+            form.noticeStartDate || form.initiatedOn || undefined,
           noticeDays:
             requiresNotice && form.noticePeriod
               ? Number(form.noticePeriod)
@@ -412,9 +430,10 @@ useEffect(() => {
         let lastWorkingDay: string;
         if (requiresNotice && form.noticePeriod) {
           const noticeDays = Number(form.noticePeriod);
-          const startDate = form.noticeStartDate || form.initiatedOn
-            ? new Date(form.noticeStartDate || form.initiatedOn)
-            : new Date();
+          const startDate =
+            form.noticeStartDate || form.initiatedOn
+              ? new Date(form.noticeStartDate || form.initiatedOn)
+              : new Date();
           startDate.setDate(startDate.getDate() + noticeDays);
           lastWorkingDay = startDate.toISOString().split("T")[0];
         } else {
@@ -429,14 +448,14 @@ useEffect(() => {
         });
       }
 
-     setIsAdding(false);
-setEmpSearch("");
-setEmpList([]);
-setSelectedDepartmentID("");
-if (user?.role !== "BRANCH_ADMIN") {
-  setSelectedBranchID("");
-}
-setForm({
+      setIsAdding(false);
+      setEmpSearch("");
+      setEmpList([]);
+      setSelectedDepartmentID("");
+      if (user?.role !== "BRANCH_ADMIN") {
+        setSelectedBranchID("");
+      }
+      setForm({
         employeeId: "",
         exitType: "",
         reasonCategory: "",
@@ -522,7 +541,9 @@ setForm({
       if (new Date() >= end) {
         return <Badge className="bg-red-100 text-red-700">Inactive</Badge>;
       }
-      return <Badge className="bg-orange-100 text-orange-700">Notice Period</Badge>;
+      return (
+        <Badge className="bg-orange-100 text-orange-700">Notice Period</Badge>
+      );
     }
     return <Badge className="bg-green-100 text-green-700">Active</Badge>;
   };
@@ -533,8 +554,8 @@ setForm({
         status === "DRAFT"
           ? "bg-yellow-100 text-yellow-700"
           : status === "APPROVED"
-          ? "bg-red-100 text-red-700"
-          : "bg-green-100 text-green-700"
+            ? "bg-red-100 text-red-700"
+            : "bg-green-100 text-green-700"
       }
     >
       {status}
@@ -545,9 +566,7 @@ setForm({
     const depts =
       branchFilter === "ALL"
         ? departmentList
-        : departmentList.filter(
-            (d) => String(d.branchesID) === branchFilter
-          );
+        : departmentList.filter((d) => String(d.branchesID) === branchFilter);
     return [
       { value: "ALL", label: "All departments" },
       ...depts.map((d) => ({
@@ -568,19 +587,20 @@ setForm({
     [branchList],
   );
 
-   const filtered = useMemo(() => {
+  const filtered = useMemo(() => {
     if (!Array.isArray(terminations)) return [];
 
     const q = table.search.trim().toLowerCase();
 
     let list = terminations.filter((t) => {
-      const branchId = String(t.employee?.branchesID ?? t.employee?.branches?.id ?? "");
+      const branchId = String(
+        t.employee?.branchesID ?? t.employee?.branches?.id ?? "",
+      );
       const departmentId = String(
-        t.employee?.departmentNameID ?? t.employee?.departments?.id ?? ""
+        t.employee?.departmentNameID ?? t.employee?.departments?.id ?? "",
       );
 
-      const matchesBranch =
-        branchFilter === "ALL" || branchFilter === branchId;
+      const matchesBranch = branchFilter === "ALL" || branchFilter === branchId;
 
       const matchesDepartment =
         departmentFilter === "ALL" || departmentFilter === departmentId;
@@ -624,81 +644,92 @@ setForm({
     departmentFilter,
   ]);
 
-  const terminationColumns = useMemo((): DataTableColumn<Termination>[] => [
-    {
-      key: "employee",
-      header: "Employee",
-      sortable: true,
-      colSpan: 3,
-      cell: (t) => (
-        <span className="font-medium">
-          {t.employee?.employeeFirstName} {t.employee?.employeeLastName}
-        </span>
-      ),
-    },
-    {
-      key: "exitType",
-      header: "Exit Type",
-      sortable: true,
-      colSpan: 2,
-      cell: (t) => t.exitType,
-    },
-    {
-      key: "exitStatus",
-      header: "Status",
-      sortable: true,
-      colSpan: 2,
-      cell: (t) => exitStatusBadge(t.exitStatus),
-    },
-    {
-      key: "noticeStartDate",
-      header: "Initiated On",
-      sortable: true,
-      colSpan: 2,
-      cell: (t) =>
-        t.noticeStartDate
-          ? new Date(t.noticeStartDate).toLocaleDateString()
-          : "—",
-    },
-    {
-      key: "noticeDays",
-      header: "Notice Period",
-      sortable: true,
-      colSpan: 2,
-      cell: (t) => (t.noticeDays != null ? `${t.noticeDays} days` : "—"),
-    },
-    {
-      key: "lastWorkingDay",
-      header: "Last Working Day",
-      sortable: true,
-      colSpan: 2,
-      cell: (t) =>
-        t.lastWorkingDay
-          ? new Date(t.lastWorkingDay).toLocaleDateString()
-          : "—",
-    },
-    {
-      key: "employeeStatus",
-      header: "Employee Status",
-      colSpan: 2,
-      cell: (t) => employeeStatusBadge(t),
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      colSpan: 3,
-      align: "right",
-      cell: (t) => (
-        <div className="flex justify-end gap-2 flex-wrap">
-          {t.exitStatus === "DRAFT" && !canManage && (
-            <>
-              <Button
-                size="sm"
-                className="bg-red-600 hover:bg-red-700"
-                onClick={() => openApproveModal(t)}
-              >
-                Approve
-              </Button>
+  const terminationColumns = useMemo(
+    (): DataTableColumn<Termination>[] => [
+      {
+        key: "employee",
+        header: "Employee",
+        sortable: true,
+        colSpan: 3,
+        cell: (t) => (
+          <span className="font-medium">
+            {t.employee?.employeeFirstName} {t.employee?.employeeLastName}
+          </span>
+        ),
+      },
+      {
+        key: "exitType",
+        header: "Exit Type",
+        sortable: true,
+        colSpan: 2,
+        cell: (t) => t.exitType,
+      },
+      {
+        key: "exitStatus",
+        header: "Status",
+        sortable: true,
+        colSpan: 2,
+        cell: (t) => exitStatusBadge(t.exitStatus),
+      },
+      {
+        key: "noticeStartDate",
+        header: "Initiated On",
+        sortable: true,
+        colSpan: 2,
+        cell: (t) =>
+          t.noticeStartDate
+            ? new Date(t.noticeStartDate).toLocaleDateString()
+            : "—",
+      },
+      {
+        key: "noticeDays",
+        header: "Notice Period",
+        sortable: true,
+        colSpan: 2,
+        cell: (t) => (t.noticeDays != null ? `${t.noticeDays} days` : "—"),
+      },
+      {
+        key: "lastWorkingDay",
+        header: "Last Working Day",
+        sortable: true,
+        colSpan: 2,
+        cell: (t) =>
+          t.lastWorkingDay
+            ? new Date(t.lastWorkingDay).toLocaleDateString()
+            : "—",
+      },
+      {
+        key: "employeeStatus",
+        header: "Employee Status",
+        colSpan: 2,
+        cell: (t) => employeeStatusBadge(t),
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        colSpan: 3,
+        align: "right",
+        cell: (t) => (
+          <div className="flex justify-end gap-2 flex-wrap">
+            {t.exitStatus === "DRAFT" && !canManage && (
+              <>
+                <Button
+                  size="sm"
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={() => openApproveModal(t)}
+                >
+                  Approve
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleCancel(t.id)}
+                >
+                  Cancel
+                </Button>
+              </>
+            )}
+            {t.exitStatus === "DRAFT" && canManage && (
               <Button
                 size="sm"
                 variant="outline"
@@ -706,40 +737,31 @@ setForm({
               >
                 Cancel
               </Button>
-            </>
-          )}
-          {t.exitStatus === "DRAFT" && canManage && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleCancel(t.id)}
-            >
-              Cancel
-            </Button>
-          )}
-          {t.exitStatus === "APPROVED" && (
-            <Button size="sm" onClick={() => handleFinal(t.id)}>
-              Final Settle
-            </Button>
-          )}
-        </div>
-      ),
-    },
-  ], [canManage]);
+            )}
+            {t.exitStatus === "APPROVED" && (
+              <Button size="sm" onClick={() => handleFinal(t.id)}>
+                Final Settle
+              </Button>
+            )}
+          </div>
+        ),
+      },
+    ],
+    [canManage],
+  );
 
   return (
     <div className="space-y-6 w-full max-w-none animate-fade-in page-content-enter">
-
       <PageHeader
         icon={UserCog}
         title="Off Boarding"
         description="Manage employee exit and termination records"
         actions={
           canManage && !isAdding ? (
-          <Button onClick={() => setIsAdding(true)}>
-            <Plus className="w-4 h-4 mr-1" />
-            Initiate Off Boarding
-          </Button>
+            <Button onClick={() => setIsAdding(true)}>
+              <Plus className="w-4 h-4 mr-1" />
+              Initiate Off Boarding
+            </Button>
           ) : null
         }
       />
@@ -747,31 +769,33 @@ setForm({
       {/* Create Form - Drawer */}
       <FormDrawer
         open={isAdding}
-        onOpenChange={(v) => { if (!v) closeTerminationPagePanels(); }}
+        onOpenChange={(v) => {
+          if (!v) closeTerminationPagePanels();
+        }}
         title="Initiate Exit"
         showHeaderCancel
       >
         <form onSubmit={handleCreate} className="space-y-6">
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Branch" required>
               <Select
                 value={selectedBranchID || undefined}
-      disabled={user?.role === "BRANCH_ADMIN"}
+                disabled={user?.role === "BRANCH_ADMIN"}
                 onValueChange={(branchID) => {
-        setSelectedBranchID(branchID);
-        setSelectedDepartmentID("");
-        setEmpSearch("");
-        setEmpList([]);
-        setForm({ ...form, employeeId: "" });
-      }}
-    >
+                  setSelectedBranchID(branchID);
+                  setSelectedDepartmentID("");
+                  setEmpSearch("");
+                  setEmpList([]);
+                  setForm({ ...form, employeeId: "" });
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select branch" />
                 </SelectTrigger>
                 <SelectContent>
-      {branchList.map((b) => (
+                  {branchList.map((b) => (
                     <SelectItem key={b.id} value={String(b.id)}>
-          {b.branchName || "Unnamed Branch"}
+                      {b.branchName || "Unnamed Branch"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -781,102 +805,102 @@ setForm({
             <FormField label="Department" required>
               <Select
                 value={selectedDepartmentID || undefined}
-      disabled={!selectedBranchID}
+                disabled={!selectedBranchID}
                 onValueChange={(departmentID) => {
                   setSelectedDepartmentID(departmentID);
-        setEmpSearch("");
-        setEmpList([]);
-        setForm({ ...form, employeeId: "" });
-      }}
-    >
+                  setEmpSearch("");
+                  setEmpList([]);
+                  setForm({ ...form, employeeId: "" });
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-      {visibleDepartments.map((d) => (
+                  {visibleDepartments.map((d) => (
                     <SelectItem key={d.id} value={String(d.id)}>
-          {d.departmentName || "Unnamed Department"}
+                      {d.departmentName || "Unnamed Department"}
                     </SelectItem>
-      ))}
+                  ))}
                 </SelectContent>
               </Select>
             </FormField>
-</div>
+          </div>
 
-<div ref={empRef} className="relative">
+          <div ref={empRef} className="relative">
             <FormField label="Employee" required>
-  <Input
-    value={empSearch}
-    onChange={(e) => {
-      setEmpSearch(e.target.value);
-      setForm({ ...form, employeeId: "" });
-      runFetchEmp(e.target.value);
-    }}
-    onFocus={(e) => runFetchEmp(e.target.value)}
-    placeholder={
-      !selectedBranchID
-        ? "Select branch first"
-        : !selectedDepartmentID
-          ? "Select department first"
-          : "Type employee name or ID…"
-    }
-    autoComplete="off"
-    disabled={!selectedBranchID || !selectedDepartmentID}
-    required={!form.employeeId}
-  />
+              <Input
+                value={empSearch}
+                onChange={(e) => {
+                  setEmpSearch(e.target.value);
+                  setForm({ ...form, employeeId: "" });
+                  runFetchEmp(e.target.value);
+                }}
+                onFocus={(e) => runFetchEmp(e.target.value)}
+                placeholder={
+                  !selectedBranchID
+                    ? "Select branch first"
+                    : !selectedDepartmentID
+                      ? "Select department first"
+                      : "Type employee name or ID…"
+                }
+                autoComplete="off"
+                disabled={!selectedBranchID || !selectedDepartmentID}
+                required={!form.employeeId}
+              />
             </FormField>
 
-  {empList.length > 0 && (
+            {empList.length > 0 && (
               <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-border bg-popover shadow-lg max-h-48 overflow-y-auto">
-      {empList.map((e) => (
-        <div
-          key={e.id}
+                {empList.map((e) => (
+                  <div
+                    key={e.id}
                     className="cursor-pointer px-3 py-2.5 text-sm transition-colors hover:bg-muted"
-          onMouseDown={(ev) => ev.preventDefault()}
-          onClick={() => {
-            setForm({ ...form, employeeId: String(e.id) });
-            setEmpSearch(
-              `${e.employeeFirstName ?? ""} ${e.employeeLastName ?? ""} - ${
-                e.employeeID ?? ""
-              }`.trim()
-            );
-            setEmpList([]);
-          }}
-        >
-          <div className="font-medium">
-            {e.employeeFirstName ?? ""} {e.employeeLastName ?? ""} -{" "}
-            {e.employeeID ?? ""}
-          </div>
+                    onMouseDown={(ev) => ev.preventDefault()}
+                    onClick={() => {
+                      setForm({ ...form, employeeId: String(e.id) });
+                      setEmpSearch(
+                        `${e.employeeFirstName ?? ""} ${e.employeeLastName ?? ""} - ${
+                          e.employeeID ?? ""
+                        }`.trim(),
+                      );
+                      setEmpList([]);
+                    }}
+                  >
+                    <div className="font-medium">
+                      {e.employeeFirstName ?? ""} {e.employeeLastName ?? ""} -{" "}
+                      {e.employeeID ?? ""}
+                    </div>
                     <div className="text-xs text-muted-foreground">
-            {e.branches?.branchName || "Branch"} /{" "}
-            {e.departments?.departmentName || "Department"}
-          </div>
-        </div>
-      ))}
-    </div>
-  )}
+                      {e.branches?.branchName || "Branch"} /{" "}
+                      {e.departments?.departmentName || "Department"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
-  {selectedBranchID &&
-    selectedDepartmentID &&
-    visibleEmployeesForTermination.length === 0 && (
+            {selectedBranchID &&
+              selectedDepartmentID &&
+              visibleEmployeesForTermination.length === 0 && (
                 <p className="text-xs text-destructive mt-1">
-        No active employees found for selected branch and department.
-      </p>
-    )}
-</div>
+                  No active employees found for selected branch and department.
+                </p>
+              )}
+          </div>
 
           <FormField label="Exit Type" required>
             <Select
               value={form.exitType || undefined}
               onValueChange={(exitType) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      exitType,
-                      noticePeriod: EXIT_TYPES_WITHOUT_NOTICE.has(exitType)
-                        ? ""
-                        : prev.noticePeriod,
-                    }));
-                  }}
+                setForm((prev) => ({
+                  ...prev,
+                  exitType,
+                  noticePeriod: EXIT_TYPES_WITHOUT_NOTICE.has(exitType)
+                    ? ""
+                    : prev.noticePeriod,
+                }));
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select type" />
@@ -894,64 +918,68 @@ setForm({
           </FormField>
 
           <FormField label="Reason">
-                <Input
-                  value={form.reasonCategory}
-                  onChange={(e) =>
-                    setForm({ ...form, reasonCategory: e.target.value })
-                  }
+            <Input
+              value={form.reasonCategory}
+              onChange={(e) =>
+                setForm({ ...form, reasonCategory: e.target.value })
+              }
               placeholder="Optional reason or category"
-                />
+            />
           </FormField>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Initiated On">
-                <Input
-                  type="date"
-                  value={form.initiatedOn}
-                  min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) =>
-                    setForm({ ...form, initiatedOn: e.target.value })
-                  }
-                />
+              <Input
+                type="date"
+                value={form.initiatedOn}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) =>
+                  setForm({ ...form, initiatedOn: e.target.value })
+                }
+              />
             </FormField>
 
-              {exitTypeRequiresNotice(form.exitType) && (
-                <>
-                  <FormField label="Notice Days">
-                    <Input
-                      type="number"
-                      min="0"
-                      value={form.noticePeriod}
-                      onChange={(e) =>
-                        setForm({ ...form, noticePeriod: e.target.value })
-                      }
-                      placeholder="e.g. 30"
-                    />
-                  </FormField>
-                  <FormField label="Notice Period Start From">
-                    <Input
-                      type="date"
-                      value={form.noticeStartDate}
-                      onChange={(e) =>
-                        setForm({ ...form, noticeStartDate: e.target.value })
-                      }
-                    />
-                  </FormField>
-                </>
-              )}
+            {exitTypeRequiresNotice(form.exitType) && (
+              <>
+                <FormField label="Notice Days">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={form.noticePeriod}
+                    onChange={(e) =>
+                      setForm({ ...form, noticePeriod: e.target.value })
+                    }
+                    placeholder="e.g. 30"
+                  />
+                </FormField>
+                <FormField label="Notice Period Start From">
+                  <Input
+                    type="date"
+                    value={form.noticeStartDate}
+                    onChange={(e) =>
+                      setForm({ ...form, noticeStartDate: e.target.value })
+                    }
+                  />
+                </FormField>
+              </>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 border-t border-border pt-5">
-            <Button type="button" variant="outline" onClick={closeTerminationPagePanels}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeTerminationPagePanels}
+            >
               <X className="w-4 h-4 mr-1" />
               Cancel
             </Button>
-                <Button type="submit" disabled={saving}>
-                  <Save className="w-4 h-4 mr-1" />
-                  {saving ? "Saving..." : "Submit"}
-                </Button>
-              </div>
-            </form>
+            <Button type="submit" disabled={saving}>
+              <Save className="w-4 h-4 mr-1" />
+              {saving ? "Saving..." : "Submit"}
+            </Button>
+          </div>
+        </form>
       </FormDrawer>
 
       {!isAdding && (
@@ -1003,7 +1031,7 @@ setForm({
               canManage ? (
                 <Button onClick={() => setIsAdding(true)}>
                   <Plus className="w-4 h-4 mr-1" /> Initiate Off Boarding
-              </Button>
+                </Button>
               ) : undefined
             }
           />
@@ -1069,10 +1097,14 @@ setForm({
           </div>
 
           <DialogFooter className="mt-6">
-            <Button type="button" variant="outline" onClick={closeTerminationPagePanels}>
-  <X className="w-4 h-4 mr-1" />
-  Cancel
-</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeTerminationPagePanels}
+            >
+              <X className="w-4 h-4 mr-1" />
+              Cancel
+            </Button>
             <Button
               className="bg-red-600 hover:bg-red-700"
               onClick={confirmApprove}

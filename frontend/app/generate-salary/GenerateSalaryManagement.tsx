@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { hasModuleWriteAccess, isCompanyAdminLikeRole } from "@/lib/companyAccess";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  hasModuleWriteAccess,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -10,7 +18,17 @@ import { NoticeBanner } from "../components/ui/notice-banner";
 import { FormDrawer } from "../components/ui/form-drawer";
 import { FormModal } from "../components/ui/form-modal";
 import { Badge } from "../components/ui/badge";
-import { Plus, Edit, Trash2, Download, Wallet, Eye, CreditCard, Loader2, CheckCircle } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Download,
+  Wallet,
+  Eye,
+  CreditCard,
+  Loader2,
+  CheckCircle,
+} from "lucide-react";
 import { PageHeader } from "../components/app/page-header";
 import { FilterBar, FilterSelect } from "../components/app/filter-bar";
 import { EntityListShell } from "../components/app/entity-list-shell";
@@ -18,11 +36,17 @@ import type { DataTableColumn } from "../components/app/data-table";
 import { EntityRowActions } from "../components/app/entity-row-actions";
 import { useClientTable, sortRows } from "../hooks/use-client-table";
 import jsPDF from "jspdf";
-import { useCurrentUser } from "../hooks/useCurrentUser"
+import { useCurrentUser } from "../hooks/useCurrentUser";
 import { toast } from "sonner";
-import { messageFromUnknownError, readApiErrorMessage } from "../utils/api-error";
+import {
+  messageFromUnknownError,
+  readApiErrorMessage,
+} from "../utils/api-error";
 import { getActiveCompanyId, getSidebarContext } from "../utils/sidebarContext";
-import { dispatchAppRefresh, registerDataCacheClearer } from "../utils/appRefresh";
+import {
+  dispatchAppRefresh,
+  registerDataCacheClearer,
+} from "../utils/appRefresh";
 import { useListAutoRefresh } from "../hooks/useListAutoRefresh";
 import { AutocompleteBranchField } from "../components/app/autocomplete-branch-field";
 import {
@@ -34,51 +58,64 @@ import {
    Types (aligned to API)
    ======================= */
 
-interface SP { id: number; companyName?: string }
-interface CO { id: number; companyName?: string; financialYearStart?: string; serviceProviderID?: number }
-interface BR { id: number; branchName?: string; companyID?: number; serviceProviderID?: number }
+interface SP {
+  id: number;
+  companyName?: string;
+}
+interface CO {
+  id: number;
+  companyName?: string;
+  financialYearStart?: string;
+  serviceProviderID?: number;
+}
+interface BR {
+  id: number;
+  branchName?: string;
+  companyID?: number;
+  serviceProviderID?: number;
+}
 interface Emp {
-  id: number
-  employeeID?: string
-  employeeFirstName?: string
-  employeeLastName?: string
-  attendancePolicyID?: number
-  workShiftID?: number
-  monthlyPayGradeID?: number
-  companyID?: number
-  branchesID?: number
-  joiningDate?: string
-  exitDate?: string
+  id: number;
+  employeeID?: string;
+  employeeFirstName?: string;
+  employeeLastName?: string;
+  attendancePolicyID?: number;
+  workShiftID?: number;
+  monthlyPayGradeID?: number;
+  companyID?: number;
+  branchesID?: number;
+  joiningDate?: string;
+  exitDate?: string;
   // salary fields (various names supported)
-  monthlyGrossSalary?: number
-  grossSalary?: number
-  monthlySalary?: number
-  ctcMonthly?: number
-  ctc?: number
-  salary?: number
-  totalSalary?: number
-  payrollSalary?: number
+  monthlyGrossSalary?: number;
+  grossSalary?: number;
+  monthlySalary?: number;
+  ctcMonthly?: number;
+  ctc?: number;
+  salary?: number;
+  totalSalary?: number;
+  payrollSalary?: number;
   departments?: {
-    id: number
-    serviceProviderID?: number
-    companyID?: number
-    branchesID?: number
-    departmentName?: string
-  }
+    id: number;
+    serviceProviderID?: number;
+    companyID?: number;
+    branchesID?: number;
+    departmentName?: string;
+  };
   designations?: {
-    id: number
-    serviceProviderID?: number
-    companyID?: number
-    branchesID?: number
-    designation?: string
-  }
+    id: number;
+    serviceProviderID?: number;
+    companyID?: number;
+    branchesID?: number;
+    designation?: string;
+  };
   employeeBankDetails?: Array<{
-    bankName?: string
-    bankBranchName?: string
-    accNumber?: string
-    ifscCode?: string
-    upi?: string
-  }>
+    bankName?: string;
+    bankBranchName?: string;
+    accNumber?: string;
+    ifscCode?: string;
+    upi?: string;
+  }>;
 }
 
 interface SalaryAdvanceRepayment {
@@ -106,59 +143,63 @@ interface SalaryAdvanceRepayment {
 }
 
 interface GenerateSalaryDTO {
-  serviceProviderID?: number | null
-  companyID?: number | null
-  branchesID?: number | null
-  employeeID: number
-  monthPeriod: string
+  serviceProviderID?: number | null;
+  companyID?: number | null;
+  branchesID?: number | null;
+  employeeID: number;
+  monthPeriod: string;
 }
 
 interface GenerateSalaryRow {
-  id: number
-  serviceProviderID?: number | null
-  companyID?: number | null
-  branchesID?: number | null
-  employeeID: number
-  monthPeriod: string
-  status?: string
-  serviceProvider?: { companyName?: string }
-  company?: { companyName?: string }
-  branches?: { branchName?: string }
-  manageEmployee?: Emp
-  createdAt?: string
+  id: number;
+  serviceProviderID?: number | null;
+  companyID?: number | null;
+  branchesID?: number | null;
+  employeeID: number;
+  monthPeriod: string;
+  status?: string;
+  serviceProvider?: { companyName?: string };
+  company?: { companyName?: string };
+  branches?: { branchName?: string };
+  manageEmployee?: Emp;
+  createdAt?: string;
 }
 
 type SalaryCycleRow = {
-  id: number
-  companyID: number
-  monthStartDay?: string | number | null
-  salaryCycleName?: string | null
-}
+  id: number;
+  companyID: number;
+  monthStartDay?: string | number | null;
+  salaryCycleName?: string | null;
+};
 
 /* =======================
    Constants / helpers
    ======================= */
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 const API = {
-  sp: "/backend/service-provider",
-  co: "/backend/company",
-  br: "/backend/branches",
-  emp: "/backend/manage-emp",
-  salaryCycleByCompany: (companyId: number) => `/backend/salary-cycle/company/${companyId}`,
-  generateSalary: "/backend/generate-salary",
-  salaryAdvanceRepayment: "/backend/salary-advance-repayment",
-  reimbursement: "/backend/reimbursement",
-  users: "/backend/users",
-  monthlyPayGrade: "/backend/monthly-pay-grade",
-  workShift: "/backend/work-shift",
-  attendancePolicy: "/backend/attendance-policy",
-  publicHoliday: "/backend/public-holiday",
-  leaveApplication: "/backend/leave-application",
-  empAttendanceRegularise: "/backend/emp-attendance-regularise",
-  empAttendanceLogs: "/backend/emp-attendance-logs",
-  rosters: "/backend/rosters",
+  sp: "https://hrms-api-test.onrender.com/service-provider",
+  co: "https://hrms-api-test.onrender.com/company",
+  br: "https://hrms-api-test.onrender.com/branches",
+  emp: "https://hrms-api-test.onrender.com/manage-emp",
+  salaryCycleByCompany: (companyId: number) =>
+    `https://hrms-api-test.onrender.com/salary-cycle/company/${companyId}`,
+  generateSalary: "https://hrms-api-test.onrender.com/generate-salary",
+  salaryAdvanceRepayment:
+    "https://hrms-api-test.onrender.com/salary-advance-repayment",
+  reimbursement: "https://hrms-api-test.onrender.com/reimbursement",
+  users: "https://hrms-api-test.onrender.com/users",
+  monthlyPayGrade: "https://hrms-api-test.onrender.com/monthly-pay-grade",
+  workShift: "https://hrms-api-test.onrender.com/work-shift",
+  attendancePolicy: "https://hrms-api-test.onrender.com/attendance-policy",
+  publicHoliday: "https://hrms-api-test.onrender.com/public-holiday",
+  leaveApplication: "https://hrms-api-test.onrender.com/leave-application",
+  empAttendanceRegularise:
+    "https://hrms-api-test.onrender.com/emp-attendance-regularise",
+  empAttendanceLogs: "https://hrms-api-test.onrender.com/emp-attendance-logs",
+  rosters: "https://hrms-api-test.onrender.com/rosters",
 };
 
 const MIN_CHARS = 0;
@@ -169,14 +210,30 @@ function empName(e?: Emp | null) {
   return [f, l].filter(Boolean).join(" ");
 }
 
-const monthsFull = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const monthsFull = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 function clampDay(d: number) {
   if (!Number.isFinite(d)) return 1;
   return Math.max(1, Math.min(28, Math.floor(d)));
 }
 
-function buildSalaryPeriodLabels(fyStart?: string | null, dayStr?: string | number | null): string[] {
+function buildSalaryPeriodLabels(
+  fyStart?: string | null,
+  dayStr?: string | number | null,
+): string[] {
   const now = new Date();
   const currentYear = now.getFullYear();
   const day = clampDay(Number(dayStr ?? 1));
@@ -191,15 +248,22 @@ function buildSalaryPeriodLabels(fyStart?: string | null, dayStr?: string | numb
   };
 
   const makeDate = (y: number, m: number, d: number) => new Date(y, m, d);
-  const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")} ${monthsFull[d.getMonth()]} ${d.getFullYear()}`;
+  const fmt = (d: Date) =>
+    `${String(d.getDate()).padStart(2, "0")} ${monthsFull[d.getMonth()]} ${d.getFullYear()}`;
 
   if (day === 1) {
     if (fyIsJan) {
-      return Array.from({ length: 12 }).map((_, i) => `${monthsFull[i]} ${currentYear}`);
+      return Array.from({ length: 12 }).map(
+        (_, i) => `${monthsFull[i]} ${currentYear}`,
+      );
     }
     const out: string[] = [];
     for (let i = 3; i <= 11; i++) out.push(`${monthsFull[i]} ${currentYear}`);
-    out.push(`January ${currentYear + 1}`, `February ${currentYear + 1}`, `March ${currentYear + 1}`);
+    out.push(
+      `January ${currentYear + 1}`,
+      `February ${currentYear + 1}`,
+      `March ${currentYear + 1}`,
+    );
     return out;
   }
 
@@ -246,12 +310,20 @@ function parseCycle(label?: string) {
 
   const monthNum = (name: string) => {
     const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
-    const idx = months.findIndex(
-      (m) => m.toLowerCase() === name.toLowerCase()
-    );
+    const idx = months.findIndex((m) => m.toLowerCase() === name.toLowerCase());
     if (idx === -1) throw new Error(`Unknown month name: ${name}`);
     return String(idx + 1).padStart(2, "0");
   };
@@ -331,16 +403,22 @@ interface ManagerScope {
 }
 
 // Update the getManagerAssignedScope function
-async function getManagerAssignedScope(username: string): Promise<ManagerScope | null> {
+async function getManagerAssignedScope(
+  username: string,
+): Promise<ManagerScope | null> {
   try {
     const users: any[] = await robustGet(API.users);
     const currentUser = users.find((u: any) => u.username === username);
 
-    if (currentUser && (currentUser.role === "SERVICE_PROVIDER" || currentUser.role === "SUPERADMIN")) {
+    if (
+      currentUser &&
+      (currentUser.role === "SERVICE_PROVIDER" ||
+        currentUser.role === "SUPERADMIN")
+    ) {
       return {
         companyID: currentUser.companyID || null,
         branchesID: currentUser.branchesID || null,
-        serviceProviderID: currentUser.serviceProviderID || null
+        serviceProviderID: currentUser.serviceProviderID || null,
       };
     }
     return null;
@@ -357,16 +435,22 @@ async function getManagerAssignedScope(username: string): Promise<ManagerScope |
 
 async function getSalaryAdvanceRepayments(
   employeeId: number,
-  selectedMonthLabel: string
+  selectedMonthLabel: string,
 ): Promise<{ name: string; amount: number }[]> {
   try {
     const { start } = parseCycle(selectedMonthLabel);
-    const selectedMonthStart = new Date(start.getFullYear(), start.getMonth(), 1);
+    const selectedMonthStart = new Date(
+      start.getFullYear(),
+      start.getMonth(),
+      1,
+    );
 
-    const repayments: SalaryAdvanceRepayment[] = await robustGet(API.salaryAdvanceRepayment);
+    const repayments: SalaryAdvanceRepayment[] = await robustGet(
+      API.salaryAdvanceRepayment,
+    );
 
-    const employeeRepayments = repayments.filter(repayment =>
-      repayment.salaryAdvance.manageEmployeeID === employeeId
+    const employeeRepayments = repayments.filter(
+      (repayment) => repayment.salaryAdvance.manageEmployeeID === employeeId,
     );
 
     if (employeeRepayments.length === 0) {
@@ -375,9 +459,13 @@ async function getSalaryAdvanceRepayments(
 
     const monthlyRepayments = new Map<string, number>();
 
-    employeeRepayments.forEach(repayment => {
+    employeeRepayments.forEach((repayment) => {
       const repaymentDate = new Date(repayment.startMonth);
-      const repaymentMonthStart = new Date(repaymentDate.getFullYear(), repaymentDate.getMonth(), 1);
+      const repaymentMonthStart = new Date(
+        repaymentDate.getFullYear(),
+        repaymentDate.getMonth(),
+        1,
+      );
 
       if (repaymentMonthStart.getTime() === selectedMonthStart.getTime()) {
         const amount = Number(repayment.amount) || 0;
@@ -396,13 +484,12 @@ async function getSalaryAdvanceRepayments(
       if (amount > 0) {
         deductions.push({
           name: "Salary Advance Repayment",
-          amount: Math.round(amount)
+          amount: Math.round(amount),
         });
       }
     });
 
     return deductions;
-
   } catch (error) {
     console.error("Error fetching salary advance repayments:", error);
     toast.error("Failed to load data.");
@@ -410,14 +497,21 @@ async function getSalaryAdvanceRepayments(
   }
 }
 
-async function getMonthlyPayGrade(companyId: number, branchId: number, emp?: any) {
+async function getMonthlyPayGrade(
+  companyId: number,
+  branchId: number,
+  emp?: any,
+) {
   const grades: any[] = await robustGet(API.monthlyPayGrade);
   if (emp?.monthlyPayGradeID) {
-    const g = grades.find(x => x.id === emp.monthlyPayGradeID);
+    const g = grades.find((x) => x.id === emp.monthlyPayGradeID);
     if (g) return g;
   }
-  const g2 = grades.find(x => x.companyID === companyId && x.branchesID === branchId);
-  if (!g2) throw new Error("Monthly Pay Grade not found for this company/branch.");
+  const g2 = grades.find(
+    (x) => x.companyID === companyId && x.branchesID === branchId,
+  );
+  if (!g2)
+    throw new Error("Monthly Pay Grade not found for this company/branch.");
   return g2;
 }
 
@@ -430,29 +524,27 @@ async function getCompanyAndBranch(companyId: number, branchId: number) {
   const branch = branches.find((b: any) => b.id === branchId) || {};
   return {
     companyName: company.companyName || company.name || `Company #${companyId}`,
-    branchName: branch.branchName || branch.name || `Branch #${branchId}`
+    branchName: branch.branchName || branch.name || `Branch #${branchId}`,
   };
 }
 
 async function getShiftDays(emp: any) {
   const workShifts: any[] = await robustGet(API.workShift);
-  const effectiveWSID = emp.workShiftID ??
-    ([...(emp.empWorkShift ?? [])].sort((a: any, b: any) =>
-      new Date(b.effectFrom || 0).getTime() - new Date(a.effectFrom || 0).getTime()
-    )[0]?.workShiftID ?? null);
-  const empShift = workShifts.find(ws => ws.id === effectiveWSID);
+  const effectiveWSID =
+    emp.workShiftID ??
+    [...(emp.empWorkShift ?? [])].sort(
+      (a: any, b: any) =>
+        new Date(b.effectFrom || 0).getTime() -
+        new Date(a.effectFrom || 0).getTime(),
+    )[0]?.workShiftID ??
+    null;
+  const empShift = workShifts.find((ws) => ws.id === effectiveWSID);
   return empShift?.workShiftDay || [];
 }
 
-function countWeeklyOffOccurrences(
-  shiftDays: any[],
-  start: Date,
-  end: Date
-) {
+function countWeeklyOffOccurrences(shiftDays: any[], start: Date, end: Date) {
   const offNames = new Set(
-    shiftDays
-      .filter((d: any) => d.weeklyOff)
-      .map((d: any) => d.weekDay)
+    shiftDays.filter((d: any) => d.weeklyOff).map((d: any) => d.weekDay),
   );
 
   let count = 0;
@@ -472,7 +564,11 @@ function weeklyOffLabel(shiftDays: any[], count: number) {
     ...new Set(
       (shiftDays || [])
         .filter((d: any) => d.weeklyOff)
-        .map((d: any) => String(d.weekDay || "").slice(0, 3).toUpperCase())
+        .map((d: any) =>
+          String(d.weekDay || "")
+            .slice(0, 3)
+            .toUpperCase(),
+        )
         .filter(Boolean),
     ),
   ];
@@ -480,19 +576,36 @@ function weeklyOffLabel(shiftDays: any[], count: number) {
   return abbrev.length ? `${count}(${abbrev.join(",")})` : String(count);
 }
 
-async function getHolidayCount(branchId: number, start: Date, end: Date, companyId?: number) {
+async function getHolidayCount(
+  branchId: number,
+  start: Date,
+  end: Date,
+  companyId?: number,
+) {
   const holidays: any[] = await robustGet(API.publicHoliday);
   let set = new Set<string>();
   holidays.forEach((h: any) => {
-    if (companyId != null && !holidayMatchesCompanyBranch(h, companyId, branchId)) return;
+    if (
+      companyId != null &&
+      !holidayMatchesCompanyBranch(h, companyId, branchId)
+    )
+      return;
     if (companyId == null) {
-      if (h.branchesID != null && Number(h.branchesID) !== Number(branchId)) return;
+      if (h.branchesID != null && Number(h.branchesID) !== Number(branchId))
+        return;
     }
     const hs = isoDatePrefix(h.startDate);
     const he = isoDatePrefix(h.endDate) || hs;
     if (!hs) return;
-    for (let d = new Date(`${hs}T00:00:00`); d <= new Date(`${he}T00:00:00`); d.setDate(d.getDate() + 1)) {
-      if (d >= start && d <= end) set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+    for (
+      let d = new Date(`${hs}T00:00:00`);
+      d <= new Date(`${he}T00:00:00`);
+      d.setDate(d.getDate() + 1)
+    ) {
+      if (d >= start && d <= end)
+        set.add(
+          `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
+        );
     }
   });
   return set.size;
@@ -504,14 +617,14 @@ function normalizeDate(date: Date): Date {
 
 async function getLeaveBreakdown(employeeId: number, start: Date, end: Date) {
   const leaves: any[] = await robustGet(API.leaveApplication);
-  const empLeaves = leaves.filter(l =>
-    l.manageEmployeeID === employeeId &&
-    l.status === "Approved"
+  const empLeaves = leaves.filter(
+    (l) => l.manageEmployeeID === employeeId && l.status === "Approved",
   );
 
-  let nonLoP = 0, lop = 0;
+  let nonLoP = 0,
+    lop = 0;
 
-  empLeaves.forEach(l => {
+  empLeaves.forEach((l) => {
     const ls = new Date(l.fromDate);
     const le = new Date(l.toDate);
 
@@ -559,8 +672,14 @@ function getGrossFromEmp(emp: any, grade?: any): number {
   }
 
   const fields = [
-    "monthlyGrossSalary", "grossSalary", "monthlySalary", "ctcMonthly",
-    "ctc", "salary", "totalSalary", "payrollSalary"
+    "monthlyGrossSalary",
+    "grossSalary",
+    "monthlySalary",
+    "ctcMonthly",
+    "ctc",
+    "salary",
+    "totalSalary",
+    "payrollSalary",
   ];
   for (const f of fields) {
     const v = Number(emp?.[f]);
@@ -576,13 +695,26 @@ function getGrossFromEmp(emp: any, grade?: any): number {
     }
   }
 
-  throw new Error("Gross salary not found (expected on employee or monthly pay grade).");
+  throw new Error(
+    "Gross salary not found (expected on employee or monthly pay grade).",
+  );
 }
 
 function resolvePayGradeBasic(gross: number, grade: any, emp?: any): number {
-  const configured = Number(emp?.basicSalary ?? emp?.monthlyPayGrade?.basicSalary ?? grade?.basicSalary ?? 0);
-  if (Number.isFinite(configured) && configured > 0) return Math.round(configured);
-  const pct = Number(emp?.percentageOfBasic ?? emp?.monthlyPayGrade?.percentageOfBasic ?? grade?.percentageOfBasic ?? 0);
+  const configured = Number(
+    emp?.basicSalary ??
+      emp?.monthlyPayGrade?.basicSalary ??
+      grade?.basicSalary ??
+      0,
+  );
+  if (Number.isFinite(configured) && configured > 0)
+    return Math.round(configured);
+  const pct = Number(
+    emp?.percentageOfBasic ??
+      emp?.monthlyPayGrade?.percentageOfBasic ??
+      grade?.percentageOfBasic ??
+      0,
+  );
   if (Number.isFinite(pct) && pct > 0) return Math.round((gross * pct) / 100);
   throw new Error("Basic not set");
 }
@@ -598,13 +730,21 @@ function isoDatePrefix(value: any): string {
   return d.toISOString().split("T")[0];
 }
 
-function holidayMatchesCompanyBranch(h: any, companyId: number, branchId: number): boolean {
+function holidayMatchesCompanyBranch(
+  h: any,
+  companyId: number,
+  branchId: number,
+): boolean {
   if (Number(h.companyID) !== Number(companyId)) return false;
   if (h.branchesID == null || String(h.branchesID) === "") return true;
   return Number(h.branchesID) === Number(branchId);
 }
 
-async function fetchProcessAttLogsForEmployee(empId: number, dateFrom: string, dateTo: string): Promise<any[]> {
+async function fetchProcessAttLogsForEmployee(
+  empId: number,
+  dateFrom: string,
+  dateTo: string,
+): Promise<any[]> {
   const all: any[] = [];
   let offset = 0;
   const limit = 1000;
@@ -617,10 +757,13 @@ async function fetchProcessAttLogsForEmployee(empId: number, dateFrom: string, d
       offset: String(offset),
       orderBy: "asc",
     });
-    const raw: any = await robustGet(`/backend/process-att-logs?${params.toString()}`);
+    const raw: any = await robustGet(
+      `https://hrms-api-test.onrender.com/process-att-logs?${params.toString()}`,
+    );
     const items: any[] = Array.isArray(raw) ? raw : (raw?.data ?? []);
     all.push(...items);
-    const hasMore = Boolean(raw?.hasMore) || (!Array.isArray(raw) && items.length === limit);
+    const hasMore =
+      Boolean(raw?.hasMore) || (!Array.isArray(raw) && items.length === limit);
     if (!hasMore || items.length === 0) break;
     offset += items.length;
     if (offset > 200000) break;
@@ -628,29 +771,39 @@ async function fetchProcessAttLogsForEmployee(empId: number, dateFrom: string, d
   return all;
 }
 
-async function getReimbursementAmount(employeeId: number, selectedMonthLabel: string): Promise<number> {
+async function getReimbursementAmount(
+  employeeId: number,
+  selectedMonthLabel: string,
+): Promise<number> {
   try {
-    const reimbursements: any[] = await robustGet(`${BACKEND_URL}/reimbursement`);
-    const { start: periodStart, end: periodEnd } = parseCycle(selectedMonthLabel);
+    const reimbursements: any[] = await robustGet(
+      `${BACKEND_URL}/reimbursement`,
+    );
+    const { start: periodStart, end: periodEnd } =
+      parseCycle(selectedMonthLabel);
 
-    const employeeReimbursements = reimbursements.filter(reimbursement => {
-      if (!reimbursement.date || typeof reimbursement.date !== 'string') return false;
+    const employeeReimbursements = reimbursements.filter((reimbursement) => {
+      if (!reimbursement.date || typeof reimbursement.date !== "string")
+        return false;
 
       try {
         const reimbDate = new Date(reimbursement.date);
         if (isNaN(reimbDate.getTime())) return false;
 
-        const overlaps = (
+        const overlaps =
           reimbDate >= periodStart &&
           reimbDate <= periodEnd &&
           reimbursement.manageEmployeeID === employeeId &&
           reimbursement.status === "Approved" &&
-          reimbursement.approvalType === "Salary"
-        );
+          reimbursement.approvalType === "Salary";
 
         return overlaps;
       } catch (error) {
-        console.error("Error parsing reimbursement date:", reimbursement.date, error);
+        console.error(
+          "Error parsing reimbursement date:",
+          reimbursement.date,
+          error,
+        );
         toast.error("Operation failed. Please try again.");
         return false;
       }
@@ -661,7 +814,7 @@ async function getReimbursementAmount(employeeId: number, selectedMonthLabel: st
     }
 
     let totalAmount = 0;
-    employeeReimbursements.forEach(reimbursement => {
+    employeeReimbursements.forEach((reimbursement) => {
       if (reimbursement.items && Array.isArray(reimbursement.items)) {
         reimbursement.items.forEach((item: any) => {
           const amount = Number(item.amount) || 0;
@@ -671,7 +824,6 @@ async function getReimbursementAmount(employeeId: number, selectedMonthLabel: st
     });
 
     return Math.round(totalAmount);
-
   } catch (error) {
     console.error("Error fetching reimbursements:", error);
     toast.error("Failed to load data.");
@@ -683,7 +835,11 @@ async function getReimbursementAmount(employeeId: number, selectedMonthLabel: st
    Attendance counter
    ======================= */
 
-async function fetchAllLogs(empId: number, dateFrom: string, dateTo: string): Promise<any[]> {
+async function fetchAllLogs(
+  empId: number,
+  dateFrom: string,
+  dateTo: string,
+): Promise<any[]> {
   try {
     const items = await fetchProcessAttLogsForEmployee(empId, dateFrom, dateTo);
     return items.map((r: any) => ({
@@ -708,10 +864,22 @@ async function calculateSalaryCounts(
   try {
     const monthNum = (name: string) => {
       const months = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
       ];
-      const idx = months.findIndex(m => m.toLowerCase() === name.toLowerCase());
+      const idx = months.findIndex(
+        (m) => m.toLowerCase() === name.toLowerCase(),
+      );
       return String(idx + 1).padStart(2, "0");
     };
 
@@ -724,12 +892,14 @@ async function calculateSalaryCounts(
     const readNum = (obj: any, ...keys: string[]) => {
       for (let k of keys) {
         const raw = obj ? obj[k] : undefined;
-        if (raw !== undefined && raw !== null && !isNaN(Number(raw))) return Number(raw);
+        if (raw !== undefined && raw !== null && !isNaN(Number(raw)))
+          return Number(raw);
       }
       return undefined;
     };
 
-    const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const ymd = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const dayName = (d: Date) => d.toLocaleString("en-US", { weekday: "long" });
     // Strip timezone designator so punch times are treated as LOCAL wall-clock time.
     // process_att_logs stores local times with Z notation (not true UTC conversion).
@@ -741,21 +911,32 @@ async function calculateSalaryCounts(
 
     let emp = empOverride;
     if (!emp) {
-    const empList: any[] = await robustGet(API.emp);
-      emp = empList.find((e) => e.id === employeeId) ??
-      empList.find((e) => [e.employeeID, e.empId, e.employeeId].includes(employeeId as any));
+      const empList: any[] = await robustGet(API.emp);
+      emp =
+        empList.find((e) => e.id === employeeId) ??
+        empList.find((e) =>
+          [e.employeeID, e.empId, e.employeeId].includes(employeeId as any),
+        );
     }
     if (!emp) throw new Error("Employee not found: " + employeeId);
 
     // Fallback: if scalar IDs are null, derive from history child records (most recent effectFrom)
-    const effectiveWorkShiftID = emp.workShiftID ??
-      ([...(emp.empWorkShift ?? [])].sort((a: any, b: any) =>
-        new Date(b.effectFrom || 0).getTime() - new Date(a.effectFrom || 0).getTime()
-      )[0]?.workShiftID ?? null);
-    const effectiveAttPolicyID = emp.attendancePolicyID ??
-      ([...(emp.empAttendancePolicy ?? [])].sort((a: any, b: any) =>
-        new Date(b.effectFrom || 0).getTime() - new Date(a.effectFrom || 0).getTime()
-      )[0]?.attendancePolicyID ?? null);
+    const effectiveWorkShiftID =
+      emp.workShiftID ??
+      [...(emp.empWorkShift ?? [])].sort(
+        (a: any, b: any) =>
+          new Date(b.effectFrom || 0).getTime() -
+          new Date(a.effectFrom || 0).getTime(),
+      )[0]?.workShiftID ??
+      null;
+    const effectiveAttPolicyID =
+      emp.attendancePolicyID ??
+      [...(emp.empAttendancePolicy ?? [])].sort(
+        (a: any, b: any) =>
+          new Date(b.effectFrom || 0).getTime() -
+          new Date(a.effectFrom || 0).getTime(),
+      )[0]?.attendancePolicyID ??
+      null;
 
     let startDate: Date, endDate: Date;
 
@@ -802,15 +983,15 @@ async function calculateSalaryCounts(
     const logToDate = new Date(endDate);
     logToDate.setDate(logToDate.getDate() + 1);
 
-    const [
-      policies,
-      workShifts,
-      rostersRaw,
-      holidays,
-      leaves,
-      regs,
-      allLogs,
-    ]: [any[], any[], any[], any[], any[], any[], any[]] = await Promise.all([
+    const [policies, workShifts, rostersRaw, holidays, leaves, regs, allLogs]: [
+      any[],
+      any[],
+      any[],
+      any[],
+      any[],
+      any[],
+      any[],
+    ] = await Promise.all([
       robustGet(API.attendancePolicy),
       robustGet(API.workShift),
       robustGet(API.rosters),
@@ -820,26 +1001,58 @@ async function calculateSalaryCounts(
       fetchAllLogs(Number(emp.id), logFrom, ymd(logToDate)),
     ]);
 
-    const policy = policies.find((p: any) => p.id === effectiveAttPolicyID) ?? {};
+    const policy =
+      policies.find((p: any) => p.id === effectiveAttPolicyID) ?? {};
     const workingType = (policy?.workingHoursType ?? "").toLowerCase();
-    const checkinBeginBeforeMin = readNum(policy, "checkin_begin_before_min", "checkinBeginBeforeMin") ?? 0;
-    const checkoutEndAfterMin = readNum(policy, "checkout_end_after_min", "checkoutEndAfterMin") ?? 0;
-    const checkinGraceMin = readNum(policy, "checkin_grace_time_min", "checkinGraceTimeMin") ?? 0;
-    const earlyCheckoutBeforeEndMin = readNum(policy, "early_checkout_before_end_min", "earlyCheckoutBeforeEndMin") ?? 0;
-    const maxLateCheckInMin = readNum(policy, "max_late_check_in_time", "maxLateCheckInTime") ?? 0;
-    const halfDayMin = toMinutesMaybeHours(readNum(policy, "min_work_hours_half_day_min", "minWorkHoursHalfDayMin") ?? 0);
+    const checkinBeginBeforeMin =
+      readNum(policy, "checkin_begin_before_min", "checkinBeginBeforeMin") ?? 0;
+    const checkoutEndAfterMin =
+      readNum(policy, "checkout_end_after_min", "checkoutEndAfterMin") ?? 0;
+    const checkinGraceMin =
+      readNum(policy, "checkin_grace_time_min", "checkinGraceTimeMin") ?? 0;
+    const earlyCheckoutBeforeEndMin =
+      readNum(
+        policy,
+        "early_checkout_before_end_min",
+        "earlyCheckoutBeforeEndMin",
+      ) ?? 0;
+    const maxLateCheckInMin =
+      readNum(policy, "max_late_check_in_time", "maxLateCheckInTime") ?? 0;
+    const halfDayMin = toMinutesMaybeHours(
+      readNum(
+        policy,
+        "min_work_hours_half_day_min",
+        "minWorkHoursHalfDayMin",
+      ) ?? 0,
+    );
     const lateMarkCount = Number(policy?.lateMarkMarkCount ?? 0);
-    const lateMarkMarkAsAction = (policy?.lateMarkMarkAs ?? policy?.markAs ?? "Half Day").toString().toLowerCase();
-    const maxLateCheckinMarkAs = (policy?.maxLateCheckinMarkAs ?? "Absent").toString().toLowerCase();
+    const lateMarkMarkAsAction = (
+      policy?.lateMarkMarkAs ??
+      policy?.markAs ??
+      "Half Day"
+    )
+      .toString()
+      .toLowerCase();
+    const maxLateCheckinMarkAs = (policy?.maxLateCheckinMarkAs ?? "Absent")
+      .toString()
+      .toLowerCase();
 
-    const empShift = workShifts.find((ws: any) => ws.id === effectiveWorkShiftID);
+    const empShift = workShifts.find(
+      (ws: any) => ws.id === effectiveWorkShiftID,
+    );
     if (!empShift) return null;
-    const isFlexible = workingType.includes("flex") || empShift?.isFlexible === true;
+    const isFlexible =
+      workingType.includes("flex") || empShift?.isFlexible === true;
     const shiftDays: any[] = empShift.workShiftDay ?? [];
-    const weeklyOffDays = new Set(shiftDays.filter((d: any) => d.weeklyOff).map((d: any) => d.weekDay));
+    const weeklyOffDays = new Set(
+      shiftDays.filter((d: any) => d.weeklyOff).map((d: any) => d.weekDay),
+    );
 
-    const rosterEmployees = (rostersRaw || []).flatMap((r: any) => r.employees ?? []);
-    const empRosterEntry = rosterEmployees.find((re: any) => re.employeeID === employeeId) ?? null;
+    const rosterEmployees = (rostersRaw || []).flatMap(
+      (r: any) => r.employees ?? [],
+    );
+    const empRosterEntry =
+      rosterEmployees.find((re: any) => re.employeeID === employeeId) ?? null;
 
     // Parse "HH:MM" or full ISO datetime strings into { h, m }
     const parseHHMM = (s: string) => {
@@ -861,28 +1074,67 @@ async function calculateSalaryCounts(
       let activeShiftDays = shiftDays;
       if (empRosterEntry) {
         const rd = empRosterEntry.days?.find(
-          (x: any) => new Date(x.workDate).toISOString().split('T')[0] === key
+          (x: any) => new Date(x.workDate).toISOString().split("T")[0] === key,
         );
         if (rd?.dayType === "WORK" && rd?.workShiftID != null) {
-          const rosterShift = workShifts.find((ws: any) => ws.id === rd.workShiftID);
-          if (rosterShift?.workShiftDay?.length) activeShiftDays = rosterShift.workShiftDay;
+          const rosterShift = workShifts.find(
+            (ws: any) => ws.id === rd.workShiftID,
+          );
+          if (rosterShift?.workShiftDay?.length)
+            activeShiftDays = rosterShift.workShiftDay;
         }
       }
       // Prefer WORK type; fall back to first matching day entry
-      const sd = activeShiftDays.find((x: any) => x.weekDay === dayOfWeek && (x.shiftType === "WORK" || !x.shiftType))
-        ?? activeShiftDays.find((x: any) => x.weekDay === dayOfWeek);
+      const sd =
+        activeShiftDays.find(
+          (x: any) =>
+            x.weekDay === dayOfWeek && (x.shiftType === "WORK" || !x.shiftType),
+        ) ?? activeShiftDays.find((x: any) => x.weekDay === dayOfWeek);
       if (!sd) return null;
-      const st = parseHHMM(sd.startTime), et = parseHHMM(sd.endTime);
-      const shiftStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), st.h, st.m);
-      let shiftEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), et.h, et.m);
+      const st = parseHHMM(sd.startTime),
+        et = parseHHMM(sd.endTime);
+      const shiftStart = new Date(
+        d.getFullYear(),
+        d.getMonth(),
+        d.getDate(),
+        st.h,
+        st.m,
+      );
+      let shiftEnd = new Date(
+        d.getFullYear(),
+        d.getMonth(),
+        d.getDate(),
+        et.h,
+        et.m,
+      );
       if (shiftEnd <= shiftStart) shiftEnd.setDate(shiftEnd.getDate() + 1);
-      const earliestIn = new Date(shiftStart.getTime() - checkinBeginBeforeMin * 60000);
-      const latestOut = new Date(shiftEnd.getTime() + checkoutEndAfterMin * 60000);
+      const earliestIn = new Date(
+        shiftStart.getTime() - checkinBeginBeforeMin * 60000,
+      );
+      const latestOut = new Date(
+        shiftEnd.getTime() + checkoutEndAfterMin * 60000,
+      );
       const graceEnd = new Date(shiftStart.getTime() + checkinGraceMin * 60000);
-      const lateEnd = new Date(shiftStart.getTime() + (checkinGraceMin + maxLateCheckInMin) * 60000);
-      const earlyOutStart = new Date(shiftEnd.getTime() - earlyCheckoutBeforeEndMin * 60000);
-      const fullMinutes = Math.round((shiftEnd.getTime() - shiftStart.getTime()) / 60000);
-      return { shiftStart, shiftEnd, earliestIn, latestOut, graceEnd, lateEnd, earlyOutStart, fullMinutes, weekDay: sd.weekDay };
+      const lateEnd = new Date(
+        shiftStart.getTime() + (checkinGraceMin + maxLateCheckInMin) * 60000,
+      );
+      const earlyOutStart = new Date(
+        shiftEnd.getTime() - earlyCheckoutBeforeEndMin * 60000,
+      );
+      const fullMinutes = Math.round(
+        (shiftEnd.getTime() - shiftStart.getTime()) / 60000,
+      );
+      return {
+        shiftStart,
+        shiftEnd,
+        earliestIn,
+        latestOut,
+        graceEnd,
+        lateEnd,
+        earlyOutStart,
+        fullMinutes,
+        weekDay: sd.weekDay,
+      };
     };
 
     const holidaySet = new Set<string>();
@@ -891,19 +1143,22 @@ async function calculateSalaryCounts(
       const hs = isoDatePrefix(h.startDate);
       const he = isoDatePrefix(h.endDate) || hs;
       if (!hs) continue;
-      for (let d = new Date(`${hs}T00:00:00`); d <= new Date(`${he}T00:00:00`); d.setDate(d.getDate() + 1)) {
+      for (
+        let d = new Date(`${hs}T00:00:00`);
+        d <= new Date(`${he}T00:00:00`);
+        d.setDate(d.getDate() + 1)
+      ) {
         if (d >= startDate && d <= endDate) holidaySet.add(ymd(d));
       }
     }
 
     const empLeaves = (leaves || []).filter(
-      (l) =>
-        l.manageEmployeeID === employeeId &&
-        l.status === "Approved"   // 🔥 ONLY approved leaves affect salary
+      (l) => l.manageEmployeeID === employeeId && l.status === "Approved", // 🔥 ONLY approved leaves affect salary
     );
     const leaveMap = new Map<string, any>();
     for (const lv of empLeaves) {
-      const ls = new Date(lv.fromDate), le = new Date(lv.toDate);
+      const ls = new Date(lv.fromDate),
+        le = new Date(lv.toDate);
       for (let d = new Date(ls); d <= le; d.setDate(d.getDate() + 1)) {
         if (d >= startDate && d <= endDate) {
           leaveMap.set(ymd(d), lv);
@@ -911,11 +1166,19 @@ async function calculateSalaryCounts(
       }
     }
 
-    const empRegs = (regs || []).filter((r) => r.manageEmployeeID === employeeId && r.status === "Approved");
+    const empRegs = (regs || []).filter(
+      (r) => r.manageEmployeeID === employeeId && r.status === "Approved",
+    );
     const regulariseMap = new Map<string, any>();
-    for (const r of empRegs) regulariseMap.set(ymd(new Date(r.attendanceDate)), r);
+    for (const r of empRegs)
+      regulariseMap.set(ymd(new Date(r.attendanceDate)), r);
 
-    const logs = (allLogs || []).filter((l: any) => String(l.employeeID) === String(emp.id) || String(l.employeeID) === String(emp.employeeID))
+    const logs = (allLogs || [])
+      .filter(
+        (l: any) =>
+          String(l.employeeID) === String(emp.id) ||
+          String(l.employeeID) === String(emp.employeeID),
+      )
       .map((l: any) => ({ ...l, t: parseCDataTs(l.punchTimeStamp) }))
       .filter((l: any) => l.t >= startDate && l.t <= endDate)
       .sort((a: any, b: any) => a.t.getTime() - b.t.getTime());
@@ -926,13 +1189,19 @@ async function calculateSalaryCounts(
       logsByDate.get(key)!.push(l.t);
     }
 
-    let flex_fullDayPresent = 0, flex_halfDayPresent = 0, flex_absent = 0;
+    let flex_fullDayPresent = 0,
+      flex_halfDayPresent = 0,
+      flex_absent = 0;
     let paidLeaveDays = 0;
     let punchPresentDays = 0;
     const lateMarksByMonth = new Map<string, number>();
 
     // Loop through each day in the effective period
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    for (
+      let d = new Date(startDate);
+      d <= endDate;
+      d.setDate(d.getDate() + 1)
+    ) {
       const key = ymd(d);
 
       const debug: any = {
@@ -949,9 +1218,11 @@ async function calculateSalaryCounts(
 
       // Check roster for any explicit override on this specific date
       const rosterDayEntry = empRosterEntry?.days?.find(
-        (rd: any) => new Date(rd.workDate).toISOString().split('T')[0] === key
+        (rd: any) => new Date(rd.workDate).toISOString().split("T")[0] === key,
       );
-      const hasRosterWorkOverride = rosterDayEntry?.dayType === "WORK" && rosterDayEntry?.workShiftID != null;
+      const hasRosterWorkOverride =
+        rosterDayEntry?.dayType === "WORK" &&
+        rosterDayEntry?.workShiftID != null;
 
       // Holiday before week-off / shift-frame skip (working Saturday PH must be paid).
       if (holidaySet.has(key)) {
@@ -964,7 +1235,10 @@ async function calculateSalaryCounts(
 
       // Check if it's a weekly off day.
       // Roster WEEKLY_OFF overrides default; roster WORK override skips the default weekly-off check.
-      if (rosterDayEntry?.dayType === "WEEKLY_OFF" || (!hasRosterWorkOverride && weeklyOffDays.has(todayWeekDay))) {
+      if (
+        rosterDayEntry?.dayType === "WEEKLY_OFF" ||
+        (!hasRosterWorkOverride && weeklyOffDays.has(todayWeekDay))
+      ) {
         debug.weeklyOff = true;
         flex_fullDayPresent++;
         debug.final = "WEEKLY_OFF → PAID (FULL DAY)";
@@ -1002,10 +1276,10 @@ async function calculateSalaryCounts(
           };
 
           if (String(lv.appliedLeaveType).toLowerCase() === "lop") {
-            flex_absent++;              // ← COUNT AS LOP
+            flex_absent++; // ← COUNT AS LOP
             debug.final = "LEAVE → LOP";
           } else {
-            flex_fullDayPresent++;      // ← PAID LEAVE
+            flex_fullDayPresent++; // ← PAID LEAVE
             paidLeaveDays++;
             debug.final = "LEAVE → PAID";
           }
@@ -1026,7 +1300,7 @@ async function calculateSalaryCounts(
       const nextDayPunches = logsByDate.get(nextDayKey) || [];
       const allPotentialPunches = [...currentDayPunches, ...nextDayPunches];
       const dayLogs = allPotentialPunches
-        .filter(t => t >= frame.earliestIn && t <= frame.latestOut)
+        .filter((t) => t >= frame.earliestIn && t <= frame.latestOut)
         .sort((a, b) => a.getTime() - b.getTime());
       let dayStatus: "full" | "half" | "absent" = "absent";
 
@@ -1034,7 +1308,10 @@ async function calculateSalaryCounts(
         if (dayLogs.length < 2) {
           dayStatus = "absent";
         } else {
-          const totalWorkedMinutes = Math.round((dayLogs[dayLogs.length - 1].getTime() - dayLogs[0].getTime()) / 60000);
+          const totalWorkedMinutes = Math.round(
+            (dayLogs[dayLogs.length - 1].getTime() - dayLogs[0].getTime()) /
+              60000,
+          );
           if (totalWorkedMinutes < halfDayMin) {
             dayStatus = "absent";
           } else if (totalWorkedMinutes >= frame.fullMinutes) {
@@ -1044,17 +1321,23 @@ async function calculateSalaryCounts(
           }
         }
       } else if (dayLogs.length >= 2) {
-          const totalWorkedMinutes = Math.round((dayLogs[dayLogs.length - 1].getTime() - dayLogs[0].getTime()) / 60000);
-          const firstPunch = dayLogs[0];
-          const lastPunch = dayLogs[dayLogs.length - 1];
-          const isLateMark = firstPunch > frame.graceEnd && firstPunch <= frame.lateEnd;
-          const isVeryLate = firstPunch > frame.lateEnd;
+        const totalWorkedMinutes = Math.round(
+          (dayLogs[dayLogs.length - 1].getTime() - dayLogs[0].getTime()) /
+            60000,
+        );
+        const firstPunch = dayLogs[0];
+        const lastPunch = dayLogs[dayLogs.length - 1];
+        const isLateMark =
+          firstPunch > frame.graceEnd && firstPunch <= frame.lateEnd;
+        const isVeryLate = firstPunch > frame.lateEnd;
         const isEarlyCheckout = lastPunch < frame.earlyOutStart;
 
         if (totalWorkedMinutes < halfDayMin) {
           dayStatus = "absent";
         } else if (isVeryLate) {
-          dayStatus = maxLateCheckinMarkAs.includes("absent") ? "absent" : "half";
+          dayStatus = maxLateCheckinMarkAs.includes("absent")
+            ? "absent"
+            : "half";
         } else if (isEarlyCheckout) {
           dayStatus = "half";
         } else if (isLateMark && lateMarkCount > 0) {
@@ -1062,17 +1345,19 @@ async function calculateSalaryCounts(
           const used = lateMarksByMonth.get(monthKey) || 0;
           const nextCount = used + 1;
           if (nextCount >= lateMarkCount) {
-                dayStatus = lateMarkMarkAsAction.includes("absent") ? "absent" : "half";
+            dayStatus = lateMarkMarkAsAction.includes("absent")
+              ? "absent"
+              : "half";
             lateMarksByMonth.set(monthKey, 0);
-              } else {
+          } else {
             lateMarksByMonth.set(monthKey, nextCount);
-                dayStatus = "full";
-              }
-        } else {
-          dayStatus = "full";
+            dayStatus = "full";
           }
         } else {
-          dayStatus = "absent";
+          dayStatus = "full";
+        }
+      } else {
+        dayStatus = "absent";
       }
 
       debug.logs = (logsByDate.get(key) || []).length;
@@ -1092,7 +1377,8 @@ async function calculateSalaryCounts(
       if (DEBUG_LOP) console.table([debug]);
     }
 
-    const totalDays = Math.floor((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
+    const totalDays =
+      Math.floor((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
     return {
       startDate: startDate.toDateString(),
       endDate: endDate.toDateString(),
@@ -1103,7 +1389,7 @@ async function calculateSalaryCounts(
       paidLeaveDays,
       punchPresentDays,
       lateMarksByMonth,
-      lateMarkCount
+      lateMarkCount,
     };
   } catch (err) {
     console.error("Error in calculateSalaryCounts:", err);
@@ -1113,42 +1399,42 @@ async function calculateSalaryCounts(
 }
 
 export type SalarySlipComputed = {
-  companyName: string
-  branchName: string
-  employee: any
-  monthLabel: string
-  start: Date
-  end: Date
-  cycleDays: number
-  paidUnits: number
-  joiningCalendarDays: number
-  absentCount: number
-  halfDayCount: number
-  lopDays: number
-  nonLoPLeaveDays: number
-  weeklyOffDays: number
-  weeklyOffDisplay: string
-  holidays: number
-  unpaidHolidays: number
-  workingDays: number
-  presentDays: number
-  maxPayableDays: number
-  halfDaysUnits: number
-  gross: number
-  basic: number
-  earnings: { name: string; amount: number }[]
-  deductions: { name: string; amount: number }[]
-  earningRows: { name: string; monthly: number; payable: number }[]
-  deductionRows: { name: string; monthly: number; amount: number }[]
-  lopAmount: number
-  earningsTotal: number
-  deductionsTotal: number
-  netPay: number
-  perDayGross: number
-  perDayBasic: number
-  proRatedGross: number
-  totalWorkingDaysInCycle: number
-}
+  companyName: string;
+  branchName: string;
+  employee: any;
+  monthLabel: string;
+  start: Date;
+  end: Date;
+  cycleDays: number;
+  paidUnits: number;
+  joiningCalendarDays: number;
+  absentCount: number;
+  halfDayCount: number;
+  lopDays: number;
+  nonLoPLeaveDays: number;
+  weeklyOffDays: number;
+  weeklyOffDisplay: string;
+  holidays: number;
+  unpaidHolidays: number;
+  workingDays: number;
+  presentDays: number;
+  maxPayableDays: number;
+  halfDaysUnits: number;
+  gross: number;
+  basic: number;
+  earnings: { name: string; amount: number }[];
+  deductions: { name: string; amount: number }[];
+  earningRows: { name: string; monthly: number; payable: number }[];
+  deductionRows: { name: string; monthly: number; amount: number }[];
+  lopAmount: number;
+  earningsTotal: number;
+  deductionsTotal: number;
+  netPay: number;
+  perDayGross: number;
+  perDayBasic: number;
+  proRatedGross: number;
+  totalWorkingDaysInCycle: number;
+};
 
 /* =======================
    PDF generation
@@ -1157,19 +1443,67 @@ export type SalarySlipComputed = {
 export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
   function numberToWords(amount: number): string {
     const ones = [
-      "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
-      "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen",
-      "Sixteen", "Seventeen", "Eighteen", "Nineteen",
+      "",
+      "One",
+      "Two",
+      "Three",
+      "Four",
+      "Five",
+      "Six",
+      "Seven",
+      "Eight",
+      "Nine",
+      "Ten",
+      "Eleven",
+      "Twelve",
+      "Thirteen",
+      "Fourteen",
+      "Fifteen",
+      "Sixteen",
+      "Seventeen",
+      "Eighteen",
+      "Nineteen",
     ];
-    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+    const tens = [
+      "",
+      "",
+      "Twenty",
+      "Thirty",
+      "Forty",
+      "Fifty",
+      "Sixty",
+      "Seventy",
+      "Eighty",
+      "Ninety",
+    ];
 
     function numToWords(n: number): string {
       if (n < 20) return ones[n];
-      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "");
-      if (n < 1000) return ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " and " + numToWords(n % 100) : "");
-      if (n < 100000) return numToWords(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + numToWords(n % 1000) : "");
-      if (n < 10000000) return numToWords(Math.floor(n / 100000)) + " Lakh" + (n % 100000 ? " " + numToWords(n % 100000) : "");
-      return numToWords(Math.floor(n / 10000000)) + " Crore" + (n % 10000000 ? " " + numToWords(n % 10000000) : "");
+      if (n < 100)
+        return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "");
+      if (n < 1000)
+        return (
+          ones[Math.floor(n / 100)] +
+          " Hundred" +
+          (n % 100 ? " and " + numToWords(n % 100) : "")
+        );
+      if (n < 100000)
+        return (
+          numToWords(Math.floor(n / 1000)) +
+          " Thousand" +
+          (n % 1000 ? " " + numToWords(n % 1000) : "")
+        );
+      if (n < 10000000)
+        return (
+          numToWords(Math.floor(n / 100000)) +
+          " Lakh" +
+          (n % 100000 ? " " + numToWords(n % 100000) : "")
+        );
+      return (
+        numToWords(Math.floor(n / 10000000)) +
+        " Crore" +
+        (n % 10000000 ? " " + numToWords(n % 10000000) : "")
+      );
     }
 
     const rupees = Math.round(Math.abs(amount));
@@ -1185,7 +1519,10 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
 
   const money = (n: number) => {
     if (!Number.isFinite(n)) return "0.00";
-    return n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return n.toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   };
 
   const pad2 = (n: number) => String(Math.round(n)).padStart(2, "0");
@@ -1194,7 +1531,20 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
     if (!raw) return "";
     const d = new Date(String(raw).includes("T") ? raw : `${raw}T00:00:00`);
     if (Number.isNaN(d.getTime())) return "";
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
     return `${months[d.getMonth()]} ${String(d.getDate()).padStart(2, "0")}, ${d.getFullYear()}`;
   };
 
@@ -1210,7 +1560,9 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
     const emp = p.employee || {};
     const company = emp.company || {};
     const branch = emp.branches || {};
-    const bank = Array.isArray(emp.employeeBankDetails) ? emp.employeeBankDetails[0] : null;
+    const bank = Array.isArray(emp.employeeBankDetails)
+      ? emp.employeeBankDetails[0]
+      : null;
 
     const hLine = (y: number, x1 = boxL, x2 = boxR) => {
       doc.setDrawColor(0);
@@ -1241,8 +1593,10 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
       for (let i = 1; i < n; i++) hLine(top + i * rowH);
       const halfW = boxW / 2;
       const labelX = (side: "L" | "R") => (side === "L" ? boxL : midX) + 2.2;
-      const colonX = (side: "L" | "R") => (side === "L" ? boxL : midX) + halfW * 0.30;
-      const valueX = (side: "L" | "R") => (side === "L" ? boxL : midX) + halfW * 0.34;
+      const colonX = (side: "L" | "R") =>
+        (side === "L" ? boxL : midX) + halfW * 0.3;
+      const valueX = (side: "L" | "R") =>
+        (side === "L" ? boxL : midX) + halfW * 0.34;
       for (let i = 0; i < n; i++) {
         const baseline = top + rowH * i + rowH * 0.68;
         const left = leftRows[i];
@@ -1270,7 +1624,9 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
     doc.setTextColor(0, 0, 0);
     let y = 14;
 
-    const companyName = blank(p.companyName || company.companyName || "Company").toUpperCase();
+    const companyName = blank(
+      p.companyName || company.companyName || "Company",
+    ).toUpperCase();
     doc.setFont("times", "bold");
     doc.setFontSize(13.5);
     doc.text(companyName, pageWidth / 2, y, { align: "center" });
@@ -1278,14 +1634,19 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
 
     const addressLines: string[] = [];
     if (blank(company.address)) addressLines.push(blank(company.address));
-    const cityPin = [blank(company.city), blank(company.pincode)].filter(Boolean).join(" - ");
+    const cityPin = [blank(company.city), blank(company.pincode)]
+      .filter(Boolean)
+      .join(" - ");
     const addrJoined = addressLines.join(" ").toLowerCase();
     if (cityPin && !addrJoined.includes(blank(company.city).toLowerCase())) {
       addressLines.push(cityPin);
     }
     doc.setFont("times", "bold");
     doc.setFontSize(9);
-    const wrappedAddr = doc.splitTextToSize(addressLines.join(", "), boxW - 8) as string[];
+    const wrappedAddr = doc.splitTextToSize(
+      addressLines.join(", "),
+      boxW - 8,
+    ) as string[];
     for (const line of wrappedAddr) {
       doc.text(line, pageWidth / 2, y, { align: "center" });
       y += 3.7;
@@ -1314,10 +1675,13 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
       : blank(p.monthLabel);
     doc.setFont("times", "bold");
     doc.setFontSize(13);
-    doc.text(`PAY SLIP For the Month of ${monthYear}`, pageWidth / 2, y, { align: "center" });
+    doc.text(`PAY SLIP For the Month of ${monthYear}`, pageWidth / 2, y, {
+      align: "center",
+    });
     y += 4;
 
-    const empName = `${blank(emp.employeeFirstName)} ${blank(emp.employeeLastName)}`.trim();
+    const empName =
+      `${blank(emp.employeeFirstName)} ${blank(emp.employeeLastName)}`.trim();
     const dept = blank(emp.departments?.departmentName);
     const desg = blank(emp.designations?.designation);
     const location = blank(company.city) || blank(branch.city);
@@ -1351,12 +1715,19 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
     const daysDisp = (n: unknown, twoDigit = false) => {
       const v = Number(n);
       if (!Number.isFinite(v)) return "";
-      if (Math.abs(v - Math.round(v)) < 0.001) return twoDigit ? pad2(v) : String(Math.round(v));
+      if (Math.abs(v - Math.round(v)) < 0.001)
+        return twoDigit ? pad2(v) : String(Math.round(v));
       return String(v);
     };
     const attLeft: [string, string][] = [
-      ["Total Days", daysDisp(p.maxPayableDays ?? p.totalWorkingDaysInCycle, true)],
-      ["Weekly-Off", blank(p.weeklyOffDisplay) || daysDisp(p.weeklyOffDays, true)],
+      [
+        "Total Days",
+        daysDisp(p.maxPayableDays ?? p.totalWorkingDaysInCycle, true),
+      ],
+      [
+        "Weekly-Off",
+        blank(p.weeklyOffDisplay) || daysDisp(p.weeklyOffDays, true),
+      ],
       ["Paid Holidays", daysDisp(p.holidays, true)],
       ["Unpaid Holidays", daysDisp(p.unpaidHolidays, true)],
       ["Working Days", daysDisp(p.workingDays, true)],
@@ -1365,7 +1736,10 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
       ["Paid Leaves", daysDisp(p.nonLoPLeaveDays, true)],
       ["LWP", daysDisp(p.lopDays, true)],
       ["Present Days", daysDisp(p.presentDays, true)],
-      ["Max Payable Days", daysDisp(p.maxPayableDays ?? p.totalWorkingDaysInCycle, true)],
+      [
+        "Max Payable Days",
+        daysDisp(p.maxPayableDays ?? p.totalWorkingDaysInCycle, true),
+      ],
       ["Net Paid Days", daysDisp(p.paidUnits, true)],
     ];
     y = drawKvTable(y, attLeft, attRight, 5.6);
@@ -1375,13 +1749,29 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
       ? p.earningRows
       : [
           { name: "Basic", monthly: p.gross || 0, payable: p.basic || 0 },
-          ...(p.earnings || []).map((e) => ({ name: e.name, monthly: e.amount, payable: e.amount })),
+          ...(p.earnings || []).map((e) => ({
+            name: e.name,
+            monthly: e.amount,
+            payable: e.amount,
+          })),
         ];
     const dedRows = p.deductionRows?.length
       ? p.deductionRows
       : [
-          ...(p.deductions || []).map((d) => ({ name: d.name, monthly: d.amount, amount: d.amount })),
-          ...((p.lopAmount || 0) > 0 ? [{ name: "LOSS OF PAY", monthly: p.lopAmount, amount: p.lopAmount }] : []),
+          ...(p.deductions || []).map((d) => ({
+            name: d.name,
+            monthly: d.amount,
+            amount: d.amount,
+          })),
+          ...((p.lopAmount || 0) > 0
+            ? [
+                {
+                  name: "LOSS OF PAY",
+                  monthly: p.lopAmount,
+                  amount: p.lopAmount,
+                },
+              ]
+            : []),
         ];
     const payRows = Math.max(earnRows.length, dedRows.length, 1);
     const headerH = 6.2;
@@ -1395,7 +1785,7 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
       boxL,
       boxL + boxW * 0.28,
       boxL + boxW * 0.39,
-      boxL + boxW * 0.50,
+      boxL + boxW * 0.5,
       boxL + boxW * 0.78,
       boxL + boxW * 0.89,
       boxR,
@@ -1410,9 +1800,18 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
 
     doc.setFont("times", "bold");
     doc.setFontSize(9);
-    const heads = ["Earnings", "Monthly", "Payable", "Deductions", "Monthly", "Amount"];
+    const heads = [
+      "Earnings",
+      "Monthly",
+      "Payable",
+      "Deductions",
+      "Monthly",
+      "Amount",
+    ];
     for (let i = 0; i < 6; i++) {
-      doc.text(heads[i], (x[i] + x[i + 1]) / 2, payTop + 4.2, { align: "center" });
+      doc.text(heads[i], (x[i] + x[i + 1]) / 2, payTop + 4.2, {
+        align: "center",
+      });
     }
 
     doc.setFont("times", "normal");
@@ -1425,12 +1824,18 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
       const dr = dedRows[i];
       if (er) {
         doc.text(er.name, x[0] + namePad, baseline);
-        doc.text(money(er.monthly), x[2] - amtPad, baseline, { align: "right" });
-        doc.text(money(er.payable), x[3] - amtPad, baseline, { align: "right" });
+        doc.text(money(er.monthly), x[2] - amtPad, baseline, {
+          align: "right",
+        });
+        doc.text(money(er.payable), x[3] - amtPad, baseline, {
+          align: "right",
+        });
       }
       if (dr) {
         doc.text(dr.name, x[3] + namePad, baseline);
-        doc.text(money(dr.monthly), x[5] - amtPad, baseline, { align: "right" });
+        doc.text(money(dr.monthly), x[5] - amtPad, baseline, {
+          align: "right",
+        });
         doc.text(money(dr.amount), x[6] - amtPad, baseline, { align: "right" });
       }
     }
@@ -1467,11 +1872,19 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
     rect(boxL, y, boxW, footH);
     doc.setFont("times", "bold");
     doc.setFontSize(9);
-    doc.text("This is Computer Generated Slip, does not require Signature", boxL + 2.2, y + 5);
+    doc.text(
+      "This is Computer Generated Slip, does not require Signature",
+      boxL + 2.2,
+      y + 5,
+    );
     doc.setFont("times", "normal");
     doc.setFontSize(8.5);
-    doc.text("Employee Signature", boxL + boxW / 4, y + footH - 3.5, { align: "center" });
-    doc.text("Authorised Signatory", boxL + (boxW * 3) / 4, y + footH - 3.5, { align: "center" });
+    doc.text("Employee Signature", boxL + boxW / 4, y + footH - 3.5, {
+      align: "center",
+    });
+    doc.text("Authorised Signatory", boxL + (boxW * 3) / 4, y + footH - 3.5, {
+      align: "center",
+    });
 
     const startDate = p.start instanceof Date ? p.start : new Date(p.start);
     const fn = `Salary_Slip_${emp.employeeID || emp.id}_${startDate.getFullYear()}_${String(
@@ -1480,7 +1893,9 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
     doc.save(fn);
   } catch (err) {
     console.error("Error generating salary slip:", err);
-    toast.error("Error generating salary slip. Please check console for details.");
+    toast.error(
+      "Error generating salary slip. Please check console for details.",
+    );
   }
 }
 
@@ -1489,31 +1904,30 @@ export function downloadSalarySlipPDF(payload: SalarySlipComputed) {
    ======================= */
 
 export async function computeSalarySlipForRow(
-  row: GenerateSalaryRow
+  row: GenerateSalaryRow,
 ): Promise<SalarySlipComputed> {
+  const employeeId = Number(row.employeeID);
+  const companyId = Number(row.companyID);
+  const branchId = Number(row.branchesID);
+  const monthLabel = row.monthPeriod;
 
-  const employeeId = Number(row.employeeID)
-  const companyId = Number(row.companyID)
-  const branchId = Number(row.branchesID)
-  const monthLabel = row.monthPeriod
+  const empList: any[] = await robustGet(API.emp);
+  const emp = empList.find((e: any) => e.id === employeeId);
+  if (!emp) throw new Error("Employee not found");
 
-  const empList: any[] = await robustGet(API.emp)
-  const emp = empList.find((e: any) => e.id === employeeId)
-  if (!emp) throw new Error("Employee not found")
-
-  const { start: cycleStart, end: cycleEnd } = parseCycle(monthLabel)
+  const { start: cycleStart, end: cycleEnd } = parseCycle(monthLabel);
 
   /* ===============================
      JOINING DATE ADJUSTMENT
   =============================== */
 
-  let effectiveStart = cycleStart
-  let effectiveEnd = cycleEnd
+  let effectiveStart = cycleStart;
+  let effectiveEnd = cycleEnd;
 
   if (emp.joiningDate) {
-    const joiningDate = new Date(emp.joiningDate + "T00:00:00")
+    const joiningDate = new Date(emp.joiningDate + "T00:00:00");
     if (joiningDate > cycleStart) {
-      effectiveStart = joiningDate
+      effectiveStart = joiningDate;
     }
   }
 
@@ -1522,10 +1936,11 @@ export async function computeSalarySlipForRow(
   =============================== */
 
   const totalCalendarDaysInMonth =
-    Math.floor((cycleEnd.getTime() - cycleStart.getTime()) / 86400000) + 1
+    Math.floor((cycleEnd.getTime() - cycleStart.getTime()) / 86400000) + 1;
 
   const totalPaidCalendarDays =
-    Math.floor((effectiveEnd.getTime() - effectiveStart.getTime()) / 86400000) + 1
+    Math.floor((effectiveEnd.getTime() - effectiveStart.getTime()) / 86400000) +
+    1;
 
   /* ===============================
      KEEP YOUR EXISTING ATTENDANCE
@@ -1543,161 +1958,159 @@ export async function computeSalarySlipForRow(
     getShiftDays(emp),
     getHolidayCount(branchId, effectiveStart, effectiveEnd, companyId),
     calculateSalaryCounts(
-    employeeId,
-    monthLabel,
-    companyId,
-    branchId,
-    effectiveStart,
+      employeeId,
+      monthLabel,
+      companyId,
+      branchId,
+      effectiveStart,
       emp,
     ),
     getMonthlyPayGrade(companyId, branchId, emp),
     getCompanyAndBranch(companyId, branchId),
     getReimbursementAmount(employeeId, monthLabel),
     getSalaryAdvanceRepayments(employeeId, monthLabel),
-  ])
-  const { companyName, branchName } = names
-  const weeklyOffDaysEffective =
-    countWeeklyOffOccurrences(shiftDays, effectiveStart, effectiveEnd)
+  ]);
+  const { companyName, branchName } = names;
+  const weeklyOffDaysEffective = countWeeklyOffOccurrences(
+    shiftDays,
+    effectiveStart,
+    effectiveEnd,
+  );
 
   // If counts is null (e.g. employee has no work shift assigned), default to 0 absent days → no LOP
-  const fullDays = Number(counts?.flex_fullDayPresent || 0)
-  const halfDays = Number(counts?.flex_halfDayPresent || 0)
-  const absentDays = Number(counts?.flex_absent || 0)
+  const fullDays = Number(counts?.flex_fullDayPresent || 0);
+  const halfDays = Number(counts?.flex_halfDayPresent || 0);
+  const absentDays = Number(counts?.flex_absent || 0);
 
   /* ===============================
      ✅ PAID DAYS (CALENDAR BASED)
   =============================== */
 
-  const joiningCalendarDays = totalPaidCalendarDays
-  const totalLopEquivalentDays = absentDays + halfDays * 0.5
-  const totalPaidDays = Math.max(0, joiningCalendarDays - totalLopEquivalentDays)
+  const joiningCalendarDays = totalPaidCalendarDays;
+  const totalLopEquivalentDays = absentDays + halfDays * 0.5;
+  const totalPaidDays = Math.max(
+    0,
+    joiningCalendarDays - totalLopEquivalentDays,
+  );
 
   /* ===============================
      SALARY BASE
   =============================== */
 
-  const monthlyGross = getGrossFromEmp(emp, grade)
+  const monthlyGross = getGrossFromEmp(emp, grade);
 
   /* ===============================
      ✅ PER DAY & RATIO (CALENDAR)
   =============================== */
 
-  const perDayGrossForLop =
-    monthlyGross / totalCalendarDaysInMonth
+  const perDayGrossForLop = monthlyGross / totalCalendarDaysInMonth;
 
-  const proRateRatio =
-    joiningCalendarDays / totalCalendarDaysInMonth
+  const proRateRatio = joiningCalendarDays / totalCalendarDaysInMonth;
 
   /* ===============================
      FULL MONTH COMPONENTS
   =============================== */
 
-  const fullMonthBasic = resolvePayGradeBasic(monthlyGross, grade, emp)
+  const fullMonthBasic = resolvePayGradeBasic(monthlyGross, grade, emp);
 
-  const fullMonthAllowances: { name: string, amount: number }[] = []
-  const allowanceList = grade?.monthlyPayGradeAllowanceList || []
+  const fullMonthAllowances: { name: string; amount: number }[] = [];
+  const allowanceList = grade?.monthlyPayGradeAllowanceList || [];
 
   allowanceList.forEach((item: any) => {
-    const a = item.salaryAllowance || {}
-    const name = (a.salaryAllowanceName || "").trim()
-    const type = (a.salaryAllowanceType || "").toLowerCase()
-    const value = Number(a.salaryAllowanceValue || 0)
-    let amt = 0
+    const a = item.salaryAllowance || {};
+    const name = (a.salaryAllowanceName || "").trim();
+    const type = (a.salaryAllowanceType || "").toLowerCase();
+    const value = Number(a.salaryAllowanceValue || 0);
+    let amt = 0;
 
-    if (type === "fixed") amt = value
+    if (type === "fixed") amt = value;
     else {
       const base = name.toLowerCase().includes("hra")
         ? fullMonthBasic
-        : monthlyGross
-      amt = Math.round((base * value) / 100)
+        : monthlyGross;
+      amt = Math.round((base * value) / 100);
     }
 
-    fullMonthAllowances.push({ name, amount: amt })
-  })
+    fullMonthAllowances.push({ name, amount: amt });
+  });
 
-  const fullMonthDeductions: { name: string; amount: number }[] = []
-  const deductionList = grade?.monthlyPayGradeDeductionList || []
+  const fullMonthDeductions: { name: string; amount: number }[] = [];
+  const deductionList = grade?.monthlyPayGradeDeductionList || [];
 
   deductionList.forEach((item: any) => {
-    const d = item.salaryDeduction || {}
-    const name = (d.salaryDeductionName || "").trim()
-    const type = (d.salaryDeductionType || "").toLowerCase()
-    const value = Number(d.salaryDeductionValue || 0)
-    let amt = 0
+    const d = item.salaryDeduction || {};
+    const name = (d.salaryDeductionName || "").trim();
+    const type = (d.salaryDeductionType || "").toLowerCase();
+    const value = Number(d.salaryDeductionValue || 0);
+    let amt = 0;
 
-    if (type === "fixed") amt = value
+    if (type === "fixed") amt = value;
     else {
       const base = name.toLowerCase().includes("pf")
         ? fullMonthBasic
-        : monthlyGross
-      amt = Math.round((base * value) / 100)
+        : monthlyGross;
+      amt = Math.round((base * value) / 100);
     }
 
-    fullMonthDeductions.push({ name, amount: amt })
-  })
+    fullMonthDeductions.push({ name, amount: amt });
+  });
 
   /* ===============================
      PRO-RATE COMPONENTS
   =============================== */
 
-  const proRatedBasic =
-    Math.round(fullMonthBasic * proRateRatio)
+  const proRatedBasic = Math.round(fullMonthBasic * proRateRatio);
 
-  const proRatedAllowances = fullMonthAllowances.map(a => ({
+  const proRatedAllowances = fullMonthAllowances.map((a) => ({
     name: a.name,
-    amount: Math.round(a.amount * proRateRatio)
-  }))
+    amount: Math.round(a.amount * proRateRatio),
+  }));
 
   if (reimbursementAmount > 0) {
     proRatedAllowances.push({
       name: "Reimbursement",
-      amount: reimbursementAmount
-    })
+      amount: reimbursementAmount,
+    });
   }
 
-  const proRatedDeductions = fullMonthDeductions.map(d => ({
+  const proRatedDeductions = fullMonthDeductions.map((d) => ({
     name: d.name,
-    amount: Math.round(d.amount * proRateRatio)
-  }))
+    amount: Math.round(d.amount * proRateRatio),
+  }));
 
-  advanceRepayments.forEach(repayment => {
+  advanceRepayments.forEach((repayment) => {
     proRatedDeductions.push({
       name: repayment.name,
-      amount: Math.round(repayment.amount)   // ❌ NOT prorated
-    })
-  })
+      amount: Math.round(repayment.amount), // ❌ NOT prorated
+    });
+  });
 
   /* ===============================
      LOP AFTER NET
   =============================== */
 
-  const lopAmount =
-    Math.round(perDayGrossForLop * totalLopEquivalentDays)
+  const lopAmount = Math.round(perDayGrossForLop * totalLopEquivalentDays);
 
-  const totalAllowances =
-    proRatedAllowances.reduce((s, a) => s + a.amount, 0)
+  const totalAllowances = proRatedAllowances.reduce((s, a) => s + a.amount, 0);
 
-  const totalEarnings =
-    proRatedBasic + totalAllowances
+  const totalEarnings = proRatedBasic + totalAllowances;
 
-  const totalDeductions =
-    proRatedDeductions.reduce((s, d) => s + d.amount, 0)
+  const totalDeductions = proRatedDeductions.reduce((s, d) => s + d.amount, 0);
 
-  const netBeforeLop =
-    totalEarnings - totalDeductions
+  const netBeforeLop = totalEarnings - totalDeductions;
 
-  const netPay = roundToNearestRupee(
-    Math.max(0, netBeforeLop - lopAmount)
-  )
+  const netPay = roundToNearestRupee(Math.max(0, netBeforeLop - lopAmount));
 
-  const proRatedGross =
-    monthlyGross * proRateRatio
+  const proRatedGross = monthlyGross * proRateRatio;
 
-  const paidLeaveDays = Number(counts?.paidLeaveDays || 0)
-  const punchPresentDays = Number(counts?.punchPresentDays || 0)
-  const unpaidHolidays = 0
-  const workingDays = Math.max(0, totalCalendarDaysInMonth - weeklyOffDaysEffective)
-  const weeklyOffDisplay = weeklyOffLabel(shiftDays, weeklyOffDaysEffective)
+  const paidLeaveDays = Number(counts?.paidLeaveDays || 0);
+  const punchPresentDays = Number(counts?.punchPresentDays || 0);
+  const unpaidHolidays = 0;
+  const workingDays = Math.max(
+    0,
+    totalCalendarDaysInMonth - weeklyOffDaysEffective,
+  );
+  const weeklyOffDisplay = weeklyOffLabel(shiftDays, weeklyOffDaysEffective);
 
   const earningRows = [
     { name: "Basic", monthly: fullMonthBasic, payable: proRatedBasic },
@@ -1707,9 +2120,15 @@ export async function computeSalarySlipForRow(
       payable: Math.round(a.amount * proRateRatio),
     })),
     ...(reimbursementAmount > 0
-      ? [{ name: "Reimbursement", monthly: reimbursementAmount, payable: reimbursementAmount }]
+      ? [
+          {
+            name: "Reimbursement",
+            monthly: reimbursementAmount,
+            payable: reimbursementAmount,
+          },
+        ]
       : []),
-  ]
+  ];
 
   const deductionRows = [
     ...fullMonthDeductions.map((d) => ({
@@ -1725,7 +2144,7 @@ export async function computeSalarySlipForRow(
     ...(lopAmount > 0
       ? [{ name: "LOSS OF PAY", monthly: lopAmount, amount: lopAmount }]
       : []),
-  ]
+  ];
 
   /* ===============================
      RETURN
@@ -1766,8 +2185,8 @@ export async function computeSalarySlipForRow(
     perDayGross: perDayGrossForLop,
     perDayBasic: perDayGrossForLop * (fullMonthBasic / (monthlyGross || 1)),
     proRatedGross,
-    totalWorkingDaysInCycle: totalCalendarDaysInMonth
-  }
+    totalWorkingDaysInCycle: totalCalendarDaysInMonth,
+  };
 }
 
 /* =======================
@@ -1781,10 +2200,15 @@ export function GenerateSalaryManagement() {
   const [editing, setEditing] = useState<GenerateSalaryRow | null>(null);
   const [salaryPeriod, setSalaryPeriod] = useState("");
 
-  const user = useCurrentUser()
-  const [items, setItems] = useState<GenerateSalaryRow[]>([])
-  const [listLoading, setListLoading] = useState(true)
-  const canManage = user?.role === "SUPERADMIN" || user?.role === "SERVICE_PROVIDER" || isCompanyAdminLikeRole(user?.role) || user?.role === "BRANCH_ADMIN" || hasModuleWriteAccess("PAYROLL")
+  const user = useCurrentUser();
+  const [items, setItems] = useState<GenerateSalaryRow[]>([]);
+  const [listLoading, setListLoading] = useState(true);
+  const canManage =
+    user?.role === "SUPERADMIN" ||
+    user?.role === "SERVICE_PROVIDER" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "BRANCH_ADMIN" ||
+    hasModuleWriteAccess("PAYROLL");
 
   const [spList, setSpList] = useState<SP[]>([]);
   const [coList, setCoList] = useState<CO[]>([]);
@@ -1799,21 +2223,29 @@ export function GenerateSalaryManagement() {
   const brRef = useRef<HTMLDivElement | null>(null);
   const empRef = useRef<HTMLDivElement | null>(null);
 
-  const [selectedCompanyFYStart, setSelectedCompanyFYStart] = useState<string | null>(null);
-  const [selectedCompanyStartDay, setSelectedCompanyStartDay] = useState<string>("1");
+  const [selectedCompanyFYStart, setSelectedCompanyFYStart] = useState<
+    string | null
+  >(null);
+  const [selectedCompanyStartDay, setSelectedCompanyStartDay] =
+    useState<string>("1");
   const [salaryPeriodOptions, setSalaryPeriodOptions] = useState<string[]>([]);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [viewSlipOpen, setViewSlipOpen] = useState(false)
-  const [viewSlipData, setViewSlipData] = useState<SalarySlipComputed | null>(null)
+  const [viewSlipOpen, setViewSlipOpen] = useState(false);
+  const [viewSlipData, setViewSlipData] = useState<SalarySlipComputed | null>(
+    null,
+  );
 
-  const [selectedSalaryRow, setSelectedSalaryRow] = useState<GenerateSalaryRow | null>(null);
+  const [selectedSalaryRow, setSelectedSalaryRow] =
+    useState<GenerateSalaryRow | null>(null);
 
   const [paymentMode, setPaymentMode] = useState<string>("Cash");
   const [paymentType, setPaymentType] = useState<string>("Cash");
   const [paymentDate, setPaymentDate] = useState<string>("");
   const [paymentRemark, setPaymentRemark] = useState<string>("");
   const [paymentProof, setPaymentProof] = useState<string>("");
-  const [employeeBankDetails, setEmployeeBankDetails] = useState<any | null>(null);
+  const [employeeBankDetails, setEmployeeBankDetails] = useState<any | null>(
+    null,
+  );
   const [isLoadingBankDetails, setIsLoadingBankDetails] = useState(false);
 
   // Add manager scope state
@@ -1852,22 +2284,24 @@ export function GenerateSalaryManagement() {
 
         // Auto-fill form data for MANAGER
         if (scope && user.role === "SERVICE_PROVIDER") {
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
             serviceProviderID: scope.serviceProviderID,
             companyID: scope.companyID,
-            branchesID: scope.branchesID
+            branchesID: scope.branchesID,
           }));
 
           // Fetch company and branch names for display
           if (scope.companyID) {
             try {
               const companies = await robustGet(API.co);
-              const company = companies.find((c: any) => c.id === scope.companyID);
+              const company = companies.find(
+                (c: any) => c.id === scope.companyID,
+              );
               if (company) {
-                setFormData(prev => ({
+                setFormData((prev) => ({
                   ...prev,
-                  coAutocomplete: company.companyName || ""
+                  coAutocomplete: company.companyName || "",
                 }));
               }
             } catch (error) {
@@ -1879,27 +2313,31 @@ export function GenerateSalaryManagement() {
           if (scope.branchesID) {
             try {
               const branches = await robustGet(API.br);
-              const branch = branches.find((b: any) => b.id === scope.branchesID);
+              const branch = branches.find(
+                (b: any) => b.id === scope.branchesID,
+              );
               if (branch) {
-                setFormData(prev => ({
+                setFormData((prev) => ({
                   ...prev,
-                  brAutocomplete: branch.branchName || ""
+                  brAutocomplete: branch.branchName || "",
                 }));
 
                 // Auto-populate service provider ID from branch
                 if (branch.serviceProviderID) {
-                  setFormData(prev => ({
+                  setFormData((prev) => ({
                     ...prev,
-                    serviceProviderID: branch.serviceProviderID
+                    serviceProviderID: branch.serviceProviderID,
                   }));
 
                   // Fetch service provider name
                   const serviceProviders = await robustGet(API.sp);
-                  const sp = serviceProviders.find((sp: any) => sp.id === branch.serviceProviderID);
+                  const sp = serviceProviders.find(
+                    (sp: any) => sp.id === branch.serviceProviderID,
+                  );
                   if (sp) {
-                    setFormData(prev => ({
+                    setFormData((prev) => ({
                       ...prev,
-                      spAutocomplete: sp.companyName || ""
+                      spAutocomplete: sp.companyName || "",
                     }));
                   }
                 }
@@ -1919,7 +2357,10 @@ export function GenerateSalaryManagement() {
   useEffect(() => {
     if (!user || user.role === "SUPERADMIN") return;
     const scoped =
-      resolveScopedCompanyId(user) ?? getActiveCompanyId() ?? user.companyID ?? null;
+      resolveScopedCompanyId(user) ??
+      getActiveCompanyId() ??
+      user.companyID ??
+      null;
     if (!scoped) return;
     setFormData((prev) => {
       if (prev.companyID) return prev;
@@ -1958,8 +2399,10 @@ export function GenerateSalaryManagement() {
   async function fetchAll() {
     setListLoading(true);
     try {
-      const raw = await robustGet(API.generateSalary, { fresh: true })
-      const allItems: GenerateSalaryRow[] = Array.isArray(raw) ? raw : (raw?.data ?? [])
+      const raw = await robustGet(API.generateSalary, { fresh: true });
+      const allItems: GenerateSalaryRow[] = Array.isArray(raw)
+        ? raw
+        : (raw?.data ?? []);
 
       if (user?.role === "SUPERADMIN") {
         const ctx = getSidebarContext();
@@ -1968,20 +2411,26 @@ export function GenerateSalaryManagement() {
         } else {
           setItems(allItems);
         }
-        return
+        return;
       }
 
       if (user?.role === "SERVICE_PROVIDER") {
-        const ctx = getSidebarContext()
+        const ctx = getSidebarContext();
         if (ctx?.companyID) {
-          setItems(allItems.filter((r: any) => r.companyID === ctx.companyID))
-          return
+          setItems(allItems.filter((r: any) => r.companyID === ctx.companyID));
+          return;
         }
-        const users = await robustGet(API.users)
-        const currentUser = users.find((u: any) => u.username === user.username)
+        const users = await robustGet(API.users);
+        const currentUser = users.find(
+          (u: any) => u.username === user.username,
+        );
         if (currentUser?.serviceProviderID) {
-          setItems(allItems.filter((r: any) => r.serviceProviderID === currentUser.serviceProviderID))
-          return
+          setItems(
+            allItems.filter(
+              (r: any) => r.serviceProviderID === currentUser.serviceProviderID,
+            ),
+          );
+          return;
         }
       }
 
@@ -1998,34 +2447,40 @@ export function GenerateSalaryManagement() {
           getSidebarContext()?.companyID ??
           user?.companyID;
         if (companyID) {
-          setItems(allItems.filter((r: any) => Number(r.companyID) === Number(companyID)));
+          setItems(
+            allItems.filter(
+              (r: any) => Number(r.companyID) === Number(companyID),
+            ),
+          );
         } else {
           setItems([]);
         }
         return;
       }
 
-      const creds = await robustGet(`${BACKEND_URL}/manage-emp/credentials/all`);
-      const emp = user ? creds.find((c: any) => c.username === user.username) : null;
+      const creds = await robustGet(
+        `${BACKEND_URL}/manage-emp/credentials/all`,
+      );
+      const emp = user
+        ? creds.find((c: any) => c.username === user.username)
+        : null;
 
       if (emp) {
-        const filtered = allItems.filter((r: any) =>
-          r.companyID === emp.companyID &&
-          r.branchesID === emp.branchesID &&
-          (
-            r.manageEmployeeID === emp.employeeID ||
-            r.manageEmployee?.id === emp.employeeID ||
-            r.employeeID === emp.employeeID
-          ) &&
-          r.status === "Paid"
+        const filtered = allItems.filter(
+          (r: any) =>
+            r.companyID === emp.companyID &&
+            r.branchesID === emp.branchesID &&
+            (r.manageEmployeeID === emp.employeeID ||
+              r.manageEmployee?.id === emp.employeeID ||
+              r.employeeID === emp.employeeID) &&
+            r.status === "Paid",
         );
         setItems(filtered);
       } else {
         setItems([]);
       }
-
     } catch (e) {
-      console.error("Failed to load GenerateSalary:", e)
+      console.error("Failed to load GenerateSalary:", e);
       toast.error("Failed to load data.");
     } finally {
       setListLoading(false);
@@ -2053,7 +2508,9 @@ export function GenerateSalaryManagement() {
       try {
         setIsLoadingBankDetails(true);
         const allEmployees = await robustGet(API.emp);
-        const employee = allEmployees.find((e: any) => e.id === row.manageEmployee?.id);
+        const employee = allEmployees.find(
+          (e: any) => e.id === row.manageEmployee?.id,
+        );
 
         if (employee && employee.employeeBankDetails?.length > 0) {
           const bankDetails = employee.employeeBankDetails[0];
@@ -2067,7 +2524,10 @@ export function GenerateSalaryManagement() {
           setEmployeeBankDetails(null);
         }
       } catch (err) {
-        console.error("Error fetching employee bank details from manage-emp:", err);
+        console.error(
+          "Error fetching employee bank details from manage-emp:",
+          err,
+        );
         toast.error("Failed to load data.");
       } finally {
         setIsLoadingBankDetails(false);
@@ -2094,13 +2554,19 @@ export function GenerateSalaryManagement() {
     delete payload.branches;
 
     try {
-      const res = await fetch(`/backend/generate-salary/${selectedSalaryRow.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        `https://hrms-api-test.onrender.com/generate-salary/${selectedSalaryRow.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
 
-      if (!res.ok) throw new Error(await readApiErrorMessage(res, "Payment update failed."));
+      if (!res.ok)
+        throw new Error(
+          await readApiErrorMessage(res, "Payment update failed."),
+        );
       toast.success("Payment marked successfully!");
       setIsPaymentDialogOpen(false);
       await fetchAll();
@@ -2120,13 +2586,18 @@ export function GenerateSalaryManagement() {
       companyID: formData.companyID ?? undefined,
       branchesID: formData.branchesID ?? undefined,
       employeeID: formData.employeeDbID,
-      monthPeriod: formData.monthLabel
+      monthPeriod: formData.monthLabel,
     };
 
     try {
-      const empRes = await fetch(`/backend/manage-emp/${formData.employeeDbID}`, { cache: "no-store" });
+      const empRes = await fetch(
+        `https://hrms-api-test.onrender.com/manage-emp/${formData.employeeDbID}`,
+        { cache: "no-store" },
+      );
       if (!empRes.ok) {
-        toast.error(await readApiErrorMessage(empRes, "Could not load this employee."));
+        toast.error(
+          await readApiErrorMessage(empRes, "Could not load this employee."),
+        );
         return;
       }
       const employee = await empRes.json();
@@ -2147,9 +2618,12 @@ export function GenerateSalaryManagement() {
           method: editing ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        }
+        },
       );
-      if (!res.ok) throw new Error(await readApiErrorMessage(res, "Failed to save. Please try again."));
+      if (!res.ok)
+        throw new Error(
+          await readApiErrorMessage(res, "Failed to save. Please try again."),
+        );
       await fetchAll();
       resetForm();
       setIsDialogOpen(false);
@@ -2157,9 +2631,13 @@ export function GenerateSalaryManagement() {
       dispatchAppRefresh();
     } catch (err) {
       console.error("Save failed:", err);
-      const message = messageFromUnknownError(err, "Failed to save. Please try again.");
+      const message = messageFromUnknownError(
+        err,
+        "Failed to save. Please try again.",
+      );
       toast.error(
-        message === "This module is not included in your company's subscription."
+        message ===
+          "This module is not included in your company's subscription."
           ? "No subscription plan for salary generation."
           : message,
       );
@@ -2169,14 +2647,21 @@ export function GenerateSalaryManagement() {
   async function handleDelete(id: number) {
     if (!confirm("Delete this record?")) return;
     try {
-      const res = await fetch(`${API.generateSalary}/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(await readApiErrorMessage(res, "Failed to delete. Please try again."));
+      const res = await fetch(`${API.generateSalary}/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok)
+        throw new Error(
+          await readApiErrorMessage(res, "Failed to delete. Please try again."),
+        );
       await fetchAll();
       toast.success("Deleted successfully");
       dispatchAppRefresh();
     } catch (e) {
       console.error("Delete failed:", e);
-      toast.error(messageFromUnknownError(e, "Failed to delete. Please try again."));
+      toast.error(
+        messageFromUnknownError(e, "Failed to delete. Please try again."),
+      );
     }
   }
 
@@ -2228,7 +2713,9 @@ export function GenerateSalaryManagement() {
       coAutocomplete: row.company?.companyName ?? "",
       brAutocomplete: row.branches?.branchName ?? "",
       employeeDbID: row.employeeID ?? null,
-      employeeAutocomplete: row.manageEmployee ? `${empName(row.manageEmployee)} (${row.manageEmployee.employeeID ?? ""})` : "",
+      employeeAutocomplete: row.manageEmployee
+        ? `${empName(row.manageEmployee)} (${row.manageEmployee.employeeID ?? ""})`
+        : "",
       monthLabel: row.monthPeriod,
     };
 
@@ -2257,9 +2744,9 @@ export function GenerateSalaryManagement() {
     try {
       const data: SP[] = await robustGet(API.sp);
       setSpList(
-        data.filter(sp =>
-          (sp.companyName ?? "").toLowerCase().includes(q.toLowerCase())
-        )
+        data.filter((sp) =>
+          (sp.companyName ?? "").toLowerCase().includes(q.toLowerCase()),
+        ),
       );
     } finally {
       setSpLoading(false);
@@ -2280,38 +2767,38 @@ export function GenerateSalaryManagement() {
       if (user?.role === "SUPERADMIN") {
         // SUPERADMIN: Only show companies if service provider is selected
         if (formData.serviceProviderID) {
-          filtered = data.filter(co =>
-            co.serviceProviderID === formData.serviceProviderID &&
-            (co.companyName ?? "").toLowerCase().includes(q.toLowerCase())
+          filtered = data.filter(
+            (co) =>
+              co.serviceProviderID === formData.serviceProviderID &&
+              (co.companyName ?? "").toLowerCase().includes(q.toLowerCase()),
           );
         } else {
           // No service provider selected, show no companies
           filtered = [];
         }
-      }
-      else if (user?.role === "SERVICE_PROVIDER") {
+      } else if (user?.role === "SERVICE_PROVIDER") {
         // MANAGER: Only show their assigned company
         if (managerScope?.companyID) {
-          filtered = data.filter(co =>
-            co.id === managerScope.companyID &&
-            (co.companyName ?? "").toLowerCase().includes(q.toLowerCase())
+          filtered = data.filter(
+            (co) =>
+              co.id === managerScope.companyID &&
+              (co.companyName ?? "").toLowerCase().includes(q.toLowerCase()),
           );
 
           // Auto-set company for MANAGER if not already set
           if (filtered.length > 0 && !formData.companyID) {
             const managerCompany = filtered[0];
-            setFormData(prev => ({
+            setFormData((prev) => ({
               ...prev,
               companyID: managerCompany.id,
-              coAutocomplete: managerCompany.companyName || ""
+              coAutocomplete: managerCompany.companyName || "",
             }));
 
             // Load company options
             await refreshCompanyDrivenOptions(managerCompany.id);
           }
         }
-      }
-      else {
+      } else {
         // Other roles (if any)
         filtered = [];
       }
@@ -2330,7 +2817,9 @@ export function GenerateSalaryManagement() {
       // Filter based on company for SUPERADMIN
       if (user?.role === "SUPERADMIN") {
         if (formData.companyID) {
-          data = data.filter(b => Number(b.companyID) === Number(formData.companyID));
+          data = data.filter(
+            (b) => Number(b.companyID) === Number(formData.companyID),
+          );
         } else {
           setBrList([]);
           return;
@@ -2339,7 +2828,9 @@ export function GenerateSalaryManagement() {
 
       // For MANAGER, show branches from their assigned company only
       if (user?.role === "SERVICE_PROVIDER" && managerScope?.companyID) {
-        data = data.filter(b => Number(b.companyID) === Number(managerScope.companyID));
+        data = data.filter(
+          (b) => Number(b.companyID) === Number(managerScope.companyID),
+        );
       }
 
       // COMPANY_ADMIN / BRANCH_ADMIN / company operators
@@ -2350,17 +2841,15 @@ export function GenerateSalaryManagement() {
         (user?.role === "EMPLOYEE" && isCompanyModuleOperator(user))
       ) {
         const companyID =
-          formData.companyID ??
-          resolveScopedCompanyId(user) ??
-          user?.companyID;
+          formData.companyID ?? resolveScopedCompanyId(user) ?? user?.companyID;
         if (companyID) {
-          data = data.filter(b => Number(b.companyID) === Number(companyID));
+          data = data.filter((b) => Number(b.companyID) === Number(companyID));
         } else {
           setBrList([]);
           return;
         }
         if (user?.role === "BRANCH_ADMIN" && user?.branchesID) {
-          data = data.filter(b => Number(b.id) === Number(user.branchesID));
+          data = data.filter((b) => Number(b.id) === Number(user.branchesID));
         }
       }
 
@@ -2371,14 +2860,16 @@ export function GenerateSalaryManagement() {
       }
       const byName = new Map<string, BR>();
       for (const b of byId.values()) {
-        const key = `${Number(b.companyID) || 0}::${String(b.branchName || "").trim().toLowerCase()}`;
+        const key = `${Number(b.companyID) || 0}::${String(b.branchName || "")
+          .trim()
+          .toLowerCase()}`;
         if (!byName.has(key)) byName.set(key, b);
       }
       data = Array.from(byName.values());
 
       const low = (q || "").toLowerCase();
       const filtered = low
-        ? data.filter(b => (b.branchName ?? "").toLowerCase().includes(low))
+        ? data.filter((b) => (b.branchName ?? "").toLowerCase().includes(low))
         : data;
 
       setBrList(filtered);
@@ -2423,7 +2914,8 @@ export function GenerateSalaryManagement() {
       }
     } else if (formData.companyID || user?.companyID) {
       companyId = Number(formData.companyID ?? user?.companyID);
-      branchId = formData.branchesID != null ? Number(formData.branchesID) : null;
+      branchId =
+        formData.branchesID != null ? Number(formData.branchesID) : null;
     }
 
     if (companyId == null || !Number.isFinite(companyId) || companyId <= 0) {
@@ -2435,7 +2927,9 @@ export function GenerateSalaryManagement() {
     try {
       let data: Emp[] = [];
       try {
-        data = await robustGet("/backend/manage-emp/list");
+        data = await robustGet(
+          "https://hrms-api-test.onrender.com/manage-emp/list",
+        );
       } catch {
         data = await robustGet(API.emp);
       }
@@ -2462,7 +2956,9 @@ export function GenerateSalaryManagement() {
       const searched = filtered.filter(
         (e) =>
           empName(e).toLowerCase().includes(low) ||
-          String(e.employeeID ?? "").toLowerCase().includes(low),
+          String(e.employeeID ?? "")
+            .toLowerCase()
+            .includes(low),
       );
 
       setEmpList(searched);
@@ -2477,8 +2973,12 @@ export function GenerateSalaryManagement() {
       const fy = company?.financialYearStart ?? "1st April";
       setSelectedCompanyFYStart(fy);
 
-      const rows: SalaryCycleRow[] = await robustGet(API.salaryCycleByCompany(companyId));
-      const scoped = Array.isArray(rows) ? rows.filter(r => Number(r.companyID) === Number(companyId)) : [];
+      const rows: SalaryCycleRow[] = await robustGet(
+        API.salaryCycleByCompany(companyId),
+      );
+      const scoped = Array.isArray(rows)
+        ? rows.filter((r) => Number(r.companyID) === Number(companyId))
+        : [];
 
       if (!scoped.length) {
         setSelectedCompanyStartDay("1");
@@ -2493,7 +2993,9 @@ export function GenerateSalaryManagement() {
 
       const opts = buildSalaryPeriodLabels(fy, day);
       setSalaryPeriodOptions(opts);
-      setFormData((p) => (opts.includes(p.monthLabel) ? p : { ...p, monthLabel: "" }));
+      setFormData((p) =>
+        opts.includes(p.monthLabel) ? p : { ...p, monthLabel: "" },
+      );
     } catch (e) {
       console.error("Failed to refresh company options:", e);
       toast.error("Operation failed. Please try again.");
@@ -2508,7 +3010,7 @@ export function GenerateSalaryManagement() {
   const handleBranchSelect = async (branchId: number, branchName: string) => {
     try {
       const branches: BR[] = await robustGet(API.br);
-      const selectedBranch = branches.find(b => b.id === branchId);
+      const selectedBranch = branches.find((b) => b.id === branchId);
 
       if (selectedBranch) {
         let serviceProviderName = "";
@@ -2517,14 +3019,18 @@ export function GenerateSalaryManagement() {
         // Get service provider name
         if (selectedBranch.serviceProviderID) {
           const serviceProviders: SP[] = await robustGet(API.sp);
-          const sp = serviceProviders.find((sp: SP) => sp.id === selectedBranch.serviceProviderID);
+          const sp = serviceProviders.find(
+            (sp: SP) => sp.id === selectedBranch.serviceProviderID,
+          );
           serviceProviderName = sp?.companyName || "";
         }
 
         // Get company name
         if (selectedBranch.companyID) {
           const companies: CO[] = await robustGet(API.co);
-          const company = companies.find((c: CO) => c.id === selectedBranch.companyID);
+          const company = companies.find(
+            (c: CO) => c.id === selectedBranch.companyID,
+          );
           companyName = company?.companyName || "";
         }
 
@@ -2558,10 +3064,10 @@ export function GenerateSalaryManagement() {
 
         if (selectedBranch.companyID) {
           updates.companyID = selectedBranch.companyID;
-        updates.coAutocomplete = companyName;
+          updates.coAutocomplete = companyName;
         }
 
-        setFormData(prev => ({ ...prev, ...updates }));
+        setFormData((prev) => ({ ...prev, ...updates }));
 
         // Refresh salary periods if company is selected
         if (selectedBranch.companyID) {
@@ -2578,28 +3084,28 @@ export function GenerateSalaryManagement() {
 
   async function handleDownloadSalarySlipForRow(row: GenerateSalaryRow) {
     try {
-      const computed = await computeSalarySlipForRow(row)
+      const computed = await computeSalarySlipForRow(row);
       downloadSalarySlipPDF({
         ...computed,
         perDayGross: computed.perDayGross || 0,
         perDayBasic: computed.perDayBasic || 0,
         proRatedGross: computed.proRatedGross || 0,
-        totalWorkingDaysInCycle: computed.totalWorkingDaysInCycle || 0
-      })
+        totalWorkingDaysInCycle: computed.totalWorkingDaysInCycle || 0,
+      });
     } catch (err) {
-      console.error(err)
-      toast.error("Error generating salary slip")
+      console.error(err);
+      toast.error("Error generating salary slip");
     }
   }
 
   async function handleViewSalarySlip(row: GenerateSalaryRow) {
     try {
-      const computed = await computeSalarySlipForRow(row)
-      setViewSlipData(computed)
-      setViewSlipOpen(true)
+      const computed = await computeSalarySlipForRow(row);
+      setViewSlipData(computed);
+      setViewSlipOpen(true);
     } catch (err) {
-      console.error(err)
-      toast.error("Unable to preview salary slip")
+      console.error(err);
+      toast.error("Unable to preview salary slip");
     }
   }
 
@@ -2610,10 +3116,10 @@ export function GenerateSalaryManagement() {
         branchFilter === "ALL" || branchFilter === String(g.branchesID ?? "");
       const matchesSearch =
         !q ||
-      (g.serviceProvider?.companyName ?? "").toLowerCase().includes(q) ||
-      (g.company?.companyName ?? "").toLowerCase().includes(q) ||
-      (g.branches?.branchName ?? "").toLowerCase().includes(q) ||
-      empName(g.manageEmployee).toLowerCase().includes(q) ||
+        (g.serviceProvider?.companyName ?? "").toLowerCase().includes(q) ||
+        (g.company?.companyName ?? "").toLowerCase().includes(q) ||
+        (g.branches?.branchName ?? "").toLowerCase().includes(q) ||
+        empName(g.manageEmployee).toLowerCase().includes(q) ||
         (g.monthPeriod ?? "").toLowerCase().includes(q);
       return matchesBranch && matchesSearch;
     });
@@ -2621,7 +3127,9 @@ export function GenerateSalaryManagement() {
       const g = row as GenerateSalaryRow;
       if (key === "branch") return g.branches?.branchName ?? "";
       if (key === "employee") {
-        return g.manageEmployee ? `${empName(g.manageEmployee)} (${g.manageEmployee.employeeID ?? ""})` : "";
+        return g.manageEmployee
+          ? `${empName(g.manageEmployee)} (${g.manageEmployee.employeeID ?? ""})`
+          : "";
       }
       if (key === "monthPeriod") return g.monthPeriod ?? "";
       if (key === "status") return g.status ?? "";
@@ -2638,17 +3146,20 @@ export function GenerateSalaryManagement() {
     });
     return [
       { value: "ALL", label: "All branches" },
-      ...Array.from(branches.entries()).map(([value, label]) => ({ value, label })),
+      ...Array.from(branches.entries()).map(([value, label]) => ({
+        value,
+        label,
+      })),
     ];
   }, [items]);
 
   function SalarySlipPreview({ data }: { data: SalarySlipComputed }) {
-    const joiningDays = data.joiningCalendarDays ?? data.cycleDays
-    const actualPaidDays = data.paidUnits
-    const fullMonthDays = data.totalWorkingDaysInCycle
-    const perDayRateForLop = data.gross / fullMonthDays
-    const proRateRatio = joiningDays / fullMonthDays
-    const lopBreakdown = `${data.absentCount} Absent + ${data.halfDayCount} Half Day × 0.5 = ${data.lopDays.toFixed(2)}`
+    const joiningDays = data.joiningCalendarDays ?? data.cycleDays;
+    const actualPaidDays = data.paidUnits;
+    const fullMonthDays = data.totalWorkingDaysInCycle;
+    const perDayRateForLop = data.gross / fullMonthDays;
+    const proRateRatio = joiningDays / fullMonthDays;
+    const lopBreakdown = `${data.absentCount} Absent + ${data.halfDayCount} Half Day × 0.5 = ${data.lopDays.toFixed(2)}`;
 
     return (
       <div className="space-y-4 text-sm">
@@ -2665,7 +3176,8 @@ export function GenerateSalaryManagement() {
             <tr>
               <td className="border p-2 font-medium">Employee</td>
               <td className="border p-2">
-                {data.employee.employeeFirstName} {data.employee.employeeLastName}
+                {data.employee.employeeFirstName}{" "}
+                {data.employee.employeeLastName}
               </td>
               <td className="border p-2 font-medium">Period</td>
               <td className="border p-2">{data.monthLabel}</td>
@@ -2676,9 +3188,7 @@ export function GenerateSalaryManagement() {
                 {data.employee.joiningDate || "N/A"}
               </td>
               <td className="border p-2 font-medium">Working Days</td>
-              <td className="border p-2">
-                {fullMonthDays} (Full Month)
-              </td>
+              <td className="border p-2">{fullMonthDays} (Full Month)</td>
             </tr>
             <tr>
               <td className="border p-2 font-medium">Paid Days</td>
@@ -2689,7 +3199,8 @@ export function GenerateSalaryManagement() {
             <tr>
               <td className="border p-2 font-medium">Pro-rate Ratio</td>
               <td className="border p-2">
-                {joiningDays} / {fullMonthDays} = {(proRateRatio * 100).toFixed(1)}%
+                {joiningDays} / {fullMonthDays} ={" "}
+                {(proRateRatio * 100).toFixed(1)}%
               </td>
               <td className="border p-2 font-medium">Monthly Gross</td>
               <td className="border p-2">₹ {data.gross.toLocaleString()}</td>
@@ -2699,34 +3210,54 @@ export function GenerateSalaryManagement() {
 
         {/* Calculation Summary */}
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="font-semibold text-blue-800 mb-2">📊 Salary Calculation Breakdown</h3>
+          <h3 className="font-semibold text-blue-800 mb-2">
+            📊 Salary Calculation Breakdown
+          </h3>
           <div className="space-y-2 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <p><span className="font-medium">Monthly Gross:</span> ₹ {data.gross.toLocaleString()}</p>
-                <p><span className="font-medium">Full Month Working Days:</span> {fullMonthDays}</p>
-                <p><span className="font-medium">Paid Days Ratio:</span> {(proRateRatio * 100).toFixed(1)}%</p>
+                <p>
+                  <span className="font-medium">Monthly Gross:</span> ₹{" "}
+                  {data.gross.toLocaleString()}
+                </p>
+                <p>
+                  <span className="font-medium">Full Month Working Days:</span>{" "}
+                  {fullMonthDays}
+                </p>
+                <p>
+                  <span className="font-medium">Paid Days Ratio:</span>{" "}
+                  {(proRateRatio * 100).toFixed(1)}%
+                </p>
               </div>
               <div>
-                <p><span className="font-medium">Per-Day Rate (for LOP):</span> ₹ {perDayRateForLop.toFixed(2)}</p>
-                <p><span className="font-medium">LOP Amount:</span> ₹ {data.lopAmount}</p>
-                <p><span className="font-medium">Net Pay:</span> ₹ {data.netPay}</p>
+                <p>
+                  <span className="font-medium">Per-Day Rate (for LOP):</span> ₹{" "}
+                  {perDayRateForLop.toFixed(2)}
+                </p>
+                <p>
+                  <span className="font-medium">LOP Amount:</span> ₹{" "}
+                  {data.lopAmount}
+                </p>
+                <p>
+                  <span className="font-medium">Net Pay:</span> ₹ {data.netPay}
+                </p>
               </div>
             </div>
             <div className="border-t pt-2">
               <p className="font-medium">Salary Calculation Formula:</p>
               <p className="text-green-600">
-                All salary components pro-rated by {(proRateRatio * 100).toFixed(1)}%
+                All salary components pro-rated by{" "}
+                {(proRateRatio * 100).toFixed(1)}%
               </p>
               <p className="font-medium mt-1">LOP Deduction:</p>
+              <p className="text-red-600">{lopBreakdown}</p>
               <p className="text-red-600">
-                {lopBreakdown}
+                Paid days = {joiningDays} − {data.lopDays.toFixed(2)} ={" "}
+                {actualPaidDays.toFixed(2)}
               </p>
               <p className="text-red-600">
-                Paid days = {joiningDays} − {data.lopDays.toFixed(2)} = {actualPaidDays.toFixed(2)}
-              </p>
-              <p className="text-red-600">
-                LOP amount: ₹ {perDayRateForLop.toFixed(2)} × {data.lopDays.toFixed(2)} = ₹ {data.lopAmount}
+                LOP amount: ₹ {perDayRateForLop.toFixed(2)} ×{" "}
+                {data.lopDays.toFixed(2)} = ₹ {data.lopAmount}
               </p>
             </div>
           </div>
@@ -2754,7 +3285,9 @@ export function GenerateSalaryManagement() {
               ))}
               <tr className="font-semibold">
                 <td className="border p-2">Total Earnings</td>
-                <td className="border p-2 text-right">₹ {data.earningsTotal}</td>
+                <td className="border p-2 text-right">
+                  ₹ {data.earningsTotal}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -2791,7 +3324,9 @@ export function GenerateSalaryManagement() {
         <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-sm font-medium text-gray-700">Total Earnings</p>
+              <p className="text-sm font-medium text-gray-700">
+                Total Earnings
+              </p>
               <p className="text-lg">₹ {data.earningsTotal}</p>
             </div>
             <div className="text-center">
@@ -2799,8 +3334,12 @@ export function GenerateSalaryManagement() {
               <p className="text-lg">-</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-700">Total Deductions</p>
-              <p className="text-lg">₹ {data.deductionsTotal + data.lopAmount}</p>
+              <p className="text-sm font-medium text-gray-700">
+                Total Deductions
+              </p>
+              <p className="text-lg">
+                ₹ {data.deductionsTotal + data.lopAmount}
+              </p>
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-gray-700">Equals</p>
@@ -2808,7 +3347,9 @@ export function GenerateSalaryManagement() {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-700">Net Pay</p>
-              <p className="text-2xl font-bold text-green-700">₹ {data.netPay}</p>
+              <p className="text-2xl font-bold text-green-700">
+                ₹ {data.netPay}
+              </p>
             </div>
           </div>
         </div>
@@ -2816,14 +3357,55 @@ export function GenerateSalaryManagement() {
         {/* Verification Calculation */}
         <NoticeBanner variant="info" title="Calculation verification">
           <div className="text-xs space-y-1 text-muted-foreground">
-            <p>Full Month Gross: <span className="font-medium text-foreground">₹ {data.gross.toLocaleString()}</span></p>
-            <p>Paid days: <span className="font-medium text-foreground">{joiningDays} − LOP {data.lopDays.toFixed(2)} = {actualPaidDays.toFixed(2)}</span></p>
-            <p>LOP breakdown: <span className="font-medium text-foreground">{lopBreakdown}</span></p>
-            <p>Joining/exit ratio: <span className="font-medium text-foreground">{joiningDays} / {fullMonthDays} = {(proRateRatio * 100).toFixed(1)}%</span></p>
-            <p>All salary components pro-rated by: <span className="font-medium text-foreground">{(proRateRatio * 100).toFixed(1)}%</span></p>
-            <p>Per-day rate for LOP: <span className="font-medium text-foreground">₹ {data.gross.toLocaleString()} ÷ {fullMonthDays} = ₹ {perDayRateForLop.toFixed(2)}</span></p>
-            <p>LOP deduction: <span className="font-medium text-foreground">₹ {perDayRateForLop.toFixed(2)} × {data.lopDays.toFixed(2)} = ₹ {data.lopAmount}</span></p>
-            <p className="font-semibold text-emerald-600 dark:text-emerald-400">Final Net Pay: ₹ {data.netPay}</p>
+            <p>
+              Full Month Gross:{" "}
+              <span className="font-medium text-foreground">
+                ₹ {data.gross.toLocaleString()}
+              </span>
+            </p>
+            <p>
+              Paid days:{" "}
+              <span className="font-medium text-foreground">
+                {joiningDays} − LOP {data.lopDays.toFixed(2)} ={" "}
+                {actualPaidDays.toFixed(2)}
+              </span>
+            </p>
+            <p>
+              LOP breakdown:{" "}
+              <span className="font-medium text-foreground">
+                {lopBreakdown}
+              </span>
+            </p>
+            <p>
+              Joining/exit ratio:{" "}
+              <span className="font-medium text-foreground">
+                {joiningDays} / {fullMonthDays} ={" "}
+                {(proRateRatio * 100).toFixed(1)}%
+              </span>
+            </p>
+            <p>
+              All salary components pro-rated by:{" "}
+              <span className="font-medium text-foreground">
+                {(proRateRatio * 100).toFixed(1)}%
+              </span>
+            </p>
+            <p>
+              Per-day rate for LOP:{" "}
+              <span className="font-medium text-foreground">
+                ₹ {data.gross.toLocaleString()} ÷ {fullMonthDays} = ₹{" "}
+                {perDayRateForLop.toFixed(2)}
+              </span>
+            </p>
+            <p>
+              LOP deduction:{" "}
+              <span className="font-medium text-foreground">
+                ₹ {perDayRateForLop.toFixed(2)} × {data.lopDays.toFixed(2)} = ₹{" "}
+                {data.lopAmount}
+              </span>
+            </p>
+            <p className="font-semibold text-emerald-600 dark:text-emerald-400">
+              Final Net Pay: ₹ {data.netPay}
+            </p>
           </div>
         </NoticeBanner>
 
@@ -2831,96 +3413,116 @@ export function GenerateSalaryManagement() {
           This is a system generated salary slip.
         </p>
       </div>
-    )
+    );
   }
 
-  const salaryColumns = useMemo((): DataTableColumn<GenerateSalaryRow>[] => [
-    {
-      key: "branch",
-      header: "Branch",
-      sortable: true,
-      colSpan: 2,
-      cell: (row) => row.branches?.branchName ?? "—",
-    },
-    {
-      key: "employee",
-      header: "Employee",
-      sortable: true,
-      colSpan: 3,
-      cell: (row) =>
-        row.manageEmployee
-          ? `${empName(row.manageEmployee)} (${row.manageEmployee.employeeID ?? ""})`
-          : "—",
-    },
-    {
-      key: "monthPeriod",
-      header: "Month Period",
-      sortable: true,
-      colSpan: 3,
-      cell: (row) => row.monthPeriod || "—",
-    },
-    {
-      key: "status",
-      header: "Status",
-      sortable: true,
-      colSpan: 2,
-      cell: (row) => (
-        <Badge variant={row.status === "Paid" ? "default" : "secondary"}>
-          {row.status || "Pending"}
-        </Badge>
-      ),
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      colSpan: 4,
-      align: "right",
-      cell: (row) => {
-        const extras: { icon: typeof Download; title: string; onClick: () => void; className?: string }[] = [
-          { icon: Eye, title: "View salary slip", onClick: () => handleViewSalarySlip(row) },
-          { icon: Download, title: "Download salary slip", onClick: () => handleDownloadSalarySlipForRow(row) },
-        ];
-        if (canManage) {
-          extras.unshift({
-            icon: CreditCard,
-            title: "Record payment",
-            onClick: () => openPaymentDialog(row),
-            className: "text-green-600",
-          });
-        }
-        return (
-          <EntityRowActions
-            onEdit={canManage ? () => beginEdit(row) : undefined}
-            onDelete={canManage ? () => handleDelete(row.id) : undefined}
-            extra={extras}
-          />
-        );
+  const salaryColumns = useMemo(
+    (): DataTableColumn<GenerateSalaryRow>[] => [
+      {
+        key: "branch",
+        header: "Branch",
+        sortable: true,
+        colSpan: 2,
+        cell: (row) => row.branches?.branchName ?? "—",
       },
-    },
-  ], [canManage]);
+      {
+        key: "employee",
+        header: "Employee",
+        sortable: true,
+        colSpan: 3,
+        cell: (row) =>
+          row.manageEmployee
+            ? `${empName(row.manageEmployee)} (${row.manageEmployee.employeeID ?? ""})`
+            : "—",
+      },
+      {
+        key: "monthPeriod",
+        header: "Month Period",
+        sortable: true,
+        colSpan: 3,
+        cell: (row) => row.monthPeriod || "—",
+      },
+      {
+        key: "status",
+        header: "Status",
+        sortable: true,
+        colSpan: 2,
+        cell: (row) => (
+          <Badge variant={row.status === "Paid" ? "default" : "secondary"}>
+            {row.status || "Pending"}
+          </Badge>
+        ),
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        colSpan: 4,
+        align: "right",
+        cell: (row) => {
+          const extras: {
+            icon: typeof Download;
+            title: string;
+            onClick: () => void;
+            className?: string;
+          }[] = [
+            {
+              icon: Eye,
+              title: "View salary slip",
+              onClick: () => handleViewSalarySlip(row),
+            },
+            {
+              icon: Download,
+              title: "Download salary slip",
+              onClick: () => handleDownloadSalarySlipForRow(row),
+            },
+          ];
+          if (canManage) {
+            extras.unshift({
+              icon: CreditCard,
+              title: "Record payment",
+              onClick: () => openPaymentDialog(row),
+              className: "text-green-600",
+            });
+          }
+          return (
+            <EntityRowActions
+              onEdit={canManage ? () => beginEdit(row) : undefined}
+              onDelete={canManage ? () => handleDelete(row.id) : undefined}
+              extra={extras}
+            />
+          );
+        },
+      },
+    ],
+    [canManage],
+  );
 
   const showMainPayrollPage = !viewSlipOpen && !isPaymentDialogOpen;
 
   return (
     <>
-      <FormDrawer open={viewSlipOpen} onOpenChange={setViewSlipOpen} title={"Salary Slip Preview"} description={""}>
-          {viewSlipData ? (
-            <SalarySlipPreview data={viewSlipData} />
-          ) : (
-            <div className="text-sm text-gray-500">Loading…</div>
-          )}
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" onClick={() => setViewSlipOpen(false)}>
-              Close
+      <FormDrawer
+        open={viewSlipOpen}
+        onOpenChange={setViewSlipOpen}
+        title={"Salary Slip Preview"}
+        description={""}
+      >
+        {viewSlipData ? (
+          <SalarySlipPreview data={viewSlipData} />
+        ) : (
+          <div className="text-sm text-gray-500">Loading…</div>
+        )}
+        <div className="flex justify-end gap-3 pt-4">
+          <Button variant="outline" onClick={() => setViewSlipOpen(false)}>
+            Close
+          </Button>
+          {viewSlipData && (
+            <Button onClick={() => downloadSalarySlipPDF(viewSlipData)}>
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
             </Button>
-            {viewSlipData && (
-              <Button onClick={() => downloadSalarySlipPDF(viewSlipData)}>
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </Button>
-            )}
-          </div>
-        
+          )}
+        </div>
       </FormDrawer>
 
       <FormModal
@@ -2936,7 +3538,9 @@ export function GenerateSalaryManagement() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <div>
                 <Label>Employee</Label>
-                <p className="font-semibold">{empName(selectedSalaryRow.manageEmployee)}</p>
+                <p className="font-semibold">
+                  {empName(selectedSalaryRow.manageEmployee)}
+                </p>
               </div>
               <div>
                 <Label>Month</Label>
@@ -2970,10 +3574,14 @@ export function GenerateSalaryManagement() {
                         setIsLoadingBankDetails(true);
                         const allEmployees = await robustGet(API.emp);
                         const employee = allEmployees.find(
-                          (e: any) => e.id === selectedSalaryRow.manageEmployee?.id,
+                          (e: any) =>
+                            e.id === selectedSalaryRow.manageEmployee?.id,
                         );
 
-                        if (employee && employee.employeeBankDetails?.length > 0) {
+                        if (
+                          employee &&
+                          employee.employeeBankDetails?.length > 0
+                        ) {
                           const bankDetails = employee.employeeBankDetails[0];
                           setEmployeeBankDetails(bankDetails);
 
@@ -2984,7 +3592,10 @@ export function GenerateSalaryManagement() {
                           setEmployeeBankDetails(null);
                         }
                       } catch (err) {
-                        console.error("Error fetching employee bank details:", err);
+                        console.error(
+                          "Error fetching employee bank details:",
+                          err,
+                        );
                         toast.error("Failed to load data.");
                       } finally {
                         setIsLoadingBankDetails(false);
@@ -3020,21 +3631,28 @@ export function GenerateSalaryManagement() {
             {paymentMode === "Bank" && isLoadingBankDetails && (
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
                 <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600" />
-                <p className="text-sm text-gray-600 mt-2">Loading employee bank details...</p>
+                <p className="text-sm text-gray-600 mt-2">
+                  Loading employee bank details...
+                </p>
               </div>
             )}
 
-            {paymentMode === "Bank" && !isLoadingBankDetails && !employeeBankDetails && (
-              <NoticeBanner variant="warning" compact>
-                No bank details found for this employee. Please contact HR to update.
-              </NoticeBanner>
-            )}
+            {paymentMode === "Bank" &&
+              !isLoadingBankDetails &&
+              !employeeBankDetails && (
+                <NoticeBanner variant="warning" compact>
+                  No bank details found for this employee. Please contact HR to
+                  update.
+                </NoticeBanner>
+              )}
 
             {paymentMode === "Bank" && employeeBankDetails && (
               <>
                 {paymentType === "Bank Transfer" && (
                   <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                    <h4 className="font-semibold text-green-800 mb-3">Employee Bank Details</h4>
+                    <h4 className="font-semibold text-green-800 mb-3">
+                      Employee Bank Details
+                    </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label>Bank Name</Label>
@@ -3066,7 +3684,9 @@ export function GenerateSalaryManagement() {
 
                 {paymentType === "UPI" && (
                   <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                    <h4 className="font-semibold text-purple-800 mb-3">Employee UPI Details</h4>
+                    <h4 className="font-semibold text-purple-800 mb-3">
+                      Employee UPI Details
+                    </h4>
                     <Label>UPI ID</Label>
                     <p className="text-lg font-semibold text-purple-900">
                       {employeeBankDetails.upi || "N/A"}
@@ -3139,316 +3759,371 @@ export function GenerateSalaryManagement() {
       </FormModal>
 
       {showMainPayrollPage && (
-      <div className="space-y-6 w-full max-w-none animate-fade-in page-content-enter">
-        <PageHeader
-          icon={Wallet}
-          title="Run Payroll"
-          description="Generate and manage employee salary payments"
-          actions={
-            !isDialogOpen && canManage ? (
-              <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
-                <Plus className="w-4 h-4 mr-1" />
-                Add Run Payroll
-              </Button>
-            ) : null
-          }
-        />
-        <FormDrawer open={isDialogOpen} onOpenChange={(o) => { setIsDialogOpen(o); if (!o) resetForm(); }} title={editing ? "Edit Salary Generation" : "Add New Salary Generation"} description={editing ? "Update the salary generation information below." : "Fill in the details to add a new salary generation."}>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Organization Selection</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* Service Provider - auto-filled from sidebar */}
-                    {false && (
-                      <div ref={spRef} className="space-y-2 relative">
-                        <Label>Service Provider *</Label>
-                        <Input
-                          value={formData.spAutocomplete}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setFormData((p) => ({
-                              ...p,
-                              spAutocomplete: val,
-                              serviceProviderID: null,
-                              // Clear dependent fields when SP changes
-                              companyID: null,
-                              coAutocomplete: "",
-                              branchesID: null,
-                              brAutocomplete: "",
-                              employeeDbID: null,
-                              employeeAutocomplete: "",
-                            }));
-                            runFetchSP(val);
-                          }}
-                          onFocus={(e) => {
-                            const val = e.target.value;
-                            if (val.length >= MIN_CHARS) runFetchSP(val);
-                          }}
-                          placeholder="Start typing service provider…"
-                          autoComplete="off"
-                          required
-                        />
-                        {spList.length > 0 && (
-                          <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
-                            {spLoading && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
-                            {spList.map((sp) => (
-                              <div
-                                key={sp.id}
-                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  setFormData((p) => ({
-                                    ...p,
-                                    serviceProviderID: sp.id,
-                                    spAutocomplete: sp.companyName ?? ""
-                                  }));
-                                  setSpList([]);
-                                }}
-                              >
-                                {sp.companyName}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Company - auto-filled from sidebar */}
-                    {false && (
-                      <div ref={coRef} className="space-y-2 relative">
-                        <Label>Company Name *</Label>
-                        <Input
-                          value={formData.coAutocomplete}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setFormData((p) => ({
-                              ...p,
-                              coAutocomplete: val,
-                              companyID: null,
-                              // Clear dependent fields when company changes
-                              branchesID: null,
-                              brAutocomplete: "",
-                              employeeDbID: null,
-                              employeeAutocomplete: "",
-                            }));
-                            runFetchCO(val);
-                          }}
-                          onFocus={(e) => {
-                            const val = e.target.value;
-                            if (val.length >= MIN_CHARS) runFetchCO(val);
-                          }}
-                          placeholder="Start typing company…"
-                          autoComplete="off"
-                          required
-                        />
-
-                        {coList.length > 0 && (
-                          <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
-                            {coLoading && (
-                              <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>
-                            )}
-                            {coList.map((co) => (
-                              <div
-                                key={co.id}
-                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  setFormData((p) => ({
-                                    ...p,
-                                    companyID: co.id,
-                                    coAutocomplete: co.companyName ?? ""
-                                  }));
-                                  setCoList([]);
-                                  void refreshCompanyDrivenOptions(co.id);
-                                }}
-                              >
-                                {co.companyName}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Branch - Always visible; auto-fills when company has one branch */}
-                    <div
-                      className="space-y-2 relative"
-                      style={{
-                        gridColumn: user?.role === "SERVICE_PROVIDER" ? "span 3" : "span 1"
-                      }}
-                    >
-                      <AutocompleteBranchField
-                        label="Branch Name *"
-                        placeholder="Start typing branch…"
-                        value={formData.brAutocomplete}
-                        branchId={formData.branchesID}
-                        companyID={
-                          formData.companyID ??
-                          managerScope?.companyID ??
-                          resolveScopedCompanyId(user) ??
-                          user?.companyID
-                        }
-                        onInputChange={(display) =>
-                          setFormData((p) => ({
-                            ...p,
-                            brAutocomplete: display,
-                            branchesID: null,
-                          }))
-                        }
-                        onBranchSelect={({ id, branchName }) => {
-                          setBrList([]);
-                          void handleBranchSelect(id, branchName);
-                        }}
-                        onFetch={(q) => void runFetchBR(q)}
-                        options={brList}
-                        optionsLoading={brLoading}
-                        hint={
-                          user?.role === "SERVICE_PROVIDER" ? (
-                            <p className="text-xs text-gray-500">
-                              You can only select from your assigned branches
-                            </p>
-                          ) : null
-                        }
-                      />
-                            </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Employee Selection</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                    <div ref={empRef} className="space-y-2 col-span-3 md:col-span-3 relative">
-                      <Label>Select Employee *</Label>
+        <div className="space-y-6 w-full max-w-none animate-fade-in page-content-enter">
+          <PageHeader
+            icon={Wallet}
+            title="Run Payroll"
+            description="Generate and manage employee salary payments"
+            actions={
+              !isDialogOpen && canManage ? (
+                <Button
+                  onClick={() => {
+                    resetForm();
+                    setIsDialogOpen(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Run Payroll
+                </Button>
+              ) : null
+            }
+          />
+          <FormDrawer
+            open={isDialogOpen}
+            onOpenChange={(o) => {
+              setIsDialogOpen(o);
+              if (!o) resetForm();
+            }}
+            title={
+              editing ? "Edit Salary Generation" : "Add New Salary Generation"
+            }
+            description={
+              editing
+                ? "Update the salary generation information below."
+                : "Fill in the details to add a new salary generation."
+            }
+          >
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">
+                  Organization Selection
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Service Provider - auto-filled from sidebar */}
+                  {false && (
+                    <div ref={spRef} className="space-y-2 relative">
+                      <Label>Service Provider *</Label>
                       <Input
-                        value={formData.employeeAutocomplete}
+                        value={formData.spAutocomplete}
                         onChange={(e) => {
                           const val = e.target.value;
-                          setFormData((p) => ({ ...p, employeeAutocomplete: val, employeeDbID: null }));
-                          runFetchEmp(val);
+                          setFormData((p) => ({
+                            ...p,
+                            spAutocomplete: val,
+                            serviceProviderID: null,
+                            // Clear dependent fields when SP changes
+                            companyID: null,
+                            coAutocomplete: "",
+                            branchesID: null,
+                            brAutocomplete: "",
+                            employeeDbID: null,
+                            employeeAutocomplete: "",
+                          }));
+                          runFetchSP(val);
                         }}
                         onFocus={(e) => {
                           const val = e.target.value;
-                          if (val.length >= MIN_CHARS) runFetchEmp(val);
+                          if (val.length >= MIN_CHARS) runFetchSP(val);
                         }}
-                        placeholder="Type name or employee code…"
+                        placeholder="Start typing service provider…"
                         autoComplete="off"
                         required
                       />
-                      {empList.length > 0 && (
-                        <div className="absolute z-10 bg-white border rounded w-full shadow max-h-56 overflow-y-auto">
-                          {empLoading && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
-                          {empList.map((emp) => {
-                            const name = empName(emp) || "(No name)";
-                            return (
-                              <div
-                                key={emp.id}
-                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  setFormData((p) => ({
-                                    ...p,
-                                    employeeDbID: emp.id,
-                                    employeeAutocomplete: `${name} (${emp.employeeID ?? ""})`,
-                                  }));
-                                  setEmpList([]);
-                                }}
-                              >
-                                {name} <span className="text-gray-500">({emp.employeeID})</span>
-                              </div>
-                            );
-                          })}
+                      {spList.length > 0 && (
+                        <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
+                          {spLoading && (
+                            <div className="px-3 py-2 text-sm text-gray-500">
+                              Loading…
+                            </div>
+                          )}
+                          {spList.map((sp) => (
+                            <div
+                              key={sp.id}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setFormData((p) => ({
+                                  ...p,
+                                  serviceProviderID: sp.id,
+                                  spAutocomplete: sp.companyName ?? "",
+                                }));
+                                setSpList([]);
+                              }}
+                            >
+                              {sp.companyName}
+                            </div>
+                          ))}
                         </div>
                       )}
-                      <p className="text-xs text-gray-500">
-                        {user?.role === "SERVICE_PROVIDER"
-                          ? "Employees from your assigned branch only"
-                          : "Fetched from /manage-emp"}
-                      </p>
                     </div>
+                  )}
+
+                  {/* Company - auto-filled from sidebar */}
+                  {false && (
+                    <div ref={coRef} className="space-y-2 relative">
+                      <Label>Company Name *</Label>
+                      <Input
+                        value={formData.coAutocomplete}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData((p) => ({
+                            ...p,
+                            coAutocomplete: val,
+                            companyID: null,
+                            // Clear dependent fields when company changes
+                            branchesID: null,
+                            brAutocomplete: "",
+                            employeeDbID: null,
+                            employeeAutocomplete: "",
+                          }));
+                          runFetchCO(val);
+                        }}
+                        onFocus={(e) => {
+                          const val = e.target.value;
+                          if (val.length >= MIN_CHARS) runFetchCO(val);
+                        }}
+                        placeholder="Start typing company…"
+                        autoComplete="off"
+                        required
+                      />
+
+                      {coList.length > 0 && (
+                        <div className="absolute z-10 bg-white border rounded w-full shadow max-h-48 overflow-y-auto">
+                          {coLoading && (
+                            <div className="px-3 py-2 text-sm text-gray-500">
+                              Loading…
+                            </div>
+                          )}
+                          {coList.map((co) => (
+                            <div
+                              key={co.id}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setFormData((p) => ({
+                                  ...p,
+                                  companyID: co.id,
+                                  coAutocomplete: co.companyName ?? "",
+                                }));
+                                setCoList([]);
+                                void refreshCompanyDrivenOptions(co.id);
+                              }}
+                            >
+                              {co.companyName}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Branch - Always visible; auto-fills when company has one branch */}
+                  <div
+                    className="space-y-2 relative"
+                    style={{
+                      gridColumn:
+                        user?.role === "SERVICE_PROVIDER" ? "span 3" : "span 1",
+                    }}
+                  >
+                    <AutocompleteBranchField
+                      label="Branch Name *"
+                      placeholder="Start typing branch…"
+                      value={formData.brAutocomplete}
+                      branchId={formData.branchesID}
+                      companyID={
+                        formData.companyID ??
+                        managerScope?.companyID ??
+                        resolveScopedCompanyId(user) ??
+                        user?.companyID
+                      }
+                      onInputChange={(display) =>
+                        setFormData((p) => ({
+                          ...p,
+                          brAutocomplete: display,
+                          branchesID: null,
+                        }))
+                      }
+                      onBranchSelect={({ id, branchName }) => {
+                        setBrList([]);
+                        void handleBranchSelect(id, branchName);
+                      }}
+                      onFetch={(q) => void runFetchBR(q)}
+                      options={brList}
+                      optionsLoading={brLoading}
+                      hint={
+                        user?.role === "SERVICE_PROVIDER" ? (
+                          <p className="text-xs text-gray-500">
+                            You can only select from your assigned branches
+                          </p>
+                        ) : null
+                      }
+                    />
                   </div>
                 </div>
+              </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Salary Period</h3>
-                  <div className="space-y-2">
-                    <Label htmlFor="month">Select Month *</Label>
-                    <select
-                      id="month"
-                      value={formData.monthLabel}
-                      onChange={(e) => setFormData((p) => ({ ...p, monthLabel: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-sm border-[#d0d0d0] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/15 focus-visible:border-[#b0b0b0]"
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Employee Selection</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                  <div
+                    ref={empRef}
+                    className="space-y-2 col-span-3 md:col-span-3 relative"
+                  >
+                    <Label>Select Employee *</Label>
+                    <Input
+                      value={formData.employeeAutocomplete}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData((p) => ({
+                          ...p,
+                          employeeAutocomplete: val,
+                          employeeDbID: null,
+                        }));
+                        runFetchEmp(val);
+                      }}
+                      onFocus={(e) => {
+                        const val = e.target.value;
+                        if (val.length >= MIN_CHARS) runFetchEmp(val);
+                      }}
+                      placeholder="Type name or employee code…"
+                      autoComplete="off"
                       required
-                      disabled={!formData.companyID}
-                    >
-                      <option value="">
-                        {formData.companyID
-                          ? (salaryPeriodOptions.length ? "Select Period" : "No cycle found for company")
-                          : "Select Company first"}
-                      </option>
-                      {salaryPeriodOptions.map((lbl) => (
-                        <option key={lbl} value={lbl}>{lbl}</option>
-                      ))}
-                    </select>
-
-                    {formData.companyID ? (
-                      <p className="text-xs text-gray-500">
-                        FY start: <b>{selectedCompanyFYStart ?? "-"}</b>; Day: <b>{selectedCompanyStartDay}</b>
-                      </p>
-                    ) : (
-                      <p className="text-xs text-gray-500">Pick a company to load its salary periods.</p>
+                    />
+                    {empList.length > 0 && (
+                      <div className="absolute z-10 bg-white border rounded w-full shadow max-h-56 overflow-y-auto">
+                        {empLoading && (
+                          <div className="px-3 py-2 text-sm text-gray-500">
+                            Loading…
+                          </div>
+                        )}
+                        {empList.map((emp) => {
+                          const name = empName(emp) || "(No name)";
+                          return (
+                            <div
+                              key={emp.id}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setFormData((p) => ({
+                                  ...p,
+                                  employeeDbID: emp.id,
+                                  employeeAutocomplete: `${name} (${emp.employeeID ?? ""})`,
+                                }));
+                                setEmpList([]);
+                              }}
+                            >
+                              {name}{" "}
+                              <span className="text-gray-500">
+                                ({emp.employeeID})
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
+                    <p className="text-xs text-gray-500">
+                      {user?.role === "SERVICE_PROVIDER"
+                        ? "Employees from your assigned branch only"
+                        : "Fetched from /manage-emp"}
+                    </p>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="">
-                    {editing ? "Update Run Payroll" : "Add Run Payroll"}
-                  </Button>
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Salary Period</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="month">Select Month *</Label>
+                  <select
+                    id="month"
+                    value={formData.monthLabel}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, monthLabel: e.target.value }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm border-[#d0d0d0] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/15 focus-visible:border-[#b0b0b0]"
+                    required
+                    disabled={!formData.companyID}
+                  >
+                    <option value="">
+                      {formData.companyID
+                        ? salaryPeriodOptions.length
+                          ? "Select Period"
+                          : "No cycle found for company"
+                        : "Select Company first"}
+                    </option>
+                    {salaryPeriodOptions.map((lbl) => (
+                      <option key={lbl} value={lbl}>
+                        {lbl}
+                      </option>
+                    ))}
+                  </select>
+
+                  {formData.companyID ? (
+                    <p className="text-xs text-gray-500">
+                      FY start: <b>{selectedCompanyFYStart ?? "-"}</b>; Day:{" "}
+                      <b>{selectedCompanyStartDay}</b>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500">
+                      Pick a company to load its salary periods.
+                    </p>
+                  )}
                 </div>
-              </form>
-            
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" className="">
+                  {editing ? "Update Run Payroll" : "Add Run Payroll"}
+                </Button>
+              </div>
+            </form>
           </FormDrawer>
 
-        {!isDialogOpen && (<>
-        <FilterBar
-          search={{
-            value: table.search,
-            onChange: table.setSearch,
-            placeholder: "Search generated salaries…",
-          }}
-          filters={
-            branchFilterOptions.length > 1 ? (
-              <FilterSelect
-                id="generate-salary-branch"
-                value={branchFilter}
-                onChange={setBranchFilter}
-                options={branchFilterOptions}
-                width="w-56"
-                ariaLabel="Filter by branch"
+          {!isDialogOpen && (
+            <>
+              <FilterBar
+                search={{
+                  value: table.search,
+                  onChange: table.setSearch,
+                  placeholder: "Search generated salaries…",
+                }}
+                filters={
+                  branchFilterOptions.length > 1 ? (
+                    <FilterSelect
+                      id="generate-salary-branch"
+                      value={branchFilter}
+                      onChange={setBranchFilter}
+                      options={branchFilterOptions}
+                      width="w-56"
+                      ariaLabel="Filter by branch"
+                    />
+                  ) : undefined
+                }
               />
-            ) : undefined
-          }
-        />
 
-        <EntityListShell
-          title="Salary generation list"
-          columns={salaryColumns}
-          rows={filtered}
-          rowKey={(row) => String(row.id)}
-          isLoading={listLoading}
-          sortBy={table.sortBy}
-          sortDir={table.sortDir}
-          onSort={table.setSort}
-          emptyIcon={Wallet}
-          emptyTitle="No records found"
-          emptyDescription="Try adjusting your search criteria."
-        />
-        </>)}
-      </div>
+              <EntityListShell
+                title="Salary generation list"
+                columns={salaryColumns}
+                rows={filtered}
+                rowKey={(row) => String(row.id)}
+                isLoading={listLoading}
+                sortBy={table.sortBy}
+                sortDir={table.sortDir}
+                onSort={table.setSort}
+                emptyIcon={Wallet}
+                emptyTitle="No records found"
+                emptyDescription="Try adjusting your search criteria."
+              />
+            </>
+          )}
+        </div>
       )}
     </>
   );

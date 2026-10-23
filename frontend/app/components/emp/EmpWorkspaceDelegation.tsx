@@ -17,10 +17,14 @@ import {
   SelectValue,
 } from "../ui/select";
 import { EmpMobileDateField } from "./EmpMobileDateField";
-import { EmpTeamStyleDataSection, useTeamListControls } from "./desktop/EmpTeamStyleDataSection";
+import {
+  EmpTeamStyleDataSection,
+  useTeamListControls,
+} from "./desktop/EmpTeamStyleDataSection";
 import { cn } from "@/app/utils/cn";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 type Colleague = {
   id: number;
@@ -48,7 +52,10 @@ type DelegationListRow = DelegationRow & {
   counterpart: string;
 };
 
-function toListRows(asDelegator: DelegationRow[], asDelegatee: DelegationRow[]): DelegationListRow[] {
+function toListRows(
+  asDelegator: DelegationRow[],
+  asDelegatee: DelegationRow[],
+): DelegationListRow[] {
   return [
     ...asDelegator.map((row) => ({
       ...row,
@@ -85,23 +92,42 @@ function DelegationTable({ rows }: { rows: DelegationListRow[] }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/40 text-left">
-              <th className="px-4 py-3 font-medium text-muted-foreground">Role</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Counterpart</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Type</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Period</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Notification</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">
+                Role
+              </th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">
+                Counterpart
+              </th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">
+                Type
+              </th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">
+                Period
+              </th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">
+                Notification
+              </th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={`${row.role}-${row.id}`} className="border-b border-border last:border-0 hover:bg-muted/30">
+              <tr
+                key={`${row.role}-${row.id}`}
+                className="border-b border-border last:border-0 hover:bg-muted/30"
+              >
                 <td className="px-4 py-3 font-medium">
-                  {row.role === "delegator" ? "Created by me" : "Assigned to me"}
+                  {row.role === "delegator"
+                    ? "Created by me"
+                    : "Assigned to me"}
                 </td>
                 <td className="px-4 py-3">{row.counterpart}</td>
-                <td className="px-4 py-3">{delegationTypeLabel(row.delegationType)}</td>
+                <td className="px-4 py-3">
+                  {delegationTypeLabel(row.delegationType)}
+                </td>
                 <td className="px-4 py-3">{dateRangeLabel(row)}</td>
-                <td className="px-4 py-3">{notificationLabel(row.notification)}</td>
+                <td className="px-4 py-3">
+                  {notificationLabel(row.notification)}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -115,22 +141,37 @@ function DelegationGrid({ rows }: { rows: DelegationListRow[] }) {
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {rows.map((row) => (
-        <DelegationCard key={`${row.role}-${row.id}`} row={row} role={row.role} />
+        <DelegationCard
+          key={`${row.role}-${row.id}`}
+          row={row}
+          role={row.role}
+        />
       ))}
     </div>
   );
 }
 
-function DelegationCard({ row, role }: { row: DelegationRow; role: "delegator" | "delegatee" }) {
-  const counterpart = role === "delegator" ? row.delegateeName : row.delegatorName;
+function DelegationCard({
+  row,
+  role,
+}: {
+  row: DelegationRow;
+  role: "delegator" | "delegatee";
+}) {
+  const counterpart =
+    role === "delegator" ? row.delegateeName : row.delegatorName;
   const roleLabel = role === "delegator" ? "Delegatee" : "Delegator";
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{roleLabel}</p>
-          <p className="font-semibold text-foreground truncate">{counterpart}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {roleLabel}
+          </p>
+          <p className="font-semibold text-foreground truncate">
+            {counterpart}
+          </p>
         </div>
         <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
           {delegationTypeLabel(row.delegationType)}
@@ -143,11 +184,15 @@ function DelegationCard({ row, role }: { row: DelegationRow; role: "delegator" |
         </div>
         <div>
           <dt className="text-muted-foreground">Notification</dt>
-          <dd className="font-medium text-foreground">{notificationLabel(row.notification)}</dd>
+          <dd className="font-medium text-foreground">
+            {notificationLabel(row.notification)}
+          </dd>
         </div>
       </dl>
       {row.description ? (
-        <p className="mt-3 text-sm text-muted-foreground border-t border-border pt-3">{row.description}</p>
+        <p className="mt-3 text-sm text-muted-foreground border-t border-border pt-3">
+          {row.description}
+        </p>
       ) : null}
     </div>
   );
@@ -256,8 +301,18 @@ function SetupDelegationForm({
           <div className="space-y-2">
             <Label>Date range</Label>
             <div className="grid gap-2 sm:grid-cols-2">
-              <EmpMobileDateField label="From" value={startDate} onChange={setStartDate} max={endDate || undefined} />
-              <EmpMobileDateField label="To" value={endDate} onChange={setEndDate} min={startDate || undefined} />
+              <EmpMobileDateField
+                label="From"
+                value={startDate}
+                onChange={setStartDate}
+                max={endDate || undefined}
+              />
+              <EmpMobileDateField
+                label="To"
+                value={endDate}
+                onChange={setEndDate}
+                min={startDate || undefined}
+              />
             </div>
           </div>
         ) : null}
@@ -270,7 +325,10 @@ function SetupDelegationForm({
             { value: "BOTH", label: "Delegator and Delegatee" },
             { value: "DELEGATEE_ONLY", label: "Delegatee" },
           ].map((opt) => (
-            <label key={opt.value} className="inline-flex items-center gap-2 text-sm cursor-pointer">
+            <label
+              key={opt.value}
+              className="inline-flex items-center gap-2 text-sm cursor-pointer"
+            >
               <input
                 type="radio"
                 name="delegation-notification"
@@ -296,7 +354,12 @@ function SetupDelegationForm({
       </div>
 
       <div className="flex flex-wrap gap-2 pt-2">
-        <Button type="button" size="lg" onClick={() => void save()} disabled={submitting}>
+        <Button
+          type="button"
+          size="lg"
+          onClick={() => void save()}
+          disabled={submitting}
+        >
           Save
         </Button>
       </div>
@@ -337,7 +400,9 @@ function SetupDelegationInline({
   );
 }
 
-export function EmpWorkspaceDelegation({ embedded = false }: { embedded?: boolean } = {}) {
+export function EmpWorkspaceDelegation({
+  embedded = false,
+}: { embedded?: boolean } = {}) {
   const user = useCurrentUser();
   const [loading, setLoading] = useState(true);
   const [asDelegator, setAsDelegator] = useState<DelegationRow[]>([]);
@@ -348,21 +413,43 @@ export function EmpWorkspaceDelegation({ embedded = false }: { embedded?: boolea
   const [roleFilter, setRoleFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const listControls = useTeamListControls("emp-profile-delegation-view");
-  const { viewMode, selectViewMode, searchOpen, searchQuery, setSearchQuery, toggleSearch, filterOpen, toggleFilter } =
-    listControls;
+  const {
+    viewMode,
+    selectViewMode,
+    searchOpen,
+    searchQuery,
+    setSearchQuery,
+    toggleSearch,
+    filterOpen,
+    toggleFilter,
+  } = listControls;
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [delegRes, colRes] = await Promise.all([
-        fetch(`${BACKEND}/emp-manager-scope/delegations`, { headers: authHeaders(), cache: "no-store" }),
-        fetch(`${BACKEND}/emp-manager-scope/delegation-colleagues`, { headers: authHeaders(), cache: "no-store" }),
+        fetch(`${BACKEND}/emp-manager-scope/delegations`, {
+          headers: authHeaders(),
+          cache: "no-store",
+        }),
+        fetch(`${BACKEND}/emp-manager-scope/delegation-colleagues`, {
+          headers: authHeaders(),
+          cache: "no-store",
+        }),
       ]);
-      const delegData = delegRes.ok ? await delegRes.json() : { asDelegator: [], asDelegatee: [] };
+      const delegData = delegRes.ok
+        ? await delegRes.json()
+        : { asDelegator: [], asDelegatee: [] };
       const colData = colRes.ok ? await colRes.json() : { colleagues: [] };
-      setAsDelegator(Array.isArray(delegData.asDelegator) ? delegData.asDelegator : []);
-      setAsDelegatee(Array.isArray(delegData.asDelegatee) ? delegData.asDelegatee : []);
-      setColleagues(Array.isArray(colData.colleagues) ? colData.colleagues : []);
+      setAsDelegator(
+        Array.isArray(delegData.asDelegator) ? delegData.asDelegator : [],
+      );
+      setAsDelegatee(
+        Array.isArray(delegData.asDelegatee) ? delegData.asDelegatee : [],
+      );
+      setColleagues(
+        Array.isArray(colData.colleagues) ? colData.colleagues : [],
+      );
     } finally {
       setLoading(false);
     }
@@ -374,26 +461,36 @@ export function EmpWorkspaceDelegation({ embedded = false }: { embedded?: boolea
 
   useEffect(() => {
     if (!user?.username) return;
-    fetch(`${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`, {
-      headers: authHeaders(),
-      cache: "no-store",
-    })
+    fetch(
+      `${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`,
+      {
+        headers: authHeaders(),
+        cache: "no-store",
+      },
+    )
       .then((r) => (r.ok ? r.json() : null))
       .then((creds) => {
         const emp = creds?.employee;
-        const name = [emp?.employeeFirstName, emp?.employeeLastName].filter(Boolean).join(" ").trim();
+        const name = [emp?.employeeFirstName, emp?.employeeLastName]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
         setDelegatorName(name || user.username || "You");
       })
       .catch(() => setDelegatorName(user.username || "You"));
   }, [user?.username]);
 
-  const allRows = useMemo(() => toListRows(asDelegator, asDelegatee), [asDelegator, asDelegatee]);
+  const allRows = useMemo(
+    () => toListRows(asDelegator, asDelegatee),
+    [asDelegator, asDelegatee],
+  );
 
   const filteredRows = useMemo(() => {
     return allRows.filter((row) => {
       if (roleFilter === "created" && row.role !== "delegator") return false;
       if (roleFilter === "assigned" && row.role !== "delegatee") return false;
-      if (typeFilter !== "all" && row.delegationType !== typeFilter) return false;
+      if (typeFilter !== "all" && row.delegationType !== typeFilter)
+        return false;
       const q = searchQuery.trim().toLowerCase();
       if (!q) return true;
       return (
@@ -417,7 +514,11 @@ export function EmpWorkspaceDelegation({ embedded = false }: { embedded?: boolea
       {!formOpen ? (
         <EmpTeamStyleDataSection
           title="My Delegation"
-          subtitle={embedded ? undefined : "Delegate your responsibilities when you are away"}
+          subtitle={
+            embedded
+              ? undefined
+              : "Delegate your responsibilities when you are away"
+          }
           actions={
             <Button type="button" size="sm" onClick={() => setFormOpen(true)}>
               <Plus className="size-4" />

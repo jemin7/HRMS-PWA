@@ -5,6 +5,7 @@ import {
   HttpException,
   Injectable,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -39,19 +40,27 @@ import {
 import { assertPasswordMeetsPolicy } from '../auth/password-policy';
 
 @Injectable()
-export class CompanyService {
+export class CompanyService implements OnModuleInit {
   constructor(private prisma: PrismaService) {}
+
+  async onModuleInit() {
+    await this.ensureModuleCatalog();
+  }
 
   private digitsOnly(value?: string | null): string {
     return String(value || '').replace(/\D/g, '');
   }
 
   private normalizeEmail(value?: string | null): string {
-    return String(value || '').trim().toLowerCase();
+    return String(value || '')
+      .trim()
+      .toLowerCase();
   }
 
   private normalizeUsername(value?: string | null): string {
-    return String(value || '').trim().toLowerCase();
+    return String(value || '')
+      .trim()
+      .toLowerCase();
   }
 
   private liveEmployeeScope(excludeEmployeeId?: number) {
@@ -105,10 +114,7 @@ export class CompanyService {
   private async releaseStaleLoginUniques() {
     const stale = await this.prisma.manageEmployee.findMany({
       where: {
-        OR: [
-          { isDeleted: true },
-          { isCompanyOwner: true, companyID: null },
-        ],
+        OR: [{ isDeleted: true }, { isCompanyOwner: true, companyID: null }],
       },
       select: { id: true },
     });
@@ -140,9 +146,7 @@ export class CompanyService {
       where: {
         username: { equals: normalized, mode: 'insensitive' },
         employee: this.liveEmployeeScope(excludeOwnerId),
-        ...(excludeOwnerId
-          ? { employeeID: { not: excludeOwnerId } }
-          : {}),
+        ...(excludeOwnerId ? { employeeID: { not: excludeOwnerId } } : {}),
       },
       select: { id: true },
     });
@@ -161,11 +165,17 @@ export class CompanyService {
     return { available: true };
   }
 
-  private async assertEmailAvailable(email: string, excludeEmployeeId?: number) {
+  private async assertEmailAvailable(
+    email: string,
+    excludeEmployeeId?: number,
+  ) {
     await assertEmailNotInUse(this.prisma, [email], { excludeEmployeeId });
   }
 
-  private async assertMobileAvailable(mobile: string, excludeEmployeeId?: number) {
+  private async assertMobileAvailable(
+    mobile: string,
+    excludeEmployeeId?: number,
+  ) {
     const digits = this.digitsOnly(mobile);
     const trimmed = String(mobile || '').trim();
     if (!digits && !trimmed) return;
@@ -174,7 +184,9 @@ export class CompanyService {
       where: {
         ...this.liveEmployeeScope(excludeEmployeeId),
         OR: [
-          ...(trimmed ? [{ personalPhoneNo: trimmed }, { businessPhoneNo: trimmed }] : []),
+          ...(trimmed
+            ? [{ personalPhoneNo: trimmed }, { businessPhoneNo: trimmed }]
+            : []),
           ...(digits
             ? [
                 { personalPhoneNo: { contains: digits } },
@@ -228,7 +240,9 @@ export class CompanyService {
       }
       const mobileKey = this.digitsOnly(mobile) || mobile;
       if (seenMobiles.has(mobileKey)) {
-        throw new ConflictException('Duplicate mobile number in primary contacts');
+        throw new ConflictException(
+          'Duplicate mobile number in primary contacts',
+        );
       }
       seenEmails.add(email);
       seenUsernames.add(username);
@@ -238,13 +252,17 @@ export class CompanyService {
       await this.assertMobileAvailable(mobile);
       const available = await this.isUsernameAvailable(username);
       if (!available.available) {
-        throw new ConflictException(available.message || 'Username already exists');
+        throw new ConflictException(
+          available.message || 'Username already exists',
+        );
       }
     }
   }
 
   private employeeInitialPassword(personalPhoneNo?: string | null): string {
-    return this.digitsOnly(personalPhoneNo) || String(personalPhoneNo || '').trim();
+    return (
+      this.digitsOnly(personalPhoneNo) || String(personalPhoneNo || '').trim()
+    );
   }
 
   async create(data: CreateCompanyDto) {
@@ -293,7 +311,9 @@ export class CompanyService {
         ownerTitle: true,
         companyID: true,
         serviceProviderID: true,
-        company: { select: { id: true, companyName: true, legalEntityType: true } },
+        company: {
+          select: { id: true, companyName: true, legalEntityType: true },
+        },
         employeeCredentials: {
           select: {
             id: true,
@@ -334,7 +354,9 @@ export class CompanyService {
 
     let maxSeq = 0;
     for (const row of existing) {
-      const match = String(row.employeeID || '').slice(prefix.length).match(/^\d+/);
+      const match = String(row.employeeID || '')
+        .slice(prefix.length)
+        .match(/^\d+/);
       if (match) {
         const num = parseInt(match[0], 10);
         if (num > maxSeq) maxSeq = num;
@@ -383,7 +405,8 @@ export class CompanyService {
   private mapPermissionRows(
     rows?: OwnerModulePermissionDto[],
   ): ModulePermissionDto[] {
-    if (!Array.isArray(rows) || rows.length === 0) return fullOwnerPermissions();
+    if (!Array.isArray(rows) || rows.length === 0)
+      return fullOwnerPermissions();
     const byKey = new Map(rows.map((r) => [r.moduleKey, r]));
     return COMPANY_MODULE_KEYS.map((moduleKey) => {
       const row = byKey.get(moduleKey);
@@ -488,7 +511,9 @@ export class CompanyService {
       },
     });
     if (codeTaken) {
-      throw new ConflictException('Employee code already exists for this company');
+      throw new ConflictException(
+        'Employee code already exists for this company',
+      );
     }
 
     const defaultBranch = await this.prisma.branches.findFirst({
@@ -512,115 +537,122 @@ export class CompanyService {
     const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS) || 12;
     const passwordHash = await bcrypt.hash(plainPassword, saltRounds);
     const joiningDate =
-      dto.joiningDate?.trim() ||
-      new Date().toISOString().slice(0, 10);
+      dto.joiningDate?.trim() || new Date().toISOString().slice(0, 10);
     const entitled = await entitledRightsKeys(this.prisma, companyId);
     const permissions = isCompanyOwner
-      ? limitPermissionsToPlan(this.mapPermissionRows(dto.permissions), entitled)
+      ? limitPermissionsToPlan(
+          this.mapPermissionRows(dto.permissions),
+          entitled,
+        )
       : [];
 
     let created;
     try {
       created = await this.prisma.$transaction(async (tx) => {
-      let designationId: number | null = null;
-      if (ownerTitle) {
-        const existingDesg = await tx.designations.findFirst({
-          where: {
-            companyID: company.id,
-            designation: { equals: ownerTitle, mode: 'insensitive' },
-          },
-          select: { id: true },
-        });
-        if (existingDesg) {
-          designationId = existingDesg.id;
-        } else {
-          const createdDesg = await tx.designations.create({
-            data: {
-              designation: ownerTitle,
+        let designationId: number | null = null;
+        if (ownerTitle) {
+          const existingDesg = await tx.designations.findFirst({
+            where: {
               companyID: company.id,
-              serviceProviderID: company.serviceProviderID ?? null,
-              branchesID: defaultBranch?.id ?? null,
-              isManager: isCompanyOwner,
+              designation: { equals: ownerTitle, mode: 'insensitive' },
             },
             select: { id: true },
           });
-          designationId = createdDesg.id;
+          if (existingDesg) {
+            designationId = existingDesg.id;
+          } else {
+            const createdDesg = await tx.designations.create({
+              data: {
+                designation: ownerTitle,
+                companyID: company.id,
+                serviceProviderID: company.serviceProviderID ?? null,
+                branchesID: defaultBranch?.id ?? null,
+                isManager: isCompanyOwner,
+              },
+              select: { id: true },
+            });
+            designationId = createdDesg.id;
+          }
         }
-      }
 
-      const employee = await tx.manageEmployee.create({
-        data: {
-          employeeID: employeeCode,
-          employeeFirstName: dto.firstName.trim(),
-          employeeLastName: (dto.lastName || '').trim() || null,
-          salutation: dto.salutation?.trim() || null,
-          personalPhoneNo: mobile,
-          businessPhoneNo: dto.businessPhoneNo?.trim() || null,
-          businessEmail: email,
-          personalEmail: email,
-          joiningDate,
-          companyID: company.id,
-          serviceProviderID: company.serviceProviderID,
-          branchesID: defaultBranch?.id ?? null,
-          designationID: designationId,
-          isCompanyOwner,
-          ownerTitle,
-          employmentStatus: 'Active',
-          onboardingApprovalStatus: 'APPROVED',
-          lifecycleStatus: 'ACTIVE',
-        },
-      });
-
-      if (designationId) {
-        await tx.empDesignation.create({
+        const employee = await tx.manageEmployee.create({
           data: {
-            manageEmployeeID: employee.id,
+            employeeID: employeeCode,
+            employeeFirstName: dto.firstName.trim(),
+            employeeLastName: (dto.lastName || '').trim() || null,
+            salutation: dto.salutation?.trim() || null,
+            personalPhoneNo: mobile,
+            businessPhoneNo: dto.businessPhoneNo?.trim() || null,
+            businessEmail: email,
+            personalEmail: email,
+            joiningDate,
+            companyID: company.id,
+            serviceProviderID: company.serviceProviderID,
+            branchesID: defaultBranch?.id ?? null,
             designationID: designationId,
-            effectFrom: joiningDate,
+            isCompanyOwner,
+            ownerTitle,
+            employmentStatus: 'Active',
+            onboardingApprovalStatus: 'APPROVED',
+            lifecycleStatus: 'ACTIVE',
           },
         });
-      }
 
-      await tx.employeeCredentials.create({
-        data: {
-          employeeID: employee.id,
-          username,
-          password: passwordHash,
-          mustChangePassword: false,
-          requireLoginOtp: isCompanyOwner,
-          isActive: true,
-          serviceProviderID: company.serviceProviderID ?? undefined,
-          companyID: company.id,
-          branchesID: defaultBranch?.id ?? undefined,
-        },
-      });
+        if (designationId) {
+          await tx.empDesignation.create({
+            data: {
+              manageEmployeeID: employee.id,
+              designationID: designationId,
+              effectFrom: joiningDate,
+            },
+          });
+        }
 
-      if (isCompanyOwner && permissions.length) {
-        await this.persistModulePermissions(tx, company.id, employee.id, permissions);
-      }
-
-      return tx.manageEmployee.findUnique({
-        where: { id: employee.id },
-        include: {
-          company: {
-            select: { id: true, companyName: true, legalEntityType: true },
+        await tx.employeeCredentials.create({
+          data: {
+            employeeID: employee.id,
+            username,
+            password: passwordHash,
+            mustChangePassword: false,
+            requireLoginOtp: isCompanyOwner,
+            isActive: true,
+            serviceProviderID: company.serviceProviderID ?? undefined,
+            companyID: company.id,
+            branchesID: defaultBranch?.id ?? undefined,
           },
-          designations: {
-            select: { id: true, designation: true },
-          },
-          employeeCredentials: {
-            select: {
-              id: true,
-              username: true,
-              isActive: true,
-              mustChangePassword: true,
-              requireLoginOtp: true,
-              createdAt: true,
+        });
+
+        if (isCompanyOwner && permissions.length) {
+          await this.persistModulePermissions(
+            tx,
+            company.id,
+            employee.id,
+            permissions,
+          );
+        }
+
+        return tx.manageEmployee.findUnique({
+          where: { id: employee.id },
+          include: {
+            company: {
+              select: { id: true, companyName: true, legalEntityType: true },
+            },
+            designations: {
+              select: { id: true, designation: true },
+            },
+            employeeCredentials: {
+              select: {
+                id: true,
+                username: true,
+                isActive: true,
+                mustChangePassword: true,
+                requireLoginOtp: true,
+                createdAt: true,
+              },
             },
           },
-        },
+        });
       });
-    });
     } catch (err) {
       this.rethrowAsHttp(err);
     }
@@ -651,10 +683,16 @@ export class CompanyService {
     });
     if (!owner) throw new NotFoundException('Company owner not found');
 
-    if (dto.businessEmail !== undefined && !this.normalizeEmail(dto.businessEmail)) {
+    if (
+      dto.businessEmail !== undefined &&
+      !this.normalizeEmail(dto.businessEmail)
+    ) {
       throw new BadRequestException('Email is required');
     }
-    if (dto.personalPhoneNo !== undefined && !String(dto.personalPhoneNo || '').trim()) {
+    if (
+      dto.personalPhoneNo !== undefined &&
+      !String(dto.personalPhoneNo || '').trim()
+    ) {
       throw new BadRequestException('Mobile is required');
     }
 
@@ -693,9 +731,13 @@ export class CompanyService {
         data: {
           employeeFirstName: dto.firstName?.trim() ?? undefined,
           employeeLastName:
-            dto.lastName !== undefined ? dto.lastName.trim() || null : undefined,
+            dto.lastName !== undefined
+              ? dto.lastName.trim() || null
+              : undefined,
           salutation:
-            dto.salutation !== undefined ? dto.salutation.trim() || null : undefined,
+            dto.salutation !== undefined
+              ? dto.salutation.trim() || null
+              : undefined,
           personalPhoneNo:
             dto.personalPhoneNo !== undefined
               ? dto.personalPhoneNo.trim() || null
@@ -744,7 +786,10 @@ export class CompanyService {
           tx,
           companyId,
           owner.id,
-          limitPermissionsToPlan(this.mapPermissionRows(dto.permissions), entitled),
+          limitPermissionsToPlan(
+            this.mapPermissionRows(dto.permissions),
+            entitled,
+          ),
         );
       }
     });
@@ -752,7 +797,9 @@ export class CompanyService {
     return this.prisma.manageEmployee.findUnique({
       where: { id: owner.id },
       include: {
-        company: { select: { id: true, companyName: true, legalEntityType: true } },
+        company: {
+          select: { id: true, companyName: true, legalEntityType: true },
+        },
         employeeCredentials: {
           select: {
             id: true,
@@ -888,7 +935,9 @@ export class CompanyService {
     const usernameBase = user.username;
     let username = usernameBase;
     let suffix = 1;
-    while (await this.prisma.employeeCredentials.findUnique({ where: { username } })) {
+    while (
+      await this.prisma.employeeCredentials.findUnique({ where: { username } })
+    ) {
       username = `${usernameBase}-${suffix++}`;
     }
 
@@ -1001,8 +1050,12 @@ export class CompanyService {
   /** Plans that already include Off Boarding also include Onboarding. */
   private async linkOnboardingToOffboardingPlans() {
     const [onboarding, offboarding] = await Promise.all([
-      this.prisma.module.findUnique({ where: { moduleKey: ONBOARDING_MODULE } }),
-      this.prisma.module.findUnique({ where: { moduleKey: OFF_BOARDING_MODULE } }),
+      this.prisma.module.findUnique({
+        where: { moduleKey: ONBOARDING_MODULE },
+      }),
+      this.prisma.module.findUnique({
+        where: { moduleKey: OFF_BOARDING_MODULE },
+      }),
     ]);
     if (!onboarding || !offboarding) return;
     const plans = await this.prisma.subscriptionPlanModule.findMany({
@@ -1011,7 +1064,9 @@ export class CompanyService {
     });
     for (const row of plans) {
       await this.prisma.subscriptionPlanModule.upsert({
-        where: { planID_moduleID: { planID: row.planID, moduleID: onboarding.id } },
+        where: {
+          planID_moduleID: { planID: row.planID, moduleID: onboarding.id },
+        },
         update: {},
         create: { planID: row.planID, moduleID: onboarding.id },
       });
@@ -1113,7 +1168,9 @@ export class CompanyService {
 
   async remove(id: number) {
     const companyId = Number(id);
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
     if (!company) {
       throw new NotFoundException(`Company with ID ${companyId} not found`);
     }
@@ -1153,7 +1210,10 @@ export class CompanyService {
             data: {
               isActive: false,
               companyID: null,
-              username: `deleted_${row.id}_${row.username || 'user'}`.slice(0, 180),
+              username: `deleted_${row.id}_${row.username || 'user'}`.slice(
+                0,
+                180,
+              ),
               email: row.email
                 ? `deleted_${row.id}_${row.email}`.slice(0, 180)
                 : `deleted_${row.id}@deleted.local`,
@@ -1225,7 +1285,10 @@ export class CompanyService {
     return Number.isFinite(n) && n > 0 ? n : undefined;
   }
 
-  private jwtEmployeeId(user?: { employeeId?: number; employeeID?: number }): number | undefined {
+  private jwtEmployeeId(user?: {
+    employeeId?: number;
+    employeeID?: number;
+  }): number | undefined {
     const n = Number(user?.employeeId ?? user?.employeeID);
     return Number.isFinite(n) && n > 0 ? n : undefined;
   }
@@ -1246,7 +1309,9 @@ export class CompanyService {
   ) {
     if (!user) throw new ForbiddenException('Authentication required');
     const role = String(user.role || '').toUpperCase();
-    const isEmployee = role === 'EMPLOYEE' || String(user.type || '').toLowerCase() === 'employee';
+    const isEmployee =
+      role === 'EMPLOYEE' ||
+      String(user.type || '').toLowerCase() === 'employee';
     if (role === 'SUPERADMIN' || role === 'SERVICE_PROVIDER') return;
 
     const target = await this.prisma.company.findUnique({
@@ -1278,7 +1343,12 @@ export class CompanyService {
       }
     }
 
-    if (role === 'COMPANY_ADMIN' || role === 'MULTI_COMPANY_ADMIN' || role === 'ADMIN' || role === 'BRANCH_ADMIN') {
+    if (
+      role === 'COMPANY_ADMIN' ||
+      role === 'MULTI_COMPANY_ADMIN' ||
+      role === 'ADMIN' ||
+      role === 'BRANCH_ADMIN'
+    ) {
       if (Number.isFinite(tokenCompanyId) && tokenCompanyId > 0) {
         const home = await this.prisma.company.findUnique({
           where: { id: tokenCompanyId },
@@ -1294,7 +1364,9 @@ export class CompanyService {
       }
     }
 
-    const employeeId = this.jwtEmployeeId(user) ?? (isEmployee ? this.jwtUserId(user) : undefined);
+    const employeeId =
+      this.jwtEmployeeId(user) ??
+      (isEmployee ? this.jwtUserId(user) : undefined);
     if (employeeId) {
       const emp = await this.prisma.manageEmployee.findFirst({
         where: { id: employeeId, isDeleted: false },
@@ -1316,7 +1388,9 @@ export class CompanyService {
         );
         const hasAccess =
           !!emp.isCompanyOwner ||
-          permissions.some((p) => p.canView || p.canCreate || p.canEdit || p.canDelete);
+          permissions.some(
+            (p) => p.canView || p.canCreate || p.canEdit || p.canDelete,
+          );
         if (hasAccess) {
           const homeSp =
             emp.serviceProviderID ??
@@ -1341,7 +1415,9 @@ export class CompanyService {
       }
     }
 
-    throw new ForbiddenException('You cannot manage Federal Domain for this company');
+    throw new ForbiddenException(
+      'You cannot manage Federal Domain for this company',
+    );
   }
 
   async getFederalDomain(
@@ -1402,7 +1478,8 @@ export class CompanyService {
         companyName: peer.companyName,
         sharedCodes: [],
       };
-      if (!existing.sharedCodes.includes(row.code)) existing.sharedCodes.push(row.code);
+      if (!existing.sharedCodes.includes(row.code))
+        existing.sharedCodes.push(row.code);
       linkedById.set(peer.id, existing);
     }
 
@@ -1495,7 +1572,9 @@ export class CompanyService {
 
   private assertSuperAdmin(user: { role?: string } | undefined) {
     if (String(user?.role || '').toUpperCase() !== 'SUPERADMIN') {
-      throw new ForbiddenException('Only SuperAdmin can manage task assignee company links');
+      throw new ForbiddenException(
+        'Only SuperAdmin can manage task assignee company links',
+      );
     }
   }
 
@@ -1512,7 +1591,9 @@ export class CompanyService {
       where: { companyID: companyId },
       select: { linkedCompanyID: true },
     });
-    const linkedCompanyIDs = outbound.map((r: { linkedCompanyID: number }) => r.linkedCompanyID);
+    const linkedCompanyIDs = outbound.map(
+      (r: { linkedCompanyID: number }) => r.linkedCompanyID,
+    );
     let mutualCompanyIDs: number[] = [];
     if (linkedCompanyIDs.length) {
       const inbound = await linkTable.findMany({
@@ -1559,7 +1640,9 @@ export class CompanyService {
         select: { id: true },
       });
       if (found.length !== uniqueIds.length) {
-        throw new BadRequestException('One or more selected companies were not found');
+        throw new BadRequestException(
+          'One or more selected companies were not found',
+        );
       }
     }
 

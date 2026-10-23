@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import { setDesktopManagerFlag } from "@/lib/desktopManager";
 import type { EmpManagerScope } from "../utils/empManagerDisplay";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 function authHeaders(): Record<string, string> {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
+      ? localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        ""
       : "";
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -28,7 +31,9 @@ export function clearEmpManagerScopeCache() {
 }
 
 export function useEmpManagerScope(enabled = true) {
-  const [scope, setScope] = useState<EmpManagerScope | null>(enabled ? cachedScope : null);
+  const [scope, setScope] = useState<EmpManagerScope | null>(
+    enabled ? cachedScope : null,
+  );
   const [loading, setLoading] = useState(enabled && !cachedScope);
 
   useEffect(() => {
@@ -60,7 +65,9 @@ export function useEmpManagerScope(enabled = true) {
         setDesktopManagerFlag(hasReportees);
         const nextScope: EmpManagerScope = {
           employeeId: Number(data.employeeId) || 0,
-          reporteeIds: Array.isArray(data.reporteeIds) ? data.reporteeIds.map(Number) : [],
+          reporteeIds: Array.isArray(data.reporteeIds)
+            ? data.reporteeIds.map(Number)
+            : [],
           hasReportees,
           reportees: Array.isArray(data.reportees) ? data.reportees : [],
         };

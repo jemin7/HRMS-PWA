@@ -17,9 +17,16 @@ import {
   SelectValue,
 } from "../ui/select";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
-const REIMB_CATEGORIES = ["Travelling", "Food", "Accommodation", "Consumables", "Other"] as const;
+const REIMB_CATEGORIES = [
+  "Travelling",
+  "Food",
+  "Accommodation",
+  "Consumables",
+  "Other",
+] as const;
 
 export type SelfApprovalFormType = "leave" | "reimbursement" | "promotion";
 
@@ -50,13 +57,17 @@ export function EmpSelfApprovalRequestForm({
   const [reimbAmount, setReimbAmount] = useState("");
   const [reimbDescription, setReimbDescription] = useState("");
 
-  const [promotionKind, setPromotionKind] = useState<"promotion" | "transfer">("promotion");
+  const [promotionKind, setPromotionKind] = useState<"promotion" | "transfer">(
+    "promotion",
+  );
   const [promotionDate, setPromotionDate] = useState("");
   const [promotionDescription, setPromotionDescription] = useState("");
 
   useEffect(() => {
     if (!user?.username) return;
-    fetch(`${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`)
+    fetch(
+      `${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`,
+    )
       .then((r) => (r.ok ? r.json() : null))
       .then(setCreds)
       .catch(() => setCreds(null));
@@ -70,7 +81,9 @@ export function EmpSelfApprovalRequestForm({
 
     if (formType === "leave") {
       if (!fromDate || !toDate || leavePurpose.trim().length < 3) {
-        toast.error("Please fill in leave dates and a reason (min. 3 characters).");
+        toast.error(
+          "Please fill in leave dates and a reason (min. 3 characters).",
+        );
         return;
       }
     } else if (formType === "reimbursement") {
@@ -80,7 +93,9 @@ export function EmpSelfApprovalRequestForm({
         return;
       }
     } else if (!promotionDate || promotionDescription.trim().length < 10) {
-      toast.error("Please provide an effective date and a detailed reason (min. 10 characters).");
+      toast.error(
+        "Please provide an effective date and a detailed reason (min. 10 characters).",
+      );
       return;
     }
 
@@ -160,14 +175,19 @@ export function EmpSelfApprovalRequestForm({
       <div className="space-y-4">
         <div className="space-y-2">
           <Label>Request type</Label>
-          <Select value={formType} onValueChange={(v) => setFormType(v as SelfApprovalFormType)}>
+          <Select
+            value={formType}
+            onValueChange={(v) => setFormType(v as SelfApprovalFormType)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Choose request type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="leave">Leave</SelectItem>
               <SelectItem value="reimbursement">Reimbursement</SelectItem>
-              <SelectItem value="promotion">Promotion &amp; Transfer</SelectItem>
+              <SelectItem value="promotion">
+                Promotion &amp; Transfer
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -257,7 +277,9 @@ export function EmpSelfApprovalRequestForm({
               <Label>Request for</Label>
               <Select
                 value={promotionKind}
-                onValueChange={(v) => setPromotionKind(v as "promotion" | "transfer")}
+                onValueChange={(v) =>
+                  setPromotionKind(v as "promotion" | "transfer")
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -292,10 +314,19 @@ export function EmpSelfApprovalRequestForm({
       </div>
 
       <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={submitting}
+        >
           Cancel
         </Button>
-        <Button type="button" onClick={() => void submit()} disabled={submitting}>
+        <Button
+          type="button"
+          onClick={() => void submit()}
+          disabled={submitting}
+        >
           {submitting ? "Submitting…" : "Submit request"}
         </Button>
       </div>
@@ -330,7 +361,11 @@ export function EmpSelfApprovalRequestInline({
   );
 }
 
-export function EmpSelfApprovalRequestButton({ onSubmitted }: { onSubmitted?: () => void }) {
+export function EmpSelfApprovalRequestButton({
+  onSubmitted,
+}: {
+  onSubmitted?: () => void;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -339,7 +374,11 @@ export function EmpSelfApprovalRequestButton({ onSubmitted }: { onSubmitted?: ()
         <Plus className="size-4" />
         New request
       </Button>
-      <EmpSelfApprovalRequestInline open={open} onOpenChange={setOpen} onSubmitted={onSubmitted} />
+      <EmpSelfApprovalRequestInline
+        open={open}
+        onOpenChange={setOpen}
+        onSubmitted={onSubmitted}
+      />
     </>
   );
 }

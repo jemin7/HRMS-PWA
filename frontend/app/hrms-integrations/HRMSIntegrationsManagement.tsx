@@ -1,36 +1,36 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
-import { Plus, X } from "lucide-react"
-import { useCurrentUser } from "../hooks/useCurrentUser"
-import { getSidebarContext } from "../utils/sidebarContext"
+import { useState, useEffect } from "react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Plus, X } from "lucide-react";
+import { useCurrentUser } from "../hooks/useCurrentUser";
+import { getSidebarContext } from "../utils/sidebarContext";
 
 interface IntegrationRow {
-  id: number
-  company: string
-  provider: string
-  apiUrl: string
-  apiKey?: string
-  token?: string
+  id: number;
+  company: string;
+  provider: string;
+  apiUrl: string;
+  apiKey?: string;
+  token?: string;
 }
 
 interface Company {
-  id: number
-  companyName?: string
+  id: number;
+  companyName?: string;
 }
 
-const PROVIDERS = ["GreytHR", "Eve"]
+const PROVIDERS = ["GreytHR", "Eve"];
 
 export function HRMSIntegrationsManagement() {
-  const user = useCurrentUser()
-  const isAdmin = user?.role === "ADMIN"
+  const user = useCurrentUser();
+  const isAdmin = user?.role === "ADMIN";
 
-  const [rows, setRows] = useState<IntegrationRow[]>([])
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [modalOpen, setModalOpen] = useState(false)
+  const [rows, setRows] = useState<IntegrationRow[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const [form, setForm] = useState({
     companyID: "",
@@ -39,53 +39,62 @@ export function HRMSIntegrationsManagement() {
     apiKey: "",
     pemFile: null as File | null,
     bearerToken: "",
-  })
+  });
 
   // Fetch companies for the dropdown
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const res = await fetch("/backend/company")
-        const data = await res.json()
-        const all: Company[] = Array.isArray(data) ? data : data?.data ?? []
+        const res = await fetch("https://hrms-api-test.onrender.com/company");
+        const data = await res.json();
+        const all: Company[] = Array.isArray(data) ? data : (data?.data ?? []);
         if (isAdmin && user?.companyID) {
-          setCompanies(all.filter((c) => c.id === user.companyID))
+          setCompanies(all.filter((c) => c.id === user.companyID));
         } else {
-          const ctx = getSidebarContext()
+          const ctx = getSidebarContext();
           if (ctx?.companyID) {
-            setCompanies(all.filter((c) => c.id === ctx.companyID))
+            setCompanies(all.filter((c) => c.id === ctx.companyID));
           } else {
-            setCompanies(all)
+            setCompanies(all);
           }
         }
       } catch {
-        setCompanies([])
+        setCompanies([]);
       }
-    }
-    if (user) fetchCompanies()
-  }, [user])
+    };
+    if (user) fetchCompanies();
+  }, [user]);
 
   const resetForm = () => {
-    setForm({ companyID: "", provider: "GreytHR", apiUrl: "", apiKey: "", pemFile: null, bearerToken: "" })
-  }
+    setForm({
+      companyID: "",
+      provider: "GreytHR",
+      apiUrl: "",
+      apiKey: "",
+      pemFile: null,
+      bearerToken: "",
+    });
+  };
 
   const handleOpenModal = () => {
-    resetForm()
+    resetForm();
     // Pre-select company if only one available
     if (companies.length === 1) {
-      setForm((p) => ({ ...p, companyID: String(companies[0].id) }))
+      setForm((p) => ({ ...p, companyID: String(companies[0].id) }));
     }
-    setModalOpen(true)
-  }
+    setModalOpen(true);
+  };
 
   const handleCloseModal = () => {
-    resetForm()
-    setModalOpen(false)
-  }
+    resetForm();
+    setModalOpen(false);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const selectedCompany = companies.find((c) => String(c.id) === form.companyID)
+    e.preventDefault();
+    const selectedCompany = companies.find(
+      (c) => String(c.id) === form.companyID,
+    );
     const newRow: IntegrationRow = {
       id: Date.now(),
       company: selectedCompany?.companyName ?? "—",
@@ -93,16 +102,18 @@ export function HRMSIntegrationsManagement() {
       apiUrl: form.apiUrl,
       apiKey: form.provider === "GreytHR" ? form.apiKey : undefined,
       token: form.provider === "Eve" ? form.bearerToken : undefined,
-    }
-    setRows((prev) => [...prev, newRow])
-    handleCloseModal()
-  }
+    };
+    setRows((prev) => [...prev, newRow]);
+    handleCloseModal();
+  };
 
   return (
     <div className="space-y-6 w-full max-w-7xl mx-auto px-4">
       {/* Header */}
       <div className="flex items-center justify-between w-full">
-        <p className="text-gray-600 text-sm">Manage HRMS integrations and connected services</p>
+        <p className="text-gray-600 text-sm">
+          Manage HRMS integrations and connected services
+        </p>
         <Button onClick={handleOpenModal} className="text-sm px-3 py-2">
           <Plus className="w-4 h-4 mr-1" /> Add API
         </Button>
@@ -123,18 +134,37 @@ export function HRMSIntegrationsManagement() {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center py-10 text-gray-400 text-sm">
-                  No integrations configured yet. Click &quot;Add API&quot; to get started.
+                <td
+                  colSpan={5}
+                  className="text-center py-10 text-gray-400 text-sm"
+                >
+                  No integrations configured yet. Click &quot;Add API&quot; to
+                  get started.
                 </td>
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={row.id} className="border-t border-gray-100 hover:bg-gray-50">
+                <tr
+                  key={row.id}
+                  className="border-t border-gray-100 hover:bg-gray-50"
+                >
                   <td className="px-4 py-3">{row.company}</td>
                   <td className="px-4 py-3">{row.provider}</td>
-                  <td className="px-4 py-3 max-w-xs truncate" title={row.apiUrl}>{row.apiUrl || "—"}</td>
-                  <td className="px-4 py-3 max-w-xs truncate" title={row.apiKey}>{row.apiKey || "N/A"}</td>
-                  <td className="px-4 py-3 max-w-xs truncate" title={row.token}>{row.token || "N/A"}</td>
+                  <td
+                    className="px-4 py-3 max-w-xs truncate"
+                    title={row.apiUrl}
+                  >
+                    {row.apiUrl || "—"}
+                  </td>
+                  <td
+                    className="px-4 py-3 max-w-xs truncate"
+                    title={row.apiKey}
+                  >
+                    {row.apiKey || "N/A"}
+                  </td>
+                  <td className="px-4 py-3 max-w-xs truncate" title={row.token}>
+                    {row.token || "N/A"}
+                  </td>
                 </tr>
               ))
             )}
@@ -151,7 +181,10 @@ export function HRMSIntegrationsManagement() {
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <span className="text-blue-500">🔗</span> Add HRMS API
               </h2>
-              <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600">
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -164,7 +197,9 @@ export function HRMSIntegrationsManagement() {
                   <select
                     className="w-full px-3 py-2 border rounded-md bg-white text-sm"
                     value={form.companyID}
-                    onChange={(e) => setForm((p) => ({ ...p, companyID: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, companyID: e.target.value }))
+                    }
                     required
                   >
                     <option value="">Select company…</option>
@@ -181,10 +216,20 @@ export function HRMSIntegrationsManagement() {
                   <select
                     className="w-full px-3 py-2 border rounded-md bg-white text-sm"
                     value={form.provider}
-                    onChange={(e) => setForm((p) => ({ ...p, provider: e.target.value, apiKey: "", pemFile: null, bearerToken: "" }))}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        provider: e.target.value,
+                        apiKey: "",
+                        pemFile: null,
+                        bearerToken: "",
+                      }))
+                    }
                   >
                     {PROVIDERS.map((p) => (
-                      <option key={p} value={p}>{p}</option>
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -196,7 +241,9 @@ export function HRMSIntegrationsManagement() {
                   <Label>API URL</Label>
                   <Input
                     value={form.apiUrl}
-                    onChange={(e) => setForm((p) => ({ ...p, apiUrl: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, apiUrl: e.target.value }))
+                    }
                     placeholder="Enter API URL"
                   />
                 </div>
@@ -206,7 +253,9 @@ export function HRMSIntegrationsManagement() {
                     <Label>API Key</Label>
                     <Input
                       value={form.apiKey}
-                      onChange={(e) => setForm((p) => ({ ...p, apiKey: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, apiKey: e.target.value }))
+                      }
                       placeholder="Enter API Key"
                     />
                   </div>
@@ -217,7 +266,9 @@ export function HRMSIntegrationsManagement() {
                     <Label>Authorization Token (Bearer)</Label>
                     <Input
                       value={form.bearerToken}
-                      onChange={(e) => setForm((p) => ({ ...p, bearerToken: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, bearerToken: e.target.value }))
+                      }
                       placeholder="Enter Bearer Token"
                     />
                   </div>
@@ -232,7 +283,12 @@ export function HRMSIntegrationsManagement() {
                     type="file"
                     accept=".pem,.crt,.key"
                     className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border file:border-gray-300 file:text-sm file:bg-white file:text-gray-700 hover:file:bg-gray-50"
-                    onChange={(e) => setForm((p) => ({ ...p, pemFile: e.target.files?.[0] ?? null }))}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        pemFile: e.target.files?.[0] ?? null,
+                      }))
+                    }
                   />
                 </div>
               )}
@@ -240,19 +296,32 @@ export function HRMSIntegrationsManagement() {
               {/* Info hint */}
               <div className="bg-teal-50 border border-teal-200 rounded-lg px-4 py-3 text-sm text-teal-800">
                 {form.provider === "GreytHR" && (
-                  <><span className="font-semibold">GreytHR:</span> Requires URL + API Key + PEM file and sends signed swipes.</>
+                  <>
+                    <span className="font-semibold">GreytHR:</span> Requires URL
+                    + API Key + PEM file and sends signed swipes.
+                  </>
                 )}
                 {form.provider === "Eve" && (
-                  <><span className="font-semibold">Eve:</span> Requires URL + Bearer Token and sends JSON payload.</>
+                  <>
+                    <span className="font-semibold">Eve:</span> Requires URL +
+                    Bearer Token and sends JSON payload.
+                  </>
                 )}
               </div>
 
               {/* Actions */}
               <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={handleCloseModal}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCloseModal}
+                >
                   <X className="w-4 h-4 mr-1" /> Cancel
                 </Button>
-                <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white">
+                <Button
+                  type="submit"
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
                   ✓ Add API
                 </Button>
               </div>
@@ -261,5 +330,5 @@ export function HRMSIntegrationsManagement() {
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -81,7 +86,8 @@ interface LeaveReportRow {
 
 // ─── Constants ──────────────────────────────────────────────
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 const REPORT_TYPES = [
   { value: "All Leave Reports", label: "All Leave Reports" },
@@ -161,9 +167,12 @@ export function LeaveReportsManagement() {
     dateTo: getTodayStr(),
   });
 
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({ sno: true, company: true, branch: true, dept: true, emp: true });
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    { sno: true, company: true, branch: true, dept: true, emp: true },
+  );
   const [columnPickerOpen, setColumnPickerOpen] = useState(false);
-  const toggleColumn = (key: string) => setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleColumn = (key: string) =>
+    setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const getStickyLeft = (key: string) => {
     const order = ["sno", "company", "branch", "dept", "emp"];
@@ -188,7 +197,7 @@ export function LeaveReportsManagement() {
     const cur = new Date(start);
     while (cur <= end) {
       dates.push(
-        `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`
+        `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`,
       );
       cur.setDate(cur.getDate() + 1);
     }
@@ -197,9 +206,15 @@ export function LeaveReportsManagement() {
 
   const formatHeaderDate = (iso: string) => {
     const d = new Date(iso);
-    const dayName = d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+    const dayName = d
+      .toLocaleDateString("en-US", { weekday: "short" })
+      .toUpperCase();
     const dateStr = d
-      .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+      .toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
       .toUpperCase();
     return { dayName, dateStr };
   };
@@ -208,10 +223,14 @@ export function LeaveReportsManagement() {
     const s = (status || "").toLowerCase();
     if (s.includes("sick") || s === "sl") return "bg-red-100 text-red-800";
     if (s.includes("casual") || s === "cl") return "bg-blue-100 text-blue-800";
-    if (s.includes("earn") || s.includes("privilege") || s === "pl") return "bg-green-100 text-green-800";
-    if (s.includes("lop") || s.includes("loss")) return "bg-yellow-100 text-yellow-800";
-    if (s.includes("week") || s === "wo") return "bg-orange-100 text-orange-800";
-    if (s.includes("comp") || s === "co") return "bg-purple-100 text-purple-800";
+    if (s.includes("earn") || s.includes("privilege") || s === "pl")
+      return "bg-green-100 text-green-800";
+    if (s.includes("lop") || s.includes("loss"))
+      return "bg-yellow-100 text-yellow-800";
+    if (s.includes("week") || s === "wo")
+      return "bg-orange-100 text-orange-800";
+    if (s.includes("comp") || s === "co")
+      return "bg-purple-100 text-purple-800";
     if (s.includes("half")) return "bg-amber-100 text-amber-800";
     return "bg-gray-100 text-gray-800";
   };
@@ -227,9 +246,15 @@ export function LeaveReportsManagement() {
       try {
         const [cRes, bRes, dRes, dgRes] = await Promise.all([
           fetch(`${BACKEND_URL}/company`).then((r) => r.json()),
-          fetch(`${BACKEND_URL}/branches`, { cache: "no-store" }).then((r) => r.json()),
-          fetch(`${BACKEND_URL}/departments`, { cache: "no-store" }).then((r) => r.json()),
-          fetch(`${BACKEND_URL}/designations`, { cache: "no-store" }).then((r) => r.json()),
+          fetch(`${BACKEND_URL}/branches`, { cache: "no-store" }).then((r) =>
+            r.json(),
+          ),
+          fetch(`${BACKEND_URL}/departments`, { cache: "no-store" }).then((r) =>
+            r.json(),
+          ),
+          fetch(`${BACKEND_URL}/designations`, { cache: "no-store" }).then(
+            (r) => r.json(),
+          ),
         ]);
         setCompanies(cRes);
         setAllBranches(bRes);
@@ -272,9 +297,15 @@ export function LeaveReportsManagement() {
     if (user.role === "SERVICE_PROVIDER") {
       const ctx = getSidebarContext();
       if (ctx?.companyID) {
-        data = data.filter((b) => Number(b.companyID) === Number(ctx.companyID));
+        data = data.filter(
+          (b) => Number(b.companyID) === Number(ctx.companyID),
+        );
       } else if (managerData?.serviceProviderID) {
-        data = data.filter((b: any) => Number(b.serviceProviderID) === Number(managerData.serviceProviderID));
+        data = data.filter(
+          (b: any) =>
+            Number(b.serviceProviderID) ===
+            Number(managerData.serviceProviderID),
+        );
       }
     } else if (
       isCompanyAdminLikeRole(user.role) ||
@@ -284,7 +315,9 @@ export function LeaveReportsManagement() {
     ) {
       const companyId =
         resolveScopedCompanyId(user) ??
-        (empCreds?.companyID != null ? Number(empCreds.companyID) : undefined) ??
+        (empCreds?.companyID != null
+          ? Number(empCreds.companyID)
+          : undefined) ??
         (formData.companyID != null ? Number(formData.companyID) : undefined) ??
         user.companyID;
       if (companyId != null) {
@@ -298,12 +331,18 @@ export function LeaveReportsManagement() {
         (b) => Number(b.companyID) === Number(empCreds.companyID),
       );
     } else if (user.role === "SUPERADMIN" && formData.companyID) {
-      data = data.filter((b) => Number(b.companyID) === Number(formData.companyID));
+      data = data.filter(
+        (b) => Number(b.companyID) === Number(formData.companyID),
+      );
     }
     setBranches(data);
     if (user.role !== "SUPERADMIN" && data.length > 0 && !formData.branchName) {
       const b = data[0];
-      setFormData((prev) => ({ ...prev, companyID: b.companyID, branchName: b.branchName }));
+      setFormData((prev) => ({
+        ...prev,
+        companyID: b.companyID,
+        branchName: b.branchName,
+      }));
       loadDepartmentsForBranch(b.id, b.companyID);
     }
   }, [user, managerData, empCreds, formData.companyID, allBranches]);
@@ -373,7 +412,9 @@ export function LeaveReportsManagement() {
         selectedCompanyID =
           selectedCompanyID ??
           (ctx?.companyID != null ? Number(ctx.companyID) : null) ??
-          (managerData?.companyID != null ? Number(managerData.companyID) : null);
+          (managerData?.companyID != null
+            ? Number(managerData.companyID)
+            : null);
         selectedBranchID =
           selectedBranchID ??
           (managerData?.branchesID != null
@@ -415,14 +456,27 @@ export function LeaveReportsManagement() {
       }
 
       // Fetch data in parallel
-      const [employees, leaveApps, companiesData, branchesData, departmentsData] =
-        await Promise.all([
-          fetch(`${BACKEND_URL}/manage-emp`, { cache: "no-store" }).then((r) => r.json()),
-          fetch(`${BACKEND_URL}/leave-application`).then((r) => r.json()),
-          fetch(`${BACKEND_URL}/company`, { cache: "no-store" }).then((r) => r.json()),
-          fetch(`${BACKEND_URL}/branches`, { cache: "no-store" }).then((r) => r.json()),
-          fetch(`${BACKEND_URL}/departments`, { cache: "no-store" }).then((r) => r.json()),
-        ]);
+      const [
+        employees,
+        leaveApps,
+        companiesData,
+        branchesData,
+        departmentsData,
+      ] = await Promise.all([
+        fetch(`${BACKEND_URL}/manage-emp`, { cache: "no-store" }).then((r) =>
+          r.json(),
+        ),
+        fetch(`${BACKEND_URL}/leave-application`).then((r) => r.json()),
+        fetch(`${BACKEND_URL}/company`, { cache: "no-store" }).then((r) =>
+          r.json(),
+        ),
+        fetch(`${BACKEND_URL}/branches`, { cache: "no-store" }).then((r) =>
+          r.json(),
+        ),
+        fetch(`${BACKEND_URL}/departments`, { cache: "no-store" }).then((r) =>
+          r.json(),
+        ),
+      ]);
 
       // Filter employees
       let filteredEmployees = employees.filter(
@@ -439,13 +493,15 @@ export function LeaveReportsManagement() {
             Number(d.branchesID) === Number(selectedBranchID),
         );
         if (dept) {
-          filteredEmployees = filteredEmployees.filter((e: any) => e.departmentNameID === dept.id);
+          filteredEmployees = filteredEmployees.filter(
+            (e: any) => e.departmentNameID === dept.id,
+          );
         }
       }
 
       if (formData.designation) {
         filteredEmployees = filteredEmployees.filter(
-          (e: any) => e.designationID === Number(formData.designation)
+          (e: any) => e.designationID === Number(formData.designation),
         );
       }
 
@@ -458,36 +514,38 @@ export function LeaveReportsManagement() {
       // Report type filter
       const typeFilter = REPORT_TYPE_FILTER[formData.reportType] || [];
 
-      const filteredLeaves: LeaveApplication[] = (leaveApps || []).filter((la: any) => {
-        if (
-          Number(la.companyID) !== Number(selectedCompanyID) ||
-          Number(la.branchesID) !== Number(selectedBranchID)
-        )
-          return false;
-        if (la.status !== "Approved") return false;
+      const filteredLeaves: LeaveApplication[] = (leaveApps || []).filter(
+        (la: any) => {
+          if (
+            Number(la.companyID) !== Number(selectedCompanyID) ||
+            Number(la.branchesID) !== Number(selectedBranchID)
+          )
+            return false;
+          if (la.status !== "Approved") return false;
 
-        // Check date overlap
-        const laFrom = la.fromDate ? new Date(la.fromDate) : null;
-        const laTo = la.toDate ? new Date(la.toDate) : null;
-        if (!laFrom || !laTo) return false;
-        laFrom.setHours(0, 0, 0, 0);
-        laTo.setHours(23, 59, 59, 999);
-        if (laTo < dateFrom || laFrom > dateTo) return false;
+          // Check date overlap
+          const laFrom = la.fromDate ? new Date(la.fromDate) : null;
+          const laTo = la.toDate ? new Date(la.toDate) : null;
+          if (!laFrom || !laTo) return false;
+          laFrom.setHours(0, 0, 0, 0);
+          laTo.setHours(23, 59, 59, 999);
+          if (laTo < dateFrom || laFrom > dateTo) return false;
 
-        // Filter by leave type if needed
-        if (typeFilter.length > 0) {
-          const leaveType = la.appliedLeaveType || "";
-          const normalized = normalizeLeaveType(leaveType);
-          const matchesFilter = typeFilter.some(
-            (f) =>
-              f.toLowerCase() === leaveType.toLowerCase() ||
-              f.toLowerCase() === normalized.toLowerCase()
-          );
-          if (!matchesFilter) return false;
-        }
+          // Filter by leave type if needed
+          if (typeFilter.length > 0) {
+            const leaveType = la.appliedLeaveType || "";
+            const normalized = normalizeLeaveType(leaveType);
+            const matchesFilter = typeFilter.some(
+              (f) =>
+                f.toLowerCase() === leaveType.toLowerCase() ||
+                f.toLowerCase() === normalized.toLowerCase(),
+            );
+            if (!matchesFilter) return false;
+          }
 
-        return true;
-      });
+          return true;
+        },
+      );
 
       // Group leaves by employee
       const leavesByEmployee = new Map<number, LeaveApplication[]>();
@@ -511,7 +569,8 @@ export function LeaveReportsManagement() {
             la.dayStatuses.forEach((ds: any) => {
               const dateKey = ds.date?.split("T")[0] || ds.date;
               if (dateColumns.includes(dateKey)) {
-                leaveDays[dateKey] = ds.status || la.appliedLeaveType || "Leave";
+                leaveDays[dateKey] =
+                  ds.status || la.appliedLeaveType || "Leave";
               }
             });
           } else {
@@ -533,7 +592,9 @@ export function LeaveReportsManagement() {
 
         const company = companiesData.find((c: any) => c.id === emp.companyID);
         const branch = branchesData.find((b: any) => b.id === emp.branchesID);
-        const dept = departmentsData.find((d: any) => d.id === emp.departmentNameID);
+        const dept = departmentsData.find(
+          (d: any) => d.id === emp.departmentNameID,
+        );
 
         return {
           employee: emp,
@@ -620,7 +681,11 @@ export function LeaveReportsManagement() {
         if (!ws[ref]) continue;
         ws[ref].s = {
           font: { name: "Arial", sz: 9 },
-          alignment: { horizontal: "center", vertical: "center", wrapText: true },
+          alignment: {
+            horizontal: "center",
+            vertical: "center",
+            wrapText: true,
+          },
           border: {
             top: { style: "thin", color: { rgb: "000000" } },
             left: { style: "thin", color: { rgb: "000000" } },
@@ -630,12 +695,24 @@ export function LeaveReportsManagement() {
         };
         if (R === 0) {
           ws[ref].s.fill = { fgColor: { rgb: "366092" } };
-          ws[ref].s.font = { name: "Arial", sz: 10, bold: true, color: { rgb: "FFFFFF" } };
+          ws[ref].s.font = {
+            name: "Arial",
+            sz: 10,
+            bold: true,
+            color: { rgb: "FFFFFF" },
+          };
         }
       }
     }
 
-    const colWidths = [{ wch: 6 }, { wch: 12 }, { wch: 18 }, { wch: 20 }, { wch: 14 }, { wch: 14 }];
+    const colWidths = [
+      { wch: 6 },
+      { wch: 12 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 14 },
+      { wch: 14 },
+    ];
     dateColumns.forEach(() => colWidths.push({ wch: 15 }));
     ws["!cols"] = colWidths;
 
@@ -654,7 +731,9 @@ export function LeaveReportsManagement() {
       `${row.employee.employeeFirstName} ${row.employee.employeeLastName}`.toLowerCase();
     return (
       fullName.includes(searchTerm.toLowerCase()) ||
-      row.employee.employeeID.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      row.employee.employeeID
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       row.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       row.branchName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       row.departmentName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -717,7 +796,12 @@ export function LeaveReportsManagement() {
               <select
                 className="w-full px-3 py-2 border rounded-md bg-white"
                 value={formData.department}
-                onChange={(e) => setFormData((prev) => ({ ...prev, department: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    department: e.target.value,
+                  }))
+                }
               >
                 <option value="">All departments</option>
                 {departments.map((d) => (
@@ -733,7 +817,12 @@ export function LeaveReportsManagement() {
               <select
                 className="w-full px-3 py-2 border rounded-md bg-white"
                 value={formData.designation}
-                onChange={(e) => setFormData((prev) => ({ ...prev, designation: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    designation: e.target.value,
+                  }))
+                }
               >
                 <option value="">All designations</option>
                 {designations.map((d) => (
@@ -751,7 +840,12 @@ export function LeaveReportsManagement() {
               <select
                 className="w-full px-3 py-2 border rounded-md bg-white"
                 value={formData.reportType}
-                onChange={(e) => setFormData((prev) => ({ ...prev, reportType: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    reportType: e.target.value,
+                  }))
+                }
               >
                 {REPORT_TYPES.map((rt) => (
                   <option key={rt.value} value={rt.value}>
@@ -768,7 +862,9 @@ export function LeaveReportsManagement() {
               <Input
                 type="date"
                 value={formData.dateFrom}
-                onChange={(e) => setFormData((prev) => ({ ...prev, dateFrom: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, dateFrom: e.target.value }))
+                }
               />
             </div>
             <div className="space-y-2">
@@ -776,7 +872,9 @@ export function LeaveReportsManagement() {
               <Input
                 type="date"
                 value={formData.dateTo}
-                onChange={(e) => setFormData((prev) => ({ ...prev, dateTo: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, dateTo: e.target.value }))
+                }
               />
             </div>
             <div className="col-span-2 flex items-end gap-3">
@@ -820,7 +918,8 @@ export function LeaveReportsManagement() {
           </div>
 
           <p className="text-xs text-gray-500 mt-2">
-            Leave data is fetched from approved leave applications for the selected date range.
+            Leave data is fetched from approved leave applications for the
+            selected date range.
           </p>
         </CardContent>
       </Card>
@@ -862,18 +961,32 @@ export function LeaveReportsManagement() {
                   Download Excel
                 </Button>
                 <div className="relative">
-                  <Button variant="outline" onClick={() => setColumnPickerOpen(v => !v)} className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setColumnPickerOpen((v) => !v)}
+                    className="flex items-center gap-2"
+                  >
                     <FileText className="w-4 h-4" /> Columns
                   </Button>
                   {columnPickerOpen && (
                     <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[200px] max-h-[300px] overflow-y-auto">
                       {[
-                        { key: "sno", label: "S.NO" }, { key: "company", label: "Company" },
-                        { key: "branch", label: "Branch" }, { key: "dept", label: "Dept" },
+                        { key: "sno", label: "S.NO" },
+                        { key: "company", label: "Company" },
+                        { key: "branch", label: "Branch" },
+                        { key: "dept", label: "Dept" },
                         { key: "emp", label: "Employee" },
-                      ].map(col => (
-                        <label key={col.key} className="flex items-center gap-2 py-1 cursor-pointer text-sm">
-                          <input type="checkbox" checked={visibleColumns[col.key] !== false} onChange={() => toggleColumn(col.key)} className="w-3.5 h-3.5 rounded" />
+                      ].map((col) => (
+                        <label
+                          key={col.key}
+                          className="flex items-center gap-2 py-1 cursor-pointer text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns[col.key] !== false}
+                            onChange={() => toggleColumn(col.key)}
+                            className="w-3.5 h-3.5 rounded"
+                          />
                           {col.label}
                         </label>
                       ))}
@@ -887,54 +1000,71 @@ export function LeaveReportsManagement() {
           <CardContent className="p-0">
             <div className="overflow-x-auto w-full border-t border-gray-200">
               <table className="min-w-full border-collapse text-xs">
-                <thead data-hrms-report-header className="bg-teal-50 text-teal-900 border-b border-teal-100">
+                <thead
+                  data-hrms-report-header
+                  className="bg-teal-50 text-teal-900 border-b border-teal-100"
+                >
                   <tr>
-                    {visibleColumns.sno && <th
-                      className="sticky z-30 bg-teal-50 text-teal-900 px-3 py-2 text-center border-r border-teal-100"
-                      style={{ left: getStickyLeft("sno"), width: LEFT_WIDTHS.sno, minWidth: LEFT_WIDTHS.sno }}
-                    >
-                      S.NO
-                    </th>}
-                    {visibleColumns.company && <th
-                      className="sticky z-30 bg-teal-50 text-teal-900 px-3 py-2 text-left border-r border-teal-100"
-                      style={{
-                        left: getStickyLeft("company"),
-                        width: LEFT_WIDTHS.company,
-                        minWidth: LEFT_WIDTHS.company,
-                      }}
-                    >
-                      COMPANY
-                    </th>}
-                    {visibleColumns.branch && <th
-                      className="sticky z-30 bg-teal-50 text-teal-900 px-3 py-2 text-left border-r border-teal-100"
-                      style={{
-                        left: getStickyLeft("branch"),
-                        width: LEFT_WIDTHS.branch,
-                        minWidth: LEFT_WIDTHS.branch,
-                      }}
-                    >
-                      BRANCH
-                    </th>}
-                    {visibleColumns.dept && <th
-                      className="sticky z-30 bg-teal-50 text-teal-900 px-3 py-2 text-left border-r border-teal-100"
-                      style={{
-                        left: getStickyLeft("dept"),
-                        width: LEFT_WIDTHS.dept,
-                        minWidth: LEFT_WIDTHS.dept,
-                      }}
-                    >
-                      DEPT
-                    </th>}
-                    {visibleColumns.emp && <th
-                      className="sticky z-30 bg-teal-50 text-teal-900 px-3 py-2 text-left border-r border-teal-100"
-                      style={{
-                        left: getStickyLeft("emp"),
-                        width: LEFT_WIDTHS.emp,
-                        minWidth: LEFT_WIDTHS.emp,
-                      }}
-                    >
-                      EMPLOYEE
-                    </th>}
+                    {visibleColumns.sno && (
+                      <th
+                        className="sticky z-30 bg-teal-50 text-teal-900 px-3 py-2 text-center border-r border-teal-100"
+                        style={{
+                          left: getStickyLeft("sno"),
+                          width: LEFT_WIDTHS.sno,
+                          minWidth: LEFT_WIDTHS.sno,
+                        }}
+                      >
+                        S.NO
+                      </th>
+                    )}
+                    {visibleColumns.company && (
+                      <th
+                        className="sticky z-30 bg-teal-50 text-teal-900 px-3 py-2 text-left border-r border-teal-100"
+                        style={{
+                          left: getStickyLeft("company"),
+                          width: LEFT_WIDTHS.company,
+                          minWidth: LEFT_WIDTHS.company,
+                        }}
+                      >
+                        COMPANY
+                      </th>
+                    )}
+                    {visibleColumns.branch && (
+                      <th
+                        className="sticky z-30 bg-teal-50 text-teal-900 px-3 py-2 text-left border-r border-teal-100"
+                        style={{
+                          left: getStickyLeft("branch"),
+                          width: LEFT_WIDTHS.branch,
+                          minWidth: LEFT_WIDTHS.branch,
+                        }}
+                      >
+                        BRANCH
+                      </th>
+                    )}
+                    {visibleColumns.dept && (
+                      <th
+                        className="sticky z-30 bg-teal-50 text-teal-900 px-3 py-2 text-left border-r border-teal-100"
+                        style={{
+                          left: getStickyLeft("dept"),
+                          width: LEFT_WIDTHS.dept,
+                          minWidth: LEFT_WIDTHS.dept,
+                        }}
+                      >
+                        DEPT
+                      </th>
+                    )}
+                    {visibleColumns.emp && (
+                      <th
+                        className="sticky z-30 bg-teal-50 text-teal-900 px-3 py-2 text-left border-r border-teal-100"
+                        style={{
+                          left: getStickyLeft("emp"),
+                          width: LEFT_WIDTHS.emp,
+                          minWidth: LEFT_WIDTHS.emp,
+                        }}
+                      >
+                        EMPLOYEE
+                      </th>
+                    )}
                     {dateColumns.map((date) => {
                       const { dayName, dateStr } = formatHeaderDate(date);
                       return (
@@ -943,7 +1073,9 @@ export function LeaveReportsManagement() {
                           className="px-2 py-1 text-center min-w-[100px] border-l border-blue-500 text-[11px]"
                         >
                           <div className="font-semibold">{dateStr}</div>
-                          <div className="text-[10px] opacity-80 mt-1">{dayName}</div>
+                          <div className="text-[10px] opacity-80 mt-1">
+                            {dayName}
+                          </div>
                         </th>
                       );
                     })}
@@ -952,57 +1084,72 @@ export function LeaveReportsManagement() {
                 <tbody>
                   {filteredReportData.map((row, index) => (
                     <tr key={row.employee.id} className="odd:bg-gray-50">
-                      {visibleColumns.sno && <td
-                        className="sticky bg-white px-3 py-2 border-b border-r text-center text-[11px] z-20"
-                        style={{ left: getStickyLeft("sno"), width: LEFT_WIDTHS.sno, minWidth: LEFT_WIDTHS.sno }}
-                      >
-                        {index + 1}
-                      </td>}
-                      {visibleColumns.company && <td
-                        className="sticky bg-white px-3 py-2 border-b border-r text-[11px] z-20 align-top"
-                        style={{
-                          left: getStickyLeft("company"),
-                          width: LEFT_WIDTHS.company,
-                          minWidth: LEFT_WIDTHS.company,
-                        }}
-                      >
-                        {row.companyName}
-                      </td>}
-                      {visibleColumns.branch && <td
-                        className="sticky bg-white px-3 py-2 border-b border-r text-[11px] z-20 align-top"
-                        style={{
-                          left: getStickyLeft("branch"),
-                          width: LEFT_WIDTHS.branch,
-                          minWidth: LEFT_WIDTHS.branch,
-                        }}
-                      >
-                        {row.branchName}
-                      </td>}
-                      {visibleColumns.dept && <td
-                        className="sticky bg-white px-3 py-2 border-b border-r text-[11px] z-20 align-top"
-                        style={{
-                          left: getStickyLeft("dept"),
-                          width: LEFT_WIDTHS.dept,
-                          minWidth: LEFT_WIDTHS.dept,
-                        }}
-                      >
-                        {row.departmentName || "N/A"}
-                      </td>}
-                      {visibleColumns.emp && <td
-                        className="sticky bg-white px-3 py-2 border-b border-r text-[11px] z-20 align-top"
-                        style={{
-                          left: getStickyLeft("emp"),
-                          width: LEFT_WIDTHS.emp,
-                          minWidth: LEFT_WIDTHS.emp,
-                        }}
-                      >
-                        <div>
-                          {row.employee.employeeFirstName} {row.employee.employeeLastName}
-                        </div>
-                        <div className="text-[10px] text-gray-500">
-                          ({row.employee.employeeID})
-                        </div>
-                      </td>}
+                      {visibleColumns.sno && (
+                        <td
+                          className="sticky bg-white px-3 py-2 border-b border-r text-center text-[11px] z-20"
+                          style={{
+                            left: getStickyLeft("sno"),
+                            width: LEFT_WIDTHS.sno,
+                            minWidth: LEFT_WIDTHS.sno,
+                          }}
+                        >
+                          {index + 1}
+                        </td>
+                      )}
+                      {visibleColumns.company && (
+                        <td
+                          className="sticky bg-white px-3 py-2 border-b border-r text-[11px] z-20 align-top"
+                          style={{
+                            left: getStickyLeft("company"),
+                            width: LEFT_WIDTHS.company,
+                            minWidth: LEFT_WIDTHS.company,
+                          }}
+                        >
+                          {row.companyName}
+                        </td>
+                      )}
+                      {visibleColumns.branch && (
+                        <td
+                          className="sticky bg-white px-3 py-2 border-b border-r text-[11px] z-20 align-top"
+                          style={{
+                            left: getStickyLeft("branch"),
+                            width: LEFT_WIDTHS.branch,
+                            minWidth: LEFT_WIDTHS.branch,
+                          }}
+                        >
+                          {row.branchName}
+                        </td>
+                      )}
+                      {visibleColumns.dept && (
+                        <td
+                          className="sticky bg-white px-3 py-2 border-b border-r text-[11px] z-20 align-top"
+                          style={{
+                            left: getStickyLeft("dept"),
+                            width: LEFT_WIDTHS.dept,
+                            minWidth: LEFT_WIDTHS.dept,
+                          }}
+                        >
+                          {row.departmentName || "N/A"}
+                        </td>
+                      )}
+                      {visibleColumns.emp && (
+                        <td
+                          className="sticky bg-white px-3 py-2 border-b border-r text-[11px] z-20 align-top"
+                          style={{
+                            left: getStickyLeft("emp"),
+                            width: LEFT_WIDTHS.emp,
+                            minWidth: LEFT_WIDTHS.emp,
+                          }}
+                        >
+                          <div>
+                            {row.employee.employeeFirstName}{" "}
+                            {row.employee.employeeLastName}
+                          </div>
+                          <div className="text-[10px] text-gray-500">
+                            ({row.employee.employeeID})
+                          </div>
+                        </td>
+                      )}
                       {dateColumns.map((date) => {
                         const status = row.leaveDays[date];
                         return (

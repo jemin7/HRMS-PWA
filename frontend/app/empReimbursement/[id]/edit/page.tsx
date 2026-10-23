@@ -10,9 +10,14 @@ import { useCurrentUser } from "../../../hooks/useCurrentUser";
 import { taskFetch } from "../../../utils/taskApi";
 import { localDateISO } from "../../../utils/localDate";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
-type LineItem = { reimbursementType: string; amount: string; description: string };
+type LineItem = {
+  reimbursementType: string;
+  amount: string;
+  description: string;
+};
 type ReimbursementCategory = "task" | "general";
 
 interface EmployeeTask {
@@ -45,7 +50,9 @@ export default function EmpReimbursementEditPage() {
 
   useEffect(() => {
     if (!user?.username) return;
-    fetch(`${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`)
+    fetch(
+      `${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`,
+    )
       .then((r) => (r.ok ? r.json() : null))
       .then(setCreds);
   }, [user]);
@@ -87,7 +94,13 @@ export default function EmpReimbursementEditPage() {
                 amount: i.amount || "",
                 description: i.description || "",
               }))
-            : [{ reimbursementType: "Travelling", amount: "", description: "" }];
+            : [
+                {
+                  reimbursementType: "Travelling",
+                  amount: "",
+                  description: "",
+                },
+              ];
         setItems(lines);
       })
       .finally(() => setLoading(false));
@@ -151,7 +164,10 @@ export default function EmpReimbursementEditPage() {
     return (
       <EmpMobileLayout>
         <div className="py-16 flex justify-center">
-          <Icon icon="solar:refresh-bold-duotone" className="w-8 h-8 text-blue-400 animate-spin" />
+          <Icon
+            icon="solar:refresh-bold-duotone"
+            className="w-8 h-8 text-blue-400 animate-spin"
+          />
         </div>
       </EmpMobileLayout>
     );
@@ -160,7 +176,11 @@ export default function EmpReimbursementEditPage() {
   return (
     <EmpMobileLayout>
       <div className="px-4 pt-4 pb-8">
-        <button type="button" onClick={() => router.back()} className="flex items-center gap-1 text-[13px] font-semibold text-[#2563eb] mb-3">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex items-center gap-1 text-[13px] font-semibold text-[#2563eb] mb-3"
+        >
           <Icon icon="solar:arrow-left-linear" className="w-5 h-5" />
           Back
         </button>
@@ -170,7 +190,9 @@ export default function EmpReimbursementEditPage() {
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-4">
           <div>
-            <label className="text-[11px] font-semibold text-gray-500">Date</label>
+            <label className="text-[11px] font-semibold text-gray-500">
+              Date
+            </label>
             <input
               type="date"
               value={date}
@@ -181,13 +203,19 @@ export default function EmpReimbursementEditPage() {
           </div>
 
           <div>
-            <label className="text-[11px] font-semibold text-gray-500 block mb-2">Category</label>
+            <label className="text-[11px] font-semibold text-gray-500 block mb-2">
+              Category
+            </label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => { setCategory("task"); }}
+                onClick={() => {
+                  setCategory("task");
+                }}
                 className={`py-2.5 rounded-xl border text-[13px] font-semibold ${
-                  category === "task" ? "border-[#2563eb] bg-blue-50 text-[#2563eb]" : "border-gray-200 text-gray-600"
+                  category === "task"
+                    ? "border-[#2563eb] bg-blue-50 text-[#2563eb]"
+                    : "border-gray-200 text-gray-600"
                 }`}
               >
                 Task-based
@@ -200,7 +228,9 @@ export default function EmpReimbursementEditPage() {
                   setTaskSearch("");
                 }}
                 className={`py-2.5 rounded-xl border text-[13px] font-semibold ${
-                  category === "general" ? "border-[#2563eb] bg-blue-50 text-[#2563eb]" : "border-gray-200 text-gray-600"
+                  category === "general"
+                    ? "border-[#2563eb] bg-blue-50 text-[#2563eb]"
+                    : "border-gray-200 text-gray-600"
                 }`}
               >
                 General
@@ -210,16 +240,25 @@ export default function EmpReimbursementEditPage() {
 
           {category === "task" && (
             <div className="relative">
-              <label className="text-[11px] font-semibold text-gray-500">Task</label>
+              <label className="text-[11px] font-semibold text-gray-500">
+                Task
+              </label>
               {selectedTask ? (
                 <div className="mt-1 flex items-start justify-between gap-2 rounded-xl border border-[#2563eb]/30 bg-blue-50/50 px-3 py-2">
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-gray-900 truncate">{selectedTask.taskName}</p>
-                    <p className="text-[11px] text-gray-500 font-mono">{selectedTask.taskCode} · #{selectedTask.id}</p>
+                    <p className="text-[13px] font-semibold text-gray-900 truncate">
+                      {selectedTask.taskName}
+                    </p>
+                    <p className="text-[11px] text-gray-500 font-mono">
+                      {selectedTask.taskCode} · #{selectedTask.id}
+                    </p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => { setSelectedTask(null); setTaskSearch(""); }}
+                    onClick={() => {
+                      setSelectedTask(null);
+                      setTaskSearch("");
+                    }}
                     className="shrink-0 w-7 h-7 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -230,7 +269,10 @@ export default function EmpReimbursementEditPage() {
                   <input
                     type="search"
                     value={taskSearch}
-                    onChange={(e) => { setTaskSearch(e.target.value); setTaskSuggestOpen(true); }}
+                    onChange={(e) => {
+                      setTaskSearch(e.target.value);
+                      setTaskSuggestOpen(true);
+                    }}
                     onFocus={() => setTaskSuggestOpen(true)}
                     placeholder="Search task…"
                     className="w-full mt-1 h-11 rounded-xl border border-gray-200 px-3 text-[14px]"
@@ -248,8 +290,12 @@ export default function EmpReimbursementEditPage() {
                               setTaskSuggestOpen(false);
                             }}
                           >
-                            <p className="text-[13px] font-medium text-gray-900 line-clamp-1">{t.taskName}</p>
-                            <p className="text-[11px] text-gray-500 font-mono">{t.taskCode} · #{t.id}</p>
+                            <p className="text-[13px] font-medium text-gray-900 line-clamp-1">
+                              {t.taskName}
+                            </p>
+                            <p className="text-[11px] text-gray-500 font-mono">
+                              {t.taskCode} · #{t.id}
+                            </p>
                           </button>
                         </li>
                       ))}
@@ -261,7 +307,10 @@ export default function EmpReimbursementEditPage() {
           )}
 
           {items.map((item, idx) => (
-            <div key={idx} className="rounded-xl border border-gray-100 p-3 space-y-2 relative">
+            <div
+              key={idx}
+              className="rounded-xl border border-gray-100 p-3 space-y-2 relative"
+            >
               {items.length > 1 && (
                 <button
                   type="button"
@@ -276,13 +325,18 @@ export default function EmpReimbursementEditPage() {
                 value={item.reimbursementType}
                 onChange={(e) => {
                   const next = [...items];
-                  next[idx] = { ...next[idx], reimbursementType: e.target.value };
+                  next[idx] = {
+                    ...next[idx],
+                    reimbursementType: e.target.value,
+                  };
                   setItems(next);
                 }}
                 className="w-full h-10 rounded-lg border border-gray-200 px-2 text-[13px]"
               >
                 {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </select>
               <input
@@ -310,16 +364,29 @@ export default function EmpReimbursementEditPage() {
           ))}
           <button
             type="button"
-            onClick={() => setItems([...items, { reimbursementType: "Travelling", amount: "", description: "" }])}
+            onClick={() =>
+              setItems([
+                ...items,
+                {
+                  reimbursementType: "Travelling",
+                  amount: "",
+                  description: "",
+                },
+              ])
+            }
             className="text-[12px] font-semibold text-[#2563eb]"
           >
             + Add expense line
           </button>
-          <p className="text-[15px] font-bold text-gray-900 pt-2 border-t">Total: ₹{total.toFixed(2)}</p>
+          <p className="text-[15px] font-bold text-gray-900 pt-2 border-t">
+            Total: ₹{total.toFixed(2)}
+          </p>
           <button
             type="button"
             onClick={submit}
-            disabled={submitting || total <= 0 || (category === "task" && !selectedTask)}
+            disabled={
+              submitting || total <= 0 || (category === "task" && !selectedTask)
+            }
             className="w-full py-3 rounded-xl bg-[#2563eb] text-white font-bold text-sm disabled:opacity-50"
           >
             {submitting ? "Saving…" : isResubmit ? "Resubmit" : "Save"}

@@ -89,7 +89,10 @@ import {
 import { FormDrawer } from "../components/ui/form-drawer";
 import { NoticeBanner } from "../components/ui/notice-banner";
 import { toast } from "sonner";
-import { humanizeApiMessage, messageFromUnknownError } from "../utils/api-error";
+import {
+  humanizeApiMessage,
+  messageFromUnknownError,
+} from "../utils/api-error";
 import { getSidebarContext } from "../utils/sidebarContext";
 import {
   CollapsibleFormGroup,
@@ -434,26 +437,26 @@ interface ManageEmpRead {
    Config & helpers
    ========================= */
 const API = {
-  manageEmp: "/backend/manage-emp",
-  manageEmpList: "/backend/manage-emp/list",
-  serviceProviders: "/backend/service-provider",
-  companies: "/backend/company",
-  branches: "/backend/branches",
-  upload: "/backend/files/upload",
-  employeeDocuments: "/backend/manage-emp-documents",
+  manageEmp: "https://hrms-api-test.onrender.com/manage-emp",
+  manageEmpList: "https://hrms-api-test.onrender.com/manage-emp/list",
+  serviceProviders: "https://hrms-api-test.onrender.com/service-provider",
+  companies: "https://hrms-api-test.onrender.com/company",
+  branches: "https://hrms-api-test.onrender.com/branches",
+  upload: "https://hrms-api-test.onrender.com/files/upload",
+  employeeDocuments: "https://hrms-api-test.onrender.com/manage-emp-documents",
 
   // NEW:
-  departments: "/backend/departments",
-  designations: "/backend/designations",
-  employees: "/backend/manage-emp",
-  contractors: "/backend/contractors",
-  workShifts: "/backend/work-shift",
-  attendancePolicies: "/backend/attendance-policy",
-  leavePolicies: "/backend/leave-policy",
-  devices: "/backend/devices",
-  monthlyGrades: "/backend/monthly-pay-grade",
-  hourlyGrades: "/backend/hourly-grade",
-  salaryCycles: "/backend/salary-cycle",
+  departments: "https://hrms-api-test.onrender.com/departments",
+  designations: "https://hrms-api-test.onrender.com/designations",
+  employees: "https://hrms-api-test.onrender.com/manage-emp",
+  contractors: "https://hrms-api-test.onrender.com/contractors",
+  workShifts: "https://hrms-api-test.onrender.com/work-shift",
+  attendancePolicies: "https://hrms-api-test.onrender.com/attendance-policy",
+  leavePolicies: "https://hrms-api-test.onrender.com/leave-policy",
+  devices: "https://hrms-api-test.onrender.com/devices",
+  monthlyGrades: "https://hrms-api-test.onrender.com/monthly-pay-grade",
+  hourlyGrades: "https://hrms-api-test.onrender.com/hourly-grade",
+  salaryCycles: "https://hrms-api-test.onrender.com/salary-cycle",
 };
 
 const MIN_CHARS = 0;
@@ -485,7 +488,12 @@ async function readApiError(
       return humanizeApiMessage(parsed.message) || fallback;
     }
 
-    return humanizeApiMessage(parsed?.message || parsed?.error, parsed?.statusCode) || fallback;
+    return (
+      humanizeApiMessage(
+        parsed?.message || parsed?.error,
+        parsed?.statusCode,
+      ) || fallback
+    );
   } catch {
     return humanizeApiMessage(raw) || fallback;
   }
@@ -714,12 +722,12 @@ export function ManageEmployeesManagement() {
   const isBranchAdmin = user?.role === "BRANCH_ADMIN";
   const isSuperAdmin = user?.role === "SUPERADMIN";
   const isEmployee = user?.role === "EMPLOYEE";
-const canManageMobileAttendanceSettings =
-  ["SUPERADMIN", "ADMIN", "COMPANY_ADMIN", "MULTI_COMPANY_ADMIN"].includes(
-    String(user?.role ?? "").toUpperCase(),
-  ) ||
-  user?.isCompanyOwner === true ||
-  (user as any)?.employee?.isCompanyOwner === true;
+  const canManageMobileAttendanceSettings =
+    ["SUPERADMIN", "ADMIN", "COMPANY_ADMIN", "MULTI_COMPANY_ADMIN"].includes(
+      String(user?.role ?? "").toUpperCase(),
+    ) ||
+    user?.isCompanyOwner === true ||
+    (user as any)?.employee?.isCompanyOwner === true;
   const [credentialModalOpen, setCredentialModalOpen] = useState(false);
   const [credentialSaving, setCredentialSaving] = useState(false);
   const [credentialEmployee, setCredentialEmployee] =
@@ -774,10 +782,13 @@ const canManageMobileAttendanceSettings =
     }
 
     try {
-      const res = await fetch(`/backend/manage-emp/${r.id}/reset-password`, {
-        method: "POST",
-        headers: authHeaders(),
-      });
+      const res = await fetch(
+        `https://hrms-api-test.onrender.com/manage-emp/${r.id}/reset-password`,
+        {
+          method: "POST",
+          headers: authHeaders(),
+        },
+      );
 
       if (!res.ok) {
         throw new Error(
@@ -823,7 +834,7 @@ const canManageMobileAttendanceSettings =
       setCredentialSaving(true);
 
       const res = await fetch(
-        `/backend/manage-emp/${credentialEmployee.id}/credentials`,
+        `https://hrms-api-test.onrender.com/manage-emp/${credentialEmployee.id}/credentials`,
         {
           method: "PATCH",
           headers: jsonAuthHeaders(),
@@ -835,7 +846,8 @@ const canManageMobileAttendanceSettings =
         },
       );
 
-      if (!res.ok) throw new Error(await readApiError(res, "Failed to save credentials"));
+      if (!res.ok)
+        throw new Error(await readApiError(res, "Failed to save credentials"));
 
       toast.success("Employee credentials saved");
       setCredentialModalOpen(false);
@@ -1340,7 +1352,7 @@ const canManageMobileAttendanceSettings =
 
     if (user.role === "SERVICE_PROVIDER") {
       (async () => {
-        const res = await fetch("/backend/users");
+        const res = await fetch("https://hrms-api-test.onrender.com/users");
         const list = await res.json();
         const me = list.find((u: any) => u.username === user.username);
         setCurrentUserMapping(me || null);
@@ -1730,7 +1742,9 @@ const canManageMobileAttendanceSettings =
 
       // Fetch active terminations to show offboarding countdown
       try {
-        const termRes = await fetch("/backend/termination");
+        const termRes = await fetch(
+          "https://hrms-api-test.onrender.com/termination",
+        );
         const termData = await termRes.json();
         const terminations: any[] = Array.isArray(termData)
           ? termData
@@ -2603,7 +2617,7 @@ const canManageMobileAttendanceSettings =
     const data = await res.json();
     const full = data?.url?.startsWith("http")
       ? data.url
-      : `/backend${data?.url ?? ""}`;
+      : `https://hrms-api-test.onrender.com${data?.url ?? ""}`;
     return full;
   };
 
@@ -3716,7 +3730,7 @@ const canManageMobileAttendanceSettings =
 
       const fileUrl = uploaded?.url?.startsWith("http")
         ? uploaded.url
-        : `/backend${uploaded?.url ?? ""}`;
+        : `https://hrms-api-test.onrender.com${uploaded?.url ?? ""}`;
 
       const doc: EmployeeDocumentForm = {
         _localId: uid(),
@@ -3765,17 +3779,24 @@ const canManageMobileAttendanceSettings =
 
     // Validation
     const validationErrors: string[] = [];
-    if (!formData.employeeFirstName?.trim()) validationErrors.push("Employee First Name is mandatory");
-    if (!formData.employeeLastName?.trim()) validationErrors.push("Employee Last Name is mandatory");
-    if (!isAdmin && !primaryMultiValue(formData.personalPhones).trim()) validationErrors.push("Mobile Number is mandatory");
-    if (!isAdmin && !formData.joiningDate?.trim()) validationErrors.push("Joining Date is mandatory");
-    if (linkedEmployees.length === 0) validationErrors.push("Manager is mandatory");
+    if (!formData.employeeFirstName?.trim())
+      validationErrors.push("Employee First Name is mandatory");
+    if (!formData.employeeLastName?.trim())
+      validationErrors.push("Employee Last Name is mandatory");
+    if (!isAdmin && !primaryMultiValue(formData.personalPhones).trim())
+      validationErrors.push("Mobile Number is mandatory");
+    if (!isAdmin && !formData.joiningDate?.trim())
+      validationErrors.push("Joining Date is mandatory");
+    if (linkedEmployees.length === 0)
+      validationErrors.push("Manager is mandatory");
 
     // Duplicate Employee ID check (within the same company) — only relevant when editing,
     // since new employees get an auto-generated, non-editable ID from the backend.
     if (editingRow && formData.employeeID?.trim()) {
       try {
-        const res = await fetch("/backend/manage-emp");
+        const res = await fetch(
+          "https://hrms-api-test.onrender.com/manage-emp",
+        );
         const allEmps = await res.json();
         const emps = Array.isArray(allEmps) ? allEmps : [];
         const duplicate = emps.find(
@@ -4313,13 +4334,8 @@ const canManageMobileAttendanceSettings =
               }
             : undefined,
         );
-      } else if (
-        approvalRequired &&
-        approvalStatus === "PENDING"
-      ) {
-        const workflowName =
-          saveResult?.approval
-            ?.workflowName;
+      } else if (approvalRequired && approvalStatus === "PENDING") {
+        const workflowName = saveResult?.approval?.workflowName;
 
         toast.success(
           workflowName
@@ -4335,17 +4351,14 @@ const canManageMobileAttendanceSettings =
           },
         );
       } else {
-        toast.success(
-          "Employee created and approved successfully",
-          {
-            description: saveResult?.initialPassword
-              ? saveResult?.loginEmailSent
-                ? "Employee created. Login details were emailed to the employee."
-                : "Employee created. No email is on file. Use the key icon to share the employee ID and temporary password."
-              : "Employee created. No matching conditional approval workflow was required.",
-            duration: 6000,
-          },
-        );
+        toast.success("Employee created and approved successfully", {
+          description: saveResult?.initialPassword
+            ? saveResult?.loginEmailSent
+              ? "Employee created. Login details were emailed to the employee."
+              : "Employee created. No email is on file. Use the key icon to share the employee ID and temporary password."
+            : "Employee created. No matching conditional approval workflow was required.",
+          duration: 6000,
+        });
       }
 
       dispatchAppRefresh();

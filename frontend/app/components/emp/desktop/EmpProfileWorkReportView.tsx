@@ -10,7 +10,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Activity, Clock, LineChart as LineChartIcon, Timer } from "lucide-react";
+import {
+  Activity,
+  Clock,
+  LineChart as LineChartIcon,
+  Timer,
+} from "lucide-react";
 import {
   formatPunchTime,
   groupAttendanceByDay,
@@ -21,8 +26,14 @@ import {
   type AttendanceDaySummary,
   type AttendanceLocationRecord,
 } from "@/app/utils/empAttendanceHistory";
-import { formatWorkedDuration, formatWorkHoursDecimal } from "@/app/utils/attendanceDuration";
-import { listCardClass, listSelectTriggerClass } from "@/app/components/app/list-ui-styles";
+import {
+  formatWorkedDuration,
+  formatWorkHoursDecimal,
+} from "@/app/utils/attendanceDuration";
+import {
+  listCardClass,
+  listSelectTriggerClass,
+} from "@/app/components/app/list-ui-styles";
 import {
   Select,
   SelectContent,
@@ -34,7 +45,8 @@ import { Input } from "@/app/components/ui/input";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/app/utils/cn";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 type PeriodPreset =
   | "custom"
@@ -48,12 +60,24 @@ function dateKeyToLabel(dateKey: string, spanDays: number) {
   const d = new Date(`${dateKey}T12:00:00Z`);
   if (Number.isNaN(d.getTime())) return dateKey;
   if (spanDays <= 14) {
-    return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", timeZone: "UTC" });
+    return d.toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    });
   }
   if (spanDays <= 62) {
-    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
+    return d.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    });
   }
-  return d.toLocaleDateString("en-IN", { month: "short", year: "2-digit", timeZone: "UTC" });
+  return d.toLocaleDateString("en-IN", {
+    month: "short",
+    year: "2-digit",
+    timeZone: "UTC",
+  });
 }
 
 function punchHourDecimal(iso: string | null | undefined): number | null {
@@ -89,7 +113,12 @@ function fillDaySeries(
   const out: AttendanceDaySummary[] = [];
   const start = new Date(`${range.from}T12:00:00Z`);
   const end = new Date(`${range.to}T12:00:00Z`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return out;
+  if (
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime()) ||
+    start > end
+  )
+    return out;
   for (let t = start.getTime(); t <= end.getTime(); t += 86_400_000) {
     const d = new Date(t);
     const key = d.toISOString().slice(0, 10);
@@ -152,7 +181,9 @@ export function EmpProfileWorkReportView({
     async (range: { from: string; to: string }) => {
       const token =
         typeof window !== "undefined"
-          ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
+          ? localStorage.getItem("token") ||
+            localStorage.getItem("accessToken") ||
+            ""
           : "";
       if (!token) {
         setDays([]);
@@ -201,7 +232,10 @@ export function EmpProfileWorkReportView({
     setAppliedRange(range);
   };
 
-  const seriesDays = useMemo(() => fillDaySeries(days, appliedRange), [days, appliedRange]);
+  const seriesDays = useMemo(
+    () => fillDaySeries(days, appliedRange),
+    [days, appliedRange],
+  );
   const spanDays = seriesDays.length || 30;
 
   const chartData = useMemo(() => {
@@ -210,13 +244,17 @@ export function EmpProfileWorkReportView({
       const checkIn = punchHourDecimal(d.checkIn);
       const checkOut = punchHourDecimal(d.checkOut);
       const primary =
-        metric === "hours" ? hours : metric === "checkin" ? checkIn ?? 0 : checkOut ?? 0;
+        metric === "hours"
+          ? hours
+          : metric === "checkin"
+            ? (checkIn ?? 0)
+            : (checkOut ?? 0);
       const secondary =
         metric === "hours"
           ? Math.max(0, hours * 0.55)
           : metric === "checkin"
-            ? checkOut ?? 0
-            : checkIn ?? 0;
+            ? (checkOut ?? 0)
+            : (checkIn ?? 0);
       return {
         key: d.dateKey,
         label: dateKeyToLabel(d.dateKey, spanDays),
@@ -246,15 +284,15 @@ export function EmpProfileWorkReportView({
       avgHours: formatHoursLabel(avgSec / 3600),
       daysPresent: worked.length,
       daysExpected: seriesDays.length,
-      onTimeRate: worked.length ? Math.round((onTime / worked.length) * 100) : 0,
+      onTimeRate: worked.length
+        ? Math.round((onTime / worked.length) * 100)
+        : 0,
       completion,
     };
   }, [seriesDays]);
 
   const yDomain =
-    metric === "hours"
-      ? ([0, "auto"] as const)
-      : ([8, 20] as const);
+    metric === "hours" ? ([0, "auto"] as const) : ([8, 20] as const);
 
   return (
     <div className="space-y-4">
@@ -284,7 +322,9 @@ export function EmpProfileWorkReportView({
           <div key={card.label} className={cn(listCardClass, "p-4")}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[12px] font-medium text-muted-foreground">{card.label}</p>
+                <p className="text-[12px] font-medium text-muted-foreground">
+                  {card.label}
+                </p>
                 <p className="mt-1 text-xl font-semibold tracking-tight text-foreground">
                   {loading ? "…" : card.value}
                 </p>
@@ -300,7 +340,9 @@ export function EmpProfileWorkReportView({
       <div className={cn(listCardClass, "p-5")}>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-foreground">Work Report</h2>
+            <h2 className="text-base font-semibold text-foreground">
+              Work Report
+            </h2>
             <p className="mt-0.5 text-[13px] text-muted-foreground">
               Check-in / check-out based work hours for the selected period
             </p>
@@ -317,7 +359,10 @@ export function EmpProfileWorkReportView({
                 applyPeriod(preset);
               }}
             >
-              <SelectTrigger className={cn(listSelectTriggerClass, "w-[180px]")} aria-label="Period">
+              <SelectTrigger
+                className={cn(listSelectTriggerClass, "w-[180px]")}
+                aria-label="Period"
+              >
                 <div className="flex items-center gap-2">
                   <Clock className="size-3.5 text-muted-foreground" />
                   <SelectValue />
@@ -331,8 +376,14 @@ export function EmpProfileWorkReportView({
                 <SelectItem value="last-year">Last Year</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={metric} onValueChange={(v) => setMetric(v as MetricMode)}>
-              <SelectTrigger className={cn(listSelectTriggerClass, "w-[160px]")} aria-label="Metric">
+            <Select
+              value={metric}
+              onValueChange={(v) => setMetric(v as MetricMode)}
+            >
+              <SelectTrigger
+                className={cn(listSelectTriggerClass, "w-[160px]")}
+                aria-label="Metric"
+              >
                 <div className="flex items-center gap-2">
                   <LineChartIcon className="size-3.5 text-muted-foreground" />
                   <SelectValue />
@@ -350,7 +401,9 @@ export function EmpProfileWorkReportView({
         {periodPreset === "custom" ? (
           <div className="mb-5 flex flex-wrap items-end gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">From Date</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                From Date
+              </label>
               <Input
                 type="date"
                 value={fromDate}
@@ -359,7 +412,9 @@ export function EmpProfileWorkReportView({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">To Date</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                To Date
+              </label>
               <Input
                 type="date"
                 value={toDate}
@@ -385,20 +440,41 @@ export function EmpProfileWorkReportView({
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <AreaChart
+                data={chartData}
+                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+              >
                 <defs>
-                  <linearGradient id="workReportFill" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient
+                    id="workReportFill"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
                     <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.02} />
+                    <stop
+                      offset="100%"
+                      stopColor="#3B82F6"
+                      stopOpacity={0.02}
+                    />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#E5E7EB"
+                />
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 11, fill: "#9CA3AF" }}
                   axisLine={false}
                   tickLine={false}
-                  interval={spanDays > 90 ? Math.floor(spanDays / 12) : "preserveStartEnd"}
+                  interval={
+                    spanDays > 90
+                      ? Math.floor(spanDays / 12)
+                      : "preserveStartEnd"
+                  }
                 />
                 <YAxis
                   domain={yDomain as unknown as [number, number | "auto"]}

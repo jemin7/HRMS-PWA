@@ -21,7 +21,8 @@ import {
 import { Icon } from "@iconify/react";
 import { canViewProductModule, useProductAccess } from "@/lib/productAccess";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 const MEMBER_TABS = [
   "profile",
@@ -76,9 +77,13 @@ function EmpDesktopTeamMemberWorkspaceInner() {
     if (!employeeId || Number.isNaN(employeeId)) return;
     const token =
       typeof window !== "undefined"
-        ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
+        ? localStorage.getItem("token") ||
+          localStorage.getItem("accessToken") ||
+          ""
         : "";
-    const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+    const headers: HeadersInit = token
+      ? { Authorization: `Bearer ${token}` }
+      : {};
     fetch(`${BACKEND}/manage-emp/${employeeId}`, { headers, cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -93,67 +98,143 @@ function EmpDesktopTeamMemberWorkspaceInner() {
 
   if (!employeeId || Number.isNaN(employeeId)) {
     return (
-      <EmpDesktopPage title="Employee profile" description="Employee not found" icon={User}>
+      <EmpDesktopPage
+        title="Employee profile"
+        description="Employee not found"
+        icon={User}
+      >
         <p className="text-sm text-muted-foreground">Invalid employee.</p>
       </EmpDesktopPage>
     );
   }
 
   const tabs = [
-    { id: "profile", label: "Profile", href: memberTabHref(employeeId, "profile") },
-    { id: "attendance", label: "Attendance", href: memberTabHref(employeeId, "attendance") },
-    { id: "work-report", label: "Work Report", href: memberTabHref(employeeId, "work-report") },
+    {
+      id: "profile",
+      label: "Profile",
+      href: memberTabHref(employeeId, "profile"),
+    },
+    {
+      id: "attendance",
+      label: "Attendance",
+      href: memberTabHref(employeeId, "attendance"),
+    },
+    {
+      id: "work-report",
+      label: "Work Report",
+      href: memberTabHref(employeeId, "work-report"),
+    },
     ...(canViewProductModule("LEAVE_MODULE")
-      ? [{ id: "leave", label: "Leave", href: memberTabHref(employeeId, "leave") }]
+      ? [
+          {
+            id: "leave",
+            label: "Leave",
+            href: memberTabHref(employeeId, "leave"),
+          },
+        ]
       : []),
     ...(canViewProductModule("REIMBURSEMENT_MODULE")
-      ? [{ id: "reimbursement", label: "Reimbursement", href: memberTabHref(employeeId, "reimbursement") }]
+      ? [
+          {
+            id: "reimbursement",
+            label: "Reimbursement",
+            href: memberTabHref(employeeId, "reimbursement"),
+          },
+        ]
       : []),
     ...(canViewProductModule("REGULARISATION_MODULE")
-      ? [{ id: "regularisation", label: "Regularisation", href: memberTabHref(employeeId, "regularisation") }]
+      ? [
+          {
+            id: "regularisation",
+            label: "Regularisation",
+            href: memberTabHref(employeeId, "regularisation"),
+          },
+        ]
       : []),
     ...(canViewProductModule("PAYSLIP_MODULE")
-      ? [{ id: "payslips", label: "Payslips", href: memberTabHref(employeeId, "payslips") }]
+      ? [
+          {
+            id: "payslips",
+            label: "Payslips",
+            href: memberTabHref(employeeId, "payslips"),
+          },
+        ]
       : []),
     ...(canViewProductModule("LOAN_ADVANCE_MODULE")
-      ? [{ id: "salary-advance", label: "Loans & Advances", href: memberTabHref(employeeId, "salary-advance") }]
+      ? [
+          {
+            id: "salary-advance",
+            label: "Loans & Advances",
+            href: memberTabHref(employeeId, "salary-advance"),
+          },
+        ]
       : []),
     ...(canViewProductModule("IM_MODULE")
-      ? [{ id: "messaging", label: "IM", href: memberTabHref(employeeId, "messaging") }]
+      ? [
+          {
+            id: "messaging",
+            label: "IM",
+            href: memberTabHref(employeeId, "messaging"),
+          },
+        ]
       : []),
     ...(canViewProductModule("HOLIDAY_MODULE")
-      ? [{ id: "holidays", label: "My Holidays", href: memberTabHref(employeeId, "holidays") }]
+      ? [
+          {
+            id: "holidays",
+            label: "My Holidays",
+            href: memberTabHref(employeeId, "holidays"),
+          },
+        ]
       : []),
-    ...(canViewProductModule("PROMOTIONS_MODULE") || canViewProductModule("TRANSFERS_MODULE")
-      ? [{ id: "promotions", label: "Promotions & Transfer", href: memberTabHref(employeeId, "promotions") }]
+    ...(canViewProductModule("PROMOTIONS_MODULE") ||
+    canViewProductModule("TRANSFERS_MODULE")
+      ? [
+          {
+            id: "promotions",
+            label: "Promotions & Transfer",
+            href: memberTabHref(employeeId, "promotions"),
+          },
+        ]
       : []),
   ];
 
   return (
-    <EmpDesktopPage title={employeeName} description="Employee profile and workspace sections" icon={User}>
+    <EmpDesktopPage
+      title={employeeName}
+      description="Employee profile and workspace sections"
+      icon={User}
+    >
       <div className="space-y-3">
         <EmpProfileWorkspaceTabNav tabs={tabs} activeTab={activeTab} />
 
         {activeTab === "profile" && (
           <EmpDesktopProfilePanel embedded employeeId={employeeId} readOnly />
         )}
-        {activeTab === "attendance" && <EmpProfileAttendanceView employeeId={employeeId} />}
-        {activeTab === "work-report" && <EmpProfileWorkReportView employeeId={employeeId} />}
+        {activeTab === "attendance" && (
+          <EmpProfileAttendanceView employeeId={employeeId} />
+        )}
+        {activeTab === "work-report" && (
+          <EmpProfileWorkReportView employeeId={employeeId} />
+        )}
         {activeTab === "leave" && canViewProductModule("LEAVE_MODULE") && (
           <EmpTeamMemberLeave employeeId={employeeId} />
         )}
-        {activeTab === "reimbursement" && canViewProductModule("REIMBURSEMENT_MODULE") && (
-          <EmpTeamMemberReimbursement employeeId={employeeId} />
-        )}
-        {activeTab === "regularisation" && canViewProductModule("REGULARISATION_MODULE") && (
-          <EmpProfileRegularisationView employeeId={employeeId} />
-        )}
+        {activeTab === "reimbursement" &&
+          canViewProductModule("REIMBURSEMENT_MODULE") && (
+            <EmpTeamMemberReimbursement employeeId={employeeId} />
+          )}
+        {activeTab === "regularisation" &&
+          canViewProductModule("REGULARISATION_MODULE") && (
+            <EmpProfileRegularisationView employeeId={employeeId} />
+          )}
         {activeTab === "payslips" && canViewProductModule("PAYSLIP_MODULE") && (
           <EmpTeamMemberPayslips employeeId={employeeId} />
         )}
-        {activeTab === "salary-advance" && canViewProductModule("LOAN_ADVANCE_MODULE") && (
-          <EmpTeamMemberSalaryAdvances employeeId={employeeId} />
-        )}
+        {activeTab === "salary-advance" &&
+          canViewProductModule("LOAN_ADVANCE_MODULE") && (
+            <EmpTeamMemberSalaryAdvances employeeId={employeeId} />
+          )}
         {activeTab === "messaging" && canViewProductModule("IM_MODULE") && (
           <EmpTeamMemberMessaging employeeId={employeeId} />
         )}
@@ -161,7 +242,8 @@ function EmpDesktopTeamMemberWorkspaceInner() {
           <EmpHolidayListMobile embedded />
         )}
         {activeTab === "promotions" &&
-          (canViewProductModule("PROMOTIONS_MODULE") || canViewProductModule("TRANSFERS_MODULE")) && (
+          (canViewProductModule("PROMOTIONS_MODULE") ||
+            canViewProductModule("TRANSFERS_MODULE")) && (
             <EmpTeamMemberPromotions employeeId={employeeId} />
           )}
       </div>
@@ -172,7 +254,10 @@ function EmpDesktopTeamMemberWorkspaceInner() {
 function Fallback() {
   return (
     <div className="p-8 flex justify-center">
-      <Icon icon="solar:refresh-bold-duotone" className="w-8 h-8 animate-spin text-blue-400" />
+      <Icon
+        icon="solar:refresh-bold-duotone"
+        className="w-8 h-8 animate-spin text-blue-400"
+      />
     </div>
   );
 }

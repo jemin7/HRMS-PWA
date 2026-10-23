@@ -21,19 +21,17 @@ import { fetchEmployeeLeaveBalance } from "../../utils/leaveApprovalApi";
 import { formatDateShort } from "../../utils/leaveDisplay";
 import { EmpMobileDateField } from "./EmpMobileDateField";
 import { useEmpPortalDesktop } from "../layout/EmpPortalShell";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 function authHeaders(): Record<string, string> {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("accessToken") || ""
+      ? localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        ""
       : "";
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -92,9 +90,18 @@ export function EmpLeaveApprovalSheet({
       .finally(() => setLoading(false));
   }, [open, application, periodFrom, periodTo]);
 
-  const pendingCount = useMemo(() => dayStatuses.filter((d) => !d.status).length, [dayStatuses]);
-  const assignedCount = useMemo(() => dayStatuses.filter((d) => d.status).length, [dayStatuses]);
-  const segments = useMemo(() => groupAssignedRanges(dayStatuses), [dayStatuses]);
+  const pendingCount = useMemo(
+    () => dayStatuses.filter((d) => !d.status).length,
+    [dayStatuses],
+  );
+  const assignedCount = useMemo(
+    () => dayStatuses.filter((d) => d.status).length,
+    [dayStatuses],
+  );
+  const segments = useMemo(
+    () => groupAssignedRanges(dayStatuses),
+    [dayStatuses],
+  );
 
   if (!open || !application || !mounted) return null;
 
@@ -124,9 +131,12 @@ export function EmpLeaveApprovalSheet({
       (rangeDayType as LeaveDayStatus["dayType"]) || undefined,
     );
     setDayStatuses(days);
-    if (assigned === 0) toast.error("No days assigned — balance may be exhausted.");
+    if (assigned === 0)
+      toast.error("No days assigned — balance may be exhausted.");
     else if (skipped > 0) {
-      toast.warning(`Assigned ${assigned} day(s); ${skipped} left unassigned (insufficient balance).`);
+      toast.warning(
+        `Assigned ${assigned} day(s); ${skipped} left unassigned (insufficient balance).`,
+      );
     } else {
       toast.success(`Assigned ${assigned} day(s).`);
     }
@@ -189,7 +199,10 @@ export function EmpLeaveApprovalSheet({
       toast.error("Leave balance not loaded.");
       return;
     }
-    const { days: balancedDays, stripped } = enforceBalanceOnDayStatuses(dayStatuses, balance);
+    const { days: balancedDays, stripped } = enforceBalanceOnDayStatuses(
+      dayStatuses,
+      balance,
+    );
     if (stripped > 0) {
       setDayStatuses(balancedDays);
       toast.error(`${stripped} day(s) exceed balance.`);
@@ -205,11 +218,14 @@ export function EmpLeaveApprovalSheet({
         ...buildLeaveApprovalPayload(balancedDays, balance),
         actorRole: "MANAGER",
       };
-      const res = await fetch(`${BACKEND}/leave-application/${application.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        `${BACKEND}/leave-application/${application.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify(payload),
+        },
+      );
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || "Approval failed");
@@ -233,11 +249,14 @@ export function EmpLeaveApprovalSheet({
     if (!confirm("Reject this leave request?")) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`${BACKEND}/leave-application/${application.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ status: "Rejected", actorRole: "MANAGER" }),
-      });
+      const res = await fetch(
+        `${BACKEND}/leave-application/${application.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ status: "Rejected", actorRole: "MANAGER" }),
+        },
+      );
       if (!res.ok) throw new Error("Reject failed");
       toast.success("Leave rejected");
       onDone();
@@ -258,32 +277,48 @@ export function EmpLeaveApprovalSheet({
           ? "flex flex-col bg-[#f8f9fb] min-h-0"
           : "fixed inset-0 z-[200] flex flex-col bg-[#f8f9fb]"
       }
-      style={embedded || useDesktopDialog ? undefined : { paddingTop: "env(safe-area-inset-top)" }}
+      style={
+        embedded || useDesktopDialog
+          ? undefined
+          : { paddingTop: "env(safe-area-inset-top)" }
+      }
     >
       {!embedded && !useDesktopDialog && (
-      <header className="shrink-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-2">
-        <button type="button" onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center">
-          <Icon icon="solar:arrow-left-linear" className="w-5 h-5" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-[16px] font-bold text-gray-900">Approve leave</h1>
-          <p className="text-[11px] text-gray-500 truncate">
-            {formatDateShort(application.fromDate)} – {formatDateShort(application.toDate)}
-          </p>
-        </div>
-      </header>
+        <header className="shrink-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-9 h-9 rounded-full flex items-center justify-center"
+          >
+            <Icon icon="solar:arrow-left-linear" className="w-5 h-5" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-[16px] font-bold text-gray-900">
+              Approve leave
+            </h1>
+            <p className="text-[11px] text-gray-500 truncate">
+              {formatDateShort(application.fromDate)} –{" "}
+              {formatDateShort(application.toDate)}
+            </p>
+          </div>
+        </header>
       )}
 
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-4">
         {loading ? (
-          <p className="text-center text-gray-400 py-8 text-sm">Loading balance…</p>
+          <p className="text-center text-gray-400 py-8 text-sm">
+            Loading balance…
+          </p>
         ) : !balance ? (
-          <p className="text-center text-gray-400 py-8 text-sm">Could not load leave balance.</p>
+          <p className="text-center text-gray-400 py-8 text-sm">
+            Could not load leave balance.
+          </p>
         ) : (
           <>
             <p className="text-[12px] text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 leading-relaxed">
               Assign leave types by date range or tap individual days.{" "}
-              <strong>Unassigned days will not be approved</strong> (same as desktop).
+              <strong>Unassigned days will not be approved</strong> (same as
+              desktop).
             </p>
 
             <div className="grid grid-cols-3 gap-2">
@@ -292,17 +327,23 @@ export function EmpLeaveApprovalSheet({
                 { k: "casual", l: "Casual" },
                 { k: "privileged", l: "Privilege" },
               ].map(({ k, l }) => (
-                <div key={k} className="bg-white rounded-xl border p-2 text-center text-[11px]">
+                <div
+                  key={k}
+                  className="bg-white rounded-xl border p-2 text-center text-[11px]"
+                >
                   <p className="text-gray-500">{l}</p>
                   <p className="font-bold text-gray-900">
-                    {balance[k as keyof LeaveBalance].remaining}/{balance[k as keyof LeaveBalance].total}
+                    {balance[k as keyof LeaveBalance].remaining}/
+                    {balance[k as keyof LeaveBalance].total}
                   </p>
                 </div>
               ))}
             </div>
 
             <div className="bg-white rounded-2xl border p-3 space-y-3 min-w-0 overflow-hidden">
-              <p className="text-[12px] font-bold text-gray-700">Assign by date range</p>
+              <p className="text-[12px] font-bold text-gray-700">
+                Assign by date range
+              </p>
               <div className="grid grid-cols-2 gap-2 min-w-0">
                 <EmpMobileDateField
                   label="From"
@@ -354,7 +395,11 @@ export function EmpLeaveApprovalSheet({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setDayStatuses(clearLeaveTypeInRange(dayStatuses, rangeFrom, rangeTo))}
+                  onClick={() =>
+                    setDayStatuses(
+                      clearLeaveTypeInRange(dayStatuses, rangeFrom, rangeTo),
+                    )
+                  }
                   className="px-3 py-1.5 rounded-lg border text-[12px] font-semibold"
                 >
                   Clear range
@@ -388,7 +433,9 @@ export function EmpLeaveApprovalSheet({
                         assigned ? "bg-emerald-50/80" : ""
                       }`}
                     >
-                      <span className="text-gray-800">{formatDateShort(day.date)}</span>
+                      <span className="text-gray-800">
+                        {formatDateShort(day.date)}
+                      </span>
                       <span
                         className={`font-semibold shrink-0 ml-2 ${
                           assigned ? "text-emerald-700" : "text-gray-400"
@@ -396,7 +443,9 @@ export function EmpLeaveApprovalSheet({
                       >
                         {assigned
                           ? leaveTypeLabel(day.status) +
-                            (day.status === "ShortLeave" && day.dayType ? ` (${day.dayType})` : "")
+                            (day.status === "ShortLeave" && day.dayType
+                              ? ` (${day.dayType})`
+                              : "")
                           : "Not approved"}
                       </span>
                     </button>
@@ -407,8 +456,8 @@ export function EmpLeaveApprovalSheet({
                 <div className="border-t border-gray-100 px-3 py-2 space-y-1">
                   {segments.map((seg, i) => (
                     <p key={i} className="text-[11px] text-gray-600">
-                      {formatDateShort(seg.from)} – {formatDateShort(seg.to)} · {leaveTypeLabel(seg.status)} (
-                      {seg.count}d)
+                      {formatDateShort(seg.from)} – {formatDateShort(seg.to)} ·{" "}
+                      {leaveTypeLabel(seg.status)} ({seg.count}d)
                     </p>
                   ))}
                 </div>
@@ -478,7 +527,8 @@ export function EmpLeaveApprovalSheet({
           <DialogHeader className="px-6 pt-5 pb-3 border-b shrink-0">
             <DialogTitle>Approve leave</DialogTitle>
             <p className="text-xs text-muted-foreground">
-              {formatDateShort(application.fromDate)} – {formatDateShort(application.toDate)}
+              {formatDateShort(application.fromDate)} –{" "}
+              {formatDateShort(application.toDate)}
             </p>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-y-auto">{sheet}</div>

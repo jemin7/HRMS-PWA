@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -10,17 +15,43 @@ import { useCurrentUser } from "../hooks/useCurrentUser";
 import * as XLSX from "xlsx";
 import { PageHeader } from "../components/app/page-header";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
-interface Company { id: number; companyName: string; }
-interface Branch { id: number; branchName: string; companyID: number; }
-interface Department { id: number; companyID: number; branchesID: number; departmentName: string; }
-interface Contractor { id: number; companyID: number | null; contractorName: string; }
-interface WorkShift { id: number; companyID: number; branchesID: number; shiftName?: string; workShiftDay?: any[]; }
+interface Company {
+  id: number;
+  companyName: string;
+}
+interface Branch {
+  id: number;
+  branchName: string;
+  companyID: number;
+}
+interface Department {
+  id: number;
+  companyID: number;
+  branchesID: number;
+  departmentName: string;
+}
+interface Contractor {
+  id: number;
+  companyID: number | null;
+  contractorName: string;
+}
+interface WorkShift {
+  id: number;
+  companyID: number;
+  branchesID: number;
+  shiftName?: string;
+  workShiftDay?: any[];
+}
 interface Employee {
-  id: number; employeeID: string;
-  employeeFirstName: string; employeeLastName: string;
-  companyID: number; branchesID: number;
+  id: number;
+  employeeID: string;
+  employeeFirstName: string;
+  employeeLastName: string;
+  companyID: number;
+  branchesID: number;
   departmentNameID?: number | null;
   contractorID?: number | null;
   workShiftID?: number | null;
@@ -62,11 +93,21 @@ export function ContractorReportsManagement() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [columnPickerOpen, setColumnPickerOpen] = useState(false);
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
-    sno: true, employeeID: true, employeeName: true, company: true,
-    branch: true, department: true, designation: true, contractor: true, shift: true,
-  });
-  const toggleColumn = (key: string) => setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }));
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    {
+      sno: true,
+      employeeID: true,
+      employeeName: true,
+      company: true,
+      branch: true,
+      department: true,
+      designation: true,
+      contractor: true,
+      shift: true,
+    },
+  );
+  const toggleColumn = (key: string) =>
+    setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const [formData, setFormData] = useState({
     companyID: null as number | null,
@@ -82,18 +123,28 @@ export function ContractorReportsManagement() {
   useEffect(() => {
     Promise.all([
       fetch(`${BACKEND_URL}/company`).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/branches`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/departments`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/contractors`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/work-shift`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${BACKEND_URL}/manage-emp`, { cache: "no-store" }).then((r) => r.json()),
+      fetch(`${BACKEND_URL}/branches`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
+      fetch(`${BACKEND_URL}/departments`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
+      fetch(`${BACKEND_URL}/contractors`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
+      fetch(`${BACKEND_URL}/work-shift`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
+      fetch(`${BACKEND_URL}/manage-emp`, { cache: "no-store" }).then((r) =>
+        r.json(),
+      ),
     ]).then(([cos, brs, depts, cons, shifts, emps]) => {
       setCompanies(cos);
       setAllBranches(brs);
       setAllDepartments(depts);
-      setContractors(Array.isArray(cons) ? cons : cons?.data ?? []);
-      setWorkShifts(Array.isArray(shifts) ? shifts : shifts?.data ?? []);
-      setEmployees(Array.isArray(emps) ? emps : emps?.data ?? []);
+      setContractors(Array.isArray(cons) ? cons : (cons?.data ?? []));
+      setWorkShifts(Array.isArray(shifts) ? shifts : (shifts?.data ?? []));
+      setEmployees(Array.isArray(emps) ? emps : (emps?.data ?? []));
     });
   }, []);
 
@@ -116,10 +167,14 @@ export function ContractorReportsManagement() {
 
   useEffect(() => {
     if (!user) return;
-    const cid = user.role !== "SUPERADMIN" && user.companyID ? user.companyID : formData.companyID;
+    const cid =
+      user.role !== "SUPERADMIN" && user.companyID
+        ? user.companyID
+        : formData.companyID;
     let filtered = [...allDepartments];
     if (cid) filtered = filtered.filter((d) => d.companyID === cid);
-    if (formData.branchID) filtered = filtered.filter((d) => d.branchesID === formData.branchID);
+    if (formData.branchID)
+      filtered = filtered.filter((d) => d.branchesID === formData.branchID);
     setDepartments(filtered);
     // Auto-select if only one department
     if (user.role !== "SUPERADMIN" && filtered.length === 1) {
@@ -130,14 +185,20 @@ export function ContractorReportsManagement() {
   // ── Filtered contractors by company ──
 
   const filteredContractors = contractors.filter((c) => {
-    const cid = user?.role !== "SUPERADMIN" && user?.companyID ? user.companyID : formData.companyID;
+    const cid =
+      user?.role !== "SUPERADMIN" && user?.companyID
+        ? user.companyID
+        : formData.companyID;
     return !cid || c.companyID === cid || c.companyID == null;
   });
 
   // ── Filtered shifts by company/branch ──
 
   const filteredShifts = workShifts.filter((s) => {
-    const cid = user?.role !== "SUPERADMIN" && user?.companyID ? user.companyID : formData.companyID;
+    const cid =
+      user?.role !== "SUPERADMIN" && user?.companyID
+        ? user.companyID
+        : formData.companyID;
     if (cid && s.companyID !== cid) return false;
     if (formData.branchID && s.branchesID !== formData.branchID) return false;
     return true;
@@ -148,16 +209,27 @@ export function ContractorReportsManagement() {
   const generateReport = async () => {
     setLoading(true);
     try {
-      const cid = user?.role !== "SUPERADMIN" && user?.companyID ? user.companyID : formData.companyID;
+      const cid =
+        user?.role !== "SUPERADMIN" && user?.companyID
+          ? user.companyID
+          : formData.companyID;
 
       // Filter employees who belong to a contractor
       let filtered = employees.filter((e) => e.contractorID != null);
 
       if (cid) filtered = filtered.filter((e) => e.companyID === cid);
-      if (formData.branchID) filtered = filtered.filter((e) => e.branchesID === formData.branchID);
-      if (formData.departmentID) filtered = filtered.filter((e) => e.departmentNameID === formData.departmentID);
-      if (formData.contractorID) filtered = filtered.filter((e) => e.contractorID === formData.contractorID);
-      if (formData.shiftID) filtered = filtered.filter((e) => e.workShiftID === formData.shiftID);
+      if (formData.branchID)
+        filtered = filtered.filter((e) => e.branchesID === formData.branchID);
+      if (formData.departmentID)
+        filtered = filtered.filter(
+          (e) => e.departmentNameID === formData.departmentID,
+        );
+      if (formData.contractorID)
+        filtered = filtered.filter(
+          (e) => e.contractorID === formData.contractorID,
+        );
+      if (formData.shiftID)
+        filtered = filtered.filter((e) => e.workShiftID === formData.shiftID);
 
       const companyMap = new Map(companies.map((c) => [c.id, c]));
       const branchMap = new Map(allBranches.map((b) => [b.id, b]));
@@ -168,7 +240,9 @@ export function ContractorReportsManagement() {
       const rows: ReportRow[] = filtered.map((emp, i) => {
         const company = companyMap.get(emp.companyID);
         const branch = branchMap.get(emp.branchesID);
-        const dept = emp.departmentNameID ? deptMap.get(emp.departmentNameID) : null;
+        const dept = emp.departmentNameID
+          ? deptMap.get(emp.departmentNameID)
+          : null;
         const cont = emp.contractorID ? contMap.get(emp.contractorID) : null;
         const shift = emp.workShiftID ? shiftMap.get(emp.workShiftID) : null;
 
@@ -178,7 +252,8 @@ export function ContractorReportsManagement() {
           employeeName: `${emp.employeeFirstName} ${emp.employeeLastName}`,
           companyName: company?.companyName || "-",
           branchName: branch?.branchName || "-",
-          departmentName: dept?.departmentName || emp.departments?.departmentName || "-",
+          departmentName:
+            dept?.departmentName || emp.departments?.departmentName || "-",
           designation: emp.designations?.designation || "-",
           contractorName: cont?.contractorName || "-",
           shiftName: shift?.shiftName || `Shift ${shift?.id || "-"}`,
@@ -213,7 +288,8 @@ export function ContractorReportsManagement() {
 
   const filteredData = reportData.filter((row) => {
     const term = searchTerm.toLowerCase();
-    return !term || (
+    return (
+      !term ||
       row.employeeID.toLowerCase().includes(term) ||
       row.employeeName.toLowerCase().includes(term) ||
       row.companyName.toLowerCase().includes(term) ||
@@ -235,19 +311,26 @@ export function ContractorReportsManagement() {
       "S.NO": row.sno,
       "Employee ID": row.employeeID,
       "Employee Name": row.employeeName,
-      "Company": row.companyName,
-      "Branch": row.branchName,
-      "Department": row.departmentName,
-      "Designation": row.designation,
-      "Contractor": row.contractorName,
-      "Shift": row.shiftName,
+      Company: row.companyName,
+      Branch: row.branchName,
+      Department: row.departmentName,
+      Designation: row.designation,
+      Contractor: row.contractorName,
+      Shift: row.shiftName,
     }));
 
     const ws = XLSX.utils.json_to_sheet(excelRows);
 
     ws["!cols"] = [
-      { wch: 6 }, { wch: 14 }, { wch: 22 }, { wch: 24 },
-      { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 22 }, { wch: 14 },
+      { wch: 6 },
+      { wch: 14 },
+      { wch: 22 },
+      { wch: 24 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 22 },
+      { wch: 14 },
     ];
 
     const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
@@ -327,7 +410,9 @@ export function ContractorReportsManagement() {
                 >
                   <option value="">Select company</option>
                   {companies.map((c) => (
-                    <option key={c.id} value={c.id}>{c.companyName}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.companyName}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -343,7 +428,9 @@ export function ContractorReportsManagement() {
               >
                 <option value="">All branches</option>
                 {branches.map((b) => (
-                  <option key={b.id} value={b.id}>{b.branchName}</option>
+                  <option key={b.id} value={b.id}>
+                    {b.branchName}
+                  </option>
                 ))}
               </select>
             </div>
@@ -357,13 +444,17 @@ export function ContractorReportsManagement() {
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    departmentID: e.target.value ? Number(e.target.value) : null,
+                    departmentID: e.target.value
+                      ? Number(e.target.value)
+                      : null,
                   }))
                 }
               >
                 <option value="">All departments</option>
                 {departments.map((d) => (
-                  <option key={d.id} value={d.id}>{d.departmentName}</option>
+                  <option key={d.id} value={d.id}>
+                    {d.departmentName}
+                  </option>
                 ))}
               </select>
             </div>
@@ -375,11 +466,16 @@ export function ContractorReportsManagement() {
                 className="w-full px-3 py-2 border rounded-md bg-white"
                 value={formData.reportType}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, reportType: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    reportType: e.target.value,
+                  }))
                 }
               >
                 {REPORT_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -395,13 +491,17 @@ export function ContractorReportsManagement() {
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    contractorID: e.target.value ? Number(e.target.value) : null,
+                    contractorID: e.target.value
+                      ? Number(e.target.value)
+                      : null,
                   }))
                 }
               >
                 <option value="">All Contractors</option>
                 {filteredContractors.map((c) => (
-                  <option key={c.id} value={c.id}>{c.contractorName}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.contractorName}
+                  </option>
                 ))}
               </select>
             </div>
@@ -421,7 +521,9 @@ export function ContractorReportsManagement() {
               >
                 <option value="">All Shifts</option>
                 {filteredShifts.map((s) => (
-                  <option key={s.id} value={s.id}>{s.shiftName || `Shift ${s.id}`}</option>
+                  <option key={s.id} value={s.id}>
+                    {s.shiftName || `Shift ${s.id}`}
+                  </option>
                 ))}
               </select>
             </div>
@@ -437,7 +539,8 @@ export function ContractorReportsManagement() {
           </div>
 
           <p className="text-xs text-gray-500 mt-2">
-            Reports show employees assigned to contractors, filtered by company, branch, department, contractor and shift.
+            Reports show employees assigned to contractors, filtered by company,
+            branch, department, contractor and shift.
           </p>
         </CardContent>
       </Card>
@@ -458,7 +561,9 @@ export function ContractorReportsManagement() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                 <FileText className="w-5 h-5" />
-                {REPORT_TYPES.find((t) => t.value === formData.reportType)?.label || formData.reportType} – {filteredData.length} records
+                {REPORT_TYPES.find((t) => t.value === formData.reportType)
+                  ?.label || formData.reportType}{" "}
+                – {filteredData.length} records
               </CardTitle>
               <div className="flex items-center gap-3">
                 <div className="relative w-64">
@@ -479,20 +584,36 @@ export function ContractorReportsManagement() {
                   Download Excel
                 </Button>
                 <div className="relative">
-                  <Button variant="outline" onClick={() => setColumnPickerOpen(v => !v)} className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setColumnPickerOpen((v) => !v)}
+                    className="flex items-center gap-2"
+                  >
                     <FileText className="w-4 h-4" /> Columns
                   </Button>
                   {columnPickerOpen && (
                     <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[200px] max-h-[300px] overflow-y-auto">
                       {[
-                        { key: "sno", label: "S.NO" }, { key: "employeeID", label: "Employee ID" },
-                        { key: "employeeName", label: "Employee Name" }, { key: "company", label: "Company" },
-                        { key: "branch", label: "Branch" }, { key: "department", label: "Department" },
-                        { key: "designation", label: "Designation" }, { key: "contractor", label: "Contractor" },
+                        { key: "sno", label: "S.NO" },
+                        { key: "employeeID", label: "Employee ID" },
+                        { key: "employeeName", label: "Employee Name" },
+                        { key: "company", label: "Company" },
+                        { key: "branch", label: "Branch" },
+                        { key: "department", label: "Department" },
+                        { key: "designation", label: "Designation" },
+                        { key: "contractor", label: "Contractor" },
                         { key: "shift", label: "Shift" },
-                      ].map(col => (
-                        <label key={col.key} className="flex items-center gap-2 py-1 cursor-pointer text-sm">
-                          <input type="checkbox" checked={visibleColumns[col.key] !== false} onChange={() => toggleColumn(col.key)} className="w-3.5 h-3.5 rounded" />
+                      ].map((col) => (
+                        <label
+                          key={col.key}
+                          className="flex items-center gap-2 py-1 cursor-pointer text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns[col.key] !== false}
+                            onChange={() => toggleColumn(col.key)}
+                            className="w-3.5 h-3.5 rounded"
+                          />
                           {col.label}
                         </label>
                       ))}
@@ -506,31 +627,88 @@ export function ContractorReportsManagement() {
           <CardContent className="p-0">
             <div className="overflow-x-auto w-full border-t border-gray-200">
               <table className="min-w-full border-collapse text-xs">
-                <thead data-hrms-report-header className="bg-teal-50 text-teal-900 border-b border-teal-100">
+                <thead
+                  data-hrms-report-header
+                  className="bg-teal-50 text-teal-900 border-b border-teal-100"
+                >
                   <tr>
-                    {visibleColumns.sno && <th className="px-3 py-2 text-center">S.NO</th>}
-                    {visibleColumns.employeeID && <th className="px-3 py-2 text-left">EMPLOYEE ID</th>}
-                    {visibleColumns.employeeName && <th className="px-3 py-2 text-left">EMPLOYEE NAME</th>}
-                    {visibleColumns.company && <th className="px-3 py-2 text-left">COMPANY</th>}
-                    {visibleColumns.branch && <th className="px-3 py-2 text-left">BRANCH</th>}
-                    {visibleColumns.department && <th className="px-3 py-2 text-left">DEPARTMENT</th>}
-                    {visibleColumns.designation && <th className="px-3 py-2 text-left">DESIGNATION</th>}
-                    {visibleColumns.contractor && <th className="px-3 py-2 text-left">CONTRACTOR</th>}
-                    {visibleColumns.shift && <th className="px-3 py-2 text-left">SHIFT</th>}
+                    {visibleColumns.sno && (
+                      <th className="px-3 py-2 text-center">S.NO</th>
+                    )}
+                    {visibleColumns.employeeID && (
+                      <th className="px-3 py-2 text-left">EMPLOYEE ID</th>
+                    )}
+                    {visibleColumns.employeeName && (
+                      <th className="px-3 py-2 text-left">EMPLOYEE NAME</th>
+                    )}
+                    {visibleColumns.company && (
+                      <th className="px-3 py-2 text-left">COMPANY</th>
+                    )}
+                    {visibleColumns.branch && (
+                      <th className="px-3 py-2 text-left">BRANCH</th>
+                    )}
+                    {visibleColumns.department && (
+                      <th className="px-3 py-2 text-left">DEPARTMENT</th>
+                    )}
+                    {visibleColumns.designation && (
+                      <th className="px-3 py-2 text-left">DESIGNATION</th>
+                    )}
+                    {visibleColumns.contractor && (
+                      <th className="px-3 py-2 text-left">CONTRACTOR</th>
+                    )}
+                    {visibleColumns.shift && (
+                      <th className="px-3 py-2 text-left">SHIFT</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredData.map((row, i) => (
                     <tr key={i} className="odd:bg-gray-50 border-b">
-                      {visibleColumns.sno && <td className="px-3 py-2 text-center text-[11px]">{row.sno}</td>}
-                      {visibleColumns.employeeID && <td className="px-3 py-2 text-[11px]">{row.employeeID}</td>}
-                      {visibleColumns.employeeName && <td className="px-3 py-2 text-[11px]">{row.employeeName}</td>}
-                      {visibleColumns.company && <td className="px-3 py-2 text-[11px]">{row.companyName}</td>}
-                      {visibleColumns.branch && <td className="px-3 py-2 text-[11px]">{row.branchName}</td>}
-                      {visibleColumns.department && <td className="px-3 py-2 text-[11px]">{row.departmentName}</td>}
-                      {visibleColumns.designation && <td className="px-3 py-2 text-[11px]">{row.designation}</td>}
-                      {visibleColumns.contractor && <td className="px-3 py-2 text-[11px]">{row.contractorName}</td>}
-                      {visibleColumns.shift && <td className="px-3 py-2 text-[11px]">{row.shiftName}</td>}
+                      {visibleColumns.sno && (
+                        <td className="px-3 py-2 text-center text-[11px]">
+                          {row.sno}
+                        </td>
+                      )}
+                      {visibleColumns.employeeID && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.employeeID}
+                        </td>
+                      )}
+                      {visibleColumns.employeeName && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.employeeName}
+                        </td>
+                      )}
+                      {visibleColumns.company && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.companyName}
+                        </td>
+                      )}
+                      {visibleColumns.branch && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.branchName}
+                        </td>
+                      )}
+                      {visibleColumns.department && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.departmentName}
+                        </td>
+                      )}
+                      {visibleColumns.designation && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.designation}
+                        </td>
+                      )}
+                      {visibleColumns.contractor && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.contractorName}
+                        </td>
+                      )}
+                      {visibleColumns.shift && (
+                        <td className="px-3 py-2 text-[11px]">
+                          {row.shiftName}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

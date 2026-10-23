@@ -15,7 +15,10 @@ import {
 import { toast } from "sonner";
 import { fetchGPSOnUserGesture } from "../utils/empGeolocation";
 import { uploadPunchPhoto } from "../hooks/useEmpPunch";
-import { EmpPhotoPunchCapture, type EmpPhotoPunchCaptureHandle } from "../components/emp/EmpPhotoPunchCapture";
+import {
+  EmpPhotoPunchCapture,
+  type EmpPhotoPunchCaptureHandle,
+} from "../components/emp/EmpPhotoPunchCapture";
 import { FieldVisitDayPanel } from "../components/task/mobile/FieldVisitDayPanel";
 import {
   getNextSitePunchKindForTask,
@@ -24,10 +27,7 @@ import {
   isSitePunchTaskType,
   sitePunchesFromTask,
 } from "../utils/taskSitePunch";
-import {
-  isEnplLinkedTask,
-  taskSiteAddress,
-} from "../utils/taskSiteVisit";
+import { isEnplLinkedTask, taskSiteAddress } from "../utils/taskSiteVisit";
 import { TaskSiteVisitSummary } from "../components/task/mobile/TaskSiteVisitPanel";
 import { downloadTaskReportForId } from "../utils/taskReportPdf";
 import { useTaskChatPolling } from "../hooks/useTaskChatPolling";
@@ -48,7 +48,8 @@ import {
 import { visitComplianceCopy } from "../utils/taskSiteVisit";
 import { TaskAssignmentRequestPanel } from "../components/task/mobile/TaskAssignmentRequestPanel";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 const STATUS_TABS = ["Requests", "Open", "WIP", "Closed", "Reopen"] as const;
 type StatusTab = (typeof STATUS_TABS)[number];
 
@@ -57,8 +58,16 @@ interface Task extends MobileTaskListItem {
   description?: string | null;
   scheduleDateTime?: string | null;
   department?: { departmentName?: string };
-  chats?: { id: number; message: string; senderName?: string; createdAt: string }[];
-  assignments?: { manageEmployeeID?: number; manageEmployee?: { employeeFirstName?: string; employeeLastName?: string } }[];
+  chats?: {
+    id: number;
+    message: string;
+    senderName?: string;
+    createdAt: string;
+  }[];
+  assignments?: {
+    manageEmployeeID?: number;
+    manageEmployee?: { employeeFirstName?: string; employeeLastName?: string };
+  }[];
 }
 
 export default function EmpMyTasksPage() {
@@ -76,7 +85,10 @@ export default function EmpMyTasksPage() {
   const [chatMsg, setChatMsg] = useState("");
   const [sending, setSending] = useState(false);
   const photoRef = useRef<EmpPhotoPunchCaptureHandle>(null);
-  const pendingVisitRef = useRef<{ task: Task; kind: "checkin" | "checkout" | "day_signout" } | null>(null);
+  const pendingVisitRef = useRef<{
+    task: Task;
+    kind: "checkin" | "checkout" | "day_signout";
+  } | null>(null);
   const [exception, setException] = useState<{
     task: Task;
     kind: "checkin" | "checkout" | "day_signout";
@@ -96,7 +108,9 @@ export default function EmpMyTasksPage() {
   const employeeEmail = (user?.email || "").trim() || null;
 
   const requestCount = useMemo(
-    () => tasks.filter((t) => isAssignmentRequestTask(t, employeeId, employeeEmail)).length,
+    () =>
+      tasks.filter((t) => isAssignmentRequestTask(t, employeeId, employeeEmail))
+        .length,
     [tasks, employeeId, employeeEmail],
   );
 
@@ -104,10 +118,15 @@ export default function EmpMyTasksPage() {
     if (!user) return;
     setLoading(true);
     try {
-      const data = await taskFetch<{ items: Task[] }>("/task-projects", user, undefined, {
-        limit: 50,
-        assignedToMe: 1,
-      });
+      const data = await taskFetch<{ items: Task[] }>(
+        "/task-projects",
+        user,
+        undefined,
+        {
+          limit: 50,
+          assignedToMe: 1,
+        },
+      );
       setTasks(data.items);
     } catch (e: any) {
       toast.error(e.message || "Failed to load tasks");
@@ -120,7 +139,9 @@ export default function EmpMyTasksPage() {
   useEffect(() => {
     if (!user?.username) return;
     load();
-    fetch(`${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`)
+    fetch(
+      `${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`,
+    )
       .then((r) => (r.ok ? r.json() : null))
       .then((creds) => {
         if (typeof creds?.employee?.allowCreateTaskOnMobile === "boolean") {
@@ -128,7 +149,9 @@ export default function EmpMyTasksPage() {
         }
         const empId = creds?.employee?.id ?? user.employee?.id;
         if (!empId) return;
-        return fetch(`${BACKEND}/manage-emp/${empId}`).then((r) => (r.ok ? r.json() : null));
+        return fetch(`${BACKEND}/manage-emp/${empId}`).then((r) =>
+          r.ok ? r.json() : null,
+        );
       })
       .then((emp) => {
         if (!emp) {
@@ -177,12 +200,16 @@ export default function EmpMyTasksPage() {
     !!detail && !isAssignmentRequestTask(detail, employeeId, employeeEmail),
   );
 
-  const sendMsg = async (payload: { message: string; attachmentUrl?: string }) => {
+  const sendMsg = async (payload: {
+    message: string;
+    attachmentUrl?: string;
+  }) => {
     if (!detail || !user) return;
     if (!payload.message.trim() && !payload.attachmentUrl) return;
     setSending(true);
     try {
-      const employeeId = (user as { employee?: { id?: number } }).employee?.id ?? user.id;
+      const employeeId =
+        (user as { employee?: { id?: number } }).employee?.id ?? user.id;
       await taskFetch(`/task-projects/${detail.id}/chats`, user, {
         method: "POST",
         body: JSON.stringify({
@@ -239,7 +266,9 @@ export default function EmpMyTasksPage() {
       (kind === "day_signout" && task.daySignOutSelfieRequired === true);
     if (needsSelfie && !extra?.selfieUrl) {
       pendingVisitRef.current = { task, kind };
-      photoRef.current?.startFromGesture(kind === "day_signout" ? "CHECK_OUT" : "CHECK_IN");
+      photoRef.current?.startFromGesture(
+        kind === "day_signout" ? "CHECK_OUT" : "CHECK_IN",
+      );
       return;
     }
     setSending(true);
@@ -263,7 +292,10 @@ export default function EmpMyTasksPage() {
           accuracyMeters: coordsAndAddr.coords.accuracy,
           addressText: coordsAndAddr.address || undefined,
           selfieUrl: extra?.selfieUrl || undefined,
-          deviceInfo: typeof navigator !== "undefined" ? { userAgent: navigator.userAgent } : undefined,
+          deviceInfo:
+            typeof navigator !== "undefined"
+              ? { userAgent: navigator.userAgent }
+              : undefined,
           exceptionRequested: extra?.exceptionRequested || undefined,
           reason: extra?.reason || undefined,
           at: new Date().toISOString(),
@@ -271,13 +303,20 @@ export default function EmpMyTasksPage() {
       });
       if (extra?.exceptionRequested) toast.success("Pending Approval");
       else if (kind === "day_signout") toast.success("Signed out for the day");
-      else toast.success(kind === "checkin" ? "Check-in recorded" : "Check-out recorded");
+      else
+        toast.success(
+          kind === "checkin" ? "Check-in recorded" : "Check-out recorded",
+        );
       setException(null);
       setExceptionReason("");
       if (detail?.id === task.id) await refreshDetail();
       load();
     } catch (e: any) {
-      if (e?.code === "OUTSIDE_GEOFENCE" && extra?.selfieUrl && kind === "checkin") {
+      if (
+        e?.code === "OUTSIDE_GEOFENCE" &&
+        extra?.selfieUrl &&
+        kind === "checkin"
+      ) {
         setException({
           task,
           kind,
@@ -288,7 +327,9 @@ export default function EmpMyTasksPage() {
           selfieUrl: extra.selfieUrl,
         });
       } else {
-        toast.error(e.message || "GPS is required for site check-in and check-out");
+        toast.error(
+          e.message || "GPS is required for site check-in and check-out",
+        );
       }
     } finally {
       setSending(false);
@@ -324,14 +365,25 @@ export default function EmpMyTasksPage() {
       | {
           erpTaskId?: number | null;
           chats?: { message?: string; createdAt?: string }[];
-          sitePunches?: { kind?: string; at?: string; createdAt?: string; message?: string | null }[];
+          sitePunches?: {
+            kind?: string;
+            at?: string;
+            createdAt?: string;
+            message?: string | null;
+          }[];
         },
     explicitKind?: "checkin" | "checkout",
   ) => {
     if (!user) return;
-    const punchSource = Array.isArray(taskOrChats) ? { chats: taskOrChats } : taskOrChats || {};
+    const punchSource = Array.isArray(taskOrChats)
+      ? { chats: taskOrChats }
+      : taskOrChats || {};
     if (!Array.isArray(taskOrChats) && isEnplLinkedTask(punchSource)) {
-      const next = explicitKind || (getNextSitePunchKindForTask(punchSource) === "out" ? "checkout" : "checkin");
+      const next =
+        explicitKind ||
+        (getNextSitePunchKindForTask(punchSource) === "out"
+          ? "checkout"
+          : "checkin");
       await postEnplSiteVisit(punchSource as Task, next);
       return;
     }
@@ -345,7 +397,8 @@ export default function EmpMyTasksPage() {
       locationBlock = "\nLocation: unavailable";
     }
     const msg = `${label} at ${new Date().toLocaleString("en-IN")}${locationBlock}`;
-    const employeeId = (user as { employee?: { id?: number } }).employee?.id ?? user.id;
+    const employeeId =
+      (user as { employee?: { id?: number } }).employee?.id ?? user.id;
     setSending(true);
     try {
       await taskFetch(`/task-projects/${taskId}/chats`, user, {
@@ -382,21 +435,24 @@ export default function EmpMyTasksPage() {
   };
 
   const assignmentAction = useCallback(
-    async (taskId: number, action: "accept" | "reschedule", reason?: string) => {
+    async (
+      taskId: number,
+      action: "accept" | "reschedule",
+      reason?: string,
+    ) => {
       if (!user || !taskId) return;
       setSending(true);
       try {
-        const result = await taskFetch<Task & { alreadyCompleted?: boolean; message?: string; task?: Task }>(
-          `/task-projects/${taskId}/assignment-action`,
-          user,
-          {
-            method: "POST",
-            body: JSON.stringify({ action, reason }),
-          },
-        );
+        const result = await taskFetch<
+          Task & { alreadyCompleted?: boolean; message?: string; task?: Task }
+        >(`/task-projects/${taskId}/assignment-action`, user, {
+          method: "POST",
+          body: JSON.stringify({ action, reason }),
+        });
         if (result?.alreadyCompleted) {
           toast.error(result.message || "Task already completed");
-          if (result.task) setDetail((prev) => (prev?.id === taskId ? result.task! : prev));
+          if (result.task)
+            setDetail((prev) => (prev?.id === taskId ? result.task! : prev));
           await load();
           return;
         }
@@ -409,7 +465,10 @@ export default function EmpMyTasksPage() {
         setRescheduleTaskId(null);
         await load();
       } catch (e: any) {
-        if (e?.alreadyCompleted || /already completed/i.test(e?.message || "")) {
+        if (
+          e?.alreadyCompleted ||
+          /already completed/i.test(e?.message || "")
+        ) {
           toast.error(e.message || "Task already completed");
         } else {
           toast.error(e.message || "Could not update assignment");
@@ -458,7 +517,9 @@ export default function EmpMyTasksPage() {
 
   const desktopFiltered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    let list = tasks.filter((t) => matchesEmpTaskTab(t, statusTab, employeeId, employeeEmail));
+    let list = tasks.filter((t) =>
+      matchesEmpTaskTab(t, statusTab, employeeId, employeeEmail),
+    );
     if (!q) return list;
     return list.filter(
       (t) =>
@@ -470,7 +531,9 @@ export default function EmpMyTasksPage() {
     );
   }, [tasks, searchQuery, statusTab, employeeId, employeeEmail]);
 
-  const requestKind = detail ? myAssignmentRequestKind(detail, employeeId, employeeEmail) : "working";
+  const requestKind = detail
+    ? myAssignmentRequestKind(detail, employeeId, employeeEmail)
+    : "working";
   const requestView =
     detail && requestKind !== "working" ? (
       <TaskAssignmentRequestPanel
@@ -484,51 +547,56 @@ export default function EmpMyTasksPage() {
           load();
         }}
         onAccept={() => void assignmentAction(detail.id, "accept")}
-        onReschedule={(reason) => void assignmentAction(detail.id, "reschedule", reason)}
+        onReschedule={(reason) =>
+          void assignmentAction(detail.id, "reschedule", reason)
+        }
       />
     ) : null;
 
-  const chatView = detail && requestKind === "working" ? (
-    <MobileTaskChatView
-      task={detail}
-      currentUserName={user?.username}
-      currentEmployeeId={
-        (user as { employee?: { id?: number } })?.employee?.id ??
-        (typeof user?.id === "number" ? user.id : undefined)
-      }
-      message={chatMsg}
-      onMessageChange={setChatMsg}
-      onSend={sendMsg}
-      sending={sending}
-      onBack={() => {
-        setDetail(null);
-        setChatMsg("");
-        load();
-      }}
-      onSitePunch={
-        isEnplLinkedTask(detail)
-          ? undefined
-          : isSitePunchTaskType(detail.taskType)
-            ? sitePunch
-            : undefined
-      }
-      sitePunchNextKind={getNextSitePunchKindForTask(detail)}
-      onEnplSiteVisit={
-        isEnplLinkedTask(detail)
-          ? (kind) => postEnplSiteVisit(detail, kind)
-          : undefined
-      }
-      embedded={isDesktop}
-      onDownloadReport={async () => {
-        try {
-          await downloadTaskReportForId(detail.id, user, detail.taskCode);
-          toast.success("Report downloaded");
-        } catch (e: unknown) {
-          toast.error(e instanceof Error ? e.message : "Failed to download report");
+  const chatView =
+    detail && requestKind === "working" ? (
+      <MobileTaskChatView
+        task={detail}
+        currentUserName={user?.username}
+        currentEmployeeId={
+          (user as { employee?: { id?: number } })?.employee?.id ??
+          (typeof user?.id === "number" ? user.id : undefined)
         }
-      }}
-    />
-  ) : null;
+        message={chatMsg}
+        onMessageChange={setChatMsg}
+        onSend={sendMsg}
+        sending={sending}
+        onBack={() => {
+          setDetail(null);
+          setChatMsg("");
+          load();
+        }}
+        onSitePunch={
+          isEnplLinkedTask(detail)
+            ? undefined
+            : isSitePunchTaskType(detail.taskType)
+              ? sitePunch
+              : undefined
+        }
+        sitePunchNextKind={getNextSitePunchKindForTask(detail)}
+        onEnplSiteVisit={
+          isEnplLinkedTask(detail)
+            ? (kind) => postEnplSiteVisit(detail, kind)
+            : undefined
+        }
+        embedded={isDesktop}
+        onDownloadReport={async () => {
+          try {
+            await downloadTaskReportForId(detail.id, user, detail.taskCode);
+            toast.success("Report downloaded");
+          } catch (e: unknown) {
+            toast.error(
+              e instanceof Error ? e.message : "Failed to download report",
+            );
+          }
+        }}
+      />
+    ) : null;
 
   const submitException = async () => {
     if (!exception) return;
@@ -552,10 +620,18 @@ export default function EmpMyTasksPage() {
     <>
       {exception ? (
         <>
-          <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setException(null)} />
+          <div
+            className="fixed inset-0 z-50 bg-black/40"
+            onClick={() => setException(null)}
+          />
           <div className="fixed inset-x-4 top-[18%] z-50 bg-white rounded-2xl shadow-xl p-5">
-            <h3 className="text-[17px] font-bold text-gray-900 mb-1">Request Exception</h3>
-            <p className="text-[12px] text-gray-500 mb-3">You are outside the visit location. Add a reason to send the same location and selfie for approval.</p>
+            <h3 className="text-[17px] font-bold text-gray-900 mb-1">
+              Request Exception
+            </h3>
+            <p className="text-[12px] text-gray-500 mb-3">
+              You are outside the visit location. Add a reason to send the same
+              location and selfie for approval.
+            </p>
             <textarea
               value={exceptionReason}
               onChange={(e) => setExceptionReason(e.target.value)}
@@ -584,12 +660,21 @@ export default function EmpMyTasksPage() {
   );
 
   if (detail && !isDesktop) {
-    return <EmpMobileLayout hideBottomNav>{requestView || chatView}{visitOverlays}</EmpMobileLayout>;
+    return (
+      <EmpMobileLayout hideBottomNav>
+        {requestView || chatView}
+        {visitOverlays}
+      </EmpMobileLayout>
+    );
   }
 
   if (detail && isDesktop) {
     return (
-      <EmpDesktopPage title="Task" description={detail.taskName} icon={ListTodo}>
+      <EmpDesktopPage
+        title="Task"
+        description={detail.taskName}
+        icon={ListTodo}
+      >
         {requestView || chatView}
         {visitOverlays}
       </EmpDesktopPage>
@@ -661,7 +746,9 @@ export default function EmpMyTasksPage() {
                     : "border-border text-muted-foreground hover:text-foreground",
                 )}
               >
-                {tab === "Requests" && requestCount ? `${tab} (${requestCount})` : tab}
+                {tab === "Requests" && requestCount
+                  ? `${tab} (${requestCount})`
+                  : tab}
               </button>
             ))}
             loading={false}
@@ -678,7 +765,9 @@ export default function EmpMyTasksPage() {
                 onOpen={(t) => void openTask(t as Task)}
                 onSitePunch={(t) => void recordSitePunch(t)}
                 onAcceptRequest={(t) => void assignmentAction(t.id, "accept")}
-                onRescheduleRequest={(t, reason) => void assignmentAction(t.id, "reschedule", reason)}
+                onRescheduleRequest={(t, reason) =>
+                  void assignmentAction(t.id, "reschedule", reason)
+                }
               />
             }
           />
@@ -711,22 +800,46 @@ export default function EmpMyTasksPage() {
         sendingAction={sending}
         rescheduleTaskId={rescheduleTaskId}
         onAcceptRequest={(t) => void assignmentAction(t.id, "accept")}
-        onRescheduleRequest={(t, reason) => void assignmentAction(t.id, "reschedule", reason)}
+        onRescheduleRequest={(t, reason) =>
+          void assignmentAction(t.id, "reschedule", reason)
+        }
       />
 
       {infoTask && (
         <>
-          <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setInfoTask(null)} />
+          <div
+            className="fixed inset-0 z-50 bg-black/40"
+            onClick={() => setInfoTask(null)}
+          />
           <div className="fixed inset-x-4 top-[15%] z-50 bg-white rounded-2xl shadow-xl p-5 max-h-[70vh] overflow-y-auto">
-            <h3 className="text-[17px] font-bold text-gray-900 mb-3">{infoTask.taskName}</h3>
+            <h3 className="text-[17px] font-bold text-gray-900 mb-3">
+              {infoTask.taskName}
+            </h3>
             <div className="space-y-2 text-[13px]">
-              <p><span className="text-gray-500">Task ID:</span> {infoTask.id}</p>
-              <p><span className="text-gray-500">Type:</span> {infoTask.taskType}</p>
-              <p><span className="text-gray-500">Status:</span> {infoTask.status}</p>
-              <p><span className="text-gray-500">Priority:</span> {infoTask.priority}</p>
-              <p><span className="text-gray-500">Site:</span> {taskSiteAddress(infoTask) || infoTask.site?.branchName || "—"}</p>
-              {(infoTask.dueAt || infoTask.dueDateTime) ? (
-                <p><span className="text-gray-500">Due date & time:</span> {new Date(String(infoTask.dueAt || infoTask.dueDateTime)).toLocaleString("en-IN")}</p>
+              <p>
+                <span className="text-gray-500">Task ID:</span> {infoTask.id}
+              </p>
+              <p>
+                <span className="text-gray-500">Type:</span> {infoTask.taskType}
+              </p>
+              <p>
+                <span className="text-gray-500">Status:</span> {infoTask.status}
+              </p>
+              <p>
+                <span className="text-gray-500">Priority:</span>{" "}
+                {infoTask.priority}
+              </p>
+              <p>
+                <span className="text-gray-500">Site:</span>{" "}
+                {taskSiteAddress(infoTask) || infoTask.site?.branchName || "—"}
+              </p>
+              {infoTask.dueAt || infoTask.dueDateTime ? (
+                <p>
+                  <span className="text-gray-500">Due date & time:</span>{" "}
+                  {new Date(
+                    String(infoTask.dueAt || infoTask.dueDateTime),
+                  ).toLocaleString("en-IN")}
+                </p>
               ) : null}
               {isEnplLinkedTask(infoTask) ? (
                 <div className="pt-2">
@@ -735,23 +848,43 @@ export default function EmpMyTasksPage() {
                     task={infoTask}
                     compact
                     visitHeading={
-                      myEngineerAssignment(infoTask, employeeId, employeeEmail)?.visitSequence != null
+                      myEngineerAssignment(infoTask, employeeId, employeeEmail)
+                        ?.visitSequence != null
                         ? `Visit ${myEngineerAssignment(infoTask, employeeId, employeeEmail)?.visitSequence}`
                         : null
                     }
-                    complianceLabel={visitComplianceCopy(myEngineerAssignment(infoTask, employeeId, employeeEmail)?.complianceStatus)?.label}
-                    complianceNote={visitComplianceCopy(myEngineerAssignment(infoTask, employeeId, employeeEmail)?.complianceStatus)?.note}
+                    complianceLabel={
+                      visitComplianceCopy(
+                        myEngineerAssignment(
+                          infoTask,
+                          employeeId,
+                          employeeEmail,
+                        )?.complianceStatus,
+                      )?.label
+                    }
+                    complianceNote={
+                      visitComplianceCopy(
+                        myEngineerAssignment(
+                          infoTask,
+                          employeeId,
+                          employeeEmail,
+                        )?.complianceStatus,
+                      )?.note
+                    }
                   />
                 </div>
               ) : isSitePunchTaskType(infoTask.taskType) ? (
                 <div className="pt-2 space-y-1">
-                  <p className="text-gray-500 font-semibold">Site check-in / check-out</p>
+                  <p className="text-gray-500 font-semibold">
+                    Site check-in / check-out
+                  </p>
                   {sitePunchesFromTask(infoTask).length === 0 ? (
                     <p className="text-gray-400">No site check-in yet</p>
                   ) : (
                     sitePunchesFromTask(infoTask).map((p, i) => (
                       <p key={`${p.kind}-${p.at}-${i}`}>
-                        {p.kind === "in" ? "Site check in" : "Site check out"}: {formatSitePunchAt(p.at)}
+                        {p.kind === "in" ? "Site check in" : "Site check out"}:{" "}
+                        {formatSitePunchAt(p.at)}
                         {p.employeeName ? ` · ${p.employeeName}` : ""}
                       </p>
                     ))
@@ -759,8 +892,20 @@ export default function EmpMyTasksPage() {
                 </div>
               ) : null}
             </div>
-            <button type="button" className="mt-4 w-full py-2.5 rounded-xl bg-[#2563eb] text-white font-semibold text-sm" onClick={() => { setInfoTask(null); if (!isAssignmentRequestTask(infoTask, employeeId, employeeEmail)) openTask(infoTask); }}>
-              {isAssignmentRequestTask(infoTask, employeeId, employeeEmail) ? "Close" : "Open chat"}
+            <button
+              type="button"
+              className="mt-4 w-full py-2.5 rounded-xl bg-[#2563eb] text-white font-semibold text-sm"
+              onClick={() => {
+                setInfoTask(null);
+                if (
+                  !isAssignmentRequestTask(infoTask, employeeId, employeeEmail)
+                )
+                  openTask(infoTask);
+              }}
+            >
+              {isAssignmentRequestTask(infoTask, employeeId, employeeEmail)
+                ? "Close"
+                : "Open chat"}
             </button>
           </div>
         </>

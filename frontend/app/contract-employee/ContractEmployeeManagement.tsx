@@ -11,7 +11,8 @@ import { useCurrentUser } from "../hooks/useCurrentUser";
 import { getSidebarContext } from "../utils/sidebarContext";
 import { authHeaders, getAccessToken } from "@/lib/auth";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 interface ContractEmployeeRow {
   id: number;
@@ -23,10 +24,22 @@ interface ContractEmployeeRow {
 }
 
 const columns: Array<DataTableColumn<ContractEmployeeRow>> = [
-  { key: "employeeID", header: "Employee ID", cell: (row) => row.employeeID || "—" },
+  {
+    key: "employeeID",
+    header: "Employee ID",
+    cell: (row) => row.employeeID || "—",
+  },
   { key: "name", header: "Name", cell: (row) => row.name },
-  { key: "designation", header: "Designation", cell: (row) => row.designation || "—" },
-  { key: "contractor", header: "Contractor", cell: (row) => row.contractor || "—" },
+  {
+    key: "designation",
+    header: "Designation",
+    cell: (row) => row.designation || "—",
+  },
+  {
+    key: "contractor",
+    header: "Contractor",
+    cell: (row) => row.contractor || "—",
+  },
   { key: "contact", header: "Contact", cell: (row) => row.contact || "—" },
 ];
 
@@ -61,7 +74,11 @@ export function ContractEmployeeManagement() {
 
       const filtered = list.filter((r: any) => {
         if (r.salaryPayoutTo !== "Contractor") return false;
-        if (activeCompanyID && r.companyID != null && Number(r.companyID) !== Number(activeCompanyID)) {
+        if (
+          activeCompanyID &&
+          r.companyID != null &&
+          Number(r.companyID) !== Number(activeCompanyID)
+        ) {
           return false;
         }
         return true;
@@ -70,15 +87,22 @@ export function ContractEmployeeManagement() {
       setRows(
         filtered.map((r: any) => ({
           id: r.id,
-          name: `${r.employeeFirstName ?? ""} ${r.employeeLastName ?? ""}`.trim() || `#${r.id}`,
+          name:
+            `${r.employeeFirstName ?? ""} ${r.employeeLastName ?? ""}`.trim() ||
+            `#${r.id}`,
           employeeID: r.employeeID ?? "",
-          designation: r.designations?.designation ?? r.empDesignation?.[0]?.designation ?? "",
+          designation:
+            r.designations?.designation ??
+            r.empDesignation?.[0]?.designation ??
+            "",
           contractor: r.contractor?.contractorName ?? "",
           contact: r.businessEmail ?? r.personalPhoneNo ?? "",
-        }))
+        })),
       );
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Could not load contract employees");
+      toast.error(
+        e instanceof Error ? e.message : "Could not load contract employees",
+      );
       setRows([]);
     } finally {
       setIsLoading(false);

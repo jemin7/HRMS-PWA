@@ -4,7 +4,7 @@ module.exports = {
   apps: [
     {
       name: "openhrm-backend",
-      cwd: "/var/www/openhrm/backend",
+      cwd: "/var/www/openhrmhttps://hrms-api-test.onrender.com",
       script: "dist/src/main.js",
       instances: 1,
       exec_mode: "fork",

@@ -26,7 +26,8 @@ function ClientPinMap(props: PinMapProps) {
   return <Map {...props} />;
 }
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 export type LocationFeature = "branch" | "wfh" | "site";
 
@@ -47,7 +48,10 @@ function num(value: string) {
 }
 
 function newSessionToken() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return crypto.randomUUID();
   }
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (ch) => {
@@ -65,7 +69,9 @@ function pairKey(lat: unknown, lng: unknown) {
 }
 
 function apiMessage(body: any, fallback: string) {
-  const message = Array.isArray(body?.message) ? body.message.join(", ") : body?.message;
+  const message = Array.isArray(body?.message)
+    ? body.message.join(", ")
+    : body?.message;
   return typeof message === "string" && message.trim() ? message : fallback;
 }
 
@@ -112,7 +118,9 @@ export function VerifiedLocationFields({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${BACKEND}/google-maps/status?feature=${feature}`, { headers: authHeaders() })
+    fetch(`${BACKEND}/google-maps/status?feature=${feature}`, {
+      headers: authHeaders(),
+    })
       .then(async (res) => {
         const body = await res.json().catch(() => null);
         return { ok: res.ok, body };
@@ -200,7 +208,8 @@ export function VerifiedLocationFields({
         { headers: authHeaders() },
       );
       const body = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(body?.message || "Could not load this place");
+      if (!res.ok)
+        throw new Error(body?.message || "Could not load this place");
       const nextAddress = String(body.formattedAddress || row.label);
       skipLookup.current = nextAddress;
       lastReverse.current = pairKey(body.latitude, body.longitude);
@@ -237,7 +246,8 @@ export function VerifiedLocationFields({
         { headers: authHeaders() },
       );
       const body = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(body?.message || "Could not find this address");
+      if (!res.ok)
+        throw new Error(body?.message || "Could not find this address");
       const nextAddress = String(body.formattedAddress || q);
       skipLookup.current = nextAddress;
       lastReverse.current = pairKey(body.latitude, body.longitude);
@@ -292,7 +302,10 @@ export function VerifiedLocationFields({
         { headers: authHeaders() },
       );
       const body = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(body?.message || "Could not find an address for these coordinates");
+      if (!res.ok)
+        throw new Error(
+          body?.message || "Could not find an address for these coordinates",
+        );
       const nextAddress = String(body.formattedAddress || "");
       skipLookup.current = nextAddress;
       setQuery(nextAddress);
@@ -307,7 +320,9 @@ export function VerifiedLocationFields({
       });
     } catch (err: any) {
       lastReverse.current = "";
-      setError(err?.message || "Could not find an address for these coordinates");
+      setError(
+        err?.message || "Could not find an address for these coordinates",
+      );
     } finally {
       setBusy(false);
     }
@@ -345,7 +360,9 @@ export function VerifiedLocationFields({
         }}
       />
       {configured === false ? (
-        <p className="text-xs text-amber-700">Google address search is not configured on the server.</p>
+        <p className="text-xs text-amber-700">
+          Google address search is not configured on the server.
+        </p>
       ) : null}
       {open && suggestions.length > 0 && !disabled ? (
         <div className="relative z-30 max-h-48 overflow-auto rounded-md border border-gray-200 bg-white shadow-sm">
@@ -398,7 +415,8 @@ export function VerifiedLocationFields({
         />
       ) : (
         <p className="text-xs text-gray-500">
-          Choose an address suggestion, re-fetch, or use the device location. Then drag the pin onto the building before saving.
+          Choose an address suggestion, re-fetch, or use the device location.
+          Then drag the pin onto the building before saving.
         </p>
       )}
       <div className="grid grid-cols-2 gap-3">
@@ -434,10 +452,14 @@ export function VerifiedLocationFields({
         </div>
       </div>
       <p className="text-xs text-gray-500">
-        Type an address or enter latitude and longitude. A verified pin is kept until you move it, edit the coordinates, or click Re-fetch. A 50–100 m geofence radius is enough once the pin is on the building.
+        Type an address or enter latitude and longitude. A verified pin is kept
+        until you move it, edit the coordinates, or click Re-fetch. A 50–100 m
+        geofence radius is enough once the pin is on the building.
       </p>
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
-      {busy ? <p className="text-xs text-gray-500">Looking up location…</p> : null}
+      {busy ? (
+        <p className="text-xs text-gray-500">Looking up location…</p>
+      ) : null}
     </div>
   );
 }

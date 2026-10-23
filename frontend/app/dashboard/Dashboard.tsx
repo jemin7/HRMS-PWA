@@ -34,7 +34,10 @@ import {
   sectionGap,
   gridGap,
 } from "./components/dashboard-ui";
-import { QuickActionGrid, type QuickActionItem } from "./components/QuickActionCard";
+import {
+  QuickActionGrid,
+  type QuickActionItem,
+} from "./components/QuickActionCard";
 import { AttendanceTrendChart } from "./components/AttendanceTrendChart";
 import { ActivityFeed, type ActivityItem } from "./components/ActivityFeed";
 import { EmptyState } from "./components/EmptyState";
@@ -227,13 +230,15 @@ interface ActivityComment {
   avatarBg: string;
 }
 
-
-export default function DashboardPage({ embeddedInEmpPortal = false }: { embeddedInEmpPortal?: boolean } = {}) {
+export default function DashboardPage({
+  embeddedInEmpPortal = false,
+}: { embeddedInEmpPortal?: boolean } = {}) {
   const user = useCurrentUser();
   const router = useRouter();
 
   const isEmployeeSession =
-    user?.type === "employee" || String(user?.role || "").toUpperCase() === "EMPLOYEE";
+    user?.type === "employee" ||
+    String(user?.role || "").toUpperCase() === "EMPLOYEE";
 
   useEffect(() => {
     if (!embeddedInEmpPortal && isEmployeeSession) {
@@ -242,7 +247,9 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
   }, [embeddedInEmpPortal, isEmployeeSession, router]);
 
   useAdminPageHeader(
-    embeddedInEmpPortal ? null : { title: "Home", subtitle: "Your workspace overview" },
+    embeddedInEmpPortal
+      ? null
+      : { title: "Home", subtitle: "Your workspace overview" },
   );
   useEmpPortalPageHeader(
     embeddedInEmpPortal
@@ -251,7 +258,7 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
   );
 
   const BACKEND_URL =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
   const [bootstrapReady, setBootstrapReady] = useState(false);
   const [dashboardLoading, setDashboardLoading] = useState(true);
@@ -259,7 +266,7 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>([]);
   const [allAttendanceLogs, setAllAttendanceLogs] = useState<AttendanceLog[]>(
-    []
+    [],
   );
   const [departments, setDepartments] = useState<Department[]>([]);
   const [departmentHeadcounts, setDepartmentHeadcounts] = useState<
@@ -269,9 +276,14 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<string>("");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>("");
-  const [overviewEmployees, setOverviewEmployees] = useState<OverviewEmployee[]>([]);
-  const [overviewSummary, setOverviewSummary] = useState<OverviewSummary | null>(null);
-  const [overviewStatusCounts, setOverviewStatusCounts] = useState<Record<string, number>>({});
+  const [overviewEmployees, setOverviewEmployees] = useState<
+    OverviewEmployee[]
+  >([]);
+  const [overviewSummary, setOverviewSummary] =
+    useState<OverviewSummary | null>(null);
+  const [overviewStatusCounts, setOverviewStatusCounts] = useState<
+    Record<string, number>
+  >({});
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [overviewLoadError, setOverviewLoadError] = useState(false);
   const overviewLoadGen = useRef(0);
@@ -279,32 +291,34 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
   const [todayDate] = useState(() => {
     const now = new Date();
     const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
   });
-  
+
   const [weekAgoDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 6);
     const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
     return `${y}-${m}-${dd}`;
   });
 
   const [currentUserMapping, setCurrentUserMapping] = useState<any>(null);
-  const [activeCompanyId, setActiveCompanyId] = useState<number | undefined>(() => {
-    const ctx = getSidebarContext();
-    if (ctx?.companyID != null) return Number(ctx.companyID);
+  const [activeCompanyId, setActiveCompanyId] = useState<number | undefined>(
+    () => {
+      const ctx = getSidebarContext();
+      if (ctx?.companyID != null) return Number(ctx.companyID);
 
-    if (typeof window !== "undefined") {
-      const stored = Number(sessionStorage.getItem("activeCompanyID") || 0);
-      if (stored) return stored;
-    }
+      if (typeof window !== "undefined") {
+        const stored = Number(sessionStorage.getItem("activeCompanyID") || 0);
+        if (stored) return stored;
+      }
 
-    return undefined;
-  });
+      return undefined;
+    },
+  );
   const [desktopManager, setDesktopManager] = useState(false);
   const [probationAlerts, setProbationAlerts] = useState<
     {
@@ -363,8 +377,7 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
     setDesktopManager(isDesktopManagerFlagSet());
   }, [user?.id]);
 
-  const isDesktopManagerEmployee =
-    desktopManager && user?.role === "EMPLOYEE";
+  const isDesktopManagerEmployee = desktopManager && user?.role === "EMPLOYEE";
   const isHrDesktopView =
     isCompanyAdminLikeRole(user?.role) ||
     user?.role === "ADMIN" ||
@@ -424,7 +437,11 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
   const canLoadDashboard = useMemo(
     () =>
       user != null &&
-      canLoadScopedDashboard(user, currentUserMapping, isDesktopManagerEmployee),
+      canLoadScopedDashboard(
+        user,
+        currentUserMapping,
+        isDesktopManagerEmployee,
+      ),
     [user, currentUserMapping, isDesktopManagerEmployee],
   );
 
@@ -434,7 +451,14 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
       return;
     }
     loadDashboard();
-  }, [user, currentUserMapping, resolvedCompanyId, resolvedServiceProviderId, canLoadDashboard, isDesktopManagerEmployee]);
+  }, [
+    user,
+    currentUserMapping,
+    resolvedCompanyId,
+    resolvedServiceProviderId,
+    canLoadDashboard,
+    isDesktopManagerEmployee,
+  ]);
 
   const overviewQueryParams = useMemo(() => {
     const params = new URLSearchParams();
@@ -442,7 +466,10 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
       if (resolvedCompanyId != null) {
         params.set("companyID", String(resolvedCompanyId));
       }
-    } else if (user?.role === "SERVICE_PROVIDER" && resolvedServiceProviderId != null) {
+    } else if (
+      user?.role === "SERVICE_PROVIDER" &&
+      resolvedServiceProviderId != null
+    ) {
       params.set("serviceProviderID", String(resolvedServiceProviderId));
       if (resolvedCompanyId != null) {
         params.set("companyID", String(resolvedCompanyId));
@@ -453,15 +480,24 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
     ) {
       params.set("companyID", String(resolvedCompanyId));
     } else if (isDesktopManagerEmployee) {
-      if (resolvedCompanyId != null) params.set("companyID", String(resolvedCompanyId));
+      if (resolvedCompanyId != null)
+        params.set("companyID", String(resolvedCompanyId));
     } else if (user?.role === "EMPLOYEE" || user?.role === "BRANCH_ADMIN") {
-      if (resolvedCompanyId != null) params.set("companyID", String(resolvedCompanyId));
+      if (resolvedCompanyId != null)
+        params.set("companyID", String(resolvedCompanyId));
       if (user.branchesID) params.set("branchId", String(user.branchesID));
     }
     if (selectedBranchId) params.set("branchId", selectedBranchId);
     if (selectedDepartmentId) params.set("departmentId", selectedDepartmentId);
     return params;
-  }, [user, resolvedCompanyId, resolvedServiceProviderId, selectedBranchId, selectedDepartmentId, isDesktopManagerEmployee]);
+  }, [
+    user,
+    resolvedCompanyId,
+    resolvedServiceProviderId,
+    selectedBranchId,
+    selectedDepartmentId,
+    isDesktopManagerEmployee,
+  ]);
 
   useEffect(() => {
     if (!user || !canLoadDashboard) {
@@ -473,7 +509,7 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
     if (isHrDesktopView) loadHrWidgets();
   }, [user, canLoadDashboard, overviewQueryParams.toString(), isHrDesktopView]);
 
-   useEffect(() => {
+  useEffect(() => {
     const onContextChange = () => {
       const ctx = getSidebarContext();
       const stored = Number(sessionStorage.getItem("activeCompanyID") || 0);
@@ -544,7 +580,7 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
 
   const loadTodayOverview = async () => {
     const gen = ++overviewLoadGen.current;
-      setOverviewLoading(true);
+    setOverviewLoading(true);
     setOverviewLoadError(false);
     try {
       const qs = overviewQueryParams.toString();
@@ -562,7 +598,7 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
       setOverviewLoadError(true);
     } finally {
       if (gen === overviewLoadGen.current) {
-      setOverviewLoading(false);
+        setOverviewLoading(false);
       }
     }
   };
@@ -590,7 +626,13 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
           : [];
       const allAttendanceMerged: AttendanceLog[] = processAttData
         .filter(
-          (p): p is { id?: number; manage_employee_id: number; punch_time: string } =>
+          (
+            p,
+          ): p is {
+            id?: number;
+            manage_employee_id: number;
+            punch_time: string;
+          } =>
             typeof p === "object" &&
             p != null &&
             (p as { manage_employee_id?: number }).manage_employee_id != null &&
@@ -656,7 +698,9 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
         deptRes.status === "fulfilled" && deptRes.value.ok
           ? await deptRes.value.json()
           : [];
-      const allDepartments: Department[] = Array.isArray(deptJson) ? deptJson : [];
+      const allDepartments: Department[] = Array.isArray(deptJson)
+        ? deptJson
+        : [];
       const allHeadcounts: DepartmentHeadcount[] =
         hcRes.status === "fulfilled" && hcRes.value.ok
           ? await hcRes.value.json()
@@ -674,28 +718,31 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
         scopedEmployees = allEmployees;
         scopedDepartments = allDepartments;
         scopedBranches = allBranches;
-      } else if (user!.role === "SERVICE_PROVIDER" && resolvedServiceProviderId != null) {
+      } else if (
+        user!.role === "SERVICE_PROVIDER" &&
+        resolvedServiceProviderId != null
+      ) {
         scopedEmployees = allEmployees.filter(
-          (e) => e.serviceProviderID === resolvedServiceProviderId
+          (e) => e.serviceProviderID === resolvedServiceProviderId,
         );
         scopedDepartments = allDepartments.filter(
-          (d) => d.serviceProviderID === resolvedServiceProviderId
+          (d) => d.serviceProviderID === resolvedServiceProviderId,
         );
         scopedBranches = allBranches.filter(
-          (b) => b.serviceProviderID === resolvedServiceProviderId
+          (b) => b.serviceProviderID === resolvedServiceProviderId,
         );
       } else if (
         (isCompanyAdminLikeRole(user!.role) || user!.role === "ADMIN") &&
         resolvedCompanyId != null
       ) {
         scopedEmployees = allEmployees.filter(
-          (e) => e.companyID === resolvedCompanyId
+          (e) => e.companyID === resolvedCompanyId,
         );
         scopedDepartments = allDepartments.filter(
-          (d) => d.companyID === resolvedCompanyId
+          (d) => d.companyID === resolvedCompanyId,
         );
         scopedBranches = allBranches.filter(
-          (b) => b.companyID === resolvedCompanyId
+          (b) => b.companyID === resolvedCompanyId,
         );
       } else if (isDesktopManagerEmployee) {
         scopedEmployees = allEmployees.filter(
@@ -710,28 +757,30 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
       } else if (user!.role === "EMPLOYEE") {
         scopedEmployees = allEmployees.filter(
           (e) =>
-            e.companyID === user!.companyID && e.branchesID === user!.branchesID
+            e.companyID === user!.companyID &&
+            e.branchesID === user!.branchesID,
         );
         scopedDepartments = allDepartments.filter(
           (d) =>
-            d.companyID === user!.companyID && d.branchesID === user!.branchesID
+            d.companyID === user!.companyID &&
+            d.branchesID === user!.branchesID,
         );
         scopedBranches = allBranches.filter(
-          (b) =>
-            b.companyID === user!.companyID && b.id === user!.branchesID
+          (b) => b.companyID === user!.companyID && b.id === user!.branchesID,
         );
       } else if (user!.role === "BRANCH_ADMIN") {
         scopedEmployees = allEmployees.filter(
           (e) =>
-            e.companyID === user!.companyID && e.branchesID === user!.branchesID
+            e.companyID === user!.companyID &&
+            e.branchesID === user!.branchesID,
         );
         scopedDepartments = allDepartments.filter(
           (d) =>
-            d.companyID === user!.companyID && d.branchesID === user!.branchesID
+            d.companyID === user!.companyID &&
+            d.branchesID === user!.branchesID,
         );
         scopedBranches = allBranches.filter(
-          (b) =>
-            b.companyID === user!.companyID && b.id === user!.branchesID
+          (b) => b.companyID === user!.companyID && b.id === user!.branchesID,
         );
         if (!selectedBranchId && user!.branchesID) {
           setSelectedBranchId(String(user!.branchesID));
@@ -771,9 +820,12 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
     loadProbationAlerts();
     if (isHrDesktopView) loadHrWidgets();
     loadDashboard();
-  }, [user, currentUserMapping, activeCompanyId, overviewQueryParams.toString()]);
-
-  
+  }, [
+    user,
+    currentUserMapping,
+    activeCompanyId,
+    overviewQueryParams.toString(),
+  ]);
 
   const barData: SoftBarPoint[] = useMemo(() => {
     const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -787,7 +839,7 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
       const dayLabel = dayNames[d.getDay()];
 
       const logsForDay = allAttendanceLogs.filter(
-        (l) => l.punchTimeStamp.split(" ")[0] === dateStr
+        (l) => l.punchTimeStamp.split(" ")[0] === dateStr,
       );
       const presentEmpIds = new Set(logsForDay.map((l) => l.employeeID));
 
@@ -804,12 +856,12 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
     y.setDate(y.getDate() - 1);
     const yStr = y.toISOString().split("T")[0];
     const logs = allAttendanceLogs.filter(
-      (l) => l.punchTimeStamp.split(" ")[0] === yStr
+      (l) => l.punchTimeStamp.split(" ")[0] === yStr,
     );
     const ids = new Set(
       logs
         .filter((l) => employees.some((e) => e.id === l.employeeID))
-        .map((l) => l.employeeID)
+        .map((l) => l.employeeID),
     );
     return ids.size;
   }, [allAttendanceLogs, employees]);
@@ -820,7 +872,6 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
     return Math.round((delta / employees.length) * 1000) / 10;
   }, [presentCount, yesterdayPresent, employees.length]);
 
-
   const filterDepartments = useMemo(() => {
     if (!selectedBranchId) return departments;
     const branchNum = Number(selectedBranchId);
@@ -829,14 +880,11 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
 
   const overviewTotal = overviewSummary?.total ?? overviewEmployees.length;
   const overviewPresent = overviewSummary?.present ?? presentCount;
-  const overviewAbsent = overviewSummary?.absent ?? Math.max(0, overviewTotal - overviewPresent);
+  const overviewAbsent =
+    overviewSummary?.absent ?? Math.max(0, overviewTotal - overviewPresent);
   const overviewStatsReady = overviewSummary != null;
   const formatOverviewStat = (value: number) =>
-    overviewStatsReady
-      ? value.toLocaleString()
-      : overviewLoading
-        ? "…"
-        : "—";
+    overviewStatsReady ? value.toLocaleString() : overviewLoading ? "…" : "—";
 
   const statusBreakdown: StatusBreakdownItem[] = useMemo(() => {
     const labels: Record<string, { name: string; fill: string }> = {
@@ -892,7 +940,7 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
       const sorted = [...logs].sort(
         (a, b) =>
           new Date(a.punchTimeStamp).getTime() -
-          new Date(b.punchTimeStamp).getTime()
+          new Date(b.punchTimeStamp).getTime(),
       );
       if (sorted.length === 0) continue;
 
@@ -936,17 +984,35 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
   const sparklineData = useMemo(() => barData.map((d) => d.value), [barData]);
 
   const dashboardInsights = useMemo(() => {
-    const items: { label: string; value: string; tone?: "default" | "success" | "warning" | "info" }[] = [];
+    const items: {
+      label: string;
+      value: string;
+      tone?: "default" | "success" | "warning" | "info";
+    }[] = [];
     if (overviewStatsReady) {
-      items.push({ label: "Present today", value: String(overviewPresent), tone: "success" });
+      items.push({
+        label: "Present today",
+        value: String(overviewPresent),
+        tone: "success",
+      });
     }
     const pendingLeave = hrWidgets?.pendingCounts?.leave;
     if (typeof pendingLeave === "number" && pendingLeave > 0) {
-      items.push({ label: "Pending leave", value: String(pendingLeave), tone: "warning" });
+      items.push({
+        label: "Pending leave",
+        value: String(pendingLeave),
+        tone: "warning",
+      });
     }
-    const birthdays = hrWidgets?.upcomingEvents?.filter((e) => e.kind === "birthday").length ?? 0;
+    const birthdays =
+      hrWidgets?.upcomingEvents?.filter((e) => e.kind === "birthday").length ??
+      0;
     if (birthdays > 0) {
-      items.push({ label: "Birthdays", value: String(birthdays), tone: "info" });
+      items.push({
+        label: "Birthdays",
+        value: String(birthdays),
+        tone: "info",
+      });
     }
     if (overviewStatsReady && overviewTotal > 0) {
       const rate = Math.round((overviewPresent / overviewTotal) * 1000) / 10;
@@ -1007,16 +1073,66 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
 
   const quickActions: QuickActionItem[] = useMemo(
     () => [
-      { href: "/manage-employees", label: "Manage employees", description: "Create or edit staff records", icon: UserCog },
-      { href: "/employee-memo", label: "Internal messaging", description: "Send memos and announcements", icon: MessageSquare },
-      { href: "/termination", label: "Off boarding", description: "Process employee exits", icon: UserMinus },
-      { href: "/attendance-regularisation", label: "Attendance regularization", description: "Review and approve punches", icon: CalendarCheck },
-      { href: "/roster", label: "Workshift roster", description: "Plan shifts and schedules", icon: CalendarDays },
-      { href: "/leave-applications", label: "Leave applications", description: "Review time-off requests", icon: CalendarX },
-      { href: "/reimbursement", label: "Reimbursements", description: "Process expense claims", icon: Wallet },
-      { href: "/salary-advance", label: "Salary advance", description: "Manage advance requests", icon: Banknote },
-      { href: "/generate-salary", label: "Run payroll", description: "Generate monthly payroll", icon: IndianRupee },
-      { href: "/attendance-reports", label: "Reports", description: "Attendance and HR analytics", icon: LineChart },
+      {
+        href: "/manage-employees",
+        label: "Manage employees",
+        description: "Create or edit staff records",
+        icon: UserCog,
+      },
+      {
+        href: "/employee-memo",
+        label: "Internal messaging",
+        description: "Send memos and announcements",
+        icon: MessageSquare,
+      },
+      {
+        href: "/termination",
+        label: "Off boarding",
+        description: "Process employee exits",
+        icon: UserMinus,
+      },
+      {
+        href: "/attendance-regularisation",
+        label: "Attendance regularization",
+        description: "Review and approve punches",
+        icon: CalendarCheck,
+      },
+      {
+        href: "/roster",
+        label: "Workshift roster",
+        description: "Plan shifts and schedules",
+        icon: CalendarDays,
+      },
+      {
+        href: "/leave-applications",
+        label: "Leave applications",
+        description: "Review time-off requests",
+        icon: CalendarX,
+      },
+      {
+        href: "/reimbursement",
+        label: "Reimbursements",
+        description: "Process expense claims",
+        icon: Wallet,
+      },
+      {
+        href: "/salary-advance",
+        label: "Salary advance",
+        description: "Manage advance requests",
+        icon: Banknote,
+      },
+      {
+        href: "/generate-salary",
+        label: "Run payroll",
+        description: "Generate monthly payroll",
+        icon: IndianRupee,
+      },
+      {
+        href: "/attendance-reports",
+        label: "Reports",
+        description: "Attendance and HR analytics",
+        icon: LineChart,
+      },
     ],
     [],
   );
@@ -1057,7 +1173,10 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
   if (isSuperadmin) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <DashboardHero firstName={user?.firstName || user?.username} isSuperadmin />
+        <DashboardHero
+          firstName={user?.firstName || user?.username}
+          isSuperadmin
+        />
         <SuperadminPlatformDashboard />
       </div>
     );
@@ -1078,13 +1197,11 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
       value: d.employeeCount,
     }));
 
-  const attendanceStatusSegments = statusBreakdown
-    .slice(0, 4)
-    .map((s) => ({
-      label: s.name,
-      value: s.value,
-      color: s.fill,
-    }));
+  const attendanceStatusSegments = statusBreakdown.slice(0, 4).map((s) => ({
+    label: s.name,
+    value: s.value,
+    color: s.fill,
+  }));
 
   const pendingCounts = hrWidgets?.pendingCounts;
 
@@ -1115,9 +1232,9 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
   if (isCompanyAdminLikeRole(user?.role)) {
     const newJoinersCount = hrWidgets?.newJoinersThisMonth ?? 0;
 
-  return (
+    return (
       <div className="animate-fade-in">
-      {probationAlerts.length > 0 && (
+        {probationAlerts.length > 0 && (
           <div className="mb-6">
             <NoticeBanner
               variant="warning"
@@ -1126,19 +1243,35 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
             >
               <ul className="space-y-2 max-h-40 overflow-y-auto">
                 {probationAlerts.slice(0, 8).map((a) => (
-                  <li key={a.employeeId} className="text-xs text-foreground flex flex-wrap gap-x-2 gap-y-0.5">
-                    <Link href="/manage-employees" className="font-semibold text-primary hover:underline">
+                  <li
+                    key={a.employeeId}
+                    className="text-xs text-foreground flex flex-wrap gap-x-2 gap-y-0.5"
+                  >
+                    <Link
+                      href="/manage-employees"
+                      className="font-semibold text-primary hover:underline"
+                    >
                       {a.employeeName}
                     </Link>
-                    <span className="text-muted-foreground">· {a.probationPeriod} · ends {a.probationEndDate}</span>
-                    <span className={a.isOverdue ? "text-destructive font-semibold" : "text-muted-foreground"}>
-                      {a.isOverdue ? "(overdue)" : `(${a.daysRemaining} days left)`}
+                    <span className="text-muted-foreground">
+                      · {a.probationPeriod} · ends {a.probationEndDate}
+                    </span>
+                    <span
+                      className={
+                        a.isOverdue
+                          ? "text-destructive font-semibold"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {a.isOverdue
+                        ? "(overdue)"
+                        : `(${a.daysRemaining} days left)`}
                     </span>
                   </li>
                 ))}
               </ul>
             </NoticeBanner>
-            </div>
+          </div>
         )}
         <CompanyAdminEnterpriseDashboard
           firstName={user?.firstName || user?.username || "Company Admin"}
@@ -1164,7 +1297,7 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
           activityItems={activityItems}
           pendingCounts={hrWidgets?.pendingCounts ?? null}
         />
-          </div>
+      </div>
     );
   }
 
@@ -1173,9 +1306,7 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
       <DashboardHero
         firstName={user?.firstName || user?.username}
         roleLabel={
-          user?.role === "ADMIN"
-            ? "Manager"
-            : user?.role?.replace(/_/g, " ")
+          user?.role === "ADMIN" ? "Manager" : user?.role?.replace(/_/g, " ")
         }
         isSuperadmin={user?.role === "SUPERADMIN"}
         lastSyncMinutesAgo={overviewStatsReady ? 2 : null}
@@ -1189,12 +1320,26 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
         >
           <ul className="space-y-2 max-h-40 overflow-y-auto">
             {probationAlerts.slice(0, 8).map((a) => (
-              <li key={a.employeeId} className="text-xs text-foreground flex flex-wrap gap-x-2 gap-y-0.5">
-                <Link href="/manage-employees" className="font-semibold text-primary hover:underline">
+              <li
+                key={a.employeeId}
+                className="text-xs text-foreground flex flex-wrap gap-x-2 gap-y-0.5"
+              >
+                <Link
+                  href="/manage-employees"
+                  className="font-semibold text-primary hover:underline"
+                >
                   {a.employeeName}
                 </Link>
-                <span className="text-muted-foreground">· {a.probationPeriod} · ends {a.probationEndDate}</span>
-                <span className={a.isOverdue ? "text-destructive font-semibold" : "text-muted-foreground"}>
+                <span className="text-muted-foreground">
+                  · {a.probationPeriod} · ends {a.probationEndDate}
+                </span>
+                <span
+                  className={
+                    a.isOverdue
+                      ? "text-destructive font-semibold"
+                      : "text-muted-foreground"
+                  }
+                >
                   {a.isOverdue ? "(overdue)" : `(${a.daysRemaining} days left)`}
                 </span>
               </li>
@@ -1207,8 +1352,12 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
         <section className={`${cardShell} p-6 sm:p-7`}>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 tracking-tight">Quick Actions</h2>
-              <p className="text-sm text-gray-500 mt-1">Manage your organization</p>
+              <h2 className="text-lg font-bold text-gray-900 tracking-tight">
+                Quick Actions
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Manage your organization
+              </p>
             </div>
             <Link
               href="/company"
@@ -1220,7 +1369,9 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
           </div>
         </section>
       )}
-      <div className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 ${gridGap}`}>
+      <div
+        className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 ${gridGap}`}
+      >
         <StatCard
           stat={{
             label: "Employees",
@@ -1239,7 +1390,9 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
             value: formatOverviewStat(overviewPresent),
             icon: UserCheck,
             trend: overviewStatsReady ? presentTrendVsYesterday : undefined,
-            unit: overviewStatsReady ? `${attRate}% attendance rate` : undefined,
+            unit: overviewStatsReady
+              ? `${attRate}% attendance rate`
+              : undefined,
             visualization: {
               type: "sparkline",
               data: sparklineData,
@@ -1262,7 +1415,10 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
               overviewStatsReady && overviewTotal > 0
                 ? `${Math.round((absentCount / overviewTotal) * 100)}% of workforce`
                 : undefined,
-            visualization: { type: "stacked", segments: attendanceStatusSegments },
+            visualization: {
+              type: "stacked",
+              segments: attendanceStatusSegments,
+            },
             iconClassName: "bg-rose-500/10 text-rose-600",
             accentColor: "#f43f5e",
           }}
@@ -1278,7 +1434,10 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
                 (hrWidgets?.pendingCounts?.leave ?? 0) > 0
                   ? `▲ ${hrWidgets?.pendingCounts?.leave} open`
                   : undefined,
-              visualization: { type: "progress", segments: leavePendingSegments },
+              visualization: {
+                type: "progress",
+                segments: leavePendingSegments,
+              },
               iconClassName: "bg-amber-500/10 text-amber-600",
               accentColor: "#f59e0b",
             }}
@@ -1286,13 +1445,17 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
         )}
       </div>
 
-      <div className={`grid grid-cols-1 lg:grid-cols-3 ${gridGap} items-stretch`}>
+      <div
+        className={`grid grid-cols-1 lg:grid-cols-3 ${gridGap} items-stretch`}
+      >
         <div className="lg:col-span-2 flex flex-col gap-8 min-h-0">
           <section className={`${cardShell} p-7 sm:p-8 shrink-0`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
                 <h2 className={panelTitle}>Overview</h2>
-                <p className="text-[13px] text-muted-foreground mt-1">Workforce distribution and attendance mix</p>
+                <p className="text-[13px] text-muted-foreground mt-1">
+                  Workforce distribution and attendance mix
+                </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {user.role !== "EMPLOYEE" && user.role !== "BRANCH_ADMIN" && (
@@ -1327,7 +1490,10 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
                   ))}
                 </select>
                 {overviewLoading && (
-                  <Icon icon="mdi:loading" className="w-4 h-4 animate-spin text-[#4f46e5]" />
+                  <Icon
+                    icon="mdi:loading"
+                    className="w-4 h-4 animate-spin text-[#4f46e5]"
+                  />
                 )}
               </div>
             </div>
@@ -1347,13 +1513,13 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
             <div className="rounded-xl bg-muted/30 p-5 sm:p-6 mb-6">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                 Workforce distribution
-                </p>
-                <EmployeeStatusCharts
-                  total={overviewTotal}
-                  present={overviewPresent}
-                  absent={absentCount}
-                  statusBreakdown={statusBreakdown}
-                />
+              </p>
+              <EmployeeStatusCharts
+                total={overviewTotal}
+                present={overviewPresent}
+                absent={absentCount}
+                statusBreakdown={statusBreakdown}
+              />
             </div>
 
             {isHrDesktopView && (
@@ -1412,11 +1578,31 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
               <h2 className={`${panelTitle} mb-4`}>Pending requests</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                 {[
-                  { href: "/employee-memo", label: "Internal Messages (IM)", count: hrWidgets?.pendingCounts?.im },
-                  { href: "/task-projects", label: "Tasks", count: hrWidgets?.pendingCounts?.tasks },
-                  { href: "/reimbursement", label: "Reimbursement Applications", count: hrWidgets?.pendingCounts?.reimbursement },
-                  { href: "/leave-applications", label: "Leave Applications", count: hrWidgets?.pendingCounts?.leave },
-                  { href: "/salary-advance", label: "Salary Advance Applications", count: hrWidgets?.pendingCounts?.salaryAdvance },
+                  {
+                    href: "/employee-memo",
+                    label: "Internal Messages (IM)",
+                    count: hrWidgets?.pendingCounts?.im,
+                  },
+                  {
+                    href: "/task-projects",
+                    label: "Tasks",
+                    count: hrWidgets?.pendingCounts?.tasks,
+                  },
+                  {
+                    href: "/reimbursement",
+                    label: "Reimbursement Applications",
+                    count: hrWidgets?.pendingCounts?.reimbursement,
+                  },
+                  {
+                    href: "/leave-applications",
+                    label: "Leave Applications",
+                    count: hrWidgets?.pendingCounts?.leave,
+                  },
+                  {
+                    href: "/salary-advance",
+                    label: "Salary Advance Applications",
+                    count: hrWidgets?.pendingCounts?.salaryAdvance,
+                  },
                 ].map((item) => (
                   <Link
                     key={item.href}
@@ -1446,164 +1632,222 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
                     <li key={item.id} className="flex gap-3 text-sm">
                       <div className={iconTileClass}>
                         <Icon
-                          icon={item.kind === "holiday" ? "mdi:calendar-star" : "mdi:account-plus"}
+                          icon={
+                            item.kind === "holiday"
+                              ? "mdi:calendar-star"
+                              : "mdi:account-plus"
+                          }
                           className="w-4 h-4 text-primary"
                         />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold text-foreground">{item.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{item.subtitle}</p>
+                        <p className="font-semibold text-foreground">
+                          {item.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {item.subtitle}
+                        </p>
                       </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">No news updates right now</p>
+                <p className="text-sm text-muted-foreground">
+                  No news updates right now
+                </p>
               )}
             </section>
           )}
 
           {!isHrDesktopView && (
-          <section className={`${cardShell} p-6 sm:p-7 flex flex-col flex-1 min-h-[240px]`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2 shrink-0">
-              <h2 className="text-lg font-bold text-gray-900 tracking-tight">
-                Attendance view
-              </h2>
-              <div className="flex items-center gap-2 rounded-full bg-[#f4f4f4] px-3 py-1.5 text-xs font-medium text-gray-600 border border-[#ebebeb]">
-                <span>Last 7 days</span>
-                <Icon icon="mdi:chevron-down" className="w-4 h-4" />
+            <section
+              className={`${cardShell} p-6 sm:p-7 flex flex-col flex-1 min-h-[240px]`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2 shrink-0">
+                <h2 className="text-lg font-bold text-gray-900 tracking-tight">
+                  Attendance view
+                </h2>
+                <div className="flex items-center gap-2 rounded-full bg-[#f4f4f4] px-3 py-1.5 text-xs font-medium text-gray-600 border border-[#ebebeb]">
+                  <span>Last 7 days</span>
+                  <Icon icon="mdi:chevron-down" className="w-4 h-4" />
+                </div>
               </div>
-            </div>
-            <div className="flex-1 min-h-[200px]">
-              <SoftBarChart data={barData} className="h-full min-h-[200px]" />
-            </div>
-          </section>
+              <div className="flex-1 min-h-[200px]">
+                <SoftBarChart data={barData} className="h-full min-h-[200px]" />
+              </div>
+            </section>
           )}
         </div>
 
         <div className="flex flex-col gap-5 h-full min-h-0">
           <section className={`${cardShell} p-4 sm:p-5 shrink-0`}>
-            <h2 className="text-base font-semibold tracking-tight text-foreground mb-3">Quick actions</h2>
+            <h2 className="text-base font-semibold tracking-tight text-foreground mb-3">
+              Quick actions
+            </h2>
             <QuickActionGrid actions={quickActions} iconOnly />
           </section>
 
-          <section className={`${cardShell} p-5 flex flex-col flex-1 min-h-[11rem]`}>
+          <section
+            className={`${cardShell} p-5 flex flex-col flex-1 min-h-[11rem]`}
+          >
             <h2 className={`${panelTitle} mb-3 shrink-0`}>Recent activity</h2>
             <div className="flex-1 flex flex-col min-h-0">
               <ActivityFeed items={activityItems} fillHeight />
-              </div>
+            </div>
           </section>
 
           {isHrDesktopView && (
-            <section className={`${cardShell} p-5 flex flex-col flex-1 min-h-[9rem]`}>
+            <section
+              className={`${cardShell} p-5 flex flex-col flex-1 min-h-[9rem]`}
+            >
               <h2 className={`${panelTitle} mb-3 shrink-0`}>Task list</h2>
               <div className="flex-1 flex flex-col min-h-0">
-              {hrWidgets?.latestTasks?.length ? (
+                {hrWidgets?.latestTasks?.length ? (
                   <ul className="space-y-2 flex-1 overflow-y-auto min-h-0">
-                  {hrWidgets.latestTasks.map((t) => (
-                    <li key={t.id}>
+                    {hrWidgets.latestTasks.map((t) => (
+                      <li key={t.id}>
                         <Link href="/task-projects" className={listItemClass}>
                           <p className="text-xs font-semibold text-foreground leading-snug whitespace-normal break-words">
-                          {t.taskCode} — {t.taskName}
-                        </p>
+                            {t.taskCode} — {t.taskName}
+                          </p>
                           <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {t.status} · {t.priority}
-                        </p>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
+                            {t.status} · {t.priority}
+                          </p>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
                   <div className="flex-1 flex items-center justify-center">
-                    <p className="text-sm text-muted-foreground">No tasks to show</p>
+                    <p className="text-sm text-muted-foreground">
+                      No tasks to show
+                    </p>
                   </div>
-              )}
+                )}
               </div>
             </section>
           )}
 
           {isHrDesktopView && (
-            <section className={`${cardShell} p-5 flex flex-col flex-1 min-h-[9rem]`}>
+            <section
+              className={`${cardShell} p-5 flex flex-col flex-1 min-h-[9rem]`}
+            >
               <h2 className={`${panelTitle} mb-3 shrink-0`}>
                 Upcoming birthdays &amp; anniversary
               </h2>
               <div className="flex-1 flex flex-col min-h-0">
-              {hrWidgets?.upcomingEvents?.length ? (
+                {hrWidgets?.upcomingEvents?.length ? (
                   <ul className="space-y-2 flex-1 overflow-y-auto min-h-0">
-                  {hrWidgets.upcomingEvents.map((ev) => (
-                    <li
-                      key={ev.id}
+                    {hrWidgets.upcomingEvents.map((ev) => (
+                      <li
+                        key={ev.id}
                         className="flex items-start gap-2.5 rounded-lg border border-border bg-background px-3 py-2.5"
-                    >
-                      <Icon
-                        icon={ev.kind === "birthday" ? "mdi:cake-variant" : "mdi:medal"}
+                      >
+                        <Icon
+                          icon={
+                            ev.kind === "birthday"
+                              ? "mdi:cake-variant"
+                              : "mdi:medal"
+                          }
                           className="w-4 h-4 text-primary shrink-0 mt-0.5"
-                      />
-                      <div className="min-w-0 flex-1">
+                        />
+                        <div className="min-w-0 flex-1">
                           <p className="text-xs font-semibold text-foreground leading-snug whitespace-normal break-words">
-                          {ev.label}
-                        </p>
-                          <p className="text-[11px] text-muted-foreground capitalize mt-0.5">{ev.kind} · {ev.when}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
+                            {ev.label}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground capitalize mt-0.5">
+                            {ev.kind} · {ev.when}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
                   <div className="flex-1 flex items-center justify-center">
-                    <p className="text-sm text-muted-foreground">No upcoming events</p>
+                    <p className="text-sm text-muted-foreground">
+                      No upcoming events
+                    </p>
                   </div>
-              )}
+                )}
               </div>
             </section>
           )}
 
           {!isHrDesktopView && (
-          <section className={`${cardShell} p-5 shrink-0`}>
-            <h2 className="text-sm font-bold text-foreground tracking-tight mb-3">
-              Today&apos;s summary
-            </h2>
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-center">
-                    <Icon icon="mdi:chart-line" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <section className={`${cardShell} p-5 shrink-0`}>
+              <h2 className="text-sm font-bold text-foreground tracking-tight mb-3">
+                Today&apos;s summary
+              </h2>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-center">
+                      <Icon
+                        icon="mdi:chart-line"
+                        className="w-4 h-4 text-emerald-600 dark:text-emerald-400"
+                      />
+                    </div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Attendance rate
+                    </p>
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground">Attendance rate</p>
+                  <span className="text-sm font-bold text-foreground tabular-nums">
+                    {attRate}%
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-foreground tabular-nums">{attRate}%</span>
-              </div>
-              <div className="h-px bg-border" />
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                    <Icon icon="mdi:account-group" className="w-4 h-4 text-blue-600" />
+                <div className="h-px bg-border" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                      <Icon
+                        icon="mdi:account-group"
+                        className="w-4 h-4 text-blue-600"
+                      />
+                    </div>
+                    <p className="text-sm font-medium text-gray-700">
+                      Total headcount
+                    </p>
                   </div>
-                  <p className="text-sm font-medium text-gray-700">Total headcount</p>
+                  <span className="text-sm font-bold text-gray-900 tabular-nums">
+                    {overviewTotal}
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-gray-900 tabular-nums">{overviewTotal}</span>
-              </div>
-              <div className="h-px bg-[#f0f0f0]" />
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-                    <Icon icon="mdi:office-building" className="w-4 h-4 text-amber-600" />
+                <div className="h-px bg-[#f0f0f0]" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+                      <Icon
+                        icon="mdi:office-building"
+                        className="w-4 h-4 text-amber-600"
+                      />
+                    </div>
+                    <p className="text-sm font-medium text-gray-700">
+                      Departments
+                    </p>
                   </div>
-                  <p className="text-sm font-medium text-gray-700">Departments</p>
+                  <span className="text-sm font-bold text-gray-900 tabular-nums">
+                    {departments.length}
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-gray-900 tabular-nums">{departments.length}</span>
-              </div>
-              <div className="h-px bg-[#f0f0f0]" />
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center">
-                    <Icon icon="mdi:clock-alert-outline" className="w-4 h-4 text-rose-600" />
+                <div className="h-px bg-[#f0f0f0]" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center">
+                      <Icon
+                        icon="mdi:clock-alert-outline"
+                        className="w-4 h-4 text-rose-600"
+                      />
+                    </div>
+                    <p className="text-sm font-medium text-gray-700">
+                      Absent today
+                    </p>
                   </div>
-                  <p className="text-sm font-medium text-gray-700">Absent today</p>
+                  <span className="text-sm font-bold text-rose-500 tabular-nums">
+                    {absentCount}
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-rose-500 tabular-nums">{absentCount}</span>
               </div>
-            </div>
-          </section>
+            </section>
           )}
         </div>
       </div>
@@ -1677,9 +1921,9 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
                   {isHrDesktopView ? "Out time & Location" : "Out"}
                 </TableHead>
                 {!isHrDesktopView && (
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Location
-                </TableHead>
+                  <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Location
+                  </TableHead>
                 )}
                 <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                   Status
@@ -1698,89 +1942,121 @@ export default function DashboardPage({ embeddedInEmpPortal = false }: { embedde
                           ? "Loading today's attendance data…"
                           : "Employees haven't checked in yet today."
                       }
-                      actionLabel={overviewLoadError ? "Refresh" : "View employees"}
-                      actionHref={overviewLoadError ? undefined : "/manage-employees"}
-                      onAction={overviewLoadError ? () => loadTodayOverview() : undefined}
+                      actionLabel={
+                        overviewLoadError ? "Refresh" : "View employees"
+                      }
+                      actionHref={
+                        overviewLoadError ? undefined : "/manage-employees"
+                      }
+                      onAction={
+                        overviewLoadError
+                          ? () => loadTodayOverview()
+                          : undefined
+                      }
                     />
                   </TableCell>
                 </TableRow>
               ) : (
                 overviewEmployees.map((e, i) => (
-                    <TableRow
-                      key={e.id}
-                      className="hover:bg-muted/40 border-border"
-                    >
-                      <TableCell className="text-sm text-gray-500 font-medium">
-                        {i + 1}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                            {e.employeeFirstName?.charAt(0)?.toUpperCase() ||
-                              "?"}
-                          </div>
-                          <span className="text-[13px] font-semibold text-gray-800">
-                            {e.employeeFirstName} {e.employeeLastName}
-                          </span>
+                  <TableRow
+                    key={e.id}
+                    className="hover:bg-muted/40 border-border"
+                  >
+                    <TableCell className="text-sm text-gray-500 font-medium">
+                      {i + 1}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                          {e.employeeFirstName?.charAt(0)?.toUpperCase() || "?"}
                         </div>
-                      </TableCell>
-                      {isHrDesktopView && (
-                        <>
-                          <TableCell className="text-sm text-gray-600">
-                            {e.departmentName || "—"}
-                          </TableCell>
-                          <TableCell className="text-sm text-gray-600">
-                            {e.designationName || "—"}
-                          </TableCell>
-                        </>
+                        <span className="text-[13px] font-semibold text-gray-800">
+                          {e.employeeFirstName} {e.employeeLastName}
+                        </span>
+                      </div>
+                    </TableCell>
+                    {isHrDesktopView && (
+                      <>
+                        <TableCell className="text-sm text-gray-600">
+                          {e.departmentName || "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {e.designationName || "—"}
+                        </TableCell>
+                      </>
+                    )}
+                    <TableCell className="text-sm text-gray-600">
+                      <div className="font-mono tabular-nums">
+                        {e.inTime || "—"}
+                      </div>
+                      {isHrDesktopView && e.inLocation && (
+                        <div
+                          className="text-[11px] text-gray-500 mt-0.5 line-clamp-2"
+                          title={e.inLocation}
+                        >
+                          {e.inLocation}
+                        </div>
                       )}
-                      <TableCell className="text-sm text-gray-600">
-                        <div className="font-mono tabular-nums">{e.inTime || "—"}</div>
-                        {isHrDesktopView && e.inLocation && (
-                          <div className="text-[11px] text-gray-500 mt-0.5 line-clamp-2" title={e.inLocation}>
-                            {e.inLocation}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        <div className="font-mono tabular-nums">{e.outTime || "—"}</div>
-                        {isHrDesktopView && e.outLocation && (
-                          <div className="text-[11px] text-gray-500 mt-0.5 line-clamp-2" title={e.outLocation}>
-                            {e.outLocation}
-                          </div>
-                        )}
-                      </TableCell>
-                      {!isHrDesktopView && (
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      <div className="font-mono tabular-nums">
+                        {e.outTime || "—"}
+                      </div>
+                      {isHrDesktopView && e.outLocation && (
+                        <div
+                          className="text-[11px] text-gray-500 mt-0.5 line-clamp-2"
+                          title={e.outLocation}
+                        >
+                          {e.outLocation}
+                        </div>
+                      )}
+                    </TableCell>
+                    {!isHrDesktopView && (
                       <TableCell className="max-w-[260px]">
                         {e.inLocation || e.outLocation ? (
                           <div className="space-y-0.5">
                             {e.inLocation && (
-                              <p className="text-[11px] text-gray-600 flex items-start gap-1" title={e.inLocation}>
-                                <span className="text-emerald-500 font-bold shrink-0">IN</span>
-                                <span className="line-clamp-1">{e.inLocation}</span>
+                              <p
+                                className="text-[11px] text-gray-600 flex items-start gap-1"
+                                title={e.inLocation}
+                              >
+                                <span className="text-emerald-500 font-bold shrink-0">
+                                  IN
+                                </span>
+                                <span className="line-clamp-1">
+                                  {e.inLocation}
+                                </span>
                               </p>
                             )}
-                            {e.outLocation && e.outLocation !== e.inLocation && (
-                              <p className="text-[11px] text-gray-600 flex items-start gap-1" title={e.outLocation}>
-                                <span className="text-rose-500 font-bold shrink-0">OUT</span>
-                                <span className="line-clamp-1">{e.outLocation}</span>
-                              </p>
-                            )}
+                            {e.outLocation &&
+                              e.outLocation !== e.inLocation && (
+                                <p
+                                  className="text-[11px] text-gray-600 flex items-start gap-1"
+                                  title={e.outLocation}
+                                >
+                                  <span className="text-rose-500 font-bold shrink-0">
+                                    OUT
+                                  </span>
+                                  <span className="line-clamp-1">
+                                    {e.outLocation}
+                                  </span>
+                                </p>
+                              )}
                           </div>
                         ) : (
                           <span className="text-sm text-gray-400">—</span>
                         )}
                       </TableCell>
-                      )}
-                      <TableCell>
-                        <StatusChip
-                          statusType={e.statusType}
-                          label={e.statusDisplay}
-                          title={e.statusLabel}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))
+                    )}
+                    <TableCell>
+                      <StatusChip
+                        statusType={e.statusType}
+                        label={e.statusDisplay}
+                        title={e.statusLabel}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>

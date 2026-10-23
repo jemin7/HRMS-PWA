@@ -19,7 +19,7 @@ export function PublicPolicyPage({ type }: { type: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/backend/company-policies/public/${type}`)
+    fetch(`https://hrms-api-test.onrender.com/company-policies/public/${type}`)
       .then(async (res) => {
         if (!res.ok) return null;
         const data = await res.json();
@@ -44,10 +44,15 @@ export function PublicPolicyPage({ type }: { type: string }) {
   return (
     <div className="bg-background">
       <div className="mx-auto max-w-3xl px-6 py-12">
-        <a href="/login" className="text-sm text-primary underline underline-offset-2">
+        <a
+          href="/login"
+          className="text-sm text-primary underline underline-offset-2"
+        >
           Back to login
         </a>
-        <h1 className="mt-6 font-display text-3xl font-medium tracking-tight">{title}</h1>
+        <h1 className="mt-6 font-display text-3xl font-medium tracking-tight">
+          {title}
+        </h1>
         {policy?.versionName || policy?.effectiveFrom ? (
           <p className="mt-2 text-sm text-muted-foreground">
             {policy.versionName ? `Version ${policy.versionName}` : ""}
@@ -65,7 +70,9 @@ export function PublicPolicyPage({ type }: { type: string }) {
             dangerouslySetInnerHTML={{ __html: policy.bodyHtml }}
           />
         ) : (
-          <p className="mt-8 text-sm text-muted-foreground">This policy has not been published yet.</p>
+          <p className="mt-8 text-sm text-muted-foreground">
+            This policy has not been published yet.
+          </p>
         )}
       </div>
     </div>

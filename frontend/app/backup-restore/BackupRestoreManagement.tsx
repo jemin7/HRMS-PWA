@@ -2,10 +2,22 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { toast } from "sonner";
-import { Cloud, Download, Database, Loader2, Play, RotateCcw } from "lucide-react";
+import {
+  Cloud,
+  Download,
+  Database,
+  Loader2,
+  Play,
+  RotateCcw,
+} from "lucide-react";
 import { FormModal } from "../components/ui/form-modal";
 import { NoticeBanner } from "../components/ui/notice-banner";
 import {
@@ -19,11 +31,10 @@ import {
 import { authHeaders, getAccessToken } from "@/lib/auth";
 import { ListAreaSkeleton } from "../components/ui/TableBodySkeleton";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
-const backupFetchInit = (
-  init: RequestInit = {},
-): RequestInit => ({
+const backupFetchInit = (init: RequestInit = {}): RequestInit => ({
   credentials: "include",
   ...init,
   headers: authHeaders(
@@ -217,11 +228,11 @@ export function BackupRestoreManagement() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-          date: restoreTarget.date,
-          fileName: restoreTarget.fileName,
-          fileLabel: restoreTarget.label,
-          confirm: true,
-        }),
+            date: restoreTarget.date,
+            fileName: restoreTarget.fileName,
+            fileLabel: restoreTarget.label,
+            confirm: true,
+          }),
         }),
       );
       if (res.status === 401) {
@@ -242,7 +253,9 @@ export function BackupRestoreManagement() {
 
   if (user?.role !== "SUPERADMIN") {
     return (
-      <div className="p-6 text-gray-500 text-sm">Only Super Admin can access backup and restore.</div>
+      <div className="p-6 text-gray-500 text-sm">
+        Only Super Admin can access backup and restore.
+      </div>
     );
   }
 
@@ -251,16 +264,20 @@ export function BackupRestoreManagement() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-gray-600 text-sm">
-            Daily backup at <strong>11:59 PM</strong>. SQL sections are zipped, emailed via SMTP, and
-            uploaded to cloud (S3 / Dropbox / Google Drive when configured). Weekly cloud archive runs
-            on Sundays.
+            Daily backup at <strong>11:59 PM</strong>. SQL sections are zipped,
+            emailed via SMTP, and uploaded to cloud (S3 / Dropbox / Google Drive
+            when configured). Weekly cloud archive runs on Sundays.
           </p>
           {backupRoot && (
             <p className="text-xs text-gray-400 mt-1">Storage: {backupRoot}</p>
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => void runWeeklyCloud()} disabled={cloudRunning}>
+          <Button
+            variant="outline"
+            onClick={() => void runWeeklyCloud()}
+            disabled={cloudRunning}
+          >
             {cloudRunning ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
@@ -269,7 +286,11 @@ export function BackupRestoreManagement() {
             Weekly cloud backup
           </Button>
           <Button onClick={() => void runBackup()} disabled={running}>
-            {running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+            {running ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Play className="w-4 h-4 mr-2" />
+            )}
             Run backup now
           </Button>
         </div>
@@ -286,11 +307,16 @@ export function BackupRestoreManagement() {
           {loading ? (
             <ListAreaSkeleton rows={5} />
           ) : items.length === 0 ? (
-            <p className="text-sm text-gray-500 py-6 text-center">No backups yet. Run a backup to create the first archive.</p>
+            <p className="text-sm text-gray-500 py-6 text-center">
+              No backups yet. Run a backup to create the first archive.
+            </p>
           ) : (
             <div className="space-y-4">
               {items.map((day) => (
-                <div key={day.date} className="rounded-lg border border-gray-200 p-4">
+                <div
+                  key={day.date}
+                  className="rounded-lg border border-gray-200 p-4"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <div>
                       <p className="font-semibold text-gray-900">{day.date}</p>
@@ -305,7 +331,9 @@ export function BackupRestoreManagement() {
                         <p className="text-xs text-gray-500 mt-0.5">
                           Cloud:{" "}
                           {day.cloudUploads
-                            .map((c) => `${c.provider}${c.success ? " ✓" : " ✗"}`)
+                            .map(
+                              (c) => `${c.provider}${c.success ? " ✓" : " ✗"}`,
+                            )
                             .join(", ")}
                         </p>
                       )}
@@ -315,7 +343,9 @@ export function BackupRestoreManagement() {
                         type="button"
                         size="sm"
                         variant="outline"
-                        onClick={() => void handleDownload(day.date, day.zipFileName!)}
+                        onClick={() =>
+                          void handleDownload(day.date, day.zipFileName!)
+                        }
                       >
                         <Download className="w-3.5 h-3.5 mr-1" />
                         Download ZIP
@@ -330,15 +360,21 @@ export function BackupRestoreManagement() {
                       >
                         <div>
                           <span className="font-medium">{f.label}</span>
-                          <span className="text-gray-500 ml-2">{f.fileName}</span>
-                          <span className="text-gray-400 ml-2">({fmtSize(f.sizeBytes)})</span>
+                          <span className="text-gray-500 ml-2">
+                            {f.fileName}
+                          </span>
+                          <span className="text-gray-400 ml-2">
+                            ({fmtSize(f.sizeBytes)})
+                          </span>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             type="button"
                             size="sm"
                             variant="outline"
-                            onClick={() => void handleDownload(day.date, f.fileName)}
+                            onClick={() =>
+                              void handleDownload(day.date, f.fileName)
+                            }
                           >
                             <Download className="w-3.5 h-3.5 mr-1" />
                             Download
@@ -376,7 +412,9 @@ export function BackupRestoreManagement() {
         </CardHeader>
         <CardContent>
           {restoreLogs.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4 text-center">No restore operations recorded yet.</p>
+            <p className="text-sm text-gray-500 py-4 text-center">
+              No restore operations recorded yet.
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -398,13 +436,21 @@ export function BackupRestoreManagement() {
                       </TableCell>
                       <TableCell>{log.username || "—"}</TableCell>
                       <TableCell>{log.backupDate}</TableCell>
-                      <TableCell className="text-xs">{log.fileLabel || log.fileName}</TableCell>
+                      <TableCell className="text-xs">
+                        {log.fileLabel || log.fileName}
+                      </TableCell>
                       <TableCell>
-                        <span className={log.success ? "text-green-700" : "text-red-600"}>
+                        <span
+                          className={
+                            log.success ? "text-green-700" : "text-red-600"
+                          }
+                        >
                           {log.success ? "Success" : "Failed"}
                         </span>
                       </TableCell>
-                      <TableCell className="text-xs">{log.ipAddress || "—"}</TableCell>
+                      <TableCell className="text-xs">
+                        {log.ipAddress || "—"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -429,11 +475,16 @@ export function BackupRestoreManagement() {
               <strong>{restoreTarget.date}</strong> ({restoreTarget.fileName})?
             </p>
             <NoticeBanner variant="warning" compact>
-              Recommended: restore only the sectional file you need (e.g. attendance). Full-database
-              restore replaces all tables.
+              Recommended: restore only the sectional file you need (e.g.
+              attendance). Full-database restore replaces all tables.
             </NoticeBanner>
             <div className="flex gap-3 pt-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setRestoreTarget(null)}>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setRestoreTarget(null)}
+              >
                 Cancel
               </Button>
               <Button
@@ -442,7 +493,9 @@ export function BackupRestoreManagement() {
                 disabled={restoring}
                 onClick={() => void confirmRestore()}
               >
-                {restoring ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                {restoring ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : null}
                 Confirm restore
               </Button>
             </div>

@@ -11,9 +11,14 @@ import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
-type LineItem = { reimbursementType: string; amount: string; description: string };
+type LineItem = {
+  reimbursementType: string;
+  amount: string;
+  description: string;
+};
 
 interface EmployeeTask {
   id: number;
@@ -36,20 +41,25 @@ export function EmpReimbursementApplyForm({
   const [taskSearch, setTaskSearch] = useState("");
   const [selectedTask, setSelectedTask] = useState<EmployeeTask | null>(null);
   const [taskSuggestOpen, setTaskSuggestOpen] = useState(false);
-  const [items, setItems] = useState<LineItem[]>([{ reimbursementType: "Travelling", amount: "", description: "" }]);
+  const [items, setItems] = useState<LineItem[]>([
+    { reimbursementType: "Travelling", amount: "", description: "" },
+  ]);
   const [submitting, setSubmitting] = useState(false);
   const today = useMemo(() => localDateISO(), []);
   const [date, setDate] = useState(today);
 
   useEffect(() => {
     const username = user?.username;
-    const empId = user?.employee?.id ?? (user?.role === "EMPLOYEE" ? user?.id : undefined);
+    const empId =
+      user?.employee?.id ?? (user?.role === "EMPLOYEE" ? user?.id : undefined);
     if (!username && !empId) return;
     let cancelled = false;
     (async () => {
       let row: any = null;
       if (username) {
-        const r = await fetch(`${BACKEND}/manage-emp/credentials/${encodeURIComponent(username)}`);
+        const r = await fetch(
+          `${BACKEND}/manage-emp/credentials/${encodeURIComponent(username)}`,
+        );
         if (r.ok) row = await r.json();
       }
       if (!row?.employee?.id && empId) {
@@ -132,8 +142,10 @@ export function EmpReimbursementApplyForm({
         let apiMessage = "Could not submit reimbursement";
         try {
           const body = await res.json();
-          if (typeof body?.message === "string" && body.message.trim()) apiMessage = body.message;
-          else if (Array.isArray(body?.message) && body.message[0]) apiMessage = String(body.message[0]);
+          if (typeof body?.message === "string" && body.message.trim())
+            apiMessage = body.message;
+          else if (Array.isArray(body?.message) && body.message[0])
+            apiMessage = String(body.message[0]);
         } catch {
           /* ignore */
         }
@@ -142,7 +154,9 @@ export function EmpReimbursementApplyForm({
       toast.success("Reimbursement submitted");
       onSuccess();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Could not submit reimbursement");
+      toast.error(
+        e instanceof Error ? e.message : "Could not submit reimbursement",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -166,7 +180,9 @@ export function EmpReimbursementApplyForm({
         {selectedTask ? (
           <div className="flex items-start justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
             <div className="min-w-0">
-              <p className="text-sm font-semibold truncate">{selectedTask.taskName}</p>
+              <p className="text-sm font-semibold truncate">
+                {selectedTask.taskName}
+              </p>
               <p className="text-xs text-muted-foreground font-mono">
                 {selectedTask.taskCode} · #{selectedTask.id}
               </p>
@@ -207,7 +223,9 @@ export function EmpReimbursementApplyForm({
                         setTaskSuggestOpen(false);
                       }}
                     >
-                      <p className="text-sm font-medium truncate">{t.taskName}</p>
+                      <p className="text-sm font-medium truncate">
+                        {t.taskName}
+                      </p>
                       <p className="text-xs text-muted-foreground font-mono">
                         {t.taskCode} · #{t.id}
                       </p>
@@ -272,17 +290,29 @@ export function EmpReimbursementApplyForm({
         ))}
         <button
           type="button"
-          onClick={() => setItems([...items, { reimbursementType: "Travelling", amount: "", description: "" }])}
+          onClick={() =>
+            setItems([
+              ...items,
+              { reimbursementType: "Travelling", amount: "", description: "" },
+            ])
+          }
           className="text-sm font-medium text-primary"
         >
           + Add expense line
         </button>
       </div>
 
-      <p className="text-sm font-semibold border-t pt-3">Total: ₹{total.toFixed(2)}</p>
+      <p className="text-sm font-semibold border-t pt-3">
+        Total: ₹{total.toFixed(2)}
+      </p>
 
       <div className="flex flex-wrap gap-2">
-        <Button type="button" size="lg" onClick={() => void submit()} disabled={submitting || total <= 0}>
+        <Button
+          type="button"
+          size="lg"
+          onClick={() => void submit()}
+          disabled={submitting || total <= 0}
+        >
           {submitting ? "Submitting…" : "Submit"}
         </Button>
       </div>

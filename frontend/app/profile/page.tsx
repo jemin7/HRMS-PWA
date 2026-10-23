@@ -8,7 +8,7 @@ import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { getSidebarContext } from "@/app/utils/sidebarContext";
 
-const API = "/backend";
+const API = "https://hrms-api-test.onrender.com";
 
 type LoggedUser = {
   id: number;
@@ -172,9 +172,11 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error("Failed to load service provider");
 
       const json = await res.json();
-      const list = Array.isArray(json) ? json : json?.data ?? [];
+      const list = Array.isArray(json) ? json : (json?.data ?? []);
 
-      const sp = list.find((x: any) => Number(x.id) === Number(serviceProviderID));
+      const sp = list.find(
+        (x: any) => Number(x.id) === Number(serviceProviderID),
+      );
       if (!sp) throw new Error("Service provider profile not found");
 
       setForm({
@@ -214,7 +216,9 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error("Failed to load company");
 
       const json = await res.json();
-      const allCompanies: CompanyRow[] = Array.isArray(json) ? json : json?.data ?? [];
+      const allCompanies: CompanyRow[] = Array.isArray(json)
+        ? json
+        : (json?.data ?? []);
 
       const allowedIds = getMappedCompanyIds(u);
 
@@ -223,7 +227,7 @@ export default function ProfilePage() {
       }
 
       const allowedCompanies = allCompanies.filter((c) =>
-        allowedIds.includes(Number(c.id))
+        allowedIds.includes(Number(c.id)),
       );
 
       if (allowedCompanies.length === 0) {
@@ -233,12 +237,14 @@ export default function ProfilePage() {
       const activeCompanyId = getActiveCompanyIdFromApp();
 
       const selectedCompany =
-        allowedCompanies.find((c) => Number(c.id) === Number(activeCompanyId)) ||
+        allowedCompanies.find(
+          (c) => Number(c.id) === Number(activeCompanyId),
+        ) ||
         allowedCompanies.find((c) => Number(c.id) === Number(u.companyID)) ||
         allowedCompanies.find((c) =>
           u.userCompanies?.some(
-            (uc) => uc.isPrimary && Number(uc.companyID) === Number(c.id)
-          )
+            (uc) => uc.isPrimary && Number(uc.companyID) === Number(c.id),
+          ),
         ) ||
         allowedCompanies[0];
 
@@ -364,7 +370,8 @@ export default function ProfilePage() {
       <div className="rounded-xl border bg-card p-8">
         <h1 className="text-2xl font-bold">Profile</h1>
         <p className="text-muted-foreground mt-2">
-          SuperAdmin is a universal account and is not linked to any company or branch.
+          SuperAdmin is a universal account and is not linked to any company or
+          branch.
         </p>
       </div>
     );
@@ -427,7 +434,10 @@ function ProfileForm({
   onSubmit: (e: React.FormEvent) => void;
 }) {
   return (
-    <form onSubmit={onSubmit} className="rounded-xl border bg-card p-6 space-y-6">
+    <form
+      onSubmit={onSubmit}
+      className="rounded-xl border bg-card p-6 space-y-6"
+    >
       <div className="border-l-2 border-primary pl-4">
         <h2 className="text-xl font-semibold">
           {profileType === "SERVICE_PROVIDER"
@@ -438,17 +448,27 @@ function ProfileForm({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {profileType === "COMPANY" && (
-          <InputBlock label="Service Provider" value={form.serviceProviderName} readOnly />
+          <InputBlock
+            label="Service Provider"
+            value={form.serviceProviderName}
+            readOnly
+          />
         )}
 
         <InputBlock
-          label={profileType === "SERVICE_PROVIDER" ? "Service Provider Name *" : "Company Name *"}
+          label={
+            profileType === "SERVICE_PROVIDER"
+              ? "Service Provider Name *"
+              : "Company Name *"
+          }
           value={form.companyName}
           onChange={(v) => setField("companyName", v)}
         />
 
         <div className="space-y-2 md:col-span-2">
-          <Label>{profileType === "SERVICE_PROVIDER" ? "Company Address" : "Address"}</Label>
+          <Label>
+            {profileType === "SERVICE_PROVIDER" ? "Company Address" : "Address"}
+          </Label>
           <textarea
             value={form.address}
             onChange={(e) => setField("address", e.target.value)}
@@ -456,37 +476,105 @@ function ProfileForm({
           />
         </div>
 
-        <InputBlock label="Country" value={form.country} onChange={(v) => setField("country", v)} />
-        <InputBlock label="State" value={form.state} onChange={(v) => setField("state", v)} />
-        <InputBlock label="City" value={form.city} onChange={(v) => setField("city", v)} />
-        <InputBlock label="Pincode" value={form.pincode} onChange={(v) => setField("pincode", v)} />
+        <InputBlock
+          label="Country"
+          value={form.country}
+          onChange={(v) => setField("country", v)}
+        />
+        <InputBlock
+          label="State"
+          value={form.state}
+          onChange={(v) => setField("state", v)}
+        />
+        <InputBlock
+          label="City"
+          value={form.city}
+          onChange={(v) => setField("city", v)}
+        />
+        <InputBlock
+          label="Pincode"
+          value={form.pincode}
+          onChange={(v) => setField("pincode", v)}
+        />
 
         {profileType === "SERVICE_PROVIDER" && (
           <>
-            <InputBlock label="Country Code" value={form.countryCode} onChange={(v) => setField("countryCode", v)} />
-            <InputBlock label="Website" value={form.website} onChange={(v) => setField("website", v)} />
+            <InputBlock
+              label="Country Code"
+              value={form.countryCode}
+              onChange={(v) => setField("countryCode", v)}
+            />
+            <InputBlock
+              label="Website"
+              value={form.website}
+              onChange={(v) => setField("website", v)}
+            />
           </>
         )}
 
         {profileType === "COMPANY" && (
           <>
-            <InputBlock label="Time Zone" value={form.timeZone} onChange={(v) => setField("timeZone", v)} />
-            <InputBlock label="Currency" value={form.currency} onChange={(v) => setField("currency", v)} />
-            <InputBlock label="Company Type" value={form.companyType} onChange={(v) => setField("companyType", v)} />
+            <InputBlock
+              label="Time Zone"
+              value={form.timeZone}
+              onChange={(v) => setField("timeZone", v)}
+            />
+            <InputBlock
+              label="Currency"
+              value={form.currency}
+              onChange={(v) => setField("currency", v)}
+            />
+            <InputBlock
+              label="Company Type"
+              value={form.companyType}
+              onChange={(v) => setField("companyType", v)}
+            />
           </>
         )}
 
-        <InputBlock label="Contact No" value={form.contactNo} onChange={(v) => setField("contactNo", v)} />
-        <InputBlock label="Email" value={form.emailAdd} onChange={(v) => setField("emailAdd", v)} />
-        <InputBlock label="GST No" value={form.gstNo} onChange={(v) => setField("gstNo", v)} />
+        <InputBlock
+          label="Contact No"
+          value={form.contactNo}
+          onChange={(v) => setField("contactNo", v)}
+        />
+        <InputBlock
+          label="Email"
+          value={form.emailAdd}
+          onChange={(v) => setField("emailAdd", v)}
+        />
+        <InputBlock
+          label="GST No"
+          value={form.gstNo}
+          onChange={(v) => setField("gstNo", v)}
+        />
 
         {profileType === "COMPANY" && (
           <>
-            <InputBlock label="PAN No" value={form.panNo} onChange={(v) => setField("panNo", v)} />
-            <InputBlock label="PF No" value={form.pfNo} onChange={(v) => setField("pfNo", v)} />
-            <InputBlock label="TAN No" value={form.tanNo} onChange={(v) => setField("tanNo", v)} />
-            <InputBlock label="ESI No" value={form.esiNo} onChange={(v) => setField("esiNo", v)} />
-            <InputBlock label="LIN No" value={form.linNo} onChange={(v) => setField("linNo", v)} />
+            <InputBlock
+              label="PAN No"
+              value={form.panNo}
+              onChange={(v) => setField("panNo", v)}
+            />
+            <InputBlock
+              label="PF No"
+              value={form.pfNo}
+              onChange={(v) => setField("pfNo", v)}
+            />
+            <InputBlock
+              label="TAN No"
+              value={form.tanNo}
+              onChange={(v) => setField("tanNo", v)}
+            />
+            <InputBlock
+              label="ESI No"
+              value={form.esiNo}
+              onChange={(v) => setField("esiNo", v)}
+            />
+            <InputBlock
+              label="LIN No"
+              value={form.linNo}
+              onChange={(v) => setField("linNo", v)}
+            />
           </>
         )}
       </div>

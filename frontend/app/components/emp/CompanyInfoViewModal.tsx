@@ -3,14 +3,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FormDrawer } from "../ui/form-drawer";
-import { EntityDetailHero, EntityDetailLayout } from "../app/entity-detail-layout";
+import {
+  EntityDetailHero,
+  EntityDetailLayout,
+} from "../app/entity-detail-layout";
 import { DetailCard } from "../app/detail-card";
 import { LEGAL_ENTITY_OPTIONS } from "@/lib/companyAccess";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { getSidebarContext } from "../../utils/sidebarContext";
 import { authHeaders } from "@/lib/auth";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "/backend";
+const BACKEND =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
 interface CompanyDetails {
   id: number;
@@ -77,7 +81,9 @@ export function CompanyInfoViewModal({
         if (!res.ok) throw new Error(await res.text());
         setCompany(await res.json());
       } catch (e: unknown) {
-        toast.error(e instanceof Error ? e.message : "Could not load company details");
+        toast.error(
+          e instanceof Error ? e.message : "Could not load company details",
+        );
       } finally {
         setLoading(false);
       }
@@ -93,9 +99,13 @@ export function CompanyInfoViewModal({
       cancelLabel="Close"
     >
       {loading ? (
-        <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>
+        <p className="text-sm text-muted-foreground py-6 text-center">
+          Loading…
+        </p>
       ) : !company ? (
-        <p className="text-sm text-muted-foreground py-6 text-center">Could not load company details.</p>
+        <p className="text-sm text-muted-foreground py-6 text-center">
+          Could not load company details.
+        </p>
       ) : (
         <EntityDetailLayout
           hero={
@@ -104,7 +114,9 @@ export function CompanyInfoViewModal({
               subtitle={
                 <span>
                   {[
-                    LEGAL_ENTITY_OPTIONS.find((o) => o.value === company.legalEntityType)?.label,
+                    LEGAL_ENTITY_OPTIONS.find(
+                      (o) => o.value === company.legalEntityType,
+                    )?.label,
                     company.companyType,
                   ]
                     .filter(Boolean)
@@ -122,7 +134,9 @@ export function CompanyInfoViewModal({
               {
                 label: "Company type",
                 value:
-                  LEGAL_ENTITY_OPTIONS.find((o) => o.value === company.legalEntityType)?.label ||
+                  LEGAL_ENTITY_OPTIONS.find(
+                    (o) => o.value === company.legalEntityType,
+                  )?.label ||
                   company.legalEntityType ||
                   "—",
               },
@@ -161,22 +175,41 @@ export function CompanyInfoViewModal({
               { label: "ESI", value: company.esiNo },
               { label: "LIN", value: company.linNo },
               { label: "Shop registration", value: company.shopRegNo },
-              { label: "Financial year start", value: company.financialYearStart },
+              {
+                label: "Financial year start",
+                value: company.financialYearStart,
+              },
             ]}
           />
-          {(company.companyLogoUrl || company.SignatureUrl) ? (
-            <DetailCard title="Branding" subtitle="Logo and signature" className="lg:col-span-2">
+          {company.companyLogoUrl || company.SignatureUrl ? (
+            <DetailCard
+              title="Branding"
+              subtitle="Logo and signature"
+              className="lg:col-span-2"
+            >
               <div className="flex flex-wrap gap-6">
                 {company.companyLogoUrl ? (
                   <div>
-                    <p className="mb-2 text-sm text-muted-foreground">Company logo</p>
-                    <img src={company.companyLogoUrl} alt="Company Logo" className="h-24 w-24 rounded-lg border object-contain" />
+                    <p className="mb-2 text-sm text-muted-foreground">
+                      Company logo
+                    </p>
+                    <img
+                      src={company.companyLogoUrl}
+                      alt="Company Logo"
+                      className="h-24 w-24 rounded-lg border object-contain"
+                    />
                   </div>
                 ) : null}
                 {company.SignatureUrl ? (
                   <div>
-                    <p className="mb-2 text-sm text-muted-foreground">Signature</p>
-                    <img src={company.SignatureUrl} alt="Signature" className="h-24 w-24 rounded-lg border object-contain" />
+                    <p className="mb-2 text-sm text-muted-foreground">
+                      Signature
+                    </p>
+                    <img
+                      src={company.SignatureUrl}
+                      alt="Signature"
+                      className="h-24 w-24 rounded-lg border object-contain"
+                    />
                   </div>
                 ) : null}
               </div>

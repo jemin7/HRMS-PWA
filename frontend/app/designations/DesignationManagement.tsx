@@ -1,9 +1,19 @@
 "use client";
 import { TableBodySkeleton } from "../components/ui/TableBodySkeleton";
 
-import { hasCompanyAccessFlag, hasModuleWriteAccess, isCompanyOwnerFlag, isCompanyAdminLikeRole } from "@/lib/companyAccess";
+import {
+  hasCompanyAccessFlag,
+  hasModuleWriteAccess,
+  isCompanyOwnerFlag,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -24,7 +34,18 @@ import {
 } from "../components/ui/table";
 import { Badge } from "../components/ui/badge";
 import { Icon } from "@iconify/react";
-import { Plus, Search, Edit, Trash2, Eye, X, Save, RotateCcw, Filter, BadgeCheck } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  X,
+  Save,
+  RotateCcw,
+  Filter,
+  BadgeCheck,
+} from "lucide-react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { FormDrawer } from "../components/ui/form-drawer";
 import { NoticeBanner } from "../components/ui/notice-banner";
@@ -34,7 +55,10 @@ import { EntityListShell } from "../components/app/entity-list-shell";
 import type { DataTableColumn } from "../components/app/data-table";
 import { EntityRowActions } from "../components/app/entity-row-actions";
 import { DetailCard } from "../components/app/detail-card";
-import { EntityDetailHero, EntityDetailLayout } from "../components/app/entity-detail-layout";
+import {
+  EntityDetailHero,
+  EntityDetailLayout,
+} from "../components/app/entity-detail-layout";
 import { AutocompleteBranchField } from "../components/app/autocomplete-branch-field";
 import { useClientTable, sortRows } from "../hooks/use-client-table";
 import { toast } from "sonner";
@@ -81,36 +105,39 @@ interface DesignationRead {
   departmentName?: string | null;
 }
 
-interface ServiceProvider { id: ID; companyName: string; }
-interface Company { 
-  id: ID; 
-  companyName: string; 
-  serviceProviderID?: ID | null; 
+interface ServiceProvider {
+  id: ID;
+  companyName: string;
 }
-interface Branch { 
-  id: ID; 
-  branchName: string; 
-  serviceProviderID?: ID | null; 
-  companyID?: ID | null; 
+interface Company {
+  id: ID;
+  companyName: string;
+  serviceProviderID?: ID | null;
 }
-interface Department { 
-  id: ID; 
-  departmentName: string; 
-  serviceProviderID?: ID | null; 
-  companyID?: ID | null; 
-  branchesID?: ID | null; 
+interface Branch {
+  id: ID;
+  branchName: string;
+  serviceProviderID?: ID | null;
+  companyID?: ID | null;
+}
+interface Department {
+  id: ID;
+  departmentName: string;
+  serviceProviderID?: ID | null;
+  companyID?: ID | null;
+  branchesID?: ID | null;
 }
 
 // ---------------------------
 /* Config & helpers */
 // ---------------------------
 const API = {
-  designations: "/backend/designations",
-  designationsList: "/backend/designations/list",
-  serviceProviders: "/backend/service-provider",
-  companies: "/backend/company",
-  branches: "/backend/branches",
-  departments: "/backend/departments",
+  designations: "https://hrms-api-test.onrender.com/designations",
+  designationsList: "https://hrms-api-test.onrender.com/designations/list",
+  serviceProviders: "https://hrms-api-test.onrender.com/service-provider",
+  companies: "https://hrms-api-test.onrender.com/company",
+  branches: "https://hrms-api-test.onrender.com/branches",
+  departments: "https://hrms-api-test.onrender.com/departments",
 };
 
 const MIN_CHARS = 0;
@@ -136,11 +163,17 @@ export function DesignationManagement() {
 
   const user = useCurrentUser();
   useEffect(() => {
-    if (!user || (user.role !== "SERVICE_PROVIDER" && !isCompanyAdminLikeRole(user.role) && user.role !== "ADMIN")) return;
+    if (
+      !user ||
+      (user.role !== "SERVICE_PROVIDER" &&
+        !isCompanyAdminLikeRole(user.role) &&
+        user.role !== "ADMIN")
+    )
+      return;
 
     const loadMapping = async () => {
       try {
-        const res = await fetch("/backend/users");
+        const res = await fetch("https://hrms-api-test.onrender.com/users");
         const allUsers = await res.json();
         const found = allUsers.find((u: any) => u.username === user.username);
         if (found) {
@@ -154,7 +187,13 @@ export function DesignationManagement() {
     loadMapping();
   }, [user]);
 
-  const canManage = user?.role === "SUPERADMIN" || user?.role === "SERVICE_PROVIDER" || isCompanyAdminLikeRole(user?.role) || user?.role === "ADMIN" || user?.role === "BRANCH_ADMIN" || hasModuleWriteAccess("DESIGNATIONS");
+  const canManage =
+    user?.role === "SUPERADMIN" ||
+    user?.role === "SERVICE_PROVIDER" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "ADMIN" ||
+    user?.role === "BRANCH_ADMIN" ||
+    hasModuleWriteAccess("DESIGNATIONS");
   const isEmployee = user?.role === "EMPLOYEE";
   // Company owners authenticate as EMPLOYEE but still need Branch/Department fields.
   const showOrgFields =
@@ -165,13 +204,15 @@ export function DesignationManagement() {
     hasModuleWriteAccess("DESIGNATIONS");
 
   // UI
-const table = useClientTable("designation");
-const [branchFilter, setBranchFilter] = useState("ALL");
-const [departmentFilter, setDepartmentFilter] = useState("ALL");
+  const table = useClientTable("designation");
+  const [branchFilter, setBranchFilter] = useState("ALL");
+  const [departmentFilter, setDepartmentFilter] = useState("ALL");
 
-const [branchFilterList, setBranchFilterList] = useState<Branch[]>([]);
-const [departmentFilterList, setDepartmentFilterList] = useState<Department[]>([]);
-const [filterLoading, setFilterLoading] = useState(false);
+  const [branchFilterList, setBranchFilterList] = useState<Branch[]>([]);
+  const [departmentFilterList, setDepartmentFilterList] = useState<
+    Department[]
+  >([]);
+  const [filterLoading, setFilterLoading] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isViewing, setIsViewing] = useState(false);
   const [editing, setEditing] = useState<DesignationRead | null>(null);
@@ -185,7 +226,9 @@ const [filterLoading, setFilterLoading] = useState(false);
   // Filtered lists for display (suggestions based on typing)
   const [suggestedCompanies, setSuggestedCompanies] = useState<Company[]>([]);
   const [suggestedBranches, setSuggestedBranches] = useState<Branch[]>([]);
-  const [suggestedDepartments, setSuggestedDepartments] = useState<Department[]>([]);
+  const [suggestedDepartments, setSuggestedDepartments] = useState<
+    Department[]
+  >([]);
 
   // Loading states
   const [loadingCompanies, setLoadingCompanies] = useState(false);
@@ -254,10 +297,26 @@ const [filterLoading, setFilterLoading] = useState(false);
         setAllBranches(brs || []);
         setAllDepartments(depts || []);
 
-        setSpMap(Object.fromEntries((sps || []).map(s => [s.id, s.companyName ?? ""])));
-        setCoMap(Object.fromEntries((cos || []).map(c => [c.id, c.companyName ?? ""])));
-        setBrMap(Object.fromEntries((brs || []).map(b => [b.id, b.branchName ?? ""])));
-        setDeptMap(Object.fromEntries((depts || []).map(d => [d.id, d.departmentName ?? ""])));
+        setSpMap(
+          Object.fromEntries(
+            (sps || []).map((s) => [s.id, s.companyName ?? ""]),
+          ),
+        );
+        setCoMap(
+          Object.fromEntries(
+            (cos || []).map((c) => [c.id, c.companyName ?? ""]),
+          ),
+        );
+        setBrMap(
+          Object.fromEntries(
+            (brs || []).map((b) => [b.id, b.branchName ?? ""]),
+          ),
+        );
+        setDeptMap(
+          Object.fromEntries(
+            (depts || []).map((d) => [d.id, d.departmentName ?? ""]),
+          ),
+        );
       } catch (error) {
         console.error("Failed to load master data:", error);
       }
@@ -271,7 +330,7 @@ const [filterLoading, setFilterLoading] = useState(false);
     if (skipCascadeRef.current) return;
     if (!editing) {
       if (formData.serviceProviderID) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           companyID: null,
           branchesID: null,
@@ -293,7 +352,7 @@ const [filterLoading, setFilterLoading] = useState(false);
     if (skipCascadeRef.current) return;
     if (!editing) {
       if (formData.companyID) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           branchesID: null,
           departmentID: null,
@@ -312,7 +371,7 @@ const [filterLoading, setFilterLoading] = useState(false);
     if (skipCascadeRef.current) return;
     if (!editing) {
       if (formData.branchesID) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           parentDesignationID: null,
           parentAutocomplete: "",
@@ -321,85 +380,83 @@ const [filterLoading, setFilterLoading] = useState(false);
     }
   }, [formData.branchesID, editing]);
 
-  
   const fetchFilterLists = async () => {
-  try {
-    setFilterLoading(true);
+    try {
+      setFilterLoading(true);
 
-    const [branchesRes, departmentsRes] = await Promise.all([
-      fetchJSONSafe<Branch[]>(API.branches),
-      fetchJSONSafe<Department[]>(API.departments),
-    ]);
+      const [branchesRes, departmentsRes] = await Promise.all([
+        fetchJSONSafe<Branch[]>(API.branches),
+        fetchJSONSafe<Department[]>(API.departments),
+      ]);
 
-    const activeCompanyID =
-      resolveScopedCompanyId({
-        ...user,
-        companyID: user?.companyID ?? currentUserMapping?.companyID,
-      }) ??
-      user?.companyID ??
-      currentUserMapping?.companyID ??
-      null;
+      const activeCompanyID =
+        resolveScopedCompanyId({
+          ...user,
+          companyID: user?.companyID ?? currentUserMapping?.companyID,
+        }) ??
+        user?.companyID ??
+        currentUserMapping?.companyID ??
+        null;
 
-    let branches = Array.isArray(branchesRes) ? branchesRes : [];
-    let departments = Array.isArray(departmentsRes) ? departmentsRes : [];
+      let branches = Array.isArray(branchesRes) ? branchesRes : [];
+      let departments = Array.isArray(departmentsRes) ? departmentsRes : [];
 
-    if (activeCompanyID) {
-      branches = branches.filter(
-        (b) => Number(b.companyID) === Number(activeCompanyID)
-      );
-
-      departments = departments.filter(
-        (d) => Number(d.companyID) === Number(activeCompanyID)
-      );
-    }
-
-    if (user?.role === "BRANCH_ADMIN") {
-      const branchID = currentUserMapping?.branchesID ?? user?.branchesID;
-
-      if (branchID) {
-        branches = branches.filter((b) => Number(b.id) === Number(branchID));
-        departments = departments.filter(
-          (d) => Number(d.branchesID) === Number(branchID)
+      if (activeCompanyID) {
+        branches = branches.filter(
+          (b) => Number(b.companyID) === Number(activeCompanyID),
         );
 
-        setBranchFilter(String(branchID));
+        departments = departments.filter(
+          (d) => Number(d.companyID) === Number(activeCompanyID),
+        );
       }
-    }
 
-    setBranchFilterList(branches);
-    setDepartmentFilterList(departments);
-  } catch (e) {
-    console.error("Failed to load filter lists:", e);
-    setBranchFilterList([]);
-    setDepartmentFilterList([]);
-  } finally {
-    setFilterLoading(false);
-  }
-};
+      if (user?.role === "BRANCH_ADMIN") {
+        const branchID = currentUserMapping?.branchesID ?? user?.branchesID;
+
+        if (branchID) {
+          branches = branches.filter((b) => Number(b.id) === Number(branchID));
+          departments = departments.filter(
+            (d) => Number(d.branchesID) === Number(branchID),
+          );
+
+          setBranchFilter(String(branchID));
+        }
+      }
+
+      setBranchFilterList(branches);
+      setDepartmentFilterList(departments);
+    } catch (e) {
+      console.error("Failed to load filter lists:", e);
+      setBranchFilterList([]);
+      setDepartmentFilterList([]);
+    } finally {
+      setFilterLoading(false);
+    }
+  };
 
   const fetchRows = async () => {
     try {
       setLoading(true);
       const all = await fetchJSONSafe<DesignationRead[]>(API.designationsList);
 
-const mapping = await resolveScopeUserMapping(user);
-if (mapping) setCurrentUserMapping(mapping);
+      const mapping = await resolveScopeUserMapping(user);
+      if (mapping) setCurrentUserMapping(mapping);
 
-const activeCompanyID =
-  resolveScopedCompanyId({
-    ...user,
-    companyID: mapping?.companyID ?? user?.companyID,
-  }) ??
-  mapping?.companyID ??
-  user?.companyID;
+      const activeCompanyID =
+        resolveScopedCompanyId({
+          ...user,
+          companyID: mapping?.companyID ?? user?.companyID,
+        }) ??
+        mapping?.companyID ??
+        user?.companyID;
 
-const filteredRows = (all || []).filter((r: any) => {
-  if (!activeCompanyID) return true;
-  return Number(r.companyID) === Number(activeCompanyID);
-});
+      const filteredRows = (all || []).filter((r: any) => {
+        if (!activeCompanyID) return true;
+        return Number(r.companyID) === Number(activeCompanyID);
+      });
 
-setRows(filteredRows);
-
+      setRows(filteredRows);
     } catch (e: any) {
       console.error("Failed to load designations:", e);
       setRows([]);
@@ -410,48 +467,55 @@ setRows(filteredRows);
 
   useEffect(() => {
     if (user) {
-  fetchRows();
-  fetchFilterLists();
-}
-  }, [user]);
-
- useEffect(() => {
-  const handler = () => {
-    if (user) {
       fetchRows();
       fetchFilterLists();
     }
-  };
+  }, [user]);
 
-  const sidebarPageClickHandler = (e: any) => {
-    if (e.detail?.path === "/designations") {
-      closeDesignationPagePanels();
-
+  useEffect(() => {
+    const handler = () => {
       if (user) {
         fetchRows();
         fetchFilterLists();
       }
-    }
-  };
+    };
 
-  window.addEventListener("sidebar-context-changed", handler);
-  window.addEventListener("app-data-refresh", handler);
-  window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler);
+    const sidebarPageClickHandler = (e: any) => {
+      if (e.detail?.path === "/designations") {
+        closeDesignationPagePanels();
 
-  return () => {
-    window.removeEventListener("sidebar-context-changed", handler);
-    window.removeEventListener("app-data-refresh", handler);
-    window.removeEventListener("sidebar-main-page-click", sidebarPageClickHandler);
-  };
-}, [user]);
+        if (user) {
+          fetchRows();
+          fetchFilterLists();
+        }
+      }
+    };
+
+    window.addEventListener("sidebar-context-changed", handler);
+    window.addEventListener("app-data-refresh", handler);
+    window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler);
+
+    return () => {
+      window.removeEventListener("sidebar-context-changed", handler);
+      window.removeEventListener("app-data-refresh", handler);
+      window.removeEventListener(
+        "sidebar-main-page-click",
+        sidebarPageClickHandler,
+      );
+    };
+  }, [user]);
 
   // Close suggestion popovers on outside click
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
-      if (spRef.current && !spRef.current.contains(e.target as any)) setSpList([]);
-      if (coRef.current && !coRef.current.contains(e.target as any)) setSuggestedCompanies([]);
-      if (brRef.current && !brRef.current.contains(e.target as any)) setSuggestedBranches([]);
-      if (deptRef.current && !deptRef.current.contains(e.target as any)) setSuggestedDepartments([]);
+      if (spRef.current && !spRef.current.contains(e.target as any))
+        setSpList([]);
+      if (coRef.current && !coRef.current.contains(e.target as any))
+        setSuggestedCompanies([]);
+      if (brRef.current && !brRef.current.contains(e.target as any))
+        setSuggestedBranches([]);
+      if (deptRef.current && !deptRef.current.contains(e.target as any))
+        setSuggestedDepartments([]);
     };
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
@@ -537,7 +601,9 @@ setRows(filteredRows);
     setSuggestedBranches([]);
     setSuggestedDepartments([]);
     setError(null);
-    setTimeout(() => { skipCascadeRef.current = false; }, 0);
+    setTimeout(() => {
+      skipCascadeRef.current = false;
+    }, 0);
   };
 
   const handleEdit = (r: DesignationRead) => {
@@ -545,44 +611,53 @@ setRows(filteredRows);
     setEditing(r);
     setIsAddingNew(true);
     setIsViewing(false);
-    
+
     // Set form data with existing values
     const newFormData = {
       serviceProviderID: r.serviceProviderID ?? r.serviceProvider?.id ?? null,
       companyID: r.companyID ?? r.company?.id ?? null,
       branchesID: r.branchesID ?? r.branches?.id ?? null,
       departmentID: r.departmentID ?? null,
-      parentDesignationID: r.parentDesignationID ?? r.parentDesignation?.id ?? null,
+      parentDesignationID:
+        r.parentDesignationID ?? r.parentDesignation?.id ?? null,
 
       designation: r.designation ?? "",
       otApplicable: (r as any).otApplicable ?? "",
       noticePeriodDaysForResignation: r.noticePeriodDaysForResignation ?? "",
       noticePeriodDaysForTermination: r.noticePeriodDaysForTermination ?? "",
 
-      spAutocomplete: r.serviceProvider?.companyName
-        ?? r.serviceProviderName
-        ?? (r.serviceProviderID != null ? spMap[r.serviceProviderID] ?? "" : ""),
+      spAutocomplete:
+        r.serviceProvider?.companyName ??
+        r.serviceProviderName ??
+        (r.serviceProviderID != null ? (spMap[r.serviceProviderID] ?? "") : ""),
 
-      coAutocomplete: r.company?.companyName
-        ?? r.companyName
-        ?? (r.companyID != null ? coMap[r.companyID] ?? "" : ""),
+      coAutocomplete:
+        r.company?.companyName ??
+        r.companyName ??
+        (r.companyID != null ? (coMap[r.companyID] ?? "") : ""),
 
-      brAutocomplete: r.branches?.branchName
-        ?? r.branchName
-        ?? (r.branchesID != null ? brMap[r.branchesID] ?? "" : ""),
+      brAutocomplete:
+        r.branches?.branchName ??
+        r.branchName ??
+        (r.branchesID != null ? (brMap[r.branchesID] ?? "") : ""),
 
-      deptAutocomplete: r.departments?.departmentName
-        ?? r.departmentName
-        ?? (r.departmentID != null ? deptMap[r.departmentID] ?? "" : ""),
+      deptAutocomplete:
+        r.departments?.departmentName ??
+        r.departmentName ??
+        (r.departmentID != null ? (deptMap[r.departmentID] ?? "") : ""),
 
-      parentAutocomplete: r.parentDesignation?.designation
-        ?? (r.parentDesignationID != null
-          ? (rows.find((d) => d.id === r.parentDesignationID)?.designation ?? "")
+      parentAutocomplete:
+        r.parentDesignation?.designation ??
+        (r.parentDesignationID != null
+          ? (rows.find((d) => d.id === r.parentDesignationID)?.designation ??
+            "")
           : ""),
     };
-    
+
     setFormData(newFormData);
-    setTimeout(() => { skipCascadeRef.current = false; }, 0);
+    setTimeout(() => {
+      skipCascadeRef.current = false;
+    }, 0);
   };
 
   const handleView = (r: DesignationRead) => {
@@ -594,7 +669,9 @@ setRows(filteredRows);
   const handleDelete = async (id: ID) => {
     if (!confirm("Delete this designation?")) return;
     try {
-      const res = await fetch(`${API.designations}/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API.designations}/${id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error(await res.text());
       await fetchRows();
       toast.success("Designation deleted successfully");
@@ -611,10 +688,12 @@ setRows(filteredRows);
 
     // Validation
     const validationErrors: string[] = [];
-    if (!formData.designation?.trim()) validationErrors.push("Designation is required");
-    if (!formData.departmentID) validationErrors.push("Please select a Department");
+    if (!formData.designation?.trim())
+      validationErrors.push("Designation is required");
+    if (!formData.departmentID)
+      validationErrors.push("Please select a Department");
     if (validationErrors.length > 0) {
-      validationErrors.forEach(msg => toast.error(msg));
+      validationErrors.forEach((msg) => toast.error(msg));
       return;
     }
 
@@ -641,8 +720,10 @@ setRows(filteredRows);
       parentDesignationID: formData.parentDesignationID || null,
       designation: formData.designation,
       otApplicable: formData.otApplicable || null,
-      noticePeriodDaysForResignation: formData.noticePeriodDaysForResignation || null,
-      noticePeriodDaysForTermination: formData.noticePeriodDaysForTermination || null,
+      noticePeriodDaysForResignation:
+        formData.noticePeriodDaysForResignation || null,
+      noticePeriodDaysForTermination:
+        formData.noticePeriodDaysForTermination || null,
     };
 
     try {
@@ -674,7 +755,7 @@ setRows(filteredRows);
     }
   };
 
- const closeDesignationPagePanels = () => {
+  const closeDesignationPagePanels = () => {
     resetForm();
 
     setIsAddingNew(false);
@@ -683,11 +764,11 @@ setRows(filteredRows);
     setViewRow(null);
 
     setSpList([]);
-};
+  };
 
-const handleCancel = () => {
+  const handleCancel = () => {
     closeDesignationPagePanels();
-};
+  };
 
   // Filter SP list based on search
   const [spList, setSpList] = useState<ServiceProvider[]>([]);
@@ -702,9 +783,11 @@ const handleCancel = () => {
       }
       setSpLoading(true);
       try {
-        const all = await fetchJSONSafe<ServiceProvider[]>(API.serviceProviders);
-        const filtered = (all || []).filter(sp =>
-          (sp.companyName ?? "").toLowerCase().includes(query.toLowerCase())
+        const all = await fetchJSONSafe<ServiceProvider[]>(
+          API.serviceProviders,
+        );
+        const filtered = (all || []).filter((sp) =>
+          (sp.companyName ?? "").toLowerCase().includes(query.toLowerCase()),
         );
         setSpList(filtered.slice(0, 20));
       } catch (error) {
@@ -725,13 +808,14 @@ const handleCancel = () => {
       }
 
       setLoadingCompanies(true);
-      
+
       // Filter from master list based on SP and query
-      const filtered = allCompanies.filter(company => 
-        company.serviceProviderID === formData.serviceProviderID &&
-        company.companyName.toLowerCase().includes(query.toLowerCase())
+      const filtered = allCompanies.filter(
+        (company) =>
+          company.serviceProviderID === formData.serviceProviderID &&
+          company.companyName.toLowerCase().includes(query.toLowerCase()),
       );
-      
+
       setSuggestedCompanies(filtered.slice(0, 20));
       setLoadingCompanies(false);
     }, DEBOUNCE_MS);
@@ -758,9 +842,7 @@ const handleCancel = () => {
           Number(branch.companyID) === Number(companyID) &&
           (user?.role !== "BRANCH_ADMIN" ||
             Number(branch.id) === Number(user?.branchesID)) &&
-          (branch.branchName ?? "")
-            .toLowerCase()
-            .includes(query.toLowerCase()),
+          (branch.branchName ?? "").toLowerCase().includes(query.toLowerCase()),
       );
 
       setSuggestedBranches(filtered.slice(0, 20));
@@ -804,73 +886,67 @@ const handleCancel = () => {
   // Search / filters
   // ---------------------------
 
-const filtered = useMemo(() => {
-  const t = table.search.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    const t = table.search.trim().toLowerCase();
 
-  const spNameOf = (r: DesignationRead) =>
-    r.serviceProvider?.companyName ??
-    r.serviceProviderName ??
-    (r.serviceProviderID != null ? spMap[r.serviceProviderID] : "");
+    const spNameOf = (r: DesignationRead) =>
+      r.serviceProvider?.companyName ??
+      r.serviceProviderName ??
+      (r.serviceProviderID != null ? spMap[r.serviceProviderID] : "");
 
-  const coNameOf = (r: DesignationRead) =>
-    r.company?.companyName ??
-    r.companyName ??
-    (r.companyID != null ? coMap[r.companyID] : "");
+    const coNameOf = (r: DesignationRead) =>
+      r.company?.companyName ??
+      r.companyName ??
+      (r.companyID != null ? coMap[r.companyID] : "");
 
-  const brNameOf = (r: DesignationRead) =>
-    r.branches?.branchName ??
-    r.branchName ??
-    (r.branchesID != null ? brMap[r.branchesID] : "");
+    const brNameOf = (r: DesignationRead) =>
+      r.branches?.branchName ??
+      r.branchName ??
+      (r.branchesID != null ? brMap[r.branchesID] : "");
 
-  const deptNameOf = (r: DesignationRead) =>
-    r.departments?.departmentName ??
-    r.departmentName ??
-    (r.departmentID != null ? deptMap[r.departmentID] : "");
+    const deptNameOf = (r: DesignationRead) =>
+      r.departments?.departmentName ??
+      r.departmentName ??
+      (r.departmentID != null ? deptMap[r.departmentID] : "");
 
-  let list = rows.filter((r) => {
-    const matchesBranch =
-      branchFilter === "ALL" ||
-      branchFilter === String(r.branchesID ?? r.branches?.id ?? "");
+    let list = rows.filter((r) => {
+      const matchesBranch =
+        branchFilter === "ALL" ||
+        branchFilter === String(r.branchesID ?? r.branches?.id ?? "");
 
-    const matchesDepartment =
-      departmentFilter === "ALL" ||
-      departmentFilter === String(r.departmentID ?? r.departments?.id ?? "");
+      const matchesDepartment =
+        departmentFilter === "ALL" ||
+        departmentFilter === String(r.departmentID ?? r.departments?.id ?? "");
 
-    const matchesSearch =
-      !t ||
-      [
-        r.designation,
-        spNameOf(r),
-        coNameOf(r),
-        brNameOf(r),
-        deptNameOf(r),
-      ]
-        .filter(Boolean)
-        .map((x) => String(x ?? "").toLowerCase())
-        .some((f) => f.includes(t));
+      const matchesSearch =
+        !t ||
+        [r.designation, spNameOf(r), coNameOf(r), brNameOf(r), deptNameOf(r)]
+          .filter(Boolean)
+          .map((x) => String(x ?? "").toLowerCase())
+          .some((f) => f.includes(t));
 
-    return matchesBranch && matchesDepartment && matchesSearch;
-  });
+      return matchesBranch && matchesDepartment && matchesSearch;
+    });
 
-  return sortRows(list, table.sortBy, table.sortDir, (row, key) => {
-    const r = row as DesignationRead;
-    if (key === "designation") return r.designation ?? "";
-    if (key === "branch") return brNameOf(r);
-    if (key === "department") return deptNameOf(r);
-    return "";
-  });
-}, [
-  rows,
-  table.search,
-  table.sortBy,
-  table.sortDir,
-  branchFilter,
-  departmentFilter,
-  spMap,
-  coMap,
-  brMap,
-  deptMap,
-]);
+    return sortRows(list, table.sortBy, table.sortDir, (row, key) => {
+      const r = row as DesignationRead;
+      if (key === "designation") return r.designation ?? "";
+      if (key === "branch") return brNameOf(r);
+      if (key === "department") return deptNameOf(r);
+      return "";
+    });
+  }, [
+    rows,
+    table.search,
+    table.sortBy,
+    table.sortDir,
+    branchFilter,
+    departmentFilter,
+    spMap,
+    coMap,
+    brMap,
+    deptMap,
+  ]);
 
   const branchFilterOptions = useMemo(
     () => [
@@ -885,8 +961,8 @@ const filtered = useMemo(() => {
 
   const visibleDepartmentFilterList = useMemo(
     () =>
-      departmentFilterList.filter((d) =>
-        branchFilter === "ALL" || String(d.branchesID) === branchFilter,
+      departmentFilterList.filter(
+        (d) => branchFilter === "ALL" || String(d.branchesID) === branchFilter,
       ),
     [departmentFilterList, branchFilter],
   );
@@ -906,61 +982,66 @@ const filtered = useMemo(() => {
   // Name helpers for table
   // ---------------------------
   const spName = (r: DesignationRead) =>
-    r.serviceProvider?.companyName
-    ?? r.serviceProviderName
-    ?? (r.serviceProviderID != null ? (spMap[r.serviceProviderID] ?? "—") : "—");
+    r.serviceProvider?.companyName ??
+    r.serviceProviderName ??
+    (r.serviceProviderID != null ? (spMap[r.serviceProviderID] ?? "—") : "—");
 
   const coName = (r: DesignationRead) =>
-    r.company?.companyName
-    ?? r.companyName
-    ?? (r.companyID != null ? (coMap[r.companyID] ?? "—") : "—");
+    r.company?.companyName ??
+    r.companyName ??
+    (r.companyID != null ? (coMap[r.companyID] ?? "—") : "—");
 
   const brName = (r: DesignationRead) =>
-    r.branches?.branchName
-    ?? r.branchName
-    ?? (r.branchesID != null ? (brMap[r.branchesID] ?? "—") : "—");
+    r.branches?.branchName ??
+    r.branchName ??
+    (r.branchesID != null ? (brMap[r.branchesID] ?? "—") : "—");
 
   const deptName = (r: DesignationRead) =>
-    r.departments?.departmentName
-    ?? r.departmentName
-    ?? (r.departmentID != null ? (deptMap[r.departmentID] ?? "—") : "—");
+    r.departments?.departmentName ??
+    r.departmentName ??
+    (r.departmentID != null ? (deptMap[r.departmentID] ?? "—") : "—");
 
-  const designationColumns = useMemo((): DataTableColumn<DesignationRead>[] => [
-    {
-      key: "designation",
-      header: "Name",
-      sortable: true,
-      colSpan: 3,
-      cell: (r) => <span className="font-medium">{r.designation || "—"}</span>,
-    },
-    {
-      key: "department",
-      header: "Department",
-      sortable: true,
-      colSpan: 3,
-      cell: (r) => deptName(r),
-    },
-    {
-      key: "branch",
-      header: "Branch",
-      sortable: true,
-      colSpan: 2,
-      cell: (r) => brName(r),
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      colSpan: 2,
-      align: "right",
-      cell: (r) => (
-        <EntityRowActions
-          onView={() => handleView(r)}
-          onEdit={canManage ? () => handleEdit(r) : undefined}
-          onDelete={canManage ? () => handleDelete(r.id) : undefined}
-        />
-      ),
-    },
-  ], [canManage, deptMap, brMap]);
+  const designationColumns = useMemo(
+    (): DataTableColumn<DesignationRead>[] => [
+      {
+        key: "designation",
+        header: "Name",
+        sortable: true,
+        colSpan: 3,
+        cell: (r) => (
+          <span className="font-medium">{r.designation || "—"}</span>
+        ),
+      },
+      {
+        key: "department",
+        header: "Department",
+        sortable: true,
+        colSpan: 3,
+        cell: (r) => deptName(r),
+      },
+      {
+        key: "branch",
+        header: "Branch",
+        sortable: true,
+        colSpan: 2,
+        cell: (r) => brName(r),
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        colSpan: 2,
+        align: "right",
+        cell: (r) => (
+          <EntityRowActions
+            onView={() => handleView(r)}
+            onEdit={canManage ? () => handleEdit(r) : undefined}
+            onDelete={canManage ? () => handleDelete(r.id) : undefined}
+          />
+        ),
+      },
+    ],
+    [canManage, deptMap, brMap],
+  );
 
   return (
     <div className="space-y-6 w-full max-w-none animate-fade-in page-content-enter">
@@ -970,7 +1051,12 @@ const filtered = useMemo(() => {
         description="Job titles for your organisation. Level helps build org-charts and feeds future pay-band logic."
         actions={
           !isAddingNew && !isViewing && canManage ? (
-            <Button onClick={() => { resetForm(); setIsAddingNew(true); }}>
+            <Button
+              onClick={() => {
+                resetForm();
+                setIsAddingNew(true);
+              }}
+            >
               <Plus className="w-4 h-4 mr-1" /> Add Designation
             </Button>
           ) : null
@@ -980,292 +1066,345 @@ const filtered = useMemo(() => {
       {/* Add/Edit Form - Drawer */}
       <FormDrawer
         open={isAddingNew}
-        onOpenChange={(v) => { if (!v) handleCancel(); }}
+        onOpenChange={(v) => {
+          if (!v) handleCancel();
+        }}
         title={editing ? "Edit Designation" : "Add New Designation"}
       >
         <div>
-            {error && (
-              <NoticeBanner variant="error" compact className="mb-4">
-                {error}
-              </NoticeBanner>
+          {error && (
+            <NoticeBanner variant="error" compact className="mb-4">
+              {error}
+            </NoticeBanner>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Service Provider - auto-filled from sidebar */}
+            {false && (
+              <div ref={spRef} className="space-y-2 relative">
+                <Label>Service Provider *</Label>
+                <Input
+                  value={formData.spAutocomplete}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData((p) => ({
+                      ...p,
+                      spAutocomplete: val,
+                      serviceProviderID: null,
+                    }));
+                    fetchServiceProviders(val);
+                  }}
+                  placeholder="Start typing service provider..."
+                  autoComplete="off"
+                  required
+                />
+                {spList.length > 0 && (
+                  <div className="absolute z-10 bg-popover text-popover-foreground border border-border rounded w-full shadow max-h-48 overflow-y-auto">
+                    {spLoading && (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        Loading…
+                      </div>
+                    )}
+                    {spList.map((sp) => (
+                      <div
+                        key={sp.id}
+                        className="px-3 py-2 hover:bg-accent cursor-pointer"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setFormData((p) => ({
+                            ...p,
+                            serviceProviderID: sp.id,
+                            spAutocomplete: sp.companyName,
+                          }));
+                          setSpList([]);
+                        }}
+                      >
+                        {sp.companyName}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Service Provider - auto-filled from sidebar */}
-              {false && (
-                <div ref={spRef} className="space-y-2 relative">
-                  <Label>Service Provider *</Label>
-                  <Input
-                    value={formData.spAutocomplete}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData((p) => ({ ...p, spAutocomplete: val, serviceProviderID: null }));
-                      fetchServiceProviders(val);
-                    }}
-                    placeholder="Start typing service provider..."
-                    autoComplete="off"
-                    required
-                  />
-                  {spList.length > 0 && (
-                    <div className="absolute z-10 bg-popover text-popover-foreground border border-border rounded w-full shadow max-h-48 overflow-y-auto">
-                      {spLoading && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
-                      {spList.map((sp) => (
-                        <div
-                          key={sp.id}
-                          className="px-3 py-2 hover:bg-accent cursor-pointer"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            setFormData((p) => ({
-                              ...p,
-                              serviceProviderID: sp.id,
-                              spAutocomplete: sp.companyName,
-                            }));
-                            setSpList([]);
-                          }}
-                        >
-                          {sp.companyName}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Company - auto-filled from sidebar */}
-              {false && (
-                <div ref={coRef} className="space-y-2 relative">
-                  <Label>Company *</Label>
-                  <Input
-                    value={formData.coAutocomplete}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData((p) => ({ ...p, coAutocomplete: val, companyID: null }));
-                      if (!editing) {
-                        fetchCompanySuggestions(val);
-                      }
-                    }}
-                    onFocus={() => {
-                      if (!editing && formData.serviceProviderID && formData.coAutocomplete.length >= MIN_CHARS) {
-                        fetchCompanySuggestions(formData.coAutocomplete);
-                      }
-                    }}
-                    placeholder={formData.serviceProviderID ? "Type to search company..." : "Select service provider first"}
-                    autoComplete="off"
-                    required
-                    disabled={!formData.serviceProviderID}
-                  />
-                  {suggestedCompanies.length > 0 && !editing && (
-                    <div className="absolute z-10 bg-popover text-popover-foreground border border-border rounded w-full shadow max-h-48 overflow-y-auto">
-                      {loadingCompanies && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
-                      {suggestedCompanies.map((co) => (
-                        <div
-                          key={co.id}
-                          className="px-3 py-2 hover:bg-accent cursor-pointer"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            setFormData((p) => ({
-                              ...p,
-                              companyID: co.id,
-                              coAutocomplete: co.companyName,
-                            }));
-                            setSuggestedCompanies([]);
-                          }}
-                        >
-                          {co.companyName}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Branch Autocomplete — auto-selects when company has exactly one branch */}
-              {showOrgFields && (
-                <div ref={brRef}>
-                  <AutocompleteBranchField
-                    label="Branch"
-                    placeholder={
-                      !(formData.companyID || resolveScopedCompanyId(user) || user?.companyID)
-                        ? "Company not resolved for this account"
-                        : "Type to search branch..."
+            {/* Company - auto-filled from sidebar */}
+            {false && (
+              <div ref={coRef} className="space-y-2 relative">
+                <Label>Company *</Label>
+                <Input
+                  value={formData.coAutocomplete}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData((p) => ({
+                      ...p,
+                      coAutocomplete: val,
+                      companyID: null,
+                    }));
+                    if (!editing) {
+                      fetchCompanySuggestions(val);
                     }
-                    value={formData.brAutocomplete}
-                    branchId={formData.branchesID}
-                    companyID={
-                      formData.companyID ??
-                      currentUserMapping?.companyID ??
-                      resolveScopedCompanyId(user) ??
+                  }}
+                  onFocus={() => {
+                    if (
+                      !editing &&
+                      formData.serviceProviderID &&
+                      formData.coAutocomplete.length >= MIN_CHARS
+                    ) {
+                      fetchCompanySuggestions(formData.coAutocomplete);
+                    }
+                  }}
+                  placeholder={
+                    formData.serviceProviderID
+                      ? "Type to search company..."
+                      : "Select service provider first"
+                  }
+                  autoComplete="off"
+                  required
+                  disabled={!formData.serviceProviderID}
+                />
+                {suggestedCompanies.length > 0 && !editing && (
+                  <div className="absolute z-10 bg-popover text-popover-foreground border border-border rounded w-full shadow max-h-48 overflow-y-auto">
+                    {loadingCompanies && (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        Loading…
+                      </div>
+                    )}
+                    {suggestedCompanies.map((co) => (
+                      <div
+                        key={co.id}
+                        className="px-3 py-2 hover:bg-accent cursor-pointer"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setFormData((p) => ({
+                            ...p,
+                            companyID: co.id,
+                            coAutocomplete: co.companyName,
+                          }));
+                          setSuggestedCompanies([]);
+                        }}
+                      >
+                        {co.companyName}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Branch Autocomplete — auto-selects when company has exactly one branch */}
+            {showOrgFields && (
+              <div ref={brRef}>
+                <AutocompleteBranchField
+                  label="Branch"
+                  placeholder={
+                    !(
+                      formData.companyID ||
+                      resolveScopedCompanyId(user) ||
                       user?.companyID
-                    }
-                    required={false}
-                    disabled={
-                      !(formData.companyID || resolveScopedCompanyId(user) || user?.companyID)
-                    }
-                    onInputChange={(display) => {
-                      setFormData((p) => ({
-                        ...p,
-                        brAutocomplete: display,
-                        branchesID: null,
-                      }));
-                    }}
-                    onBranchSelect={({ id, branchName, item }) => {
-                      setFormData((p) => ({
-                        ...p,
-                        branchesID: id,
-                        brAutocomplete: branchName,
-                        companyID: p.companyID ?? item?.companyID ?? null,
-                        serviceProviderID:
-                          p.serviceProviderID ?? item?.serviceProviderID ?? null,
-                      }));
-                      setSuggestedBranches([]);
-                    }}
-                    onFetch={(q) => {
-                      if (!editing) fetchBranchSuggestions(q);
-                    }}
-                    options={suggestedBranches}
-                    optionsLoading={loadingBranches}
-                  />
-                </div>
-              )}
+                    )
+                      ? "Company not resolved for this account"
+                      : "Type to search branch..."
+                  }
+                  value={formData.brAutocomplete}
+                  branchId={formData.branchesID}
+                  companyID={
+                    formData.companyID ??
+                    currentUserMapping?.companyID ??
+                    resolveScopedCompanyId(user) ??
+                    user?.companyID
+                  }
+                  required={false}
+                  disabled={
+                    !(
+                      formData.companyID ||
+                      resolveScopedCompanyId(user) ||
+                      user?.companyID
+                    )
+                  }
+                  onInputChange={(display) => {
+                    setFormData((p) => ({
+                      ...p,
+                      brAutocomplete: display,
+                      branchesID: null,
+                    }));
+                  }}
+                  onBranchSelect={({ id, branchName, item }) => {
+                    setFormData((p) => ({
+                      ...p,
+                      branchesID: id,
+                      brAutocomplete: branchName,
+                      companyID: p.companyID ?? item?.companyID ?? null,
+                      serviceProviderID:
+                        p.serviceProviderID ?? item?.serviceProviderID ?? null,
+                    }));
+                    setSuggestedBranches([]);
+                  }}
+                  onFetch={(q) => {
+                    if (!editing) fetchBranchSuggestions(q);
+                  }}
+                  options={suggestedBranches}
+                  optionsLoading={loadingBranches}
+                />
+              </div>
+            )}
 
-              {/* Department Autocomplete */}
-              {showOrgFields && (
-                <div ref={deptRef} className="space-y-2 relative">
-                  <Label>Department *</Label>
-                  <Input
-                    value={formData.deptAutocomplete}
-                    onChange={(e) => {
-                      const val = e.target.value;
+            {/* Department Autocomplete */}
+            {showOrgFields && (
+              <div ref={deptRef} className="space-y-2 relative">
+                <Label>Department *</Label>
+                <Input
+                  value={formData.deptAutocomplete}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData((p) => ({
+                      ...p,
+                      deptAutocomplete: val,
+                      departmentID: null,
+                      parentDesignationID: null,
+                      parentAutocomplete: "",
+                    }));
+                    if (!editing) {
+                      fetchDepartmentSuggestions(val);
+                    }
+                  }}
+                  onFocus={() => {
+                    if (
+                      !editing &&
+                      (formData.companyID || resolveScopedCompanyId(user)) &&
+                      formData.deptAutocomplete.length >= MIN_CHARS
+                    ) {
+                      fetchDepartmentSuggestions(formData.deptAutocomplete);
+                    }
+                  }}
+                  placeholder={
+                    !(
+                      formData.companyID ||
+                      resolveScopedCompanyId(user) ||
+                      user?.companyID
+                    )
+                      ? "Company not resolved for this account"
+                      : editing
+                        ? formData.deptAutocomplete || "Department"
+                        : "Type to search department..."
+                  }
+                  autoComplete="off"
+                  required
+                  disabled={
+                    !(
+                      formData.companyID ||
+                      resolveScopedCompanyId(user) ||
+                      user?.companyID
+                    )
+                  }
+                />
+                {suggestedDepartments.length > 0 && !editing && (
+                  <div className="absolute z-10 bg-popover text-popover-foreground border border-border rounded w-full shadow max-h-48 overflow-y-auto">
+                    {loadingDepartments && (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        Loading…
+                      </div>
+                    )}
+                    {suggestedDepartments.map((dept) => (
+                      <div
+                        key={dept.id}
+                        className="px-3 py-2 hover:bg-accent cursor-pointer"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setFormData((p) => ({
+                            ...p,
+                            departmentID: dept.id,
+                            deptAutocomplete: dept.departmentName,
+                            parentDesignationID: null,
+                            parentAutocomplete: "",
+                          }));
+                          setSuggestedDepartments([]);
+                        }}
+                      >
+                        {dept.departmentName}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Designation Name */}
+            <div className="space-y-2">
+              <Label>Designation *</Label>
+              <Input
+                value={formData.designation}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, designation: e.target.value }))
+                }
+                required
+                placeholder="Enter designation name"
+              />
+            </div>
+
+            {/* Parent Designation — company-wide; not limited to the selected department */}
+            {showOrgFields && (
+              <div className="space-y-2">
+                <Label>Parent Designation</Label>
+                <Select
+                  value={
+                    formData.parentDesignationID != null
+                      ? String(formData.parentDesignationID)
+                      : "none"
+                  }
+                  onValueChange={(value) => {
+                    if (value === "none") {
                       setFormData((p) => ({
                         ...p,
-                        deptAutocomplete: val,
-                        departmentID: null,
                         parentDesignationID: null,
                         parentAutocomplete: "",
                       }));
-                      if (!editing) {
-                        fetchDepartmentSuggestions(val);
-                      }
-                    }}
-                    onFocus={() => {
-                      if (
-                        !editing &&
-                        (formData.companyID || resolveScopedCompanyId(user)) &&
-                        formData.deptAutocomplete.length >= MIN_CHARS
-                      ) {
-                        fetchDepartmentSuggestions(formData.deptAutocomplete);
-                      }
-                    }}
-                    placeholder={
-                      !(formData.companyID || resolveScopedCompanyId(user) || user?.companyID)
-                        ? "Company not resolved for this account"
-                        : editing
-                          ? formData.deptAutocomplete || "Department"
-                          : "Type to search department..."
+                      return;
                     }
-                    autoComplete="off"
-                    required
-                    disabled={!(formData.companyID || resolveScopedCompanyId(user) || user?.companyID)}
-                  />
-                  {suggestedDepartments.length > 0 && !editing && (
-                    <div className="absolute z-10 bg-popover text-popover-foreground border border-border rounded w-full shadow max-h-48 overflow-y-auto">
-                      {loadingDepartments && <div className="px-3 py-2 text-sm text-gray-500">Loading…</div>}
-                      {suggestedDepartments.map((dept) => (
-                        <div
-                          key={dept.id}
-                          className="px-3 py-2 hover:bg-accent cursor-pointer"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            setFormData((p) => ({
-                              ...p,
-                              departmentID: dept.id,
-                              deptAutocomplete: dept.departmentName,
-                              parentDesignationID: null,
-                              parentAutocomplete: "",
-                            }));
-                            setSuggestedDepartments([]);
-                          }}
-                        >
-                          {dept.departmentName}
-                        </div>
+                    const id = Number(value);
+                    const match = rows.find((d) => d.id === id);
+                    setFormData((p) => ({
+                      ...p,
+                      parentDesignationID: id,
+                      parentAutocomplete: match?.designation ?? "",
+                    }));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="No Parent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Parent</SelectItem>
+                    {rows
+                      .filter((d) => {
+                        if (editing && d.id === editing.id) return false;
+                        const companyId =
+                          formData.companyID ||
+                          resolveScopedCompanyId(user) ||
+                          user?.companyID;
+                        if (
+                          companyId &&
+                          d.companyID != null &&
+                          Number(d.companyID) !== Number(companyId)
+                        ) {
+                          return false;
+                        }
+                        return true;
+                      })
+                      .map((d) => (
+                        <SelectItem key={d.id} value={String(d.id)}>
+                          {d.designation || `Designation #${d.id}`}
+                        </SelectItem>
                       ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Designation Name */}
-              <div className="space-y-2">
-                <Label>Designation *</Label>
-                <Input
-                  value={formData.designation}
-                  onChange={(e) => setFormData((p) => ({ ...p, designation: e.target.value }))}
-                  required
-                  placeholder="Enter designation name"
-                />
+                  </SelectContent>
+                </Select>
               </div>
+            )}
 
-              {/* Parent Designation — company-wide; not limited to the selected department */}
-              {showOrgFields && (
-                <div className="space-y-2">
-                  <Label>Parent Designation</Label>
-                  <Select
-                    value={
-                      formData.parentDesignationID != null
-                        ? String(formData.parentDesignationID)
-                        : "none"
-                    }
-                    onValueChange={(value) => {
-                      if (value === "none") {
-                        setFormData((p) => ({
-                          ...p,
-                          parentDesignationID: null,
-                          parentAutocomplete: "",
-                        }));
-                        return;
-                      }
-                      const id = Number(value);
-                      const match = rows.find((d) => d.id === id);
-                      setFormData((p) => ({
-                        ...p,
-                        parentDesignationID: id,
-                        parentAutocomplete: match?.designation ?? "",
-                      }));
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="No Parent" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No Parent</SelectItem>
-                      {rows
-                        .filter((d) => {
-                          if (editing && d.id === editing.id) return false;
-                          const companyId =
-                            formData.companyID ||
-                            resolveScopedCompanyId(user) ||
-                            user?.companyID;
-                          if (
-                            companyId &&
-                            d.companyID != null &&
-                            Number(d.companyID) !== Number(companyId)
-                          ) {
-                            return false;
-                          }
-                          return true;
-                        })
-                        .map((d) => (
-                          <SelectItem key={d.id} value={String(d.id)}>
-                            {d.designation || `Designation #${d.id}`}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* New Fields Section - hidden for ADMIN and COMPANY_ADMIN */}
-              {!(user?.role === "ADMIN" || isCompanyAdminLikeRole(user?.role)) && <div className="border-t border-gray-200 pt-4 mt-4">
+            {/* New Fields Section - hidden for ADMIN and COMPANY_ADMIN */}
+            {!(
+              user?.role === "ADMIN" || isCompanyAdminLikeRole(user?.role)
+            ) && (
+              <div className="border-t border-gray-200 pt-4 mt-4">
                 <h3 className="text-lg font-medium mb-4">Additional Details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* OT Applicable */}
@@ -1273,7 +1412,9 @@ const filtered = useMemo(() => {
                     <Label>OT Applicable?</Label>
                     <Select
                       value={formData.otApplicable}
-                      onValueChange={(value) => setFormData((p) => ({ ...p, otApplicable: value }))}
+                      onValueChange={(value) =>
+                        setFormData((p) => ({ ...p, otApplicable: value }))
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select Yes/No" />
@@ -1291,7 +1432,12 @@ const filtered = useMemo(() => {
                     <Input
                       type="number"
                       value={formData.noticePeriodDaysForResignation}
-                      onChange={(e) => setFormData((p) => ({ ...p, noticePeriodDaysForResignation: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((p) => ({
+                          ...p,
+                          noticePeriodDaysForResignation: e.target.value,
+                        }))
+                      }
                       placeholder="Enter days"
                       min="0"
                     />
@@ -1303,31 +1449,43 @@ const filtered = useMemo(() => {
                     <Input
                       type="number"
                       value={formData.noticePeriodDaysForTermination}
-                      onChange={(e) => setFormData((p) => ({ ...p, noticePeriodDaysForTermination: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((p) => ({
+                          ...p,
+                          noticePeriodDaysForTermination: e.target.value,
+                        }))
+                      }
                       placeholder="Enter days"
                       min="0"
                     />
                   </div>
                 </div>
-              </div>}
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
-                <Button type="button" variant="outline" onClick={handleCancel}>
-                  Cancel
-                </Button>
-                <Button type="submit" className="" disabled={saving}>
-                  <Save className="w-4 h-4 mr-1" />
-                  {saving ? "Saving..." : editing ? "Update Designation" : "Add Designation"}
-                </Button>
               </div>
-            </form>
+            )}
+
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
+              <Button type="button" variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button type="submit" className="" disabled={saving}>
+                <Save className="w-4 h-4 mr-1" />
+                {saving
+                  ? "Saving..."
+                  : editing
+                    ? "Update Designation"
+                    : "Add Designation"}
+              </Button>
+            </div>
+          </form>
         </div>
       </FormDrawer>
 
       {/* View Details - Drawer */}
       <FormDrawer
         open={!!(isViewing && viewRow)}
-        onOpenChange={(v) => { if (!v) handleCancel(); }}
+        onOpenChange={(v) => {
+          if (!v) handleCancel();
+        }}
         title="Designation Details"
         showHeaderCancel
         cancelLabel="Close"
@@ -1355,7 +1513,8 @@ const filtered = useMemo(() => {
                   value:
                     viewRow.parentDesignation?.designation ??
                     (viewRow.parentDesignationID != null
-                      ? (rows.find((d) => d.id === viewRow.parentDesignationID)?.designation ?? "—")
+                      ? (rows.find((d) => d.id === viewRow.parentDesignationID)
+                          ?.designation ?? "—")
                       : "—"),
                 },
               ]}
@@ -1364,57 +1523,73 @@ const filtered = useMemo(() => {
               title="Policies"
               subtitle="Notice period and overtime settings"
               rows={[
-                { label: "OT Applicable", value: (viewRow as any).otApplicable },
-                { label: "Notice Period (Resignation)", value: viewRow.noticePeriodDaysForResignation },
-                { label: "Notice Period (Termination)", value: viewRow.noticePeriodDaysForTermination },
+                {
+                  label: "OT Applicable",
+                  value: (viewRow as any).otApplicable,
+                },
+                {
+                  label: "Notice Period (Resignation)",
+                  value: viewRow.noticePeriodDaysForResignation,
+                },
+                {
+                  label: "Notice Period (Termination)",
+                  value: viewRow.noticePeriodDaysForTermination,
+                },
               ]}
             />
           </EntityDetailLayout>
         )}
       </FormDrawer>
 
-      {!isAddingNew && !isViewing && (<>
-        <FilterBar
-          search={{
-            value: table.search,
-            onChange: table.setSearch,
-            placeholder: "Search code, name or grade…",
-          }}
-          filters={
-            <>
-              <FilterSelect
-                id="designations-branch"
-                value={branchFilter}
-                onChange={setBranchFilter}
-                options={branchFilterOptions}
-                width="w-56"
-                ariaLabel="Filter by branch"
-              />
-            </>
-          }
-        />
+      {!isAddingNew && !isViewing && (
+        <>
+          <FilterBar
+            search={{
+              value: table.search,
+              onChange: table.setSearch,
+              placeholder: "Search code, name or grade…",
+            }}
+            filters={
+              <>
+                <FilterSelect
+                  id="designations-branch"
+                  value={branchFilter}
+                  onChange={setBranchFilter}
+                  options={branchFilterOptions}
+                  width="w-56"
+                  ariaLabel="Filter by branch"
+                />
+              </>
+            }
+          />
 
-        <EntityListShell
-          title="All designations"
-          columns={designationColumns}
-          rows={filtered}
-          rowKey={(r) => String(r.id)}
-          isLoading={loading}
-          sortBy={table.sortBy}
-          sortDir={table.sortDir}
-          onSort={table.setSort}
-          emptyIcon={BadgeCheck}
-          emptyTitle="No designations yet"
-          emptyDescription="Define the job titles in use across your company."
-          emptyAction={
-            canManage ? (
-              <Button onClick={() => { resetForm(); setIsAddingNew(true); }}>
-                <Plus className="w-4 h-4 mr-1" /> Add Designation
-              </Button>
-            ) : undefined
-          }
-        />
-      </>)}
+          <EntityListShell
+            title="All designations"
+            columns={designationColumns}
+            rows={filtered}
+            rowKey={(r) => String(r.id)}
+            isLoading={loading}
+            sortBy={table.sortBy}
+            sortDir={table.sortDir}
+            onSort={table.setSort}
+            emptyIcon={BadgeCheck}
+            emptyTitle="No designations yet"
+            emptyDescription="Define the job titles in use across your company."
+            emptyAction={
+              canManage ? (
+                <Button
+                  onClick={() => {
+                    resetForm();
+                    setIsAddingNew(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add Designation
+                </Button>
+              ) : undefined
+            }
+          />
+        </>
+      )}
     </div>
   );
 }

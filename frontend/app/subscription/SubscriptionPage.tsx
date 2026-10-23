@@ -2,8 +2,16 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { ADDON_MODULE_KEYS, ATTENDANCE_CORE_MODULE_KEYS } from "@/lib/productModules";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  ADDON_MODULE_KEYS,
+  ATTENDANCE_CORE_MODULE_KEYS,
+} from "@/lib/productModules";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -53,7 +61,9 @@ interface Module {
 
 function idsForKeys(modules: Module[], keys: readonly string[]) {
   const wanted = new Set<string>(keys);
-  return modules.filter((module) => wanted.has(module.moduleKey)).map((module) => module.id);
+  return modules
+    .filter((module) => wanted.has(module.moduleKey))
+    .map((module) => module.id);
 }
 
 function BundleCheckbox({
@@ -104,20 +114,35 @@ function ModulePicker({
     { label: "Attendance Core", keys: ATTENDANCE_CORE_MODULE_KEYS },
     { label: "Add-ons", keys: ADDON_MODULE_KEYS },
   ];
-  const groupedKeys = new Set<string>([...ATTENDANCE_CORE_MODULE_KEYS, ...ADDON_MODULE_KEYS]);
+  const groupedKeys = new Set<string>([
+    ...ATTENDANCE_CORE_MODULE_KEYS,
+    ...ADDON_MODULE_KEYS,
+  ]);
   const other = modules.filter((module) => !groupedKeys.has(module.moduleKey));
   const toggle = (id: ID, checked: boolean) => {
-    onChange(checked ? [...selected, id] : selected.filter((item) => item !== id));
+    onChange(
+      checked ? [...selected, id] : selected.filter((item) => item !== id),
+    );
   };
   return (
     <div className="space-y-4">
       <Label>Modules Included</Label>
       {groups.map((group) => {
-        const children = modules.filter((module) => (group.keys as readonly string[]).includes(module.moduleKey));
+        const children = modules.filter((module) =>
+          (group.keys as readonly string[]).includes(module.moduleKey),
+        );
         const childIds = children.map((module) => module.id);
         return (
-          <div key={group.label} className="rounded-xl border border-border p-3 space-y-3">
-            <BundleCheckbox label={group.label} childIds={childIds} selected={selected} onChange={onChange} />
+          <div
+            key={group.label}
+            className="rounded-xl border border-border p-3 space-y-3"
+          >
+            <BundleCheckbox
+              label={group.label}
+              childIds={childIds}
+              selected={selected}
+              onChange={onChange}
+            />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6">
               {children.map((module) => (
                 <label key={module.id} className="flex items-center gap-2">
@@ -166,8 +191,17 @@ interface AssignedModule {
 function planAmountDraft(raw: string): string {
   const cleaned = raw.replace(/[^\d.]/g, "");
   const dot = cleaned.indexOf(".");
-  const whole = (dot === -1 ? cleaned : cleaned.slice(0, dot)).replace(/^0+(?=\d)/, "");
-  const fraction = dot === -1 ? "" : cleaned.slice(dot + 1).replace(/\./g, "").slice(0, 2);
+  const whole = (dot === -1 ? cleaned : cleaned.slice(0, dot)).replace(
+    /^0+(?=\d)/,
+    "",
+  );
+  const fraction =
+    dot === -1
+      ? ""
+      : cleaned
+          .slice(dot + 1)
+          .replace(/\./g, "")
+          .slice(0, 2);
   if (dot === -1) return whole;
   return `${whole || "0"}.${fraction}`;
 }
@@ -241,7 +275,9 @@ export default function SubscriptionPage() {
   const [saving, setSaving] = useState(false);
 
   // UI State
-  const [activeTab, setActiveTab] = useState<"plans" | "subscriptions">("plans");
+  const [activeTab, setActiveTab] = useState<"plans" | "subscriptions">(
+    "plans",
+  );
   const [searchTerm, setSearchTerm] = useState("");
 
   // Pagination
@@ -269,7 +305,9 @@ export default function SubscriptionPage() {
   });
 
   // Deactivation State
-  const [deactivatingSub, setDeactivatingSub] = useState<Subscription | null>(null);
+  const [deactivatingSub, setDeactivatingSub] = useState<Subscription | null>(
+    null,
+  );
   const [deactivationData, setDeactivationData] = useState({
     deactivationWef: new Date().toISOString().split("T")[0],
     reason: "",
@@ -294,27 +332,32 @@ export default function SubscriptionPage() {
   // Data Loading
   // ---------------------------
   const loadData = useCallback(async () => {
+    setLoading(true);
+    const modulesResult = await fetchJSONSafe<Module[]>(API.modules).then(
+      (rows) => ({ ok: true as const, rows: rows || [] }),
+      (error: unknown) => ({ ok: false as const, error }),
+    );
+    if (modulesResult.ok) setModules(modulesResult.rows);
+
     try {
-      setLoading(true);
-      const [plansData, subsData, companiesData, modulesData] = await Promise.all([
+      const [plansData, subsData, companiesData] = await Promise.all([
         fetchJSONSafe<Plan[]>(API.plans),
         fetchJSONSafe<Subscription[]>(API.subscriptions),
         fetchJSONSafe<Company[]>(API.company),
-        fetchJSONSafe<Module[]>(API.modules),
       ]);
 
       setPlans(plansData || []);
       setSubscriptions(subsData || []);
       setCompanies(companiesData || []);
-      setModules(modulesData || []);
 
-      // Calculate stats
       const activeSubs = (subsData || []).filter((s) => s.status === "ACTIVE");
       const expiring = (subsData || []).filter((s) => {
         if (s.status !== "ACTIVE") return false;
         const endDate = new Date(s.endDate);
         const now = new Date();
-        const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.ceil(
+          (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+        );
         return diffDays <= 30 && diffDays > 0;
       });
 
@@ -322,11 +365,23 @@ export default function SubscriptionPage() {
         totalPlans: (plansData || []).length,
         activeAssignments: activeSubs.length,
         expiringSoon: expiring.length,
-        totalRevenue: (subsData || []).reduce((sum, s) => sum + (s.plan?.planAmount || 0), 0),
+        totalRevenue: (subsData || []).reduce(
+          (sum, s) => sum + (s.plan?.planAmount || 0),
+          0,
+        ),
       });
     } catch (error: any) {
-      toast.error(error?.message || "Failed to load data");
+      setPlans([]);
+      setSubscriptions([]);
+      toast.error(error?.message || "Failed to load plans");
     } finally {
+      if (!modulesResult.ok) {
+        const message =
+          modulesResult.error instanceof Error
+            ? modulesResult.error.message
+            : "Failed to load modules";
+        toast.error(message);
+      }
       setLoading(false);
     }
   }, []);
@@ -339,7 +394,13 @@ export default function SubscriptionPage() {
   // Helpers
   // ---------------------------
   const getStatusBadge = (status: string) => {
-    const config: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    const config: Record<
+      string,
+      {
+        label: string;
+        variant: "default" | "secondary" | "destructive" | "outline";
+      }
+    > = {
       ACTIVE: { label: "Active", variant: "default" },
       INACTIVE: { label: "Inactive", variant: "secondary" },
       EXPIRED: { label: "Expired", variant: "destructive" },
@@ -386,7 +447,10 @@ export default function SubscriptionPage() {
       await fetchJSONSafe(API.plans, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...planForm, planAmount: planAmountNumber(planForm.planAmount) }),
+        body: JSON.stringify({
+          ...planForm,
+          planAmount: planAmountNumber(planForm.planAmount),
+        }),
       });
       toast.success("Plan created successfully");
       resetPlanForm();
@@ -406,7 +470,10 @@ export default function SubscriptionPage() {
       await fetchJSONSafe(`${API.plans}/${editingPlan.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...planForm, planAmount: planAmountNumber(planForm.planAmount) }),
+        body: JSON.stringify({
+          ...planForm,
+          planAmount: planAmountNumber(planForm.planAmount),
+        }),
       });
       toast.success("Plan updated successfully");
       resetPlanForm();
@@ -435,7 +502,9 @@ export default function SubscriptionPage() {
     setPlanForm({
       planName: plan.planName,
       validityDays: plan.validityDays,
-      planAmount: Number(plan.planAmount) ? planAmountDraft(String(Number(plan.planAmount))) : "",
+      planAmount: Number(plan.planAmount)
+        ? planAmountDraft(String(Number(plan.planAmount)))
+        : "",
       moduleIDs: plan.assignedModules?.map((am) => am.moduleID) || [],
       isActive: plan.isActive,
     });
@@ -477,11 +546,14 @@ export default function SubscriptionPage() {
     if (!deactivatingSub) return;
     setSaving(true);
     try {
-      await fetchJSONSafe(`${API.subscriptions}/${deactivatingSub.id}/deactivate`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(deactivationData),
-      });
+      await fetchJSONSafe(
+        `${API.subscriptions}/${deactivatingSub.id}/deactivate`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(deactivationData),
+        },
+      );
       toast.success("Subscription deactivated successfully");
       setDeactivatingSub(null);
       setDeactivationData({
@@ -532,7 +604,7 @@ export default function SubscriptionPage() {
     return plans.filter(
       (p) =>
         p.planName.toLowerCase().includes(search) ||
-        p.planAmount.toString().includes(search)
+        p.planAmount.toString().includes(search),
     );
   }, [plans, searchTerm]);
 
@@ -543,7 +615,7 @@ export default function SubscriptionPage() {
       (s) =>
         getCompanyName(s.companyID).toLowerCase().includes(search) ||
         getPlanName(s.planID).toLowerCase().includes(search) ||
-        s.status.toLowerCase().includes(search)
+        s.status.toLowerCase().includes(search),
     );
   }, [subscriptions, searchTerm]);
 
@@ -575,263 +647,332 @@ export default function SubscriptionPage() {
     <div className="space-y-6 w-full max-w-none animate-fade-in page-content-enter py-6">
       {!inlineFormOpen && (
         <>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Subscription Management</h1>
-          <p className="text-muted-foreground text-sm">Manage subscription plans and assignments</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={loadData} disabled={loading}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
-      </div>
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Subscription Management</h1>
+              <p className="text-muted-foreground text-sm">
+                Manage subscription plans and assignments
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadData}
+              disabled={loading}
+            >
+              <RefreshCw
+                className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
+          </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Plans</CardTitle>
-            <Icon icon="mdi:package" className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalPlans}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Assignments</CardTitle>
-            <Icon icon="mdi:check-circle" className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeAssignments}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
-            <Icon icon="mdi:clock-alert" className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{stats.expiringSoon}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <Icon icon="mdi:currency-inr" className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Stats Cards */}
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Plans
+                </CardTitle>
+                <Icon
+                  icon="mdi:package"
+                  className="w-4 h-4 text-muted-foreground"
+                />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalPlans}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Active Assignments
+                </CardTitle>
+                <Icon
+                  icon="mdi:check-circle"
+                  className="w-4 h-4 text-muted-foreground"
+                />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {stats.activeAssignments}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Expiring Soon
+                </CardTitle>
+                <Icon
+                  icon="mdi:clock-alert"
+                  className="w-4 h-4 text-muted-foreground"
+                />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-amber-600">
+                  {stats.expiringSoon}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Revenue
+                </CardTitle>
+                <Icon
+                  icon="mdi:currency-inr"
+                  className="w-4 h-4 text-muted-foreground"
+                />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  ₹{stats.totalRevenue.toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b">
-        <Button
-          variant={activeTab === "plans" ? "default" : "ghost"}
-          onClick={() => setActiveTab("plans")}
-          className="rounded-none border-b-2 border-transparent data-[active=true]:border-primary"
-        >
-          <Icon icon="mdi:package-variant" className="w-4 h-4 mr-2" />
-          Subscription Plans
-        </Button>
-        <Button
-          variant={activeTab === "subscriptions" ? "default" : "ghost"}
-          onClick={() => setActiveTab("subscriptions")}
-          className="rounded-none border-b-2 border-transparent data-[active=true]:border-primary"
-        >
-          <Icon icon="mdi:clipboard-list" className="w-4 h-4 mr-2" />
-          Assigned Subscriptions
-        </Button>
-      </div>
+          {/* Tabs */}
+          <div className="flex gap-2 border-b">
+            <Button
+              variant={activeTab === "plans" ? "default" : "ghost"}
+              onClick={() => setActiveTab("plans")}
+              className="rounded-none border-b-2 border-transparent data-[active=true]:border-primary"
+            >
+              <Icon icon="mdi:package-variant" className="w-4 h-4 mr-2" />
+              Subscription Plans
+            </Button>
+            <Button
+              variant={activeTab === "subscriptions" ? "default" : "ghost"}
+              onClick={() => setActiveTab("subscriptions")}
+              className="rounded-none border-b-2 border-transparent data-[active=true]:border-primary"
+            >
+              <Icon icon="mdi:clipboard-list" className="w-4 h-4 mr-2" />
+              Assigned Subscriptions
+            </Button>
+          </div>
 
-      {/* Search */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder={`Search ${activeTab === "plans" ? "plans..." : "subscriptions..."}`}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        {activeTab === "plans" && !showPlanForm && (
-          <Button onClick={() => {
-            setEditingPlan(null);
-            setPlanForm({
-              planName: "",
-              validityDays: 90,
-              planAmount: "",
-              moduleIDs: idsForKeys(modules, ATTENDANCE_CORE_MODULE_KEYS),
-              isActive: true,
-            });
-            setShowPlanForm(true);
-          }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Plan
-          </Button>
-        )}
-        {activeTab === "subscriptions" && !showSubForm && (
-          <Button onClick={() => { setShowSubForm(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Assign Plan
-          </Button>
-        )}
-      </div>
+          {/* Search */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder={`Search ${activeTab === "plans" ? "plans..." : "subscriptions..."}`}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            {activeTab === "plans" && !showPlanForm && (
+              <Button
+                onClick={() => {
+                  setEditingPlan(null);
+                  setPlanForm({
+                    planName: "",
+                    validityDays: 90,
+                    planAmount: "",
+                    moduleIDs: idsForKeys(modules, ATTENDANCE_CORE_MODULE_KEYS),
+                    isActive: true,
+                  });
+                  setShowPlanForm(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Plan
+              </Button>
+            )}
+            {activeTab === "subscriptions" && !showSubForm && (
+              <Button
+                onClick={() => {
+                  setShowSubForm(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Assign Plan
+              </Button>
+            )}
+          </div>
         </>
       )}
 
       {/* Plan form — inline shell */}
       <FormDrawer
         open={showPlanForm}
-        onOpenChange={(open) => { if (!open) resetPlanForm(); }}
+        onOpenChange={(open) => {
+          if (!open) resetPlanForm();
+        }}
         title={editingPlan ? "Edit Plan" : "Create New Plan"}
-        description={editingPlan ? "Update subscription plan details." : "Fill in the details to create a new subscription plan."}
+        description={
+          editingPlan
+            ? "Update subscription plan details."
+            : "Fill in the details to create a new subscription plan."
+        }
       >
-                <form onSubmit={editingPlan ? handleUpdatePlan : handleCreatePlan} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Plan Name *</Label>
-                      <Input
-                        value={planForm.planName}
-                        onChange={(e) => setPlanForm({ ...planForm, planName: e.target.value })}
-                        placeholder="Enter plan name"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Validity (Days) *</Label>
-                      <Input
-                        inputMode="numeric"
-                        value={planForm.validityDays || ""}
-                        onChange={(e) => {
-                          const digits = e.target.value.replace(/\D/g, "");
-                          setPlanForm({
-                            ...planForm,
-                            validityDays: digits === "" ? 0 : Number(digits),
-                          });
-                        }}
-                        placeholder="90"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Plan Amount (₹) *</Label>
-                      <Input
-                        inputMode="decimal"
-                        value={planForm.planAmount}
-                        onChange={(e) =>
-                          setPlanForm({ ...planForm, planAmount: planAmountDraft(e.target.value) })
-                        }
-                        placeholder="0"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Status</Label>
-                      <Select
-                        value={planForm.isActive ? "active" : "inactive"}
-                        onValueChange={(v) => setPlanForm({ ...planForm, isActive: v === "active" })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+        <form
+          onSubmit={editingPlan ? handleUpdatePlan : handleCreatePlan}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Plan Name *</Label>
+              <Input
+                value={planForm.planName}
+                onChange={(e) =>
+                  setPlanForm({ ...planForm, planName: e.target.value })
+                }
+                placeholder="Enter plan name"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Validity (Days) *</Label>
+              <Input
+                inputMode="numeric"
+                value={planForm.validityDays || ""}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "");
+                  setPlanForm({
+                    ...planForm,
+                    validityDays: digits === "" ? 0 : Number(digits),
+                  });
+                }}
+                placeholder="90"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Plan Amount (₹) *</Label>
+              <Input
+                inputMode="decimal"
+                value={planForm.planAmount}
+                onChange={(e) =>
+                  setPlanForm({
+                    ...planForm,
+                    planAmount: planAmountDraft(e.target.value),
+                  })
+                }
+                placeholder="0"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select
+                value={planForm.isActive ? "active" : "inactive"}
+                onValueChange={(v) =>
+                  setPlanForm({ ...planForm, isActive: v === "active" })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-                  <ModulePicker
-                    modules={modules}
-                    selected={planForm.moduleIDs}
-                    onChange={(moduleIDs) => setPlanForm({ ...planForm, moduleIDs })}
-                  />
+          <ModulePicker
+            modules={modules}
+            selected={planForm.moduleIDs}
+            onChange={(moduleIDs) => setPlanForm({ ...planForm, moduleIDs })}
+          />
 
-                  <div className="flex gap-2 pt-4 border-t">
-                    <Button type="submit" disabled={saving}>
-                      <Save className="w-4 h-4 mr-2" />
-                      {saving ? "Saving..." : editingPlan ? "Update Plan" : "Create Plan"}
-                    </Button>
-                    <Button type="button" variant="outline" onClick={resetPlanForm}>
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
+          <div className="flex gap-2 pt-4 border-t">
+            <Button type="submit" disabled={saving}>
+              <Save className="w-4 h-4 mr-2" />
+              {saving
+                ? "Saving..."
+                : editingPlan
+                  ? "Update Plan"
+                  : "Create Plan"}
+            </Button>
+            <Button type="button" variant="outline" onClick={resetPlanForm}>
+              Cancel
+            </Button>
+          </div>
+        </form>
       </FormDrawer>
 
       {/* Assign plan form — inline shell */}
       <FormDrawer
         open={showSubForm}
-        onOpenChange={(open) => { if (!open) resetSubForm(); }}
+        onOpenChange={(open) => {
+          if (!open) resetSubForm();
+        }}
         title="Assign Plan to Company"
         description="Select a company and plan to create a new subscription assignment."
       >
-                <form onSubmit={handleAssignPlan} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Company *</Label>
-                      <Select
-                        value={subForm.companyID.toString()}
-                        onValueChange={(v) => setSubForm({ ...subForm, companyID: parseInt(v) })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select company" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {companies.map((company) => (
-                            <SelectItem key={company.id} value={company.id.toString()}>
-                              {company.companyName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Plan *</Label>
-                      <Select
-                        value={subForm.planID.toString()}
-                        onValueChange={(v) => setSubForm({ ...subForm, planID: parseInt(v) })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select plan" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {plans
-                            .filter((p) => p.isActive)
-                            .map((plan) => (
-                              <SelectItem key={plan.id} value={plan.id.toString()}>
-                                {plan.planName} (₹{plan.planAmount})
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Start Date *</Label>
-                      <Input
-                        type="date"
-                        value={subForm.startDate}
-                        onChange={(e) => setSubForm({ ...subForm, startDate: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 pt-4 border-t">
-                    <Button type="submit" disabled={saving}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      {saving ? "Assigning..." : "Assign Plan"}
-                    </Button>
-                    <Button type="button" variant="outline" onClick={resetSubForm}>
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
+        <form onSubmit={handleAssignPlan} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Company *</Label>
+              <Select
+                value={subForm.companyID.toString()}
+                onValueChange={(v) =>
+                  setSubForm({ ...subForm, companyID: parseInt(v) })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select company" />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id.toString()}>
+                      {company.companyName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Plan *</Label>
+              <Select
+                value={subForm.planID.toString()}
+                onValueChange={(v) =>
+                  setSubForm({ ...subForm, planID: parseInt(v) })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select plan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {plans
+                    .filter((p) => p.isActive)
+                    .map((plan) => (
+                      <SelectItem key={plan.id} value={plan.id.toString()}>
+                        {plan.planName} (₹{plan.planAmount})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Start Date *</Label>
+              <Input
+                type="date"
+                value={subForm.startDate}
+                onChange={(e) =>
+                  setSubForm({ ...subForm, startDate: e.target.value })
+                }
+                required
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-4 border-t">
+            <Button type="submit" disabled={saving}>
+              <Plus className="w-4 h-4 mr-2" />
+              {saving ? "Assigning..." : "Assign Plan"}
+            </Button>
+            <Button type="button" variant="outline" onClick={resetSubForm}>
+              Cancel
+            </Button>
+          </div>
+        </form>
       </FormDrawer>
 
       {/* ==================== PLANS TAB ==================== */}
@@ -843,7 +984,8 @@ export default function SubscriptionPage() {
               <CardTitle className="flex items-center justify-between">
                 <span>Plans</span>
                 <span className="text-sm font-normal text-muted-foreground">
-                  {filteredPlans.length} plan{filteredPlans.length !== 1 ? "s" : ""}
+                  {filteredPlans.length} plan
+                  {filteredPlans.length !== 1 ? "s" : ""}
                 </span>
               </CardTitle>
             </CardHeader>
@@ -863,15 +1005,24 @@ export default function SubscriptionPage() {
                   <TableBody>
                     {loading ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        <TableCell
+                          colSpan={6}
+                          className="text-center py-8 text-muted-foreground"
+                        >
                           Loading...
                         </TableCell>
                       </TableRow>
                     ) : paginatedPlans.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        <TableCell
+                          colSpan={6}
+                          className="text-center py-8 text-muted-foreground"
+                        >
                           <div className="flex flex-col items-center gap-2">
-                            <Icon icon="mdi:package" className="w-12 h-12 text-muted-foreground/50" />
+                            <Icon
+                              icon="mdi:package"
+                              className="w-12 h-12 text-muted-foreground/50"
+                            />
                             <p>No plans found</p>
                           </div>
                         </TableCell>
@@ -879,18 +1030,28 @@ export default function SubscriptionPage() {
                     ) : (
                       paginatedPlans.map((plan) => (
                         <TableRow key={plan.id}>
-                          <TableCell className="font-medium">{plan.planName}</TableCell>
+                          <TableCell className="font-medium">
+                            {plan.planName}
+                          </TableCell>
                           <TableCell>{plan.validityDays} days</TableCell>
-                          <TableCell>₹{plan.planAmount.toLocaleString()}</TableCell>
+                          <TableCell>
+                            ₹{plan.planAmount.toLocaleString()}
+                          </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {getPlanModules(plan).map((m) => (
-                                <Badge key={m.id} variant="outline" className="text-xs">
+                                <Badge
+                                  key={m.id}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
                                   {m.moduleName}
                                 </Badge>
                               ))}
                               {getPlanModules(plan).length === 0 && (
-                                <span className="text-xs text-muted-foreground">No modules</span>
+                                <span className="text-xs text-muted-foreground">
+                                  No modules
+                                </span>
                               )}
                             </div>
                           </TableCell>
@@ -949,7 +1110,9 @@ export default function SubscriptionPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setPlanPage((p) => Math.min(totalPlanPages, p + 1))}
+                      onClick={() =>
+                        setPlanPage((p) => Math.min(totalPlanPages, p + 1))
+                      }
                       disabled={planPage >= totalPlanPages}
                     >
                       Next
@@ -969,12 +1132,17 @@ export default function SubscriptionPage() {
           {/* Subscriptions Grid */}
           <div className="space-y-4">
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+              <div className="text-center py-8 text-muted-foreground">
+                Loading...
+              </div>
             ) : paginatedSubscriptions.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
-                    <Icon icon="mdi:clipboard" className="w-12 h-12 text-muted-foreground/50" />
+                    <Icon
+                      icon="mdi:clipboard"
+                      className="w-12 h-12 text-muted-foreground/50"
+                    />
                     <p>No subscriptions found</p>
                   </div>
                 </CardContent>
@@ -986,15 +1154,22 @@ export default function SubscriptionPage() {
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="space-y-2 flex-1 min-w-[200px]">
                         <div className="flex items-center gap-3">
-                          <h4 className="font-semibold">{getCompanyName(sub.companyID)}</h4>
+                          <h4 className="font-semibold">
+                            {getCompanyName(sub.companyID)}
+                          </h4>
                           {getStatusBadge(sub.status)}
                         </div>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                           <span>Plan: {getPlanName(sub.planID)}</span>
                           <span>•</span>
-                          <span>Start: {new Date(sub.startDate).toLocaleDateString()}</span>
+                          <span>
+                            Start:{" "}
+                            {new Date(sub.startDate).toLocaleDateString()}
+                          </span>
                           <span>•</span>
-                          <span>End: {new Date(sub.endDate).toLocaleDateString()}</span>
+                          <span>
+                            End: {new Date(sub.endDate).toLocaleDateString()}
+                          </span>
                           {sub.plan && (
                             <>
                               <span>•</span>
@@ -1028,7 +1203,8 @@ export default function SubscriptionPage() {
                         )}
 
                         {/* Renew Action */}
-                        {(sub.status === "ACTIVE" || sub.status === "EXPIRED") && (
+                        {(sub.status === "ACTIVE" ||
+                          sub.status === "EXPIRED") && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -1036,7 +1212,9 @@ export default function SubscriptionPage() {
                               setRenewingSub(sub);
                               setRenewData({
                                 planID: sub.planID,
-                                startDate: new Date().toISOString().split("T")[0],
+                                startDate: new Date()
+                                  .toISOString()
+                                  .split("T")[0],
                               });
                               setDeactivatingSub(null);
                             }}
@@ -1058,7 +1236,10 @@ export default function SubscriptionPage() {
                               type="date"
                               value={deactivationData.deactivationWef}
                               onChange={(e) =>
-                                setDeactivationData({ ...deactivationData, deactivationWef: e.target.value })
+                                setDeactivationData({
+                                  ...deactivationData,
+                                  deactivationWef: e.target.value,
+                                })
                               }
                             />
                           </div>
@@ -1067,14 +1248,22 @@ export default function SubscriptionPage() {
                             <Input
                               value={deactivationData.reason}
                               onChange={(e) =>
-                                setDeactivationData({ ...deactivationData, reason: e.target.value })
+                                setDeactivationData({
+                                  ...deactivationData,
+                                  reason: e.target.value,
+                                })
                               }
                               placeholder="Reason for deactivation"
                             />
                           </div>
                         </div>
                         <div className="flex gap-2 mt-4">
-                          <Button variant="destructive" size="sm" onClick={handleDeactivate} disabled={saving}>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleDeactivate}
+                            disabled={saving}
+                          >
                             {saving ? "Processing..." : "Confirm Deactivation"}
                           </Button>
                           <Button
@@ -1083,7 +1272,9 @@ export default function SubscriptionPage() {
                             onClick={() => {
                               setDeactivatingSub(null);
                               setDeactivationData({
-                                deactivationWef: new Date().toISOString().split("T")[0],
+                                deactivationWef: new Date()
+                                  .toISOString()
+                                  .split("T")[0],
                                 reason: "",
                               });
                             }}
@@ -1102,7 +1293,12 @@ export default function SubscriptionPage() {
                             <Label>New Plan *</Label>
                             <Select
                               value={renewData.planID.toString()}
-                              onValueChange={(v) => setRenewData({ ...renewData, planID: parseInt(v) })}
+                              onValueChange={(v) =>
+                                setRenewData({
+                                  ...renewData,
+                                  planID: parseInt(v),
+                                })
+                              }
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select plan" />
@@ -1111,7 +1307,10 @@ export default function SubscriptionPage() {
                                 {plans
                                   .filter((p) => p.isActive)
                                   .map((plan) => (
-                                    <SelectItem key={plan.id} value={plan.id.toString()}>
+                                    <SelectItem
+                                      key={plan.id}
+                                      value={plan.id.toString()}
+                                    >
                                       {plan.planName} (₹{plan.planAmount})
                                     </SelectItem>
                                   ))}
@@ -1123,12 +1322,21 @@ export default function SubscriptionPage() {
                             <Input
                               type="date"
                               value={renewData.startDate}
-                              onChange={(e) => setRenewData({ ...renewData, startDate: e.target.value })}
+                              onChange={(e) =>
+                                setRenewData({
+                                  ...renewData,
+                                  startDate: e.target.value,
+                                })
+                              }
                             />
                           </div>
                         </div>
                         <div className="flex gap-2 mt-4">
-                          <Button size="sm" onClick={handleRenew} disabled={saving}>
+                          <Button
+                            size="sm"
+                            onClick={handleRenew}
+                            disabled={saving}
+                          >
                             {saving ? "Processing..." : "Confirm Renewal"}
                           </Button>
                           <Button
@@ -1138,7 +1346,9 @@ export default function SubscriptionPage() {
                               setRenewingSub(null);
                               setRenewData({
                                 planID: 0,
-                                startDate: new Date().toISOString().split("T")[0],
+                                startDate: new Date()
+                                  .toISOString()
+                                  .split("T")[0],
                               });
                             }}
                           >
@@ -1171,7 +1381,9 @@ export default function SubscriptionPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setSubPage((p) => Math.min(totalSubPages, p + 1))}
+                    onClick={() =>
+                      setSubPage((p) => Math.min(totalSubPages, p + 1))
+                    }
                     disabled={subPage >= totalSubPages}
                   >
                     Next

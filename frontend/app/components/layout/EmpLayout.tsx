@@ -17,16 +17,29 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from "../../components/ui/sidebar";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "../../components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "../../components/ui/collapsible";
 import { Icon } from "@iconify/react";
-import { Avatar, AvatarImage, AvatarFallback } from "../../components/ui/avatar";
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "../../components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -48,7 +61,11 @@ interface EmpLayoutProps {
 export default function EmpLayout({ children }: EmpLayoutProps) {
   const pathname = usePathname();
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [pwdForm, setPwdForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
+  const [pwdForm, setPwdForm] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [pwdLoading, setPwdLoading] = useState(false);
   const [showOldPwd, setShowOldPwd] = useState(false);
   const [showNewPwd, setShowNewPwd] = useState(false);
@@ -63,23 +80,45 @@ export default function EmpLayout({ children }: EmpLayoutProps) {
       toast.error("Sign in again to change your temporary password.");
       return;
     }
-    if ((!mustSetFirstPassword && !pwdForm.oldPassword) || !pwdForm.newPassword) { toast.error("All fields are required"); return; }
-    if (!isPasswordValid(pwdForm.newPassword)) { toast.error(PASSWORD_POLICY_MESSAGE); return; }
-    if (pwdForm.newPassword !== pwdForm.confirmPassword) { toast.error("Passwords do not match"); return; }
+    if (
+      (!mustSetFirstPassword && !pwdForm.oldPassword) ||
+      !pwdForm.newPassword
+    ) {
+      toast.error("All fields are required");
+      return;
+    }
+    if (!isPasswordValid(pwdForm.newPassword)) {
+      toast.error(PASSWORD_POLICY_MESSAGE);
+      return;
+    }
+    if (pwdForm.newPassword !== pwdForm.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
     try {
       setPwdLoading(true);
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       const empId = user?.employee?.id;
-      if (!empId) { toast.error("Employee not found"); return; }
-      const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
-      const res = await fetch(`/backend/manage-emp/${empId}/change-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      if (!empId) {
+        toast.error("Employee not found");
+        return;
+      }
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("accessToken");
+      const res = await fetch(
+        `https://hrms-api-test.onrender.com/manage-emp/${empId}/change-password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            oldPassword: currentPassword,
+            newPassword: pwdForm.newPassword,
+          }),
         },
-        body: JSON.stringify({ oldPassword: currentPassword, newPassword: pwdForm.newPassword }),
-      });
+      );
       if (!res.ok) {
         const err = await res.json().catch(() => null);
         throw new Error(err?.message || "Failed to change password");
@@ -114,14 +153,17 @@ export default function EmpLayout({ children }: EmpLayoutProps) {
   }, []);
 
   const empDisplayName = empUser?.employee
-    ? `${empUser.employee.firstName || ""} ${empUser.employee.lastName || ""}`.trim() || empUser.username || "Employee"
+    ? `${empUser.employee.firstName || ""} ${empUser.employee.lastName || ""}`.trim() ||
+      empUser.username ||
+      "Employee"
     : empUser?.username || "Employee";
-  const empInitials = empDisplayName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w: string) => w[0].toUpperCase())
-    .join("") || "E";
+  const empInitials =
+    empDisplayName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w: string) => w[0].toUpperCase())
+      .join("") || "E";
 
   const [openSections, setOpenSections] = useState({
     leave: false,
@@ -141,12 +183,21 @@ export default function EmpLayout({ children }: EmpLayoutProps) {
     <div className="min-h-screen bg-[#f8fafc]">
       <SidebarProvider>
         {/* Sidebar */}
-        <Sidebar collapsible="icon" className="border-r border-[#d1d5db] bg-sidebar text-sidebar-foreground">
+        <Sidebar
+          collapsible="icon"
+          className="border-r border-[#d1d5db] bg-sidebar text-sidebar-foreground"
+        >
           <SidebarHeader className="px-4 py-6 border-0">
             <Link href="/empAttendance" className="flex items-center gap-3">
-              <img src="/img/OpenHRM_Logo.png" alt="OpenHRM" className="w-11 h-11 rounded-full object-cover shrink-0 shadow-[0_6px_16px_rgba(79,70,229,0.35)]" />
+              <img
+                src="/img/OpenHRM_Logo.png"
+                alt="OpenHRM"
+                className="w-11 h-11 rounded-full object-cover shrink-0 shadow-[0_6px_16px_rgba(79,70,229,0.35)]"
+              />
               <div className="min-w-0">
-                <span className="text-[#111827] font-bold text-sm tracking-tight block truncate">OpenHRM</span>
+                <span className="text-[#111827] font-bold text-sm tracking-tight block truncate">
+                  OpenHRM
+                </span>
                 <p className="text-[11px] text-gray-400">Employee Portal</p>
               </div>
             </Link>
@@ -166,7 +217,10 @@ export default function EmpLayout({ children }: EmpLayoutProps) {
                           : "text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a2e]"
                       }`}
                     >
-                      <Icon icon="mdi:map-marker-check-outline" className={`w-5 h-5 shrink-0 ${isActive("/empAttendance") ? "text-[#4f46e5]" : "text-gray-400"}`} />
+                      <Icon
+                        icon="mdi:map-marker-check-outline"
+                        className={`w-5 h-5 shrink-0 ${isActive("/empAttendance") ? "text-[#4f46e5]" : "text-gray-400"}`}
+                      />
                       <span className="text-[13px]">Attendance</span>
                     </Link>
                   </SidebarMenuButton>
@@ -181,12 +235,17 @@ export default function EmpLayout({ children }: EmpLayoutProps) {
                 >
                   <SidebarMenuItem className="mx-0">
                     <CollapsibleTrigger asChild>
-                      <SidebarMenuButton className={`flex w-full items-center gap-3 rounded-md px-3 h-11 min-h-[44px] max-h-11 shrink-0 transition-colors duration-150 ${
-                        ["/empLeaveApplication"].includes(pathname)
-                          ? "!bg-[#eef2ff] text-[#4f46e5] font-medium"
-                          : "text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a2e]"
-                      }`}>
-                        <Icon icon="mdi:calendar-clock-outline" className={`w-5 h-5 shrink-0 ${["/empLeaveApplication"].includes(pathname) ? "text-[#4f46e5]" : "text-gray-400"}`} />
+                      <SidebarMenuButton
+                        className={`flex w-full items-center gap-3 rounded-md px-3 h-11 min-h-[44px] max-h-11 shrink-0 transition-colors duration-150 ${
+                          ["/empLeaveApplication"].includes(pathname)
+                            ? "!bg-[#eef2ff] text-[#4f46e5] font-medium"
+                            : "text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a2e]"
+                        }`}
+                      >
+                        <Icon
+                          icon="mdi:calendar-clock-outline"
+                          className={`w-5 h-5 shrink-0 ${["/empLeaveApplication"].includes(pathname) ? "text-[#4f46e5]" : "text-gray-400"}`}
+                        />
                         <span className="text-[13px]">Leave Policy</span>
                         <Icon
                           icon="mdi:chevron-right"
@@ -201,7 +260,10 @@ export default function EmpLayout({ children }: EmpLayoutProps) {
                   <CollapsibleContent>
                     <SidebarMenuSub className="ml-4 mt-1 space-y-0.5">
                       {[
-                        { href: "/empLeaveApplication", label: "Leave Applications" },
+                        {
+                          href: "/empLeaveApplication",
+                          label: "Leave Applications",
+                        },
                       ].map((item) => (
                         <SidebarMenuSubItem key={item.href}>
                           <SidebarMenuSubButton asChild>
@@ -234,22 +296,34 @@ export default function EmpLayout({ children }: EmpLayoutProps) {
               <div className="flex items-center gap-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button type="button" className="flex items-center gap-2 cursor-pointer focus:outline-none rounded-full pl-1 pr-1 py-1 hover:bg-white/80 transition-colors">
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 cursor-pointer focus:outline-none rounded-full pl-1 pr-1 py-1 hover:bg-white/80 transition-colors"
+                    >
                       <Avatar className="w-10 h-10 ring-[3px] ring-white shadow-md">
-                        <AvatarFallback className="bg-gray-900 text-white text-sm font-bold">{empInitials}</AvatarFallback>
+                        <AvatarFallback className="bg-gray-900 text-white text-sm font-bold">
+                          {empInitials}
+                        </AvatarFallback>
                       </Avatar>
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52 rounded-2xl">
                     <div className="px-3 py-2 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{empDisplayName}</p>
-                      <p className="text-[11px] text-gray-400 font-medium mt-0.5">Employee</p>
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {empDisplayName}
+                      </p>
+                      <p className="text-[11px] text-gray-400 font-medium mt-0.5">
+                        Employee
+                      </p>
                     </div>
                     <DropdownMenuItem
                       className="cursor-pointer rounded-xl m-1"
                       onClick={() => setShowProfile(true)}
                     >
-                      <Icon icon="mdi:account-circle-outline" className="w-4 h-4 mr-2" />
+                      <Icon
+                        icon="mdi:account-circle-outline"
+                        className="w-4 h-4 mr-2"
+                      />
                       User Profile
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -268,8 +342,11 @@ export default function EmpLayout({ children }: EmpLayoutProps) {
                         try {
                           sessionStorage.removeItem("activeCompanyID");
                           localStorage.removeItem("sidebarContext");
-                        } catch { /* ignore */ }
-                        document.cookie = "accessToken=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 UTC; samesite=lax";
+                        } catch {
+                          /* ignore */
+                        }
+                        document.cookie =
+                          "accessToken=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 UTC; samesite=lax";
                         window.location.href = "/login";
                       }}
                     >
@@ -297,22 +374,54 @@ export default function EmpLayout({ children }: EmpLayoutProps) {
                 Choose a new password. You will sign in again after it is saved.
               </p>
             ) : (
-            <div>
-              <Label>Current Password</Label>
-              <div className="relative">
-                <Input type={showOldPwd ? "text" : "password"} value={pwdForm.oldPassword} onChange={(e) => setPwdForm({ ...pwdForm, oldPassword: e.target.value })} className="pr-10" />
-                <button type="button" onClick={() => setShowOldPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" tabIndex={-1}>
-                  {showOldPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+              <div>
+                <Label>Current Password</Label>
+                <div className="relative">
+                  <Input
+                    type={showOldPwd ? "text" : "password"}
+                    value={pwdForm.oldPassword}
+                    onChange={(e) =>
+                      setPwdForm({ ...pwdForm, oldPassword: e.target.value })
+                    }
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPwd((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    tabIndex={-1}
+                  >
+                    {showOldPwd ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
             )}
             <div>
               <Label>New Password</Label>
               <div className="relative">
-                <Input type={showNewPwd ? "text" : "password"} value={pwdForm.newPassword} onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })} className="pr-10" />
-                <button type="button" onClick={() => setShowNewPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" tabIndex={-1}>
-                  {showNewPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <Input
+                  type={showNewPwd ? "text" : "password"}
+                  value={pwdForm.newPassword}
+                  onChange={(e) =>
+                    setPwdForm({ ...pwdForm, newPassword: e.target.value })
+                  }
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPwd((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  tabIndex={-1}
+                >
+                  {showNewPwd ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
               <PasswordRuleHints password={pwdForm.newPassword} />
@@ -320,13 +429,33 @@ export default function EmpLayout({ children }: EmpLayoutProps) {
             <div>
               <Label>Confirm New Password</Label>
               <div className="relative">
-                <Input type={showConfirmPwd ? "text" : "password"} value={pwdForm.confirmPassword} onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })} className="pr-10" />
-                <button type="button" onClick={() => setShowConfirmPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" tabIndex={-1}>
-                  {showConfirmPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <Input
+                  type={showConfirmPwd ? "text" : "password"}
+                  value={pwdForm.confirmPassword}
+                  onChange={(e) =>
+                    setPwdForm({ ...pwdForm, confirmPassword: e.target.value })
+                  }
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPwd((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  tabIndex={-1}
+                >
+                  {showConfirmPwd ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
-            <Button onClick={handleChangePassword} disabled={pwdLoading} className="w-full">
+            <Button
+              onClick={handleChangePassword}
+              disabled={pwdLoading}
+              className="w-full"
+            >
               {pwdLoading ? "Changing..." : "Change Password"}
             </Button>
           </div>
@@ -345,52 +474,75 @@ export default function EmpLayout({ children }: EmpLayoutProps) {
                 {empInitials}
               </div>
               <div>
-                <p className="text-base font-semibold text-gray-900">{empDisplayName}</p>
+                <p className="text-base font-semibold text-gray-900">
+                  {empDisplayName}
+                </p>
                 <p className="text-sm text-gray-500">Employee</p>
               </div>
             </div>
             {empUser?.employee?.employeeID && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 font-medium">Employee ID</span>
-                <span className="font-semibold text-gray-900">{empUser.employee.employeeID}</span>
+                <span className="font-semibold text-gray-900">
+                  {empUser.employee.employeeID}
+                </span>
               </div>
             )}
             {empUser?.employee?.email && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 font-medium">Email</span>
-                <span className="font-semibold text-gray-900">{empUser.employee.email}</span>
+                <span className="font-semibold text-gray-900">
+                  {empUser.employee.email}
+                </span>
               </div>
             )}
             {empUser?.employee?.department && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 font-medium">Department</span>
-                <span className="font-semibold text-gray-900">{empUser.employee.department}</span>
+                <span className="font-semibold text-gray-900">
+                  {empUser.employee.department}
+                </span>
               </div>
             )}
             {empUser?.employee?.designation && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 font-medium">Designation</span>
-                <span className="font-semibold text-gray-900">{empUser.employee.designation}</span>
+                <span className="font-semibold text-gray-900">
+                  {empUser.employee.designation}
+                </span>
               </div>
             )}
             {empUser?.employee?.company && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 font-medium">Company</span>
-                <span className="font-semibold text-gray-900">{empUser.employee.company}</span>
+                <span className="font-semibold text-gray-900">
+                  {empUser.employee.company}
+                </span>
               </div>
             )}
             {empUser?.employee?.branch && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 font-medium">Branch</span>
-                <span className="font-semibold text-gray-900">{empUser.employee.branch}</span>
+                <span className="font-semibold text-gray-900">
+                  {empUser.employee.branch}
+                </span>
               </div>
             )}
             <div className="flex justify-between text-sm">
               <span className="text-gray-500 font-medium">Username</span>
-              <span className="font-semibold text-gray-900">{empUser?.username || "—"}</span>
+              <span className="font-semibold text-gray-900">
+                {empUser?.username || "—"}
+              </span>
             </div>
             <div className="pt-2">
-              <Button variant="outline" className="w-full" onClick={() => { setShowProfile(false); setShowChangePassword(true); }}>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setShowProfile(false);
+                  setShowChangePassword(true);
+                }}
+              >
                 <Icon icon="mdi:lock-outline" className="w-4 h-4 mr-2" />
                 Change Password
               </Button>

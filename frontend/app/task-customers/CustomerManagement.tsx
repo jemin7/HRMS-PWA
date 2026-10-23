@@ -1,6 +1,9 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { hasModuleWriteAccess, isCompanyAdminLikeRole } from "@/lib/companyAccess";
+import {
+  hasModuleWriteAccess,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -11,7 +14,11 @@ import { useCurrentUser } from "../hooks/useCurrentUser";
 import { toast } from "sonner";
 import { LocationFields } from "../components/ui/location-fields";
 import { taskFetch } from "../utils/taskApi";
-import { TaskContactsRepeater, sanitizeContacts, type TaskContactRow } from "../components/task/TaskContactsRepeater";
+import {
+  TaskContactsRepeater,
+  sanitizeContacts,
+  type TaskContactRow,
+} from "../components/task/TaskContactsRepeater";
 import { EnplSyncButton } from "../components/task/EnplSyncButton";
 import { SearchSuggestInput } from "../components/SearchSuggestInput";
 import { getSidebarContext } from "../utils/sidebarContext";
@@ -21,18 +28,36 @@ import { EntityListShell } from "../components/app/entity-list-shell";
 import type { DataTableColumn } from "../components/app/data-table";
 import { EntityRowActions } from "../components/app/entity-row-actions";
 import { DetailCard } from "../components/app/detail-card";
-import { EntityDetailHero, EntityDetailLayout } from "../components/app/entity-detail-layout";
+import {
+  EntityDetailHero,
+  EntityDetailLayout,
+} from "../components/app/entity-detail-layout";
 import { useClientTable, sortRows } from "../hooks/use-client-table";
 import { useCompanyBranches } from "../hooks/useCompanyBranches";
 
-interface Contact { id?: number; contactPerson: string; contactNumber: string; designation?: string | null; email?: string | null; }
+interface Contact {
+  id?: number;
+  contactPerson: string;
+  contactNumber: string;
+  designation?: string | null;
+  email?: string | null;
+}
 interface Customer {
-  id: number; customerCode: string; customerName: string;
-  addressType?: string | null; gstNo?: string | null;
-  relationshipManagerName?: string | null; relationshipManagerEmail?: string | null;
-  address?: string | null; city?: string | null; state?: string | null;
-  pincode?: string | null; country?: string | null; createdAt?: string;
-  contacts?: Contact[]; _count?: { sites: number; tasks: number };
+  id: number;
+  customerCode: string;
+  customerName: string;
+  addressType?: string | null;
+  gstNo?: string | null;
+  relationshipManagerName?: string | null;
+  relationshipManagerEmail?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+  country?: string | null;
+  createdAt?: string;
+  contacts?: Contact[];
+  _count?: { sites: number; tasks: number };
   branchesID?: number | null;
   branchName?: string | null;
   branches?: {
@@ -67,7 +92,10 @@ const emptyForm = {
 
 export default function CustomerManagement() {
   const user = useCurrentUser();
-  const canManage = user?.role === "SUPERADMIN" || isCompanyAdminLikeRole(user?.role) || hasModuleWriteAccess("TASKS");
+  const canManage =
+    user?.role === "SUPERADMIN" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    hasModuleWriteAccess("TASKS");
   const table = useClientTable("customerName");
   const [rows, setRows] = useState<Customer[]>([]);
   const [total, setTotal] = useState(0);
@@ -94,16 +122,18 @@ export default function CustomerManagement() {
 
   const loadBranchFilterList = useCallback(async () => {
     try {
-      const res = await fetch("/backend/branches", { cache: "no-store" });
+      const res = await fetch("https://hrms-api-test.onrender.com/branches", {
+        cache: "no-store",
+      });
       const data = await res.json();
 
       const activeCompanyID = getActiveCompanyID();
 
-      let branches: Branch[] = Array.isArray(data) ? data : data?.data ?? [];
+      let branches: Branch[] = Array.isArray(data) ? data : (data?.data ?? []);
 
       if (activeCompanyID) {
         branches = branches.filter(
-          (b) => Number(b.companyID) === Number(activeCompanyID)
+          (b) => Number(b.companyID) === Number(activeCompanyID),
         );
       }
 
@@ -118,11 +148,23 @@ export default function CustomerManagement() {
     if (!canManage) return;
     setLoading(true);
     try {
-      const data = await taskFetch<{ items: Customer[]; total: number; totalPages: number }>(
-        "/task-customers", user, undefined, { page, limit: 10, search: debouncedSearch });
-      setRows(data.items); setTotal(data.total); setTotalPages(data.totalPages || 1);
-    } catch (e: any) { toast.error(e.message || "Failed to load customers"); }
-    finally { setLoading(false); }
+      const data = await taskFetch<{
+        items: Customer[];
+        total: number;
+        totalPages: number;
+      }>("/task-customers", user, undefined, {
+        page,
+        limit: 10,
+        search: debouncedSearch,
+      });
+      setRows(data.items);
+      setTotal(data.total);
+      setTotalPages(data.totalPages || 1);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to load customers");
+    } finally {
+      setLoading(false);
+    }
   }, [canManage, user, page, debouncedSearch]);
 
   useEffect(() => {
@@ -172,28 +214,35 @@ export default function CustomerManagement() {
     return () => {
       window.removeEventListener("sidebar-context-changed", h);
       window.removeEventListener("app-data-refresh", h);
-      window.removeEventListener("sidebar-main-page-click", sidebarPageClickHandler);
+      window.removeEventListener(
+        "sidebar-main-page-click",
+        sidebarPageClickHandler,
+      );
     };
   }, [load]);
 
   const fetchBranchSuggestions = async (query: string): Promise<Branch[]> => {
-    const res = await fetch("/backend/branches", { cache: "no-store" });
+    const res = await fetch("https://hrms-api-test.onrender.com/branches", {
+      cache: "no-store",
+    });
     const data = await res.json();
 
     const activeCompanyID = getActiveCompanyID();
     const q = query.trim().toLowerCase();
 
-    let branches: Branch[] = Array.isArray(data) ? data : data?.data ?? [];
+    let branches: Branch[] = Array.isArray(data) ? data : (data?.data ?? []);
 
     if (activeCompanyID) {
       branches = branches.filter(
-        (b) => Number(b.companyID) === Number(activeCompanyID)
+        (b) => Number(b.companyID) === Number(activeCompanyID),
       );
     }
 
     if (q) {
       branches = branches.filter((b) =>
-        String(b.branchName || "").toLowerCase().includes(q)
+        String(b.branchName || "")
+          .toLowerCase()
+          .includes(q),
       );
     }
 
@@ -226,7 +275,8 @@ export default function CustomerManagement() {
       const r = row as Customer;
       if (key === "customerCode") return r.customerCode ?? "";
       if (key === "customerName") return r.customerName ?? "";
-      if (key === "branchName") return r.branchName ?? r.branches?.branchName ?? "";
+      if (key === "branchName")
+        return r.branchName ?? r.branches?.branchName ?? "";
       if (key === "city") return r.city ?? "";
       if (key === "state") return r.state ?? "";
       if (key === "sites") return r._count?.sites ?? 0;
@@ -276,108 +326,159 @@ export default function CustomerManagement() {
         pincode: full.pincode || "",
         country: full.country || "",
       });
-      setContacts(full.contacts?.length
-        ? full.contacts.map((c) => ({ contactPerson: c.contactPerson, contactNumber: c.contactNumber, designation: c.designation || "", email: c.email || "" }))
-        : []);
+      setContacts(
+        full.contacts?.length
+          ? full.contacts.map((c) => ({
+              contactPerson: c.contactPerson,
+              contactNumber: c.contactNumber,
+              designation: c.designation || "",
+              email: c.email || "",
+            }))
+          : [],
+      );
       setFormOpen(true);
-    } catch (e: any) { toast.error(e.message || "Failed to load customer"); }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to load customer");
+    }
   };
 
   const openView = async (r: Customer) => {
     try {
       const full = await taskFetch<Customer>(`/task-customers/${r.id}`, user);
-      setViewRow(full); setViewOpen(true);
-    } catch (e: any) { toast.error(e.message || "Failed to load customer"); }
+      setViewRow(full);
+      setViewOpen(true);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to load customer");
+    }
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.customerName.trim()) { toast.error("Customer name is required"); return; }
-    if (!form.address.trim()) { toast.error("Registered address is required"); return; }
+    if (!form.customerName.trim()) {
+      toast.error("Customer name is required");
+      return;
+    }
+    if (!form.address.trim()) {
+      toast.error("Registered address is required");
+      return;
+    }
     if (!form.branchesID) {
       toast.error("Branch is required");
       return;
     }
-    if (!editing && !form.customerCode.trim()) { toast.error("Customer ID is required"); return; }
+    if (!editing && !form.customerCode.trim()) {
+      toast.error("Customer ID is required");
+      return;
+    }
     setSaving(true);
-    const payload = { ...form, customerCode: form.customerCode.trim() || undefined, contacts: sanitizeContacts(contacts) };
+    const payload = {
+      ...form,
+      customerCode: form.customerCode.trim() || undefined,
+      contacts: sanitizeContacts(contacts),
+    };
     try {
       if (editing) {
-        await taskFetch(`/task-customers/${editing.id}`, user, { method: "PATCH", body: JSON.stringify(payload) });
+        await taskFetch(`/task-customers/${editing.id}`, user, {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        });
         toast.success("Customer updated");
       } else {
-        await taskFetch("/task-customers", user, { method: "POST", body: JSON.stringify(payload) });
+        await taskFetch("/task-customers", user, {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
         toast.success("Customer created");
       }
-      setFormOpen(false); load();
-    } catch (err: any) { toast.error(err.message || "Save failed"); }
-    finally { setSaving(false); }
+      setFormOpen(false);
+      load();
+    } catch (err: any) {
+      toast.error(err.message || "Save failed");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id: number) => {
-    try { await taskFetch(`/task-customers/${id}`, user, { method: "DELETE" }); toast.success("Customer deleted"); load(); }
-    catch (err: any) { toast.error(err.message || "Delete failed"); }
+    try {
+      await taskFetch(`/task-customers/${id}`, user, { method: "DELETE" });
+      toast.success("Customer deleted");
+      load();
+    } catch (err: any) {
+      toast.error(err.message || "Delete failed");
+    }
   };
 
-  const customerColumns = useMemo((): DataTableColumn<Customer>[] => [
-    {
-      key: "customerCode",
-      header: "Customer ID",
-      sortable: true,
-      colSpan: 2,
-      cell: (r) => <span className="font-mono text-sm">{r.customerCode}</span>,
-    },
-    {
-      key: "customerName",
-      header: "Name",
-      sortable: true,
-      colSpan: 3,
-      cell: (r) => <span className="font-medium">{r.customerName}</span>,
-    },
-    {
-      key: "branchName",
-      header: "Branch Name",
-      sortable: true,
-      colSpan: 2,
-      cell: (r) => r.branchName || r.branches?.branchName || "—",
-    },
-    {
-      key: "city",
-      header: "City",
-      sortable: true,
-      colSpan: 1,
-      cell: (r) => r.city || "—",
-    },
-    {
-      key: "state",
-      header: "State",
-      sortable: true,
-      colSpan: 1,
-      cell: (r) => r.state || "—",
-    },
-    {
-      key: "sites",
-      header: "Sites",
-      sortable: true,
-      colSpan: 1,
-      cell: (r) => r._count?.sites ?? 0,
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      colSpan: 2,
-      align: "right",
-      cell: (r) => (
-        <EntityRowActions
-          onView={() => openView(r)}
-          onEdit={() => openEdit(r)}
-          onDelete={() => remove(r.id)}
-        />
-      ),
-    },
-  ], []);
+  const customerColumns = useMemo(
+    (): DataTableColumn<Customer>[] => [
+      {
+        key: "customerCode",
+        header: "Customer ID",
+        sortable: true,
+        colSpan: 2,
+        cell: (r) => (
+          <span className="font-mono text-sm">{r.customerCode}</span>
+        ),
+      },
+      {
+        key: "customerName",
+        header: "Name",
+        sortable: true,
+        colSpan: 3,
+        cell: (r) => <span className="font-medium">{r.customerName}</span>,
+      },
+      {
+        key: "branchName",
+        header: "Branch Name",
+        sortable: true,
+        colSpan: 2,
+        cell: (r) => r.branchName || r.branches?.branchName || "—",
+      },
+      {
+        key: "city",
+        header: "City",
+        sortable: true,
+        colSpan: 1,
+        cell: (r) => r.city || "—",
+      },
+      {
+        key: "state",
+        header: "State",
+        sortable: true,
+        colSpan: 1,
+        cell: (r) => r.state || "—",
+      },
+      {
+        key: "sites",
+        header: "Sites",
+        sortable: true,
+        colSpan: 1,
+        cell: (r) => r._count?.sites ?? 0,
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        colSpan: 2,
+        align: "right",
+        cell: (r) => (
+          <EntityRowActions
+            onView={() => openView(r)}
+            onEdit={() => openEdit(r)}
+            onDelete={() => remove(r.id)}
+          />
+        ),
+      },
+    ],
+    [],
+  );
 
-  if (!canManage) return <div className="p-6 text-gray-500">Access denied. Task customers are available to SuperAdmin and Company Admin only.</div>;
+  if (!canManage)
+    return (
+      <div className="p-6 text-gray-500">
+        Access denied. Task customers are available to SuperAdmin and Company
+        Admin only.
+      </div>
+    );
 
   return (
     <div className="space-y-6 w-full max-w-none animate-fade-in page-content-enter">
@@ -389,7 +490,9 @@ export default function CustomerManagement() {
           !formOpen && !viewOpen && canManage ? (
             <div className="flex items-center gap-2">
               <EnplSyncButton user={user} onDone={load} />
-              <Button onClick={openCreate}><Plus className="w-4 h-4 mr-1" /> Add Customer</Button>
+              <Button onClick={openCreate}>
+                <Plus className="w-4 h-4 mr-1" /> Add Customer
+              </Button>
             </div>
           ) : null
         }
@@ -463,18 +566,36 @@ export default function CustomerManagement() {
         </>
       )}
 
-      <FormDrawer open={formOpen} onOpenChange={(v) => { if (!v) setFormOpen(false); }} title={editing ? "Edit Customer" : "Add Customer"} showHeaderCancel>
+      <FormDrawer
+        open={formOpen}
+        onOpenChange={(v) => {
+          if (!v) setFormOpen(false);
+        }}
+        title={editing ? "Edit Customer" : "Add Customer"}
+        showHeaderCancel
+      >
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-2">
             <Label>Customer ID *</Label>
-            <Input value={form.customerCode} onChange={(e) => setForm((p) => ({ ...p, customerCode: e.target.value }))}
-              placeholder="Enter customer ID" required disabled={!!editing} />
+            <Input
+              value={form.customerCode}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, customerCode: e.target.value }))
+              }
+              placeholder="Enter customer ID"
+              required
+              disabled={!!editing}
+            />
           </div>
 
           {isSingleBranch ? (
             <div className="space-y-2">
               <Label>Branch</Label>
-              <Input value={form.branchName || autoBranchName || ""} readOnly className="bg-muted" />
+              <Input
+                value={form.branchName || autoBranchName || ""}
+                readOnly
+                className="bg-muted"
+              />
             </div>
           ) : (
             <SearchSuggestInput
@@ -488,7 +609,11 @@ export default function CustomerManagement() {
                   branchesID: undefined,
                 }))
               }
-              onSelect={(selected: { display: string; value: number; item: Branch }) =>
+              onSelect={(selected: {
+                display: string;
+                value: number;
+                item: Branch;
+              }) =>
                 setForm((p) => ({
                   ...p,
                   branchName: selected.display,
@@ -501,47 +626,94 @@ export default function CustomerManagement() {
               required
             />
           )}
-          
+
           <div className="space-y-2">
             <Label>Customer Name *</Label>
-            <Input value={form.customerName} onChange={(e) => setForm((p) => ({ ...p, customerName: e.target.value }))} required />
+            <Input
+              value={form.customerName}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, customerName: e.target.value }))
+              }
+              required
+            />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Address Type</Label>
-              <Input value={form.addressType} onChange={(e) => setForm((p) => ({ ...p, addressType: e.target.value }))} />
+              <Input
+                value={form.addressType}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, addressType: e.target.value }))
+                }
+              />
             </div>
             <div className="space-y-2">
               <Label>GST No</Label>
-              <Input value={form.gstNo} onChange={(e) => setForm((p) => ({ ...p, gstNo: e.target.value }))} />
+              <Input
+                value={form.gstNo}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, gstNo: e.target.value }))
+                }
+              />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Relationship Manager</Label>
-              <Input value={form.relationshipManagerName} onChange={(e) => setForm((p) => ({ ...p, relationshipManagerName: e.target.value }))} />
+              <Input
+                value={form.relationshipManagerName}
+                onChange={(e) =>
+                  setForm((p) => ({
+                    ...p,
+                    relationshipManagerName: e.target.value,
+                  }))
+                }
+              />
             </div>
             <div className="space-y-2">
               <Label>Manager Email</Label>
-              <Input value={form.relationshipManagerEmail} onChange={(e) => setForm((p) => ({ ...p, relationshipManagerEmail: e.target.value }))} />
+              <Input
+                value={form.relationshipManagerEmail}
+                onChange={(e) =>
+                  setForm((p) => ({
+                    ...p,
+                    relationshipManagerEmail: e.target.value,
+                  }))
+                }
+              />
             </div>
           </div>
 
-      
-
           <div className="space-y-2">
             <Label>Registered Address *</Label>
-            <Textarea value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} rows={3} required />
+            <Textarea
+              value={form.address}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, address: e.target.value }))
+              }
+              rows={3}
+              required
+            />
           </div>
-          <LocationFields values={form} onChange={(patch) => setForm((p) => ({ ...p, ...patch }))} showCurrency={false} pincodeLabel="PIN Code" />
+          <LocationFields
+            values={form}
+            onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
+            showCurrency={false}
+            pincodeLabel="PIN Code"
+          />
           <TaskContactsRepeater contacts={contacts} onChange={setContacts} />
           <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={closeCustomerPagePanels}>Cancel</Button>
-            <Button type="submit" disabled={saving}>{saving ? "Saving…" : editing ? "Update" : "Create"}</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeCustomerPagePanels}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving…" : editing ? "Update" : "Create"}
+            </Button>
           </div>
-
-
-
         </form>
       </FormDrawer>
 
@@ -581,12 +753,18 @@ export default function CustomerManagement() {
               ]}
             />
             {viewRow.contacts && viewRow.contacts.length > 0 ? (
-              <DetailCard title="Contacts" subtitle="Customer contact persons" className="lg:col-span-2">
+              <DetailCard
+                title="Contacts"
+                subtitle="Customer contact persons"
+                className="lg:col-span-2"
+              >
                 <div className="divide-y divide-border">
                   {viewRow.contacts.map((c, i) => (
                     <div key={c.id ?? i} className="py-3 text-sm">
-                      <div className="font-medium">{c.contactPerson} · {c.contactNumber}</div>
-                      {(c.designation || c.email) ? (
+                      <div className="font-medium">
+                        {c.contactPerson} · {c.contactNumber}
+                      </div>
+                      {c.designation || c.email ? (
                         <div className="mt-1 text-muted-foreground">
                           {[c.designation, c.email].filter(Boolean).join(" · ")}
                         </div>

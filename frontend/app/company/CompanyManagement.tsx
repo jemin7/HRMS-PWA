@@ -1,161 +1,200 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
-import { Textarea } from "../components/ui/textarea"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
-import { Badge } from "../components/ui/badge"
-import { PageHeader } from "../components/app/page-header"
-import { Building2, Plus, Edit, Trash2, Eye, ArrowLeft, X, Save, UserPlus } from "lucide-react"
-import { useCurrentUser } from "../hooks/useCurrentUser"
-import { useRouter } from "next/navigation"
-import { LocationFields } from "../components/ui/location-fields"
-import { PdfUploadField } from "../components/PdfUploadField"
-import { ListAreaSkeleton } from "../components/ui/TableBodySkeleton"
-import { toast } from "sonner"
-import { isPasswordValid, PASSWORD_POLICY_MESSAGE } from "@/lib/passwordRules"
-import { PasswordRuleHints } from "../components/ui/password-rule-hints"
-import { getSidebarContext, clearSidebarContext, setSidebarContext } from "../utils/sidebarContext"
-import { isDesktopManagerFlagSet } from "@/lib/desktopManager"
-import { authHeaders } from "@/lib/auth"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Textarea } from "../components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+import { Badge } from "../components/ui/badge";
+import { PageHeader } from "../components/app/page-header";
+import {
+  Building2,
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  ArrowLeft,
+  X,
+  Save,
+  UserPlus,
+} from "lucide-react";
+import { useCurrentUser } from "../hooks/useCurrentUser";
+import { useRouter } from "next/navigation";
+import { LocationFields } from "../components/ui/location-fields";
+import { PdfUploadField } from "../components/PdfUploadField";
+import { ListAreaSkeleton } from "../components/ui/TableBodySkeleton";
+import { toast } from "sonner";
+import { isPasswordValid, PASSWORD_POLICY_MESSAGE } from "@/lib/passwordRules";
+import { PasswordRuleHints } from "../components/ui/password-rule-hints";
+import {
+  getSidebarContext,
+  clearSidebarContext,
+  setSidebarContext,
+} from "../utils/sidebarContext";
+import { isDesktopManagerFlagSet } from "@/lib/desktopManager";
+import { authHeaders } from "@/lib/auth";
 import {
   canDesktopManagerManage,
   filterCompaniesForUser,
-} from "../utils/scopeContext"
-import { FormDrawer } from "../components/ui/form-drawer"
-import { FilterBar } from "../components/app/filter-bar"
-import { EntityListShell } from "../components/app/entity-list-shell"
-import type { DataTableColumn } from "../components/app/data-table"
-import { EntityRowActions } from "../components/app/entity-row-actions"
-import { DetailCard } from "../components/app/detail-card"
-import { EntityDetailHero, EntityDetailLayout } from "../components/app/entity-detail-layout"
-import { FormSectionNav } from "../components/app/form-section-nav"
-import { useClientTable, sortRows } from "../hooks/use-client-table"
+} from "../utils/scopeContext";
+import { FormDrawer } from "../components/ui/form-drawer";
+import { FilterBar } from "../components/app/filter-bar";
+import { EntityListShell } from "../components/app/entity-list-shell";
+import type { DataTableColumn } from "../components/app/data-table";
+import { EntityRowActions } from "../components/app/entity-row-actions";
+import { DetailCard } from "../components/app/detail-card";
+import {
+  EntityDetailHero,
+  EntityDetailLayout,
+} from "../components/app/entity-detail-layout";
+import { FormSectionNav } from "../components/app/form-section-nav";
+import { useClientTable, sortRows } from "../hooks/use-client-table";
 import {
   buildCompanyPayload,
   mapCompanyToFormData,
-} from "../utils/companyFormPayload"
-import { LEGAL_ENTITY_OPTIONS, ownerTitleForLegalEntity, defaultUserTypeForEntity, userTypeOptionsForEntity, isCompanyAdminLikeRole } from "@/lib/companyAccess"
-import { cn } from "@/app/utils/cn"
-import { FormSection } from "../components/ui/form-section"
-import { FormField } from "../components/ui/form-field"
+} from "../utils/companyFormPayload";
+import {
+  LEGAL_ENTITY_OPTIONS,
+  ownerTitleForLegalEntity,
+  defaultUserTypeForEntity,
+  userTypeOptionsForEntity,
+  isCompanyAdminLikeRole,
+} from "@/lib/companyAccess";
+import { cn } from "@/app/utils/cn";
+import { FormSection } from "../components/ui/form-section";
+import { FormField } from "../components/ui/form-field";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select"
+} from "../components/ui/select";
 
 interface Company {
-  id: number
-  serviceProviderID?: number
-  companyName?: string
-  companyType?: string
-  legalEntityType?: string
-  defaultOwnerTitle?: string
-  noticePeriodDaysForResignation?: string
-  noticePeriodDaysForTermination?: string
-  address?: string
-  country?: string
-  state?: string
-  city?: string
-  pincode?: string
-  timeZone?: string
-  currency?: string
-  pfNo?: string
-  tanNo?: string
-  panNo?: string
-  esiNo?: string
-  linNo?: string
-  gstNo?: string
-  gstCertUrl?: string
-  website?: string
-  gstRegistrationType?: string
-  businessTradeName?: string
-  shopRegNo?: string
-  shopRegCertHistory?: { certNo: string; effectFrom: string; _localId: string }[]
-  financialYearStart?: string
-  contactNo?: string
-  emailAdd?: string
-  companyLogoUrl?: string
-  SignatureUrl?: string
-  createdAt?: string
+  id: number;
+  serviceProviderID?: number;
+  companyName?: string;
+  companyType?: string;
+  legalEntityType?: string;
+  defaultOwnerTitle?: string;
+  noticePeriodDaysForResignation?: string;
+  noticePeriodDaysForTermination?: string;
+  address?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  pincode?: string;
+  timeZone?: string;
+  currency?: string;
+  pfNo?: string;
+  tanNo?: string;
+  panNo?: string;
+  esiNo?: string;
+  linNo?: string;
+  gstNo?: string;
+  gstCertUrl?: string;
+  website?: string;
+  gstRegistrationType?: string;
+  businessTradeName?: string;
+  shopRegNo?: string;
+  shopRegCertHistory?: {
+    certNo: string;
+    effectFrom: string;
+    _localId: string;
+  }[];
+  financialYearStart?: string;
+  contactNo?: string;
+  emailAdd?: string;
+  companyLogoUrl?: string;
+  SignatureUrl?: string;
+  createdAt?: string;
   subscriptions?: {
-    startDate?: string
-    endDate?: string
-    plan?: { planName?: string } | null
-  }[]
+    startDate?: string;
+    endDate?: string;
+    plan?: { planName?: string } | null;
+  }[];
 }
 
 interface ServiceProvider {
-  id: number
-  companyName: string
+  id: number;
+  companyName: string;
 }
 
 interface ModuleItem {
-  id: number
-  moduleKey: string
-  moduleName: string
-  description?: string | null
-  isActive: boolean
-  sortOrder: number
+  id: number;
+  moduleKey: string;
+  moduleName: string;
+  description?: string | null;
+  isActive: boolean;
+  sortOrder: number;
 }
 
 interface CompanyModuleItem {
-  id: number
-  companyID: number
-  moduleID: number
-  moduleKey: string
-  moduleName: string
-  isEnabled: boolean
+  id: number;
+  companyID: number;
+  moduleID: number;
+  moduleKey: string;
+  moduleName: string;
+  isEnabled: boolean;
 }
 
 interface CompanyAdminUser {
-  id: number
-  username: string
-  role: string
-  firstName?: string
-  lastName?: string
-  ownerTitle?: string | null
-  salutation?: string | null
-  phone?: string | null
-  serviceProviderID?: number | null
-  contactNo?: string | null
-  email?: string | null
-  isActive: boolean
-  companyID?: number | null
-  company?: { id?: number; companyName?: string } | null
+  id: number;
+  username: string;
+  role: string;
+  firstName?: string;
+  lastName?: string;
+  ownerTitle?: string | null;
+  salutation?: string | null;
+  phone?: string | null;
+  serviceProviderID?: number | null;
+  contactNo?: string | null;
+  email?: string | null;
+  isActive: boolean;
+  companyID?: number | null;
+  company?: { id?: number; companyName?: string } | null;
 }
 
 type OwnerPermissionRow = {
-  moduleKey: string
-  canView: boolean
-  canCreate: boolean
-  canEdit: boolean
-  canDelete: boolean
-}
+  moduleKey: string;
+  canView: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+};
 
-type ModuleMeta = { moduleKey: string; label: string }
+type ModuleMeta = { moduleKey: string; label: string };
 
 type PrimaryContactRow = {
-  _localId: string
-  title: string
-  firstName: string
-  lastName: string
-  username: string
-  email: string
-  phone: string
-  mobile: string
-  designation: string
-  designationOther: string
-  setAsCompanyAdmin: boolean
-}
+  _localId: string;
+  title: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  phone: string;
+  mobile: string;
+  designation: string;
+  designationOther: string;
+  setAsCompanyAdmin: boolean;
+};
 
-const CONTACT_TITLE_OPTIONS = ["Mr", "Mrs", "Ms", "Dr", "Mx"]
+const CONTACT_TITLE_OPTIONS = ["Mr", "Mrs", "Ms", "Dr", "Mx"];
 
 const emptyPrimaryContact = (): PrimaryContactRow => ({
   _localId: `pc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -169,52 +208,56 @@ const emptyPrimaryContact = (): PrimaryContactRow => ({
   designation: "",
   designationOther: "",
   setAsCompanyAdmin: false,
-})
+});
 
 function apiErrorMessage(raw: unknown, fallback: string): string {
-  const text = typeof raw === "string" ? raw.trim() : ""
-  if (!text) return fallback
+  const text = typeof raw === "string" ? raw.trim() : "";
+  if (!text) return fallback;
 
   const fromParsed = (parsed: any): string | null => {
-    const msg = parsed?.message
+    const msg = parsed?.message;
     if (Array.isArray(msg)) {
-      const joined = msg.map((item) => String(item || "").trim()).filter(Boolean).join(". ")
-      return joined || null
+      const joined = msg
+        .map((item) => String(item || "").trim())
+        .filter(Boolean)
+        .join(". ");
+      return joined || null;
     }
-    if (typeof msg === "string" && msg.trim()) return msg.trim()
-    return null
-  }
+    if (typeof msg === "string" && msg.trim()) return msg.trim();
+    return null;
+  };
 
   try {
-    const parsed = JSON.parse(text)
-    const extracted = fromParsed(parsed)
-    if (extracted) return extracted
+    const parsed = JSON.parse(text);
+    const extracted = fromParsed(parsed);
+    if (extracted) return extracted;
   } catch {
-    const messageMatch = text.match(/"message"\s*:\s*"([^"]+)"/)
-    if (messageMatch?.[1]) return messageMatch[1]
-    const arrayMatch = text.match(/"message"\s*:\s*\[([^\]]+)\]/)
+    const messageMatch = text.match(/"message"\s*:\s*"([^"]+)"/);
+    if (messageMatch?.[1]) return messageMatch[1];
+    const arrayMatch = text.match(/"message"\s*:\s*\[([^\]]+)\]/);
     if (arrayMatch?.[1]) {
       const items = arrayMatch[1]
         .split(",")
         .map((part) => part.replace(/["']/g, "").trim())
-        .filter(Boolean)
-      if (items.length) return items.join(". ")
+        .filter(Boolean);
+      if (items.length) return items.join(". ");
     }
   }
 
-  if (text.length > 280 || /statusCode|stack|"error"/.test(text)) return fallback
-  return text
+  if (text.length > 280 || /statusCode|stack|"error"/.test(text))
+    return fallback;
+  return text;
 }
 
 function formatCompanyDate(value?: string | Date | null) {
-  if (!value) return "—"
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return "—"
-  return d.toLocaleDateString()
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString();
 }
 
 function latestSubscription(company: Company) {
-  return company.subscriptions?.[0] || null
+  return company.subscriptions?.[0] || null;
 }
 
 function fullPermissionRows(modules: ModuleMeta[]): OwnerPermissionRow[] {
@@ -224,16 +267,21 @@ function fullPermissionRows(modules: ModuleMeta[]): OwnerPermissionRow[] {
     canCreate: true,
     canEdit: true,
     canDelete: true,
-  }))
+  }));
 }
 
-function resolvedDesignation(row: { designation: string; designationOther: string }) {
-  if (row.designation === "Other") return row.designationOther.trim()
-  return row.designation.trim()
+function resolvedDesignation(row: {
+  designation: string;
+  designationOther: string;
+}) {
+  if (row.designation === "Other") return row.designationOther.trim();
+  return row.designation.trim();
 }
 
-
-const getSafeStorageItem = (storage: "session" | "local", key: string): string | null => {
+const getSafeStorageItem = (
+  storage: "session" | "local",
+  key: string,
+): string | null => {
   if (typeof window === "undefined") return null;
 
   try {
@@ -261,72 +309,91 @@ const emptyCompanyAdminForm = {
   companyID: "" as string | number,
   isActive: true,
   useEmailMobileCreds: false,
-}
+};
 
 function digitsOnly(value?: string | null): string {
-  return String(value || "").replace(/\D/g, "")
+  return String(value || "").replace(/\D/g, "");
 }
 
 export function CompanyManagement() {
-  const router = useRouter()
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [listLoading, setListLoading] = useState(true)
-  const [desktopManager, setDesktopManager] = useState(false)
-  const table = useClientTable("companyName")
-  const [editingCompany, setEditingCompany] = useState<Company | null>(null)
-  const [viewCompany, setViewCompany] = useState<Company | null>(null)
-  const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>([])
-  const [spDropdownOpen, setSpDropdownOpen] = useState(false)
-  const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [isAddingNew, setIsAddingNew] = useState(false)
-  const [companyFormTab, setCompanyFormTab] = useState("general")
-  const [primaryContacts, setPrimaryContacts] = useState<PrimaryContactRow[]>([emptyPrimaryContact()])
-  const [isViewing, setIsViewing] = useState(false)
+  const router = useRouter();
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [listLoading, setListLoading] = useState(true);
+  const [desktopManager, setDesktopManager] = useState(false);
+  const table = useClientTable("companyName");
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [viewCompany, setViewCompany] = useState<Company | null>(null);
+  const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>(
+    [],
+  );
+  const [spDropdownOpen, setSpDropdownOpen] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [companyFormTab, setCompanyFormTab] = useState("general");
+  const [primaryContacts, setPrimaryContacts] = useState<PrimaryContactRow[]>([
+    emptyPrimaryContact(),
+  ]);
+  const [isViewing, setIsViewing] = useState(false);
 
-  const [isModuleDrawerOpen, setIsModuleDrawerOpen] = useState(false)
-  const [selectedCompanyForModules, setSelectedCompanyForModules] = useState<Company | null>(null)
-  const [allModules, setAllModules] = useState<ModuleItem[]>([])
-  const [selectedModuleIds, setSelectedModuleIds] = useState<number[]>([])
-  const [moduleLoading, setModuleLoading] = useState(false)
-  const [moduleSaving, setModuleSaving] = useState(false)
+  const [isModuleDrawerOpen, setIsModuleDrawerOpen] = useState(false);
+  const [selectedCompanyForModules, setSelectedCompanyForModules] =
+    useState<Company | null>(null);
+  const [allModules, setAllModules] = useState<ModuleItem[]>([]);
+  const [selectedModuleIds, setSelectedModuleIds] = useState<number[]>([]);
+  const [moduleLoading, setModuleLoading] = useState(false);
+  const [moduleSaving, setModuleSaving] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [companyAdminDrawerOpen, setCompanyAdminDrawerOpen] = useState(false)
-  const [selectedCompanyForAdmin, setSelectedCompanyForAdmin] = useState<Company | null>(null)
-  const [companyAdminUsers, setCompanyAdminUsers] = useState<CompanyAdminUser[]>([])
-  const [companyAdminForm, setCompanyAdminForm] = useState({ ...emptyCompanyAdminForm })
-  const [companyAdminSaving, setCompanyAdminSaving] = useState(false)
-  const [companyAdminLoading, setCompanyAdminLoading] = useState(false)
+  const [companyAdminDrawerOpen, setCompanyAdminDrawerOpen] = useState(false);
+  const [selectedCompanyForAdmin, setSelectedCompanyForAdmin] =
+    useState<Company | null>(null);
+  const [companyAdminUsers, setCompanyAdminUsers] = useState<
+    CompanyAdminUser[]
+  >([]);
+  const [companyAdminForm, setCompanyAdminForm] = useState({
+    ...emptyCompanyAdminForm,
+  });
+  const [companyAdminSaving, setCompanyAdminSaving] = useState(false);
+  const [companyAdminLoading, setCompanyAdminLoading] = useState(false);
   const [editingCompanyAdmin, setEditingCompanyAdmin] =
-    useState<CompanyAdminUser | null>(null)
+    useState<CompanyAdminUser | null>(null);
 
-  const [companyAdminFormOpen, setCompanyAdminFormOpen] = useState(false)
-  const [viewingCompanyAdmin, setViewingCompanyAdmin] = useState(false)
-  const [companyAdminFormTab, setCompanyAdminFormTab] = useState("general")
-  const [ownerModules, setOwnerModules] = useState<ModuleMeta[]>([])
-  const [ownerPermissions, setOwnerPermissions] = useState<OwnerPermissionRow[]>([])
+  const [companyAdminFormOpen, setCompanyAdminFormOpen] = useState(false);
+  const [viewingCompanyAdmin, setViewingCompanyAdmin] = useState(false);
+  const [companyAdminFormTab, setCompanyAdminFormTab] = useState("general");
+  const [ownerModules, setOwnerModules] = useState<ModuleMeta[]>([]);
+  const [ownerPermissions, setOwnerPermissions] = useState<
+    OwnerPermissionRow[]
+  >([]);
   const [usernameCheck, setUsernameCheck] = useState<{
-    status: "idle" | "checking" | "ok" | "taken"
-    message: string
-  }>({ status: "idle", message: "" })
-  const usernameCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const savingRef = useRef(false)
+    status: "idle" | "checking" | "ok" | "taken";
+    message: string;
+  }>({ status: "idle", message: "" });
+  const usernameCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savingRef = useRef(false);
 
-  const user = useCurrentUser()
-
+  const user = useCurrentUser();
 
   useEffect(() => {
-    setDesktopManager(isDesktopManagerFlagSet())
-  }, [user?.id])
+    setDesktopManager(isDesktopManagerFlagSet());
+  }, [user?.id]);
 
-  const isDesktopManager = desktopManager && user?.role === "EMPLOYEE"
-  const canManage = user?.role === "SUPERADMIN" || user?.role === "SERVICE_PROVIDER" || isCompanyAdminLikeRole(user?.role) || user?.role === "ADMIN" || canDesktopManagerManage(user)
- const isServiceProvider = user?.role === "SERVICE_PROVIDER"
-const isSuperAdmin = user?.role === "SUPERADMIN"
-const isCompanyProfileOnly = isCompanyAdminLikeRole(user?.role) || user?.role === "ADMIN" || isDesktopManager
-const shouldAutoOpenCompanyProfile = isCompanyProfileOnly
+  const isDesktopManager = desktopManager && user?.role === "EMPLOYEE";
+  const canManage =
+    user?.role === "SUPERADMIN" ||
+    user?.role === "SERVICE_PROVIDER" ||
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "ADMIN" ||
+    canDesktopManagerManage(user);
+  const isServiceProvider = user?.role === "SERVICE_PROVIDER";
+  const isSuperAdmin = user?.role === "SUPERADMIN";
+  const isCompanyProfileOnly =
+    isCompanyAdminLikeRole(user?.role) ||
+    user?.role === "ADMIN" ||
+    isDesktopManager;
+  const shouldAutoOpenCompanyProfile = isCompanyProfileOnly;
 
   interface CompanyFormData extends Partial<Company> {
-    autocompleteName?: string
+    autocompleteName?: string;
   }
 
   const [formData, setFormData] = useState<CompanyFormData>({
@@ -353,181 +420,201 @@ const shouldAutoOpenCompanyProfile = isCompanyProfileOnly
     gstRegistrationType: "",
     businessTradeName: "",
     shopRegNo: "",
-    shopRegCertHistory: [] as { certNo: string; effectFrom: string; _localId: string }[],
+    shopRegCertHistory: [] as {
+      certNo: string;
+      effectFrom: string;
+      _localId: string;
+    }[],
     financialYearStart: "",
     contactNo: "",
     emailAdd: "",
     autocompleteName: "",
-  })
+  });
 
-  const wrapperRef = useRef<HTMLDivElement>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Fetch companies based on role
   useEffect(() => {
     if (user) {
-      fetchCompanies()
+      fetchCompanies();
     }
-  }, [user])
+  }, [user]);
 
   const closeCompanyPagePanels = useCallback(() => {
-    resetForm()
-    setIsAddingNew(false)
-    setIsViewing(false)
-    setViewCompany(null)
+    resetForm();
+    setIsAddingNew(false);
+    setIsViewing(false);
+    setViewCompany(null);
 
-    closeModuleDrawer()
+    closeModuleDrawer();
 
-    setCompanyAdminDrawerOpen(false)
-    setSelectedCompanyForAdmin(null)
-    setCompanyAdminUsers([])
-    setCompanyAdminForm({ ...emptyCompanyAdminForm })
-    setCompanyAdminSaving(false)
-    setCompanyAdminLoading(false)
-    setEditingCompanyAdmin(null)
-    setViewingCompanyAdmin(false)
-    setCompanyAdminFormTab("general")
-  }, [])
+    setCompanyAdminDrawerOpen(false);
+    setSelectedCompanyForAdmin(null);
+    setCompanyAdminUsers([]);
+    setCompanyAdminForm({ ...emptyCompanyAdminForm });
+    setCompanyAdminSaving(false);
+    setCompanyAdminLoading(false);
+    setEditingCompanyAdmin(null);
+    setViewingCompanyAdmin(false);
+    setCompanyAdminFormTab("general");
+  }, []);
 
   const handleBack = () => {
-    closeCompanyPagePanels()
-    router.push('/company')
-  }
+    closeCompanyPagePanels();
+    router.push("/company");
+  };
 
   useEffect(() => {
     const handler = () => {
-      if (user) fetchCompanies()
-    }
+      if (user) fetchCompanies();
+    };
 
     const sidebarPageClickHandler = (e: any) => {
-      if (e.detail?.path !== "/company") return
+      if (e.detail?.path !== "/company") return;
 
-      closeCompanyPagePanels()
+      closeCompanyPagePanels();
 
       setTimeout(() => {
-        if (user) fetchCompanies()
-      }, 0)
-    }
+        if (user) fetchCompanies();
+      }, 0);
+    };
 
-    window.addEventListener("sidebar-context-changed", handler)
-    window.addEventListener("app-data-refresh", handler)
-    window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler)
+    window.addEventListener("sidebar-context-changed", handler);
+    window.addEventListener("app-data-refresh", handler);
+    window.addEventListener("sidebar-main-page-click", sidebarPageClickHandler);
 
     return () => {
-      window.removeEventListener("sidebar-context-changed", handler)
-      window.removeEventListener("app-data-refresh", handler)
-      window.removeEventListener("sidebar-main-page-click", sidebarPageClickHandler)
-    }
-  }, [user, closeCompanyPagePanels])
+      window.removeEventListener("sidebar-context-changed", handler);
+      window.removeEventListener("app-data-refresh", handler);
+      window.removeEventListener(
+        "sidebar-main-page-click",
+        sidebarPageClickHandler,
+      );
+    };
+  }, [user, closeCompanyPagePanels]);
 
   // For non-SUPERADMIN users, auto-open edit form with their company
-// Company profile users open direct edit form.
-// SERVICE_PROVIDER must see company list, not direct edit form.
+  // Company profile users open direct edit form.
+  // SERVICE_PROVIDER must see company list, not direct edit form.
   useEffect(() => {
-  if (shouldAutoOpenCompanyProfile && companies.length > 0 && !isAddingNew && !editingCompany) {
-      const company = companies[0] as any
-    setServiceProviders([])
-    setSpDropdownOpen(false)
-    setFormData(mapCompanyToFormData(company))
-      setEditingCompany(company)
-      setIsAddingNew(true)
+    if (
+      shouldAutoOpenCompanyProfile &&
+      companies.length > 0 &&
+      !isAddingNew &&
+      !editingCompany
+    ) {
+      const company = companies[0] as any;
+      setServiceProviders([]);
+      setSpDropdownOpen(false);
+      setFormData(mapCompanyToFormData(company));
+      setEditingCompany(company);
+      setIsAddingNew(true);
     }
-}, [companies, shouldAutoOpenCompanyProfile, isAddingNew, editingCompany])
+  }, [companies, shouldAutoOpenCompanyProfile, isAddingNew, editingCompany]);
 
   const fetchCompanies = async () => {
-    setListLoading(true)
+    setListLoading(true);
     try {
-      const res = await fetch("/backend/company")
-      if (!res.ok) throw new Error(`Failed to load companies (${res.status})`)
-      const json = await res.json()
-      const all = Array.isArray(json) ? json : json.data ?? []
+      const res = await fetch("https://hrms-api-test.onrender.com/company");
+      if (!res.ok) throw new Error(`Failed to load companies (${res.status})`);
+      const json = await res.json();
+      const all = Array.isArray(json) ? json : (json.data ?? []);
 
-let filtered =
-  user?.role === "SERVICE_PROVIDER"
-    ? all.filter(
-        (company: any) =>
-          Number(company.serviceProviderID) === Number(user.serviceProviderID)
-      )
-    : await filterCompaniesForUser(all, user)
+      let filtered =
+        user?.role === "SERVICE_PROVIDER"
+          ? all.filter(
+              (company: any) =>
+                Number(company.serviceProviderID) ===
+                Number(user.serviceProviderID),
+            )
+          : await filterCompaniesForUser(all, user);
 
       if (filtered.length === 0 && isCompanyProfileOnly) {
-        const ctx = getSidebarContext()
+        const ctx = getSidebarContext();
         const companyId =
           ctx?.companyID ??
           user?.companyID ??
-          (Number(sessionStorage.getItem("activeCompanyID") || 0) || undefined)
+          (Number(sessionStorage.getItem("activeCompanyID") || 0) || undefined);
 
         if (companyId) {
-          const oneRes = await fetch(`/backend/company/${companyId}`)
+          const oneRes = await fetch(
+            `https://hrms-api-test.onrender.com/company/${companyId}`,
+          );
           if (oneRes.ok) {
-            const company = await oneRes.json()
-            if (company?.id) filtered = [company]
+            const company = await oneRes.json();
+            if (company?.id) filtered = [company];
           }
         }
       }
 
-      setCompanies(filtered as Company[])
+      setCompanies(filtered as Company[]);
     } catch (error) {
-      console.error("Failed to load companies:", error)
-      toast.error("Failed to load company profile.")
-      setCompanies([])
+      console.error("Failed to load companies:", error);
+      toast.error("Failed to load company profile.");
+      setCompanies([]);
     } finally {
-      setListLoading(false)
+      setListLoading(false);
     }
-  }
+  };
 
   // Resolve the single service provider (platform has only one).
   // Never trust stale sidebar/localStorage SP after deletes.
-  const resolveSoleServiceProvider = async (): Promise<ServiceProvider | null> => {
-    try {
-      const res = await fetch("/backend/service-provider", { cache: "no-store" })
-      if (!res.ok) return null
-      const data = await res.json()
-      const list: ServiceProvider[] = Array.isArray(data) ? data : data?.data ?? []
-      const sole = list[0] || null
+  const resolveSoleServiceProvider =
+    async (): Promise<ServiceProvider | null> => {
+      try {
+        const res = await fetch(
+          "https://hrms-api-test.onrender.com/service-provider",
+          { cache: "no-store" },
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        const list: ServiceProvider[] = Array.isArray(data)
+          ? data
+          : (data?.data ?? []);
+        const sole = list[0] || null;
 
-      const ctx = getSidebarContext()
-      if (!sole) {
-        if (ctx?.serviceProviderID) clearSidebarContext()
-        return null
-      }
+        const ctx = getSidebarContext();
+        if (!sole) {
+          if (ctx?.serviceProviderID) clearSidebarContext();
+          return null;
+        }
 
-      // Keep sidebar context in sync with the live SP only.
-      if (
-        !ctx ||
-        Number(ctx.serviceProviderID) !== Number(sole.id) ||
-        ctx.serviceProviderName !== sole.companyName
-      ) {
-        setSidebarContext(
-          sole.id,
-          sole.companyName || "",
-          ctx?.companyID || 0,
-          ctx?.companyName || "",
-        )
+        // Keep sidebar context in sync with the live SP only.
+        if (
+          !ctx ||
+          Number(ctx.serviceProviderID) !== Number(sole.id) ||
+          ctx.serviceProviderName !== sole.companyName
+        ) {
+          setSidebarContext(
+            sole.id,
+            sole.companyName || "",
+            ctx?.companyID || 0,
+            ctx?.companyName || "",
+          );
+        }
+        return sole;
+      } catch (error) {
+        console.error("Error resolving service provider:", error);
+        return null;
       }
-      return sole
-    } catch (error) {
-      console.error("Error resolving service provider:", error)
-      return null
-    }
-  }
+    };
 
   const applySoleServiceProviderToForm = async () => {
-    const sole = await resolveSoleServiceProvider()
+    const sole = await resolveSoleServiceProvider();
     setFormData((p) => ({
       ...p,
       serviceProviderID: sole?.id,
       autocompleteName: sole?.companyName || "",
-    }))
-    return sole
-  }
+    }));
+    return sole;
+  };
 
   // Fetch service providers for autocomplete (legacy — kept unused for SP list cache)
   const fetchServiceProviders = async (_query: string) => {
     /* no-op: tenant SP field is read-only and auto-bound */
-  }
+  };
 
-
-  const UPLOAD_URL = "/backend/files/upload";
+  const UPLOAD_URL = "https://hrms-api-test.onrender.com/files/upload";
 
   async function uploadImage(file: File): Promise<string> {
     const fd = new FormData();
@@ -544,22 +631,27 @@ let filtered =
 
     if (savingRef.current) return;
 
-    if ((formData as any).gstRegistrationType === "Registered" && !String(formData.gstNo || "").trim()) {
-      toast.error("GSTIN is required for Registered companies")
-      return
+    if (
+      (formData as any).gstRegistrationType === "Registered" &&
+      !String(formData.gstNo || "").trim()
+    ) {
+      toast.error("GSTIN is required for Registered companies");
+      return;
     }
 
     const filledContacts = primaryContacts.filter((row) =>
-      [row.email, row.mobile, row.firstName, row.lastName, row.username].some((v) => String(v || "").trim()),
-    )
+      [row.email, row.mobile, row.firstName, row.lastName, row.username].some(
+        (v) => String(v || "").trim(),
+      ),
+    );
     for (const row of filledContacts) {
       if (!row.email.trim() || !row.mobile.trim()) {
-        toast.error("Each filled primary contact requires Email and Mobile")
-        return
+        toast.error("Each filled primary contact requires Email and Mobile");
+        return;
       }
       if (row.designation === "Other" && !row.designationOther.trim()) {
-        toast.error("Specify designation for contacts marked Other")
-        return
+        toast.error("Specify designation for contacts marked Other");
+        return;
       }
     }
 
@@ -575,51 +667,59 @@ let filtered =
       }
 
       // Always bind the sole live service provider (never stale localStorage / typed text).
-      const soleSp = await resolveSoleServiceProvider()
-      const resolvedServiceProviderID = soleSp?.id
+      const soleSp = await resolveSoleServiceProvider();
+      const resolvedServiceProviderID = soleSp?.id;
       if (!resolvedServiceProviderID) {
-        toast.error("Create a Service Provider first, then add a tenant.")
-        return
+        toast.error("Create a Service Provider first, then add a tenant.");
+        return;
       }
 
-      const finalData = buildCompanyPayload(formData as Record<string, unknown>, {
-        companyName: formData.companyName || formData.autocompleteName || "",
-        serviceProviderID: resolvedServiceProviderID,
-        companyLogoUrl: companyLogoUrl || undefined,
-        SignatureUrl: SignatureUrl || undefined,
-        primaryContacts: filledContacts.map((row) => ({
-          title: row.title.trim() || undefined,
-          firstName: row.firstName.trim() || undefined,
-          lastName: row.lastName.trim() || undefined,
-          username: row.username.trim() || row.email.trim(),
-          email: row.email.trim(),
-          phone: row.phone.trim() || undefined,
-          mobile: row.mobile.trim(),
-          designation: resolvedDesignation(row) || undefined,
-          setAsCompanyAdmin: !!row.setAsCompanyAdmin,
-        })),
-      });
+      const finalData = buildCompanyPayload(
+        formData as Record<string, unknown>,
+        {
+          companyName: formData.companyName || formData.autocompleteName || "",
+          serviceProviderID: resolvedServiceProviderID,
+          companyLogoUrl: companyLogoUrl || undefined,
+          SignatureUrl: SignatureUrl || undefined,
+          primaryContacts: filledContacts.map((row) => ({
+            title: row.title.trim() || undefined,
+            firstName: row.firstName.trim() || undefined,
+            lastName: row.lastName.trim() || undefined,
+            username: row.username.trim() || row.email.trim(),
+            email: row.email.trim(),
+            phone: row.phone.trim() || undefined,
+            mobile: row.mobile.trim(),
+            designation: resolvedDesignation(row) || undefined,
+            setAsCompanyAdmin: !!row.setAsCompanyAdmin,
+          })),
+        },
+      );
 
       const res = editingCompany
-        ? await fetch(`/backend/company/${editingCompany.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(finalData),
-        })
-        : await fetch("/backend/company", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(finalData),
-        });
+        ? await fetch(
+            `https://hrms-api-test.onrender.com/company/${editingCompany.id}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(finalData),
+            },
+          )
+        : await fetch("https://hrms-api-test.onrender.com/company", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(finalData),
+          });
 
       if (!res.ok) {
-        throw new Error(apiErrorMessage(await res.text(), "Failed to save company"));
+        throw new Error(
+          apiErrorMessage(await res.text(), "Failed to save company"),
+        );
       }
 
       await fetchCompanies();
-        resetForm();
-        setIsAddingNew(false);
-        setEditingCompany(null);
+      resetForm();
+      setIsAddingNew(false);
+      setEditingCompany(null);
       toast.success("Company saved successfully");
       window.dispatchEvent(new Event("sidebar-refresh"));
     } catch (error) {
@@ -635,71 +735,88 @@ let filtered =
 
   const loadOwnerPermissionGrid = async (ownerId?: number) => {
     try {
-      const companyId = selectedCompanyForAdmin?.id
+      const companyId = selectedCompanyForAdmin?.id;
       const modRes = await fetch(
         companyId
-          ? `/backend/employee-permissions/modules?companyId=${companyId}`
-          : "/backend/employee-permissions/modules",
+          ? `https://hrms-api-test.onrender.com/employee-permissions/modules?companyId=${companyId}`
+          : "https://hrms-api-test.onrender.com/employee-permissions/modules",
         { headers: authHeaders(), cache: "no-store" },
-      )
-      const modules = modRes.ok ? await modRes.json() : []
-      const list: ModuleMeta[] = Array.isArray(modules) ? modules : []
-      setOwnerModules(list)
+      );
+      const modules = modRes.ok ? await modRes.json() : [];
+      const list: ModuleMeta[] = Array.isArray(modules) ? modules : [];
+      setOwnerModules(list);
 
       if (ownerId && selectedCompanyForAdmin?.id) {
         const permRes = await fetch(
-          `/backend/company/${selectedCompanyForAdmin.id}/owner/${ownerId}/permissions`,
-        )
+          `https://hrms-api-test.onrender.com/company/${selectedCompanyForAdmin.id}/owner/${ownerId}/permissions`,
+        );
         if (permRes.ok) {
-          const data = await permRes.json()
+          const data = await permRes.json();
           if (Array.isArray(data?.permissions) && data.permissions.length) {
-            setOwnerPermissions(data.permissions)
-            return
+            setOwnerPermissions(data.permissions);
+            return;
           }
         }
       }
-      setOwnerPermissions(fullPermissionRows(list))
+      setOwnerPermissions(fullPermissionRows(list));
     } catch {
-      setOwnerModules([])
-      setOwnerPermissions([])
+      setOwnerModules([]);
+      setOwnerPermissions([]);
     }
-  }
+  };
 
   const toggleOwnerPerm = (
     moduleKey: string,
     action: "read" | "write" | "delete" | "admin",
   ) => {
-    if (viewingCompanyAdmin) return
+    if (viewingCompanyAdmin) return;
     setOwnerPermissions((rows) =>
       rows.map((row) => {
-        if (row.moduleKey !== moduleKey) return row
-        if (action === "read") return { ...row, canView: !row.canView }
+        if (row.moduleKey !== moduleKey) return row;
+        if (action === "read") return { ...row, canView: !row.canView };
         if (action === "write") {
-          const on = row.canCreate && row.canEdit
-          return { ...row, canCreate: !on, canEdit: !on }
+          const on = row.canCreate && row.canEdit;
+          return { ...row, canCreate: !on, canEdit: !on };
         }
-        if (action === "delete") return { ...row, canDelete: !row.canDelete }
-        const allOn = row.canView && row.canCreate && row.canEdit && row.canDelete
-        const next = !allOn
-        return { ...row, canView: next, canCreate: next, canEdit: next, canDelete: next }
+        if (action === "delete") return { ...row, canDelete: !row.canDelete };
+        const allOn =
+          row.canView && row.canCreate && row.canEdit && row.canDelete;
+        const next = !allOn;
+        return {
+          ...row,
+          canView: next,
+          canCreate: next,
+          canEdit: next,
+          canDelete: next,
+        };
       }),
-    )
-  }
+    );
+  };
 
-  const designationFromTitle = (title?: string | null, legalEntityType?: string | null) => {
-    const options = userTypeOptionsForEntity(legalEntityType)
-    const value = (title || "").trim()
-    if (!value) return { designation: defaultUserTypeForEntity(legalEntityType) || "", designationOther: "" }
+  const designationFromTitle = (
+    title?: string | null,
+    legalEntityType?: string | null,
+  ) => {
+    const options = userTypeOptionsForEntity(legalEntityType);
+    const value = (title || "").trim();
+    if (!value)
+      return {
+        designation: defaultUserTypeForEntity(legalEntityType) || "",
+        designationOther: "",
+      };
     if (options.includes(value) && value !== "Other") {
-      return { designation: value, designationOther: "" }
+      return { designation: value, designationOther: "" };
     }
-    return { designation: "Other", designationOther: value }
-  }
+    return { designation: "Other", designationOther: value };
+  };
 
   const handleViewCompanyAdmin = async (user: CompanyAdminUser) => {
-    setEditingCompanyAdmin(user)
-    setViewingCompanyAdmin(true)
-    const desg = designationFromTitle(user.ownerTitle, selectedCompanyForAdmin?.legalEntityType)
+    setEditingCompanyAdmin(user);
+    setViewingCompanyAdmin(true);
+    const desg = designationFromTitle(
+      user.ownerTitle,
+      selectedCompanyForAdmin?.legalEntityType,
+    );
     setCompanyAdminForm({
       ...emptyCompanyAdminForm,
       username: user.username || "",
@@ -716,20 +833,20 @@ let filtered =
       serviceProviderID: selectedCompanyForAdmin?.serviceProviderID || "",
       companyID: selectedCompanyForAdmin?.id || "",
       isActive: user.isActive,
-    })
-    setCompanyAdminFormTab("general")
-    setCompanyAdminFormOpen(true)
-    await loadOwnerPermissionGrid(user.id)
-  }
+    });
+    setCompanyAdminFormTab("general");
+    setCompanyAdminFormOpen(true);
+    await loadOwnerPermissionGrid(user.id);
+  };
 
   const handleEditCompanyAdmin = async (user: CompanyAdminUser) => {
-    setEditingCompanyAdmin(user)
-    setViewingCompanyAdmin(false)
+    setEditingCompanyAdmin(user);
+    setViewingCompanyAdmin(false);
 
     const desg = designationFromTitle(
       (user as any).ownerTitle || selectedCompanyForAdmin?.defaultOwnerTitle,
       selectedCompanyForAdmin?.legalEntityType,
-    )
+    );
 
     setCompanyAdminForm({
       ...emptyCompanyAdminForm,
@@ -747,91 +864,101 @@ let filtered =
       serviceProviderID: selectedCompanyForAdmin?.serviceProviderID || "",
       companyID: selectedCompanyForAdmin?.id || "",
       isActive: user.isActive,
-    })
-    setCompanyAdminFormTab("general")
-    setCompanyAdminFormOpen(true)
-    await loadOwnerPermissionGrid(user.id)
-  }
+    });
+    setCompanyAdminFormTab("general");
+    setCompanyAdminFormOpen(true);
+    await loadOwnerPermissionGrid(user.id);
+  };
 
   const handleDeleteCompanyAdmin = async (id: number) => {
-    if (!selectedCompanyForAdmin?.id) return
-    if (!confirm("Deactivate this Company Admin?")) return
+    if (!selectedCompanyForAdmin?.id) return;
+    if (!confirm("Deactivate this Company Admin?")) return;
 
     try {
-      const res = await fetch(`/backend/company/${selectedCompanyForAdmin.id}/owner/${id}`, {
-        method: "DELETE",
-      })
+      const res = await fetch(
+        `https://hrms-api-test.onrender.com/company/${selectedCompanyForAdmin.id}/owner/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!res.ok) {
-        const errText = await res.text()
-        throw new Error(errText || "Failed to deactivate Company Owner")
+        const errText = await res.text();
+        throw new Error(errText || "Failed to deactivate Company Owner");
       }
 
-      toast.success("Company Owner deactivated")
+      toast.success("Company Owner deactivated");
 
       if (editingCompanyAdmin?.id === id) {
-        setEditingCompanyAdmin(null)
+        setEditingCompanyAdmin(null);
         setCompanyAdminForm({
           ...emptyCompanyAdminForm,
           role: "COMPANY_OWNER",
           serviceProviderID: selectedCompanyForAdmin?.serviceProviderID || "",
           companyID: selectedCompanyForAdmin?.id || "",
           isActive: true,
-        })
+        });
       }
 
       if (selectedCompanyForAdmin) {
-        await fetchCompanyAdminUsers(selectedCompanyForAdmin)
-        setCompanyAdminFormOpen(false)
+        await fetchCompanyAdminUsers(selectedCompanyForAdmin);
+        setCompanyAdminFormOpen(false);
       }
     } catch (error: any) {
-      toast.error(error?.message || "Failed to deactivate Company Owner")
+      toast.error(error?.message || "Failed to deactivate Company Owner");
     }
-  }
+  };
 
-  const handleEdit = async (company: Company & { serviceProvider?: ServiceProvider }) => {
-    setServiceProviders([])
-    setSpDropdownOpen(false)
-    setFormData(mapCompanyToFormData(company))
-    setEditingCompany(company)
-    setIsAddingNew(true)
-    setIsViewing(false)
-    setCompanyFormTab("general")
-    setPrimaryContacts([emptyPrimaryContact()])
-    await applySoleServiceProviderToForm()
-  }
+  const handleEdit = async (
+    company: Company & { serviceProvider?: ServiceProvider },
+  ) => {
+    setServiceProviders([]);
+    setSpDropdownOpen(false);
+    setFormData(mapCompanyToFormData(company));
+    setEditingCompany(company);
+    setIsAddingNew(true);
+    setIsViewing(false);
+    setCompanyFormTab("general");
+    setPrimaryContacts([emptyPrimaryContact()]);
+    await applySoleServiceProviderToForm();
+  };
 
   const handleView = (company: Company) => {
-    setViewCompany(company)
-    setIsViewing(true)
-    setIsAddingNew(false)
-  }
+    setViewCompany(company);
+    setIsViewing(true);
+    setIsAddingNew(false);
+  };
 
   const handleDelete = async (id: number) => {
-      try {
-      const res = await fetch(`/backend/company/${id}`, { method: "DELETE" })
+    try {
+      const res = await fetch(
+        `https://hrms-api-test.onrender.com/company/${id}`,
+        { method: "DELETE" },
+      );
       if (!res.ok) {
-        throw new Error(apiErrorMessage(await res.text(), "Failed to delete company"))
+        throw new Error(
+          apiErrorMessage(await res.text(), "Failed to delete company"),
+        );
       }
-        await fetchCompanies()
-        toast.success("Company deleted successfully")
-      } catch (error) {
-        console.error("Error deleting company:", error)
+      await fetchCompanies();
+      toast.success("Company deleted successfully");
+    } catch (error) {
+      console.error("Error deleting company:", error);
       toast.error(
         apiErrorMessage(
           error instanceof Error ? error.message : "",
           "Failed to delete company",
         ),
-      )
+      );
     }
-  }
+  };
 
   const resetForm = () => {
     setFormData({
       companyName: "",
       companyType: "",
       legalEntityType: "",
-      noticePeriodDaysForResignation: "", 
+      noticePeriodDaysForResignation: "",
       noticePeriodDaysForTermination: "",
       address: "",
       country: "",
@@ -857,82 +984,83 @@ let filtered =
       emailAdd: "",
       serviceProviderID: undefined,
       autocompleteName: "",
-    })
-    setLogoFile(null)
-    setEditingCompany(null)
-    setServiceProviders([])
-    setSpDropdownOpen(false)
-    setCompanyFormTab("general")
-    setPrimaryContacts([emptyPrimaryContact()])
-  }
+    });
+    setLogoFile(null);
+    setEditingCompany(null);
+    setServiceProviders([]);
+    setSpDropdownOpen(false);
+    setCompanyFormTab("general");
+    setPrimaryContacts([emptyPrimaryContact()]);
+  };
 
   const handleCancel = () => {
-    resetForm()
-    setIsAddingNew(false)
-    setIsViewing(false)
-    setViewCompany(null)
-  }
-
-
+    resetForm();
+    setIsAddingNew(false);
+    setIsViewing(false);
+    setViewCompany(null);
+  };
 
   const openModuleDrawer = async (company: Company) => {
-    setSelectedCompanyForModules(company)
-    setIsModuleDrawerOpen(true)
-    setModuleLoading(true)
+    setSelectedCompanyForModules(company);
+    setIsModuleDrawerOpen(true);
+    setModuleLoading(true);
 
     try {
       const [modulesRes, companyModulesRes] = await Promise.all([
-        fetch("/backend/company/modules/all"),
-        fetch(`/backend/company/${company.id}/modules`),
-      ])
+        fetch("https://hrms-api-test.onrender.com/company/modules/all"),
+        fetch(
+          `https://hrms-api-test.onrender.com/company/${company.id}/modules`,
+        ),
+      ]);
 
-      if (!modulesRes.ok) throw new Error("Failed to load modules")
-      if (!companyModulesRes.ok) throw new Error("Failed to load company modules")
+      if (!modulesRes.ok) throw new Error("Failed to load modules");
+      if (!companyModulesRes.ok)
+        throw new Error("Failed to load company modules");
 
-      const modules = await modulesRes.json()
-      const companyModules = await companyModulesRes.json()
+      const modules = await modulesRes.json();
+      const companyModules = await companyModulesRes.json();
 
-      setAllModules(Array.isArray(modules) ? modules : [])
+      setAllModules(Array.isArray(modules) ? modules : []);
 
       setSelectedModuleIds(
         Array.isArray(companyModules)
           ? companyModules
-            .filter((m: CompanyModuleItem) => m.isEnabled)
-            .map((m: CompanyModuleItem) => Number(m.moduleID))
-          : []
-      )
+              .filter((m: CompanyModuleItem) => m.isEnabled)
+              .map((m: CompanyModuleItem) => Number(m.moduleID))
+          : [],
+      );
     } catch (error) {
-      console.error("Module load error:", error)
-      toast.error("Failed to load modules")
-      setAllModules([])
-      setSelectedModuleIds([])
+      console.error("Module load error:", error);
+      toast.error("Failed to load modules");
+      setAllModules([]);
+      setSelectedModuleIds([]);
     } finally {
-      setModuleLoading(false)
+      setModuleLoading(false);
     }
-  }
+  };
 
   const closeModuleDrawer = () => {
-    setIsModuleDrawerOpen(false)
-    setSelectedCompanyForModules(null)
-    setAllModules([])
-    setSelectedModuleIds([])
-  }
+    setIsModuleDrawerOpen(false);
+    setSelectedCompanyForModules(null);
+    setAllModules([]);
+    setSelectedModuleIds([]);
+  };
 
   const toggleModule = (moduleId: number) => {
     setSelectedModuleIds((prev) =>
       prev.includes(moduleId)
         ? prev.filter((id) => id !== moduleId)
-        : [...prev, moduleId]
-    )
-  }
+        : [...prev, moduleId],
+    );
+  };
 
   const saveCompanyModules = async () => {
     if (!selectedCompanyForModules?.id) {
-      toast.error("Company not selected")
-      return
+      toast.error("Company not selected");
+      return;
     }
 
-    setModuleSaving(true)
+    setModuleSaving(true);
 
     try {
       const payload = {
@@ -940,169 +1068,195 @@ let filtered =
           moduleID: module.id,
           isEnabled: selectedModuleIds.includes(module.id),
         })),
-      }
+      };
 
-      const res = await fetch(`/backend/company/${selectedCompanyForModules.id}/modules`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+      const res = await fetch(
+        `https://hrms-api-test.onrender.com/company/${selectedCompanyForModules.id}/modules`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      })
+      );
 
       if (!res.ok) {
-        const err = await res.text()
-        throw new Error(err || "Failed to save company modules")
+        const err = await res.text();
+        throw new Error(err || "Failed to save company modules");
       }
 
-      toast.success("Company modules updated successfully")
-      closeModuleDrawer()
+      toast.success("Company modules updated successfully");
+      closeModuleDrawer();
     } catch (error: any) {
-      console.error("Save module error:", error)
-      toast.error(error?.message || "Failed to save modules")
+      console.error("Save module error:", error);
+      toast.error(error?.message || "Failed to save modules");
     } finally {
-      setModuleSaving(false)
+      setModuleSaving(false);
     }
-  }
+  };
 
   const filteredCompanies = useMemo(() => {
-    const t = table.search.trim().toLowerCase()
+    const t = table.search.trim().toLowerCase();
     let list = companies.filter(
-    (c) =>
+      (c) =>
         !t ||
-        (c.companyName?.toLowerCase().includes(t) ||
-          c.country?.toLowerCase().includes(t) ||
-          c.state?.toLowerCase().includes(t) ||
-          c.city?.toLowerCase().includes(t) ||
-          c.legalEntityType?.toLowerCase().includes(t))
-    )
+        c.companyName?.toLowerCase().includes(t) ||
+        c.country?.toLowerCase().includes(t) ||
+        c.state?.toLowerCase().includes(t) ||
+        c.city?.toLowerCase().includes(t) ||
+        c.legalEntityType?.toLowerCase().includes(t),
+    );
     return sortRows(list, table.sortBy, table.sortDir, (row, key) => {
-      const c = row as Company
-      if (key === "companyName") return c.companyName ?? ""
-      if (key === "companyType") return LEGAL_ENTITY_OPTIONS.find((o) => o.value === c.legalEntityType)?.label ?? c.legalEntityType ?? ""
-      if (key === "city") return c.city ?? ""
-      if (key === "country") return c.country ?? ""
-      if (key === "state") return c.state ?? ""
-      if (key === "activePlan") return latestSubscription(c)?.plan?.planName ?? ""
-      if (key === "activationDate") return latestSubscription(c)?.startDate ?? ""
-      if (key === "expiryDate") return latestSubscription(c)?.endDate ?? ""
-      return ""
-    })
-  }, [companies, table.search, table.sortBy, table.sortDir])
+      const c = row as Company;
+      if (key === "companyName") return c.companyName ?? "";
+      if (key === "companyType")
+        return (
+          LEGAL_ENTITY_OPTIONS.find((o) => o.value === c.legalEntityType)
+            ?.label ??
+          c.legalEntityType ??
+          ""
+        );
+      if (key === "city") return c.city ?? "";
+      if (key === "country") return c.country ?? "";
+      if (key === "state") return c.state ?? "";
+      if (key === "activePlan")
+        return latestSubscription(c)?.plan?.planName ?? "";
+      if (key === "activationDate")
+        return latestSubscription(c)?.startDate ?? "";
+      if (key === "expiryDate") return latestSubscription(c)?.endDate ?? "";
+      return "";
+    });
+  }, [companies, table.search, table.sortBy, table.sortDir]);
 
-  const companyColumns = useMemo((): DataTableColumn<Company>[] => [
-    {
-      key: "companyName",
-      header: "Company Name",
-      sortable: true,
-      colSpan: 3,
-      cell: (c) => <span className="font-medium">{c.companyName || "—"}</span>,
-    },
-    {
-      key: "companyType",
-      header: "Company Type",
-      sortable: true,
-      colSpan: 2,
-      cell: (c) =>
-        LEGAL_ENTITY_OPTIONS.find((o) => o.value === c.legalEntityType)?.label ||
-        c.legalEntityType ||
-        "—",
-    },
-    {
-      key: "city",
-      header: "City",
-      sortable: true,
-      colSpan: 2,
-      cell: (c) => c.city || "—",
-    },
-    {
-      key: "state",
-      header: "State",
-      sortable: true,
-      colSpan: 2,
-      cell: (c) => c.state || "—",
-    },
-    {
-      key: "country",
-      header: "Country",
-      sortable: true,
-      colSpan: 2,
-      cell: (c) => c.country || "—",
-    },
-    {
-      key: "activePlan",
-      header: "Active Plan",
-      sortable: true,
-      colSpan: 2,
-      cell: (c) => latestSubscription(c)?.plan?.planName || "—",
-    },
-    {
-      key: "activationDate",
-      header: "Activation Date",
-      sortable: true,
-      colSpan: 2,
-      cell: (c) => formatCompanyDate(latestSubscription(c)?.startDate),
-    },
-    {
-      key: "expiryDate",
-      header: "Expiry Date",
-      sortable: true,
-      colSpan: 2,
-      cell: (c) => formatCompanyDate(latestSubscription(c)?.endDate),
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      colSpan: 3,
-      align: "right",
-      cell: (c) => (
-        <EntityRowActions
-          onView={() => handleView(c)}
-          onEdit={
-            user?.role === "SUPERADMIN" || user?.role === "SERVICE_PROVIDER" || isCompanyAdminLikeRole(user?.role)
-              ? () => handleEdit(c)
-              : undefined
-          }
-          onDelete={
-            user?.role === "SUPERADMIN" || isCompanyAdminLikeRole(user?.role) || user?.role === "SERVICE_PROVIDER"
-              ? () => handleDelete(c.id)
-              : undefined
-          }
-          deleteConfirmMessage="Are you sure you want to delete this company?"
-          extra={
-            user?.role === "SUPERADMIN" || user?.role === "SERVICE_PROVIDER"
-              ? [
-                  {
-                    icon: UserPlus,
-                    title: "Company Admin",
-                    onClick: () => openCompanyAdminDrawer(c),
-                  },
-                ]
-              : undefined
-          }
-        />
-      ),
-    },
-  ], [user?.role])
+  const companyColumns = useMemo(
+    (): DataTableColumn<Company>[] => [
+      {
+        key: "companyName",
+        header: "Company Name",
+        sortable: true,
+        colSpan: 3,
+        cell: (c) => (
+          <span className="font-medium">{c.companyName || "—"}</span>
+        ),
+      },
+      {
+        key: "companyType",
+        header: "Company Type",
+        sortable: true,
+        colSpan: 2,
+        cell: (c) =>
+          LEGAL_ENTITY_OPTIONS.find((o) => o.value === c.legalEntityType)
+            ?.label ||
+          c.legalEntityType ||
+          "—",
+      },
+      {
+        key: "city",
+        header: "City",
+        sortable: true,
+        colSpan: 2,
+        cell: (c) => c.city || "—",
+      },
+      {
+        key: "state",
+        header: "State",
+        sortable: true,
+        colSpan: 2,
+        cell: (c) => c.state || "—",
+      },
+      {
+        key: "country",
+        header: "Country",
+        sortable: true,
+        colSpan: 2,
+        cell: (c) => c.country || "—",
+      },
+      {
+        key: "activePlan",
+        header: "Active Plan",
+        sortable: true,
+        colSpan: 2,
+        cell: (c) => latestSubscription(c)?.plan?.planName || "—",
+      },
+      {
+        key: "activationDate",
+        header: "Activation Date",
+        sortable: true,
+        colSpan: 2,
+        cell: (c) => formatCompanyDate(latestSubscription(c)?.startDate),
+      },
+      {
+        key: "expiryDate",
+        header: "Expiry Date",
+        sortable: true,
+        colSpan: 2,
+        cell: (c) => formatCompanyDate(latestSubscription(c)?.endDate),
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        colSpan: 3,
+        align: "right",
+        cell: (c) => (
+          <EntityRowActions
+            onView={() => handleView(c)}
+            onEdit={
+              user?.role === "SUPERADMIN" ||
+              user?.role === "SERVICE_PROVIDER" ||
+              isCompanyAdminLikeRole(user?.role)
+                ? () => handleEdit(c)
+                : undefined
+            }
+            onDelete={
+              user?.role === "SUPERADMIN" ||
+              isCompanyAdminLikeRole(user?.role) ||
+              user?.role === "SERVICE_PROVIDER"
+                ? () => handleDelete(c.id)
+                : undefined
+            }
+            deleteConfirmMessage="Are you sure you want to delete this company?"
+            extra={
+              user?.role === "SUPERADMIN" || user?.role === "SERVICE_PROVIDER"
+                ? [
+                    {
+                      icon: UserPlus,
+                      title: "Company Admin",
+                      onClick: () => openCompanyAdminDrawer(c),
+                    },
+                  ]
+                : undefined
+            }
+          />
+        ),
+      },
+    ],
+    [user?.role],
+  );
 
   // Close autocomplete on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setServiceProviders([])
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
+        setServiceProviders([]);
       }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fetchCompanyAdminUsers = async (company: Company) => {
     try {
-      setCompanyAdminLoading(true)
+      setCompanyAdminLoading(true);
 
-      const res = await fetch(`/backend/company/owners?companyID=${company.id}`)
-      const data = await res.json()
-      const owners = Array.isArray(data) ? data : data?.data ?? []
+      const res = await fetch(
+        `https://hrms-api-test.onrender.com/company/owners?companyID=${company.id}`,
+      );
+      const data = await res.json();
+      const owners = Array.isArray(data) ? data : (data?.data ?? []);
 
       setCompanyAdminUsers(
         owners.map((o: any) => ({
@@ -1121,17 +1275,17 @@ let filtered =
           ownerTitle: o.ownerTitle,
           salutation: o.salutation,
         })),
-      )
+      );
     } catch (error) {
-      console.error("Failed to fetch company owners:", error)
-      setCompanyAdminUsers([])
+      console.error("Failed to fetch company owners:", error);
+      setCompanyAdminUsers([]);
     } finally {
-      setCompanyAdminLoading(false)
+      setCompanyAdminLoading(false);
     }
-  }
+  };
 
   const openCompanyAdminDrawer = async (company: Company) => {
-    setSelectedCompanyForAdmin(company)
+    setSelectedCompanyForAdmin(company);
 
     setCompanyAdminForm({
       ...emptyCompanyAdminForm,
@@ -1144,133 +1298,139 @@ let filtered =
         defaultUserTypeForEntity(company.legalEntityType) ||
         ownerTitleForLegalEntity(company.legalEntityType) ||
         "",
-    })
+    });
 
-    setCompanyAdminFormOpen(false)
-    setCompanyAdminDrawerOpen(true)
-    await fetchCompanyAdminUsers(company)
-  }
+    setCompanyAdminFormOpen(false);
+    setCompanyAdminDrawerOpen(true);
+    await fetchCompanyAdminUsers(company);
+  };
 
   const closeCompanyAdminPanel = () => {
-    setCompanyAdminDrawerOpen(false)
-    setSelectedCompanyForAdmin(null)
-    setCompanyAdminUsers([])
-    setCompanyAdminForm({ ...emptyCompanyAdminForm })
-    setCompanyAdminSaving(false)
-    setCompanyAdminLoading(false)
-    setEditingCompanyAdmin(null)
-    setViewingCompanyAdmin(false)
-    setCompanyAdminFormOpen(false)
-    setCompanyAdminFormTab("general")
-    setUsernameCheck({ status: "idle", message: "" })
-  }
+    setCompanyAdminDrawerOpen(false);
+    setSelectedCompanyForAdmin(null);
+    setCompanyAdminUsers([]);
+    setCompanyAdminForm({ ...emptyCompanyAdminForm });
+    setCompanyAdminSaving(false);
+    setCompanyAdminLoading(false);
+    setEditingCompanyAdmin(null);
+    setViewingCompanyAdmin(false);
+    setCompanyAdminFormOpen(false);
+    setCompanyAdminFormTab("general");
+    setUsernameCheck({ status: "idle", message: "" });
+  };
 
   const applyEmailMobileCreds = (form: typeof emptyCompanyAdminForm) => {
-    if (!form.useEmailMobileCreds) return form
+    if (!form.useEmailMobileCreds) return form;
     return {
       ...form,
       username: form.email.trim(),
       password: digitsOnly(form.contactNo) || form.contactNo.trim(),
-    }
-  }
+    };
+  };
 
   const checkUsernameAvailable = useCallback(
     (username: string, excludeOwnerId?: number | null) => {
-      if (usernameCheckTimer.current) clearTimeout(usernameCheckTimer.current)
-      const value = username.trim()
+      if (usernameCheckTimer.current) clearTimeout(usernameCheckTimer.current);
+      const value = username.trim();
       if (!value) {
-        setUsernameCheck({ status: "idle", message: "" })
-        return
+        setUsernameCheck({ status: "idle", message: "" });
+        return;
       }
-      setUsernameCheck({ status: "checking", message: "Checking username…" })
+      setUsernameCheck({ status: "checking", message: "Checking username…" });
       usernameCheckTimer.current = setTimeout(async () => {
         try {
-          const params = new URLSearchParams({ username: value })
-          if (excludeOwnerId) params.set("excludeOwnerId", String(excludeOwnerId))
-          const res = await fetch(`/backend/company/owners/username-available?${params.toString()}`)
-          const data = await res.json().catch(() => null)
+          const params = new URLSearchParams({ username: value });
+          if (excludeOwnerId)
+            params.set("excludeOwnerId", String(excludeOwnerId));
+          const res = await fetch(
+            `https://hrms-api-test.onrender.com/company/owners/username-available?${params.toString()}`,
+          );
+          const data = await res.json().catch(() => null);
           if (data?.available) {
-            setUsernameCheck({ status: "ok", message: "Username is available" })
+            setUsernameCheck({
+              status: "ok",
+              message: "Username is available",
+            });
           } else {
             setUsernameCheck({
               status: "taken",
               message: data?.message || "Username already exists",
-            })
+            });
           }
         } catch {
-          setUsernameCheck({ status: "idle", message: "" })
+          setUsernameCheck({ status: "idle", message: "" });
         }
-      }, 400)
+      }, 400);
     },
     [],
-  )
+  );
 
   const createCompanyAdminUser = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    if (companyAdminSaving) return
+    if (companyAdminSaving) return;
 
     if (!selectedCompanyForAdmin?.id) {
-      toast.error("Company not selected")
-      return
+      toast.error("Company not selected");
+      return;
     }
 
-    if (viewingCompanyAdmin) return
+    if (viewingCompanyAdmin) return;
 
-    const form = applyEmailMobileCreds(companyAdminForm)
+    const form = applyEmailMobileCreds(companyAdminForm);
 
     if (!form.email.trim()) {
-      toast.error("Email is required")
-      return
+      toast.error("Email is required");
+      return;
     }
 
     if (!form.contactNo.trim()) {
-      toast.error("Mobile is required")
-      return
+      toast.error("Mobile is required");
+      return;
     }
 
     if (!form.firstName.trim()) {
-      toast.error("First name is required")
-      return
+      toast.error("First name is required");
+      return;
     }
 
     if (form.designation === "Other" && !form.designationOther.trim()) {
-      toast.error("Specify designation")
-      return
+      toast.error("Specify designation");
+      return;
     }
 
-    const isEdit = Boolean(editingCompanyAdmin?.id)
+    const isEdit = Boolean(editingCompanyAdmin?.id);
 
     if (!form.useEmailMobileCreds) {
       if (!form.username.trim()) {
-        toast.error("Username is required")
-        return
+        toast.error("Username is required");
+        return;
       }
       if (!isEdit && !form.password.trim()) {
-        toast.error("Password is required")
-        return
+        toast.error("Password is required");
+        return;
       }
     }
 
     if (form.password && !isPasswordValid(form.password)) {
-      toast.error(PASSWORD_POLICY_MESSAGE)
-      return
+      toast.error(PASSWORD_POLICY_MESSAGE);
+      return;
     }
 
     if (usernameCheck.status === "taken") {
-      toast.error(usernameCheck.message || "Username already exists")
-      return
+      toast.error(usernameCheck.message || "Username already exists");
+      return;
     }
 
-    setCompanyAdminSaving(true)
+    setCompanyAdminSaving(true);
 
     try {
-      const companyId = selectedCompanyForAdmin.id
+      const companyId = selectedCompanyForAdmin.id;
       const ownerTitle =
         resolvedDesignation(form) ||
         (selectedCompanyForAdmin as any)?.defaultOwnerTitle ||
         ownerTitleForLegalEntity(selectedCompanyForAdmin.legalEntityType) ||
-        undefined
+        undefined;
 
       const payload: any = {
         firstName: form.firstName.trim(),
@@ -1284,97 +1444,98 @@ let filtered =
         isCompanyOwner: true,
         ownerTitle,
         permissions: ownerPermissions,
-      }
+      };
 
       if (form.password.trim()) {
-        payload.password = form.password
+        payload.password = form.password;
       }
 
       const res = await fetch(
         isEdit
-          ? `/backend/company/${companyId}/owner/${editingCompanyAdmin?.id}`
-          : `/backend/company/${companyId}/owner`,
+          ? `https://hrms-api-test.onrender.com/company/${companyId}/owner/${editingCompanyAdmin?.id}`
+          : `https://hrms-api-test.onrender.com/company/${companyId}/owner`,
         {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        }
-      )
+        },
+      );
 
       if (!res.ok) {
-        const errText = await res.text()
-        let message = errText
+        const errText = await res.text();
+        let message = errText;
         try {
-          const parsed = JSON.parse(errText)
-          message = parsed?.message || errText
+          const parsed = JSON.parse(errText);
+          message = parsed?.message || errText;
         } catch {
           /* keep text */
         }
         throw new Error(
           message ||
-          (isEdit
-            ? "Failed to update company owner"
-            : "Failed to create company owner")
-        )
+            (isEdit
+              ? "Failed to update company owner"
+              : "Failed to create company owner"),
+        );
       }
 
       toast.success(
         isEdit
           ? "Company admin updated successfully"
-          : "Company admin created — they log in with username"
-      )
+          : "Company admin created — they log in with username",
+      );
 
-      setEditingCompanyAdmin(null)
-      setViewingCompanyAdmin(false)
-      setCompanyAdminFormOpen(false)
-      setUsernameCheck({ status: "idle", message: "" })
+      setEditingCompanyAdmin(null);
+      setViewingCompanyAdmin(false);
+      setCompanyAdminFormOpen(false);
+      setUsernameCheck({ status: "idle", message: "" });
 
-      await fetchCompanyAdminUsers(selectedCompanyForAdmin)
+      await fetchCompanyAdminUsers(selectedCompanyForAdmin);
     } catch (error: any) {
-      console.error(error)
-      toast.error(error?.message || "Failed to save company owner")
+      console.error(error);
+      toast.error(error?.message || "Failed to save company owner");
     } finally {
-      setCompanyAdminSaving(false)
+      setCompanyAdminSaving(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-6 w-full max-w-none animate-fade-in page-content-enter pb-6 min-h-0">
-
-      {listLoading && isCompanyProfileOnly && (
-        <ListAreaSkeleton rows={6} />
-      )}
+      {listLoading && isCompanyProfileOnly && <ListAreaSkeleton rows={6} />}
 
       {!listLoading && (
         <>
-
           {/* Header with Dropdown */}
           <PageHeader
             icon={Building2}
             title="Tenants"
             description="Manage registered companies"
             actions={
-              !isAddingNew && !isViewing && !isModuleDrawerOpen && user?.role === "SUPERADMIN" ? (
-            <Button
+              !isAddingNew &&
+              !isViewing &&
+              !isModuleDrawerOpen &&
+              user?.role === "SUPERADMIN" ? (
+                <Button
                   onClick={async () => {
-                resetForm()
-                setIsAddingNew(true)
-                    await applySoleServiceProviderToForm()
-              }}
-            >
+                    resetForm();
+                    setIsAddingNew(true);
+                    await applySoleServiceProviderToForm();
+                  }}
+                >
                   <Plus className="w-4 h-4 mr-1" /> Add Tenant
-            </Button>
+                </Button>
               ) : null
             }
           />
 
-      {/* Add/Edit Form - Drawer */}
-      <FormDrawer
-        open={isAddingNew}
-        onOpenChange={(v) => { if (!v) handleCancel(); }}
+          {/* Add/Edit Form - Drawer */}
+          <FormDrawer
+            open={isAddingNew}
+            onOpenChange={(v) => {
+              if (!v) handleCancel();
+            }}
             title={editingCompany ? "Edit Tenant" : "Add New Tenant"}
-      >
-        <div>
+          >
+            <div>
               <form onSubmit={handleSubmit} className="space-y-8 pb-2">
                 <FormSectionNav
                   active={companyFormTab}
@@ -1388,315 +1549,455 @@ let filtered =
 
                 {companyFormTab === "general" && (
                   <>
-                <FormSection
-                  title="General"
-                  description="Core company details and registered address."
-                >
-                  <FormField label="Company Name" required>
-                <Input
-                      value={formData.companyName || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, companyName: e.target.value }))}
-                      placeholder="Enter company name"
-                    />
-                  </FormField>
-
-                  <FormField label="Company Type" description="Legal entity type for this tenant." required>
-                    <Select
-                      value={formData.legalEntityType || ""}
-                      onValueChange={(v) =>
-                          setFormData((p) => ({
-                            ...p,
-                          legalEntityType: v,
-                          defaultOwnerTitle: defaultUserTypeForEntity(v),
-                        }))
-                      }
+                    <FormSection
+                      title="General"
+                      description="Core company details and registered address."
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select company type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LEGAL_ENTITY_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormField>
+                      <FormField label="Company Name" required>
+                        <Input
+                          value={formData.companyName || ""}
+                          onChange={(e) =>
+                            setFormData((p) => ({
+                              ...p,
+                              companyName: e.target.value,
+                            }))
+                          }
+                          placeholder="Enter company name"
+                        />
+                      </FormField>
 
-                  <FormField label="Registered / HO Address">
-                <Textarea
-                  value={formData.address || ""}
-                  onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))}
-                      placeholder="Street, area, landmark…"
-                  rows={3}
-                      showCount
-                      maxLength={500}
-                />
-                  </FormField>
+                      <FormField
+                        label="Company Type"
+                        description="Legal entity type for this tenant."
+                        required
+                      >
+                        <Select
+                          value={formData.legalEntityType || ""}
+                          onValueChange={(v) =>
+                            setFormData((p) => ({
+                              ...p,
+                              legalEntityType: v,
+                              defaultOwnerTitle: defaultUserTypeForEntity(v),
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select company type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {LEGAL_ENTITY_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormField>
 
-              <LocationFields
-                values={{
-                  city: formData.city,
-                  state: formData.state,
-                  pincode: formData.pincode,
-                  country: formData.country,
-                  currency: formData.currency,
-                }}
-                onChange={(patch) => setFormData((p) => ({ ...p, ...patch }))}
-                showCurrency={false}
-              />
+                      <FormField label="Registered / HO Address">
+                        <Textarea
+                          value={formData.address || ""}
+                          onChange={(e) =>
+                            setFormData((p) => ({
+                              ...p,
+                              address: e.target.value,
+                            }))
+                          }
+                          placeholder="Street, area, landmark…"
+                          rows={3}
+                          showCount
+                          maxLength={500}
+                        />
+                      </FormField>
 
-                  <FormField label="Website">
-                    <Input
-                      value={(formData as any).website || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, website: e.target.value }))}
-                      placeholder="https://"
-                    />
-                  </FormField>
-                </FormSection>
+                      <LocationFields
+                        values={{
+                          city: formData.city,
+                          state: formData.state,
+                          pincode: formData.pincode,
+                          country: formData.country,
+                          currency: formData.currency,
+                        }}
+                        onChange={(patch) =>
+                          setFormData((p) => ({ ...p, ...patch }))
+                        }
+                        showCurrency={false}
+                      />
+
+                      <FormField label="Website">
+                        <Input
+                          value={(formData as any).website || ""}
+                          onChange={(e) =>
+                            setFormData((p) => ({
+                              ...p,
+                              website: e.target.value,
+                            }))
+                          }
+                          placeholder="https://"
+                        />
+                      </FormField>
+                    </FormSection>
                   </>
                 )}
 
                 {companyFormTab === "billing" && (
-                <FormSection title="Billing details" description="GST registration and tax identifiers.">
-                  <FormField label="Registration Type">
-                    <Select
-                      value={(formData as any).gstRegistrationType || "Unregistered"}
-                      onValueChange={(v) => setFormData((p) => ({ ...p, gstRegistrationType: v }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select registration type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Unregistered">Unregistered</SelectItem>
-                        <SelectItem value="Registered">Registered</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormField>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField label="GSTIN" required={(formData as any).gstRegistrationType === "Registered"}>
-                  <Input value={formData.gstNo || ""} onChange={(e) => setFormData((p) => ({ ...p, gstNo: e.target.value }))} />
+                  <FormSection
+                    title="Billing details"
+                    description="GST registration and tax identifiers."
+                  >
+                    <FormField label="Registration Type">
+                      <Select
+                        value={
+                          (formData as any).gstRegistrationType ||
+                          "Unregistered"
+                        }
+                        onValueChange={(v) =>
+                          setFormData((p) => ({ ...p, gstRegistrationType: v }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select registration type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Unregistered">
+                            Unregistered
+                          </SelectItem>
+                          <SelectItem value="Registered">Registered</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </FormField>
-                    <FormField label="PAN">
-                      <Input value={formData.panNo || ""} onChange={(e) => setFormData((p) => ({ ...p, panNo: e.target.value }))} />
-                    </FormField>
-                    <FormField label="Email">
-                      <Input
-                        type="email"
-                        value={formData.emailAdd || ""}
-                        onChange={(e) => setFormData((p) => ({ ...p, emailAdd: e.target.value }))}
-                        placeholder="accounts@company.com"
-                      />
-                    </FormField>
-                    <FormField label="Business Trade Name" className="sm:col-span-2">
-                      <Input
-                        value={(formData as any).businessTradeName || ""}
-                        onChange={(e) => setFormData((p) => ({ ...p, businessTradeName: e.target.value }))}
-                      />
-                    </FormField>
-                  </div>
-                  <PdfUploadField
-                    label="GST certificate (PDF)"
-                    value={formData.gstCertUrl}
-                    onChange={(url) => setFormData((p) => ({ ...p, gstCertUrl: url ?? "" }))}
-                  />
-                </FormSection>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField
+                        label="GSTIN"
+                        required={
+                          (formData as any).gstRegistrationType === "Registered"
+                        }
+                      >
+                        <Input
+                          value={formData.gstNo || ""}
+                          onChange={(e) =>
+                            setFormData((p) => ({
+                              ...p,
+                              gstNo: e.target.value,
+                            }))
+                          }
+                        />
+                      </FormField>
+                      <FormField label="PAN">
+                        <Input
+                          value={formData.panNo || ""}
+                          onChange={(e) =>
+                            setFormData((p) => ({
+                              ...p,
+                              panNo: e.target.value,
+                            }))
+                          }
+                        />
+                      </FormField>
+                      <FormField label="Email">
+                        <Input
+                          type="email"
+                          value={formData.emailAdd || ""}
+                          onChange={(e) =>
+                            setFormData((p) => ({
+                              ...p,
+                              emailAdd: e.target.value,
+                            }))
+                          }
+                          placeholder="accounts@company.com"
+                        />
+                      </FormField>
+                      <FormField
+                        label="Business Trade Name"
+                        className="sm:col-span-2"
+                      >
+                        <Input
+                          value={(formData as any).businessTradeName || ""}
+                          onChange={(e) =>
+                            setFormData((p) => ({
+                              ...p,
+                              businessTradeName: e.target.value,
+                            }))
+                          }
+                        />
+                      </FormField>
+                    </div>
+                    <PdfUploadField
+                      label="GST certificate (PDF)"
+                      value={formData.gstCertUrl}
+                      onChange={(url) =>
+                        setFormData((p) => ({ ...p, gstCertUrl: url ?? "" }))
+                      }
+                    />
+                  </FormSection>
                 )}
 
                 {companyFormTab === "contacts" && (
-                <FormSection title="Primary contacts" description="Optional. Ticked contacts become Company Admins; others get an employee login.">
-                  <div className="space-y-4">
-                    {primaryContacts.map((row, index) => {
-                      const designationOptions = userTypeOptionsForEntity(formData.legalEntityType)
-                      return (
-                        <div key={row._localId} className="rounded-lg border border-border p-4 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium">Primary Contact {index + 1}</p>
-                            {primaryContacts.length > 1 ? (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  setPrimaryContacts((rows) => rows.filter((r) => r._localId !== row._localId))
-                                }
-                              >
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                              </Button>
-                            ) : null}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField label="Title">
-                              <Select
-                                value={row.title || "__none__"}
-                                onValueChange={(v) =>
-                                  setPrimaryContacts((rows) =>
-                                    rows.map((r) =>
-                                      r._localId === row._localId ? { ...r, title: v === "__none__" ? "" : v } : r,
-                                    ),
-                                  )
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select title" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__none__">Select title</SelectItem>
-                                  {CONTACT_TITLE_OPTIONS.map((opt) => (
-                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </FormField>
-                            <FormField label="Username">
-                              <Input
-                                value={row.username}
-                                onChange={(e) =>
-                                  setPrimaryContacts((rows) =>
-                                    rows.map((r) => r._localId === row._localId ? { ...r, username: e.target.value } : r),
-                                  )
-                                }
-                              />
-                            </FormField>
-                            <FormField label="First Name">
-                              <Input
-                                value={row.firstName}
-                                onChange={(e) =>
-                                  setPrimaryContacts((rows) =>
-                                    rows.map((r) => r._localId === row._localId ? { ...r, firstName: e.target.value } : r),
-                                  )
-                                }
-                              />
-                            </FormField>
-                            <FormField label="Last Name">
-                              <Input
-                                value={row.lastName}
-                                onChange={(e) =>
-                                  setPrimaryContacts((rows) =>
-                                    rows.map((r) => r._localId === row._localId ? { ...r, lastName: e.target.value } : r),
-                                  )
-                                }
-                              />
-                            </FormField>
-                            <FormField label="Email" required>
-                              <Input
-                                type="email"
-                                value={row.email}
-                                onChange={(e) =>
-                                  setPrimaryContacts((rows) =>
-                                    rows.map((r) => r._localId === row._localId ? { ...r, email: e.target.value } : r),
-                                  )
-                                }
-                              />
-                            </FormField>
-                            <FormField label="Phone">
-                              <Input
-                                value={row.phone}
-                                onChange={(e) =>
-                                  setPrimaryContacts((rows) =>
-                                    rows.map((r) => r._localId === row._localId ? { ...r, phone: e.target.value } : r),
-                                  )
-                                }
-                              />
-                            </FormField>
-                            <FormField label="Mobile" required>
-                              <Input
-                                value={row.mobile}
-                                onChange={(e) =>
-                                  setPrimaryContacts((rows) =>
-                                    rows.map((r) => r._localId === row._localId ? { ...r, mobile: e.target.value } : r),
-                                  )
-                                }
-                              />
-                            </FormField>
-                            <FormField label="Designation">
-                              <Select
-                                value={row.designation || "__none__"}
-                                onValueChange={(v) =>
-                                  setPrimaryContacts((rows) =>
-                                    rows.map((r) =>
-                                      r._localId === row._localId
-                                        ? { ...r, designation: v === "__none__" ? "" : v }
-                                        : r,
-                                    ),
-                                  )
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select designation" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__none__">Select designation</SelectItem>
-                                  {designationOptions.map((opt) => (
-                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </FormField>
-                            {row.designation === "Other" ? (
-                              <FormField label="Specify Designation" required>
+                  <FormSection
+                    title="Primary contacts"
+                    description="Optional. Ticked contacts become Company Admins; others get an employee login."
+                  >
+                    <div className="space-y-4">
+                      {primaryContacts.map((row, index) => {
+                        const designationOptions = userTypeOptionsForEntity(
+                          formData.legalEntityType,
+                        );
+                        return (
+                          <div
+                            key={row._localId}
+                            className="rounded-lg border border-border p-4 space-y-4"
+                          >
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium">
+                                Primary Contact {index + 1}
+                              </p>
+                              {primaryContacts.length > 1 ? (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() =>
+                                    setPrimaryContacts((rows) =>
+                                      rows.filter(
+                                        (r) => r._localId !== row._localId,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
+                              ) : null}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <FormField label="Title">
+                                <Select
+                                  value={row.title || "__none__"}
+                                  onValueChange={(v) =>
+                                    setPrimaryContacts((rows) =>
+                                      rows.map((r) =>
+                                        r._localId === row._localId
+                                          ? {
+                                              ...r,
+                                              title: v === "__none__" ? "" : v,
+                                            }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select title" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__">
+                                      Select title
+                                    </SelectItem>
+                                    {CONTACT_TITLE_OPTIONS.map((opt) => (
+                                      <SelectItem key={opt} value={opt}>
+                                        {opt}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormField>
+                              <FormField label="Username">
                                 <Input
-                                  value={row.designationOther}
+                                  value={row.username}
                                   onChange={(e) =>
                                     setPrimaryContacts((rows) =>
                                       rows.map((r) =>
-                                        r._localId === row._localId ? { ...r, designationOther: e.target.value } : r,
+                                        r._localId === row._localId
+                                          ? { ...r, username: e.target.value }
+                                          : r,
                                       ),
                                     )
                                   }
                                 />
                               </FormField>
-                            ) : null}
-                </div>
-                          <label className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={row.setAsCompanyAdmin}
-                              onChange={(e) =>
-                                setPrimaryContacts((rows) =>
-                                  rows.map((r) =>
-                                    r._localId === row._localId ? { ...r, setAsCompanyAdmin: e.target.checked } : r,
-                                  ),
-                                )
-                              }
-                            />
-                            Set as Company Admin
-                          </label>
-                </div>
-                      )
-                    })}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setPrimaryContacts((rows) => [...rows, emptyPrimaryContact()])}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Primary Contact
-                    </Button>
-              </div>
-                </FormSection>
+                              <FormField label="First Name">
+                                <Input
+                                  value={row.firstName}
+                                  onChange={(e) =>
+                                    setPrimaryContacts((rows) =>
+                                      rows.map((r) =>
+                                        r._localId === row._localId
+                                          ? { ...r, firstName: e.target.value }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </FormField>
+                              <FormField label="Last Name">
+                                <Input
+                                  value={row.lastName}
+                                  onChange={(e) =>
+                                    setPrimaryContacts((rows) =>
+                                      rows.map((r) =>
+                                        r._localId === row._localId
+                                          ? { ...r, lastName: e.target.value }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </FormField>
+                              <FormField label="Email" required>
+                                <Input
+                                  type="email"
+                                  value={row.email}
+                                  onChange={(e) =>
+                                    setPrimaryContacts((rows) =>
+                                      rows.map((r) =>
+                                        r._localId === row._localId
+                                          ? { ...r, email: e.target.value }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </FormField>
+                              <FormField label="Phone">
+                                <Input
+                                  value={row.phone}
+                                  onChange={(e) =>
+                                    setPrimaryContacts((rows) =>
+                                      rows.map((r) =>
+                                        r._localId === row._localId
+                                          ? { ...r, phone: e.target.value }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </FormField>
+                              <FormField label="Mobile" required>
+                                <Input
+                                  value={row.mobile}
+                                  onChange={(e) =>
+                                    setPrimaryContacts((rows) =>
+                                      rows.map((r) =>
+                                        r._localId === row._localId
+                                          ? { ...r, mobile: e.target.value }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </FormField>
+                              <FormField label="Designation">
+                                <Select
+                                  value={row.designation || "__none__"}
+                                  onValueChange={(v) =>
+                                    setPrimaryContacts((rows) =>
+                                      rows.map((r) =>
+                                        r._localId === row._localId
+                                          ? {
+                                              ...r,
+                                              designation:
+                                                v === "__none__" ? "" : v,
+                                            }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select designation" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__">
+                                      Select designation
+                                    </SelectItem>
+                                    {designationOptions.map((opt) => (
+                                      <SelectItem key={opt} value={opt}>
+                                        {opt}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormField>
+                              {row.designation === "Other" ? (
+                                <FormField label="Specify Designation" required>
+                                  <Input
+                                    value={row.designationOther}
+                                    onChange={(e) =>
+                                      setPrimaryContacts((rows) =>
+                                        rows.map((r) =>
+                                          r._localId === row._localId
+                                            ? {
+                                                ...r,
+                                                designationOther:
+                                                  e.target.value,
+                                              }
+                                            : r,
+                                        ),
+                                      )
+                                    }
+                                  />
+                                </FormField>
+                              ) : null}
+                            </div>
+                            <label className="flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={row.setAsCompanyAdmin}
+                                onChange={(e) =>
+                                  setPrimaryContacts((rows) =>
+                                    rows.map((r) =>
+                                      r._localId === row._localId
+                                        ? {
+                                            ...r,
+                                            setAsCompanyAdmin: e.target.checked,
+                                          }
+                                        : r,
+                                    ),
+                                  )
+                                }
+                              />
+                              Set as Company Admin
+                            </label>
+                          </div>
+                        );
+                      })}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          setPrimaryContacts((rows) => [
+                            ...rows,
+                            emptyPrimaryContact(),
+                          ])
+                        }
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Primary Contact
+                      </Button>
+                    </div>
+                  </FormSection>
                 )}
 
                 <div className="flex justify-end gap-2 border-t border-border pt-5">
                   <Button type="submit" disabled={saving}>
-                  <Save className="w-4 h-4 mr-1" />
+                    <Save className="w-4 h-4 mr-1" />
                     {editingCompany ? "Save Changes" : "Add Tenant"}
-                </Button>
-              </div>
-            </form>
-        </div>
-      </FormDrawer>
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </FormDrawer>
 
-      {/* View Details - Drawer */}
-      <FormDrawer
-        open={!!(isViewing && viewCompany)}
-        onOpenChange={(v) => { if (!v) handleCancel(); }}
-        title="Company Details"
+          {/* View Details - Drawer */}
+          <FormDrawer
+            open={!!(isViewing && viewCompany)}
+            onOpenChange={(v) => {
+              if (!v) handleCancel();
+            }}
+            title="Company Details"
             showHeaderCancel
             cancelLabel="Close"
-      >
-        {viewCompany && (
+          >
+            {viewCompany && (
               <EntityDetailLayout
                 hero={
                   <EntityDetailHero
@@ -1704,7 +2005,9 @@ let filtered =
                     subtitle={
                       <span>
                         {[
-                          LEGAL_ENTITY_OPTIONS.find((o) => o.value === viewCompany.legalEntityType)?.label,
+                          LEGAL_ENTITY_OPTIONS.find(
+                            (o) => o.value === viewCompany.legalEntityType,
+                          )?.label,
                           viewCompany.companyType,
                         ]
                           .filter(Boolean)
@@ -1722,11 +2025,16 @@ let filtered =
                     {
                       label: "Company type",
                       value:
-                        LEGAL_ENTITY_OPTIONS.find((o) => o.value === viewCompany.legalEntityType)?.label ||
+                        LEGAL_ENTITY_OPTIONS.find(
+                          (o) => o.value === viewCompany.legalEntityType,
+                        )?.label ||
                         viewCompany.legalEntityType ||
                         "—",
                     },
-                    { label: "Establishment type", value: viewCompany.companyType },
+                    {
+                      label: "Establishment type",
+                      value: viewCompany.companyType,
+                    },
                     { label: "Website", value: viewCompany.website },
                     { label: "Address", value: viewCompany.address },
                   ]}
@@ -1745,8 +2053,14 @@ let filtered =
                   title="Billing"
                   subtitle="GST and tax identifiers"
                   rows={[
-                    { label: "Registration type", value: viewCompany.gstRegistrationType },
-                    { label: "Business trade name", value: viewCompany.businessTradeName },
+                    {
+                      label: "Registration type",
+                      value: viewCompany.gstRegistrationType,
+                    },
+                    {
+                      label: "Business trade name",
+                      value: viewCompany.businessTradeName,
+                    },
                     { label: "GSTIN", value: viewCompany.gstNo },
                     { label: "PAN", value: viewCompany.panNo },
                     { label: "Email", value: viewCompany.emailAdd },
@@ -1762,23 +2076,45 @@ let filtered =
                     { label: "PAN", value: viewCompany.panNo },
                     { label: "ESI", value: viewCompany.esiNo },
                     { label: "LIN", value: viewCompany.linNo },
-                    { label: "Shop registration", value: viewCompany.shopRegNo },
-                    { label: "Financial year start", value: viewCompany.financialYearStart },
+                    {
+                      label: "Shop registration",
+                      value: viewCompany.shopRegNo,
+                    },
+                    {
+                      label: "Financial year start",
+                      value: viewCompany.financialYearStart,
+                    },
                   ]}
                 />
-                {(viewCompany.companyLogoUrl || viewCompany.SignatureUrl) ? (
-                  <DetailCard title="Branding" subtitle="Logo and signature" className="lg:col-span-2">
+                {viewCompany.companyLogoUrl || viewCompany.SignatureUrl ? (
+                  <DetailCard
+                    title="Branding"
+                    subtitle="Logo and signature"
+                    className="lg:col-span-2"
+                  >
                     <div className="flex flex-wrap gap-6">
                       {viewCompany.companyLogoUrl ? (
-        <div>
-                          <p className="mb-2 text-sm text-muted-foreground">Company logo</p>
-                          <img src={viewCompany.companyLogoUrl} alt="Company Logo" className="h-24 w-24 rounded-lg border object-contain" />
+                        <div>
+                          <p className="mb-2 text-sm text-muted-foreground">
+                            Company logo
+                          </p>
+                          <img
+                            src={viewCompany.companyLogoUrl}
+                            alt="Company Logo"
+                            className="h-24 w-24 rounded-lg border object-contain"
+                          />
                         </div>
                       ) : null}
                       {viewCompany.SignatureUrl ? (
                         <div>
-                          <p className="mb-2 text-sm text-muted-foreground">Signature</p>
-                          <img src={viewCompany.SignatureUrl} alt="Signature" className="h-24 w-24 rounded-lg border object-contain" />
+                          <p className="mb-2 text-sm text-muted-foreground">
+                            Signature
+                          </p>
+                          <img
+                            src={viewCompany.SignatureUrl}
+                            alt="Signature"
+                            className="h-24 w-24 rounded-lg border object-contain"
+                          />
                         </div>
                       ) : null}
                     </div>
@@ -1791,8 +2127,8 @@ let filtered =
           <FormDrawer
             open={isModuleDrawerOpen}
             onOpenChange={(open) => {
-              if (!open) closeModuleDrawer()
-              else setIsModuleDrawerOpen(true)
+              if (!open) closeModuleDrawer();
+              else setIsModuleDrawerOpen(true);
             }}
             title="Company Modules"
             description="Select modules enabled for this company."
@@ -1831,15 +2167,16 @@ let filtered =
 
                       <div>
                         <p className="font-medium">{module.moduleName}</p>
-                        <p className="text-xs text-gray-500">{module.moduleKey}</p>
+                        <p className="text-xs text-gray-500">
+                          {module.moduleKey}
+                        </p>
                       </div>
                     </div>
-                    ))}
-                  </div>
-                )}
+                  ))}
+                </div>
+              )}
 
               <div className="flex justify-end gap-3 pt-4">
-
                 <Button
                   type="button"
                   onClick={saveCompanyModules}
@@ -1855,38 +2192,45 @@ let filtered =
             <Card className="w-full border border-gray-200 shadow-sm">
               <CardHeader className="border-b bg-white">
                 <div className="flex items-start justify-between gap-4">
-                <div>
+                  <div>
                     <CardTitle className="flex items-center gap-2 text-xl">
                       <UserPlus className="w-5 h-5 text-indigo-600" />
                       Company Admin
                     </CardTitle>
                     <p className="text-sm text-gray-500 mt-1">
-                      Create and manage company admin employee logins for this tenant.
+                      Create and manage company admin employee logins for this
+                      tenant.
                     </p>
-                </div>
+                  </div>
 
                   <div className="flex gap-2">
                     {!companyAdminFormOpen ? (
                       <Button
                         type="button"
                         onClick={async () => {
-                          setEditingCompanyAdmin(null)
-                          setViewingCompanyAdmin(false)
-                          setCompanyAdminFormTab("general")
+                          setEditingCompanyAdmin(null);
+                          setViewingCompanyAdmin(false);
+                          setCompanyAdminFormTab("general");
                           setCompanyAdminForm({
                             ...emptyCompanyAdminForm,
                             role: "COMPANY_OWNER",
-                            serviceProviderID: selectedCompanyForAdmin?.serviceProviderID || "",
+                            serviceProviderID:
+                              selectedCompanyForAdmin?.serviceProviderID || "",
                             companyID: selectedCompanyForAdmin?.id || "",
                             isActive: true,
                             designation:
-                              (selectedCompanyForAdmin as any)?.defaultOwnerTitle ||
-                              defaultUserTypeForEntity(selectedCompanyForAdmin?.legalEntityType) ||
-                              ownerTitleForLegalEntity(selectedCompanyForAdmin?.legalEntityType) ||
+                              (selectedCompanyForAdmin as any)
+                                ?.defaultOwnerTitle ||
+                              defaultUserTypeForEntity(
+                                selectedCompanyForAdmin?.legalEntityType,
+                              ) ||
+                              ownerTitleForLegalEntity(
+                                selectedCompanyForAdmin?.legalEntityType,
+                              ) ||
                               "",
-                          })
-                          setCompanyAdminFormOpen(true)
-                          await loadOwnerPermissionGrid()
+                          });
+                          setCompanyAdminFormOpen(true);
+                          await loadOwnerPermissionGrid();
                         }}
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -1897,9 +2241,9 @@ let filtered =
                         type="button"
                         variant="outline"
                         onClick={() => {
-                          setEditingCompanyAdmin(null)
-                          setViewingCompanyAdmin(false)
-                          setCompanyAdminFormOpen(false)
+                          setEditingCompanyAdmin(null);
+                          setViewingCompanyAdmin(false);
+                          setCompanyAdminFormOpen(false);
                         }}
                       >
                         <ArrowLeft className="w-4 h-4 mr-2" />
@@ -1932,7 +2276,7 @@ let filtered =
                     onSubmit={createCompanyAdminUser}
                     className="rounded-xl border bg-white p-5 space-y-5"
                   >
-                <div>
+                    <div>
                       <h3 className="text-base font-semibold text-gray-900">
                         {viewingCompanyAdmin
                           ? "View Company Admin"
@@ -1941,9 +2285,10 @@ let filtered =
                             : "Create Company Admin"}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        Company login uses a unique username. Password override is optional on update.
+                        Company login uses a unique username. Password override
+                        is optional on update.
                       </p>
-                </div>
+                    </div>
 
                     <FormSectionNav
                       active={companyAdminFormTab}
@@ -1955,251 +2300,333 @@ let filtered =
                     />
 
                     {companyAdminFormTab === "general" && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Status</Label>
-                        <label className="flex h-10 items-center gap-2 rounded-md border px-3 text-sm bg-white">
-                          <input
-                            type="checkbox"
-                            checked={companyAdminForm.isActive}
-                            onChange={(e) =>
-                              setCompanyAdminForm((p) => ({ ...p, isActive: e.target.checked }))
-                            }
-                            disabled={viewingCompanyAdmin}
-                          />
-                          Active
-                        </label>
-            </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label>Title</Label>
+                          <Label>Status</Label>
+                          <label className="flex h-10 items-center gap-2 rounded-md border px-3 text-sm bg-white">
+                            <input
+                              type="checkbox"
+                              checked={companyAdminForm.isActive}
+                              onChange={(e) =>
+                                setCompanyAdminForm((p) => ({
+                                  ...p,
+                                  isActive: e.target.checked,
+                                }))
+                              }
+                              disabled={viewingCompanyAdmin}
+                            />
+                            Active
+                          </label>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>Title</Label>
+                            <Select
+                              value={companyAdminForm.title || "__none__"}
+                              onValueChange={(v) =>
+                                setCompanyAdminForm((p) => ({
+                                  ...p,
+                                  title: v === "__none__" ? "" : v,
+                                }))
+                              }
+                              disabled={viewingCompanyAdmin}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select title" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">
+                                  Select title
+                                </SelectItem>
+                                {CONTACT_TITLE_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt} value={opt}>
+                                    {opt}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>First Name *</Label>
+                            <Input
+                              value={companyAdminForm.firstName}
+                              onChange={(e) =>
+                                setCompanyAdminForm((p) => ({
+                                  ...p,
+                                  firstName: e.target.value,
+                                }))
+                              }
+                              disabled={viewingCompanyAdmin}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Last Name</Label>
+                            <Input
+                              value={companyAdminForm.lastName}
+                              onChange={(e) =>
+                                setCompanyAdminForm((p) => ({
+                                  ...p,
+                                  lastName: e.target.value,
+                                }))
+                              }
+                              disabled={viewingCompanyAdmin}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>Email *</Label>
+                            <Input
+                              type="email"
+                              value={companyAdminForm.email}
+                              onChange={(e) => {
+                                const email = e.target.value;
+                                setCompanyAdminForm((p) => {
+                                  const next = applyEmailMobileCreds({
+                                    ...p,
+                                    email,
+                                  });
+                                  if (
+                                    next.useEmailMobileCreds &&
+                                    !viewingCompanyAdmin
+                                  ) {
+                                    checkUsernameAvailable(
+                                      next.username,
+                                      editingCompanyAdmin?.id,
+                                    );
+                                  }
+                                  return next;
+                                });
+                              }}
+                              disabled={viewingCompanyAdmin}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Phone</Label>
+                            <Input
+                              value={companyAdminForm.phone}
+                              onChange={(e) =>
+                                setCompanyAdminForm((p) => ({
+                                  ...p,
+                                  phone: e.target.value,
+                                }))
+                              }
+                              disabled={viewingCompanyAdmin}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Mobile *</Label>
+                            <Input
+                              value={companyAdminForm.contactNo}
+                              onChange={(e) => {
+                                const contactNo = e.target.value;
+                                setCompanyAdminForm((p) =>
+                                  applyEmailMobileCreds({ ...p, contactNo }),
+                                );
+                              }}
+                              disabled={viewingCompanyAdmin}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Designation</Label>
                           <Select
-                            value={companyAdminForm.title || "__none__"}
+                            value={companyAdminForm.designation || "__none__"}
                             onValueChange={(v) =>
-                              setCompanyAdminForm((p) => ({ ...p, title: v === "__none__" ? "" : v }))
+                              setCompanyAdminForm((p) => ({
+                                ...p,
+                                designation: v === "__none__" ? "" : v,
+                              }))
                             }
                             disabled={viewingCompanyAdmin}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select title" />
+                              <SelectValue placeholder="Select designation" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__none__">Select title</SelectItem>
-                              {CONTACT_TITLE_OPTIONS.map((opt) => (
-                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              <SelectItem value="__none__">
+                                Select designation
+                              </SelectItem>
+                              {userTypeOptionsForEntity(
+                                selectedCompanyForAdmin.legalEntityType,
+                              ).map((opt) => (
+                                <SelectItem key={opt} value={opt}>
+                                  {opt}
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-        </div>
-                        <div className="space-y-2">
-                          <Label>First Name *</Label>
-                          <Input
-                            value={companyAdminForm.firstName}
-                            onChange={(e) =>
-                              setCompanyAdminForm((p) => ({ ...p, firstName: e.target.value }))
-                            }
-                            disabled={viewingCompanyAdmin}
-                          />
                         </div>
-                        <div className="space-y-2">
-                          <Label>Last Name</Label>
-                          <Input
-                            value={companyAdminForm.lastName}
-                            onChange={(e) =>
-                              setCompanyAdminForm((p) => ({ ...p, lastName: e.target.value }))
-                            }
-                            disabled={viewingCompanyAdmin}
-                          />
-                        </div>
-                      </div>
+                        {companyAdminForm.designation === "Other" ? (
+                          <div className="space-y-2">
+                            <Label>Specify Designation *</Label>
+                            <Input
+                              value={companyAdminForm.designationOther}
+                              onChange={(e) =>
+                                setCompanyAdminForm((p) => ({
+                                  ...p,
+                                  designationOther: e.target.value,
+                                }))
+                              }
+                              disabled={viewingCompanyAdmin}
+                            />
+                          </div>
+                        ) : null}
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label>Email *</Label>
-                          <Input
-                            type="email"
-                            value={companyAdminForm.email}
-                            onChange={(e) => {
-                              const email = e.target.value
-                              setCompanyAdminForm((p) => {
-                                const next = applyEmailMobileCreds({ ...p, email })
-                                if (next.useEmailMobileCreds && !viewingCompanyAdmin) {
-                                  checkUsernameAvailable(next.username, editingCompanyAdmin?.id)
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>
+                              Username
+                              {companyAdminForm.useEmailMobileCreds ? "" : " *"}
+                            </Label>
+                            <Input
+                              autoComplete="new-username"
+                              value={companyAdminForm.username}
+                              onChange={(e) => {
+                                const username = e.target.value;
+                                setCompanyAdminForm((p) => ({
+                                  ...p,
+                                  username,
+                                }));
+                                if (
+                                  !companyAdminForm.useEmailMobileCreds &&
+                                  !viewingCompanyAdmin
+                                ) {
+                                  checkUsernameAvailable(
+                                    username,
+                                    editingCompanyAdmin?.id,
+                                  );
                                 }
-                                return next
-                              })
-                            }}
-                            disabled={viewingCompanyAdmin}
-                          />
+                              }}
+                              onBlur={() => {
+                                if (
+                                  !companyAdminForm.useEmailMobileCreds &&
+                                  !viewingCompanyAdmin
+                                ) {
+                                  checkUsernameAvailable(
+                                    companyAdminForm.username,
+                                    editingCompanyAdmin?.id,
+                                  );
+                                }
+                              }}
+                              placeholder={
+                                companyAdminForm.useEmailMobileCreds
+                                  ? "Uses email"
+                                  : "Enter unique username"
+                              }
+                              disabled={
+                                viewingCompanyAdmin ||
+                                companyAdminForm.useEmailMobileCreds
+                              }
+                            />
+                            {companyAdminForm.useEmailMobileCreds ? (
+                              <p className="text-xs text-muted-foreground">
+                                set email id as username
+                              </p>
+                            ) : usernameCheck.status !== "idle" ? (
+                              <p
+                                className={cn(
+                                  "text-xs",
+                                  usernameCheck.status === "taken"
+                                    ? "text-destructive"
+                                    : usernameCheck.status === "ok"
+                                      ? "text-emerald-600"
+                                      : "text-muted-foreground",
+                                )}
+                              >
+                                {usernameCheck.message}
+                              </p>
+                            ) : null}
+                          </div>
+                          <div className="space-y-2">
+                            <Label>
+                              Password
+                              {editingCompanyAdmin &&
+                              !companyAdminForm.useEmailMobileCreds
+                                ? " (optional)"
+                                : companyAdminForm.useEmailMobileCreds
+                                  ? ""
+                                  : " *"}
+                            </Label>
+                            <Input
+                              autoComplete="new-password"
+                              type="text"
+                              value={companyAdminForm.password}
+                              onChange={(e) =>
+                                setCompanyAdminForm((p) => ({
+                                  ...p,
+                                  password: e.target.value,
+                                }))
+                              }
+                              placeholder={
+                                companyAdminForm.useEmailMobileCreds
+                                  ? "Uses mobile number"
+                                  : editingCompanyAdmin
+                                    ? "Leave blank to keep current"
+                                    : "Enter password"
+                              }
+                              disabled={
+                                viewingCompanyAdmin ||
+                                companyAdminForm.useEmailMobileCreds
+                              }
+                            />
+                            <PasswordRuleHints
+                              password={companyAdminForm.password}
+                            />
+                            {companyAdminForm.useEmailMobileCreds ? (
+                              <p className="text-xs text-muted-foreground">
+                                set Mobile no. as password
+                              </p>
+                            ) : null}
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Phone</Label>
-                          <Input
-                            value={companyAdminForm.phone}
-                            onChange={(e) =>
-                              setCompanyAdminForm((p) => ({ ...p, phone: e.target.value }))
-                            }
-                            disabled={viewingCompanyAdmin}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Mobile *</Label>
-                          <Input
-                            value={companyAdminForm.contactNo}
+
+                        <label className="flex items-start gap-2 rounded-md border px-3 py-2 text-sm bg-white">
+                          <input
+                            type="checkbox"
+                            className="mt-0.5"
+                            checked={companyAdminForm.useEmailMobileCreds}
                             onChange={(e) => {
-                              const contactNo = e.target.value
-                              setCompanyAdminForm((p) =>
-                                applyEmailMobileCreds({ ...p, contactNo }),
-                              )
+                              const useEmailMobileCreds = e.target.checked;
+                              setCompanyAdminForm((p) => {
+                                const next = applyEmailMobileCreds({
+                                  ...p,
+                                  useEmailMobileCreds,
+                                });
+                                if (
+                                  useEmailMobileCreds &&
+                                  !viewingCompanyAdmin
+                                ) {
+                                  checkUsernameAvailable(
+                                    next.username,
+                                    editingCompanyAdmin?.id,
+                                  );
+                                } else {
+                                  setUsernameCheck({
+                                    status: "idle",
+                                    message: "",
+                                  });
+                                }
+                                return next;
+                              });
                             }}
                             disabled={viewingCompanyAdmin}
                           />
-                        </div>
+                          <span>
+                            Set email as username and mobile as password
+                          </span>
+                        </label>
                       </div>
-
-                      <div className="space-y-2">
-                        <Label>Designation</Label>
-                        <Select
-                          value={companyAdminForm.designation || "__none__"}
-                          onValueChange={(v) =>
-                            setCompanyAdminForm((p) => ({
-                              ...p,
-                              designation: v === "__none__" ? "" : v,
-                            }))
-                          }
-                          disabled={viewingCompanyAdmin}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select designation" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none__">Select designation</SelectItem>
-                            {userTypeOptionsForEntity(selectedCompanyForAdmin.legalEntityType).map(
-                              (opt) => (
-                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                              ),
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {companyAdminForm.designation === "Other" ? (
-                        <div className="space-y-2">
-                          <Label>Specify Designation *</Label>
-                          <Input
-                            value={companyAdminForm.designationOther}
-                            onChange={(e) =>
-                              setCompanyAdminForm((p) => ({ ...p, designationOther: e.target.value }))
-                            }
-                            disabled={viewingCompanyAdmin}
-                          />
-                        </div>
-                      ) : null}
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Username{companyAdminForm.useEmailMobileCreds ? "" : " *"}</Label>
-                <Input
-                            autoComplete="new-username"
-                            value={companyAdminForm.username}
-                            onChange={(e) => {
-                              const username = e.target.value
-                              setCompanyAdminForm((p) => ({ ...p, username }))
-                              if (!companyAdminForm.useEmailMobileCreds && !viewingCompanyAdmin) {
-                                checkUsernameAvailable(username, editingCompanyAdmin?.id)
-                              }
-                            }}
-                            onBlur={() => {
-                              if (!companyAdminForm.useEmailMobileCreds && !viewingCompanyAdmin) {
-                                checkUsernameAvailable(
-                                  companyAdminForm.username,
-                                  editingCompanyAdmin?.id,
-                                )
-                              }
-                            }}
-                            placeholder={companyAdminForm.useEmailMobileCreds ? "Uses email" : "Enter unique username"}
-                            disabled={viewingCompanyAdmin || companyAdminForm.useEmailMobileCreds}
-                          />
-                          {companyAdminForm.useEmailMobileCreds ? (
-                            <p className="text-xs text-muted-foreground">set email id as username</p>
-                          ) : usernameCheck.status !== "idle" ? (
-                            <p
-                              className={cn(
-                                "text-xs",
-                                usernameCheck.status === "taken"
-                                  ? "text-destructive"
-                                  : usernameCheck.status === "ok"
-                                    ? "text-emerald-600"
-                                    : "text-muted-foreground",
-                              )}
-                            >
-                              {usernameCheck.message}
-                            </p>
-                          ) : null}
-              </div>
-                        <div className="space-y-2">
-                          <Label>
-                            Password
-                            {editingCompanyAdmin && !companyAdminForm.useEmailMobileCreds
-                              ? " (optional)"
-                              : companyAdminForm.useEmailMobileCreds
-                                ? ""
-                                : " *"}
-                          </Label>
-                          <Input
-                            autoComplete="new-password"
-                            type="text"
-                            value={companyAdminForm.password}
-                            onChange={(e) =>
-                              setCompanyAdminForm((p) => ({ ...p, password: e.target.value }))
-                            }
-                            placeholder={
-                              companyAdminForm.useEmailMobileCreds
-                                ? "Uses mobile number"
-                                : editingCompanyAdmin
-                                  ? "Leave blank to keep current"
-                                  : "Enter password"
-                            }
-                            disabled={viewingCompanyAdmin || companyAdminForm.useEmailMobileCreds}
-                          />
-                          <PasswordRuleHints password={companyAdminForm.password} />
-                          {companyAdminForm.useEmailMobileCreds ? (
-                            <p className="text-xs text-muted-foreground">set Mobile no. as password</p>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <label className="flex items-start gap-2 rounded-md border px-3 py-2 text-sm bg-white">
-                        <input
-                          type="checkbox"
-                          className="mt-0.5"
-                          checked={companyAdminForm.useEmailMobileCreds}
-                          onChange={(e) => {
-                            const useEmailMobileCreds = e.target.checked
-                            setCompanyAdminForm((p) => {
-                              const next = applyEmailMobileCreds({ ...p, useEmailMobileCreds })
-                              if (useEmailMobileCreds && !viewingCompanyAdmin) {
-                                checkUsernameAvailable(next.username, editingCompanyAdmin?.id)
-                              } else {
-                                setUsernameCheck({ status: "idle", message: "" })
-                              }
-                              return next
-                            })
-                          }}
-                          disabled={viewingCompanyAdmin}
-                        />
-                        <span>
-                          Set email as username and mobile as password
-                        </span>
-                      </label>
-                    </div>
                     )}
 
                     {companyAdminFormTab === "permissions" && (
                       <div className="overflow-x-auto rounded-md border">
                         <Table>
-                <TableHeader>
-                  <TableRow>
+                          <TableHeader>
+                            <TableRow>
                               <TableHead>Module</TableHead>
                               <TableHead>Read</TableHead>
                               <TableHead>Write</TableHead>
@@ -2208,35 +2635,80 @@ let filtered =
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {(ownerPermissions.length ? ownerPermissions : fullPermissionRows(ownerModules)).map((row) => {
-                              const meta = ownerModules.find((m) => m.moduleKey === row.moduleKey)
-                              const writeOn = row.canCreate && row.canEdit
-                              const adminOn = row.canView && row.canCreate && row.canEdit && row.canDelete
+                            {(ownerPermissions.length
+                              ? ownerPermissions
+                              : fullPermissionRows(ownerModules)
+                            ).map((row) => {
+                              const meta = ownerModules.find(
+                                (m) => m.moduleKey === row.moduleKey,
+                              );
+                              const writeOn = row.canCreate && row.canEdit;
+                              const adminOn =
+                                row.canView &&
+                                row.canCreate &&
+                                row.canEdit &&
+                                row.canDelete;
                               const cell = (on: boolean) =>
                                 cn(
                                   "px-2 py-2 text-xs rounded-md border w-full",
                                   on
                                     ? "bg-primary/15 border-primary text-primary font-medium"
                                     : "bg-background border-border text-muted-foreground",
-                                  viewingCompanyAdmin ? "cursor-default" : "cursor-pointer",
-                                )
+                                  viewingCompanyAdmin
+                                    ? "cursor-default"
+                                    : "cursor-pointer",
+                                );
                               return (
                                 <TableRow key={row.moduleKey}>
-                                  <TableCell className="font-medium">{meta?.label || row.moduleKey}</TableCell>
-                                  <TableCell>
-                                    <button type="button" className={cell(row.canView)} onClick={() => toggleOwnerPerm(row.moduleKey, "read")}>Read</button>
+                                  <TableCell className="font-medium">
+                                    {meta?.label || row.moduleKey}
                                   </TableCell>
                                   <TableCell>
-                                    <button type="button" className={cell(writeOn)} onClick={() => toggleOwnerPerm(row.moduleKey, "write")}>Write</button>
+                                    <button
+                                      type="button"
+                                      className={cell(row.canView)}
+                                      onClick={() =>
+                                        toggleOwnerPerm(row.moduleKey, "read")
+                                      }
+                                    >
+                                      Read
+                                    </button>
                                   </TableCell>
                                   <TableCell>
-                                    <button type="button" className={cell(row.canDelete)} onClick={() => toggleOwnerPerm(row.moduleKey, "delete")}>Delete</button>
+                                    <button
+                                      type="button"
+                                      className={cell(writeOn)}
+                                      onClick={() =>
+                                        toggleOwnerPerm(row.moduleKey, "write")
+                                      }
+                                    >
+                                      Write
+                                    </button>
                                   </TableCell>
                                   <TableCell>
-                                    <button type="button" className={cell(adminOn)} onClick={() => toggleOwnerPerm(row.moduleKey, "admin")}>Add Admin</button>
+                                    <button
+                                      type="button"
+                                      className={cell(row.canDelete)}
+                                      onClick={() =>
+                                        toggleOwnerPerm(row.moduleKey, "delete")
+                                      }
+                                    >
+                                      Delete
+                                    </button>
+                                  </TableCell>
+                                  <TableCell>
+                                    <button
+                                      type="button"
+                                      className={cell(adminOn)}
+                                      onClick={() =>
+                                        toggleOwnerPerm(row.moduleKey, "admin")
+                                      }
+                                    >
+                                      Add Admin
+                                    </button>
                                   </TableCell>
                                 </TableRow>
-                              )
+                              );
                             })}
                           </TableBody>
                         </Table>
@@ -2244,31 +2716,31 @@ let filtered =
                     )}
 
                     {!viewingCompanyAdmin ? (
-                    <div className="flex justify-end gap-2">
-                      {editingCompanyAdmin && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingCompanyAdmin(null)
-                            setViewingCompanyAdmin(false)
-                            setCompanyAdminFormOpen(false)
-                          }}
-                        >
-                          Cancel Edit
-                        </Button>
-                      )}
+                      <div className="flex justify-end gap-2">
+                        {editingCompanyAdmin && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingCompanyAdmin(null);
+                              setViewingCompanyAdmin(false);
+                              setCompanyAdminFormOpen(false);
+                            }}
+                          >
+                            Cancel Edit
+                          </Button>
+                        )}
 
-                      <Button type="submit" disabled={companyAdminSaving}>
-                        {companyAdminSaving
-                          ? editingCompanyAdmin
-                            ? "Updating..."
-                            : "Creating..."
-                          : editingCompanyAdmin
-                            ? "Update Company Admin"
-                            : "Create Company Admin"}
-                      </Button>
-                    </div>
+                        <Button type="submit" disabled={companyAdminSaving}>
+                          {companyAdminSaving
+                            ? editingCompanyAdmin
+                              ? "Updating..."
+                              : "Creating..."
+                            : editingCompanyAdmin
+                              ? "Update Company Admin"
+                              : "Create Company Admin"}
+                        </Button>
+                      </div>
                     ) : null}
                   </form>
                 ) : (
@@ -2291,27 +2763,35 @@ let filtered =
                           <TableHead>Role</TableHead>
                           <TableHead>Designation</TableHead>
                           <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
 
-                <TableBody>
+                      <TableBody>
                         {companyAdminLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                          <TableRow>
+                            <TableCell
+                              colSpan={7}
+                              className="text-center py-8 text-gray-500"
+                            >
                               Loading users...
                             </TableCell>
                           </TableRow>
                         ) : companyAdminUsers.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                            <TableCell
+                              colSpan={7}
+                              className="text-center py-8 text-gray-500"
+                            >
                               No company admins found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
+                            </TableCell>
+                          </TableRow>
+                        ) : (
                           companyAdminUsers.map((u) => (
                             <TableRow key={u.id}>
-                              <TableCell className="font-medium">{u.username}</TableCell>
+                              <TableCell className="font-medium">
+                                {u.username}
+                              </TableCell>
                               <TableCell>{u.firstName || "—"}</TableCell>
                               <TableCell>{u.lastName || "—"}</TableCell>
                               <TableCell>
@@ -2323,80 +2803,87 @@ let filtered =
                                   {u.isActive ? "Active" : "Inactive"}
                                 </Badge>
                               </TableCell>
-                        <TableCell className="text-right">
+                              <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
+                                  <Button
+                                    variant="ghost"
                                     size="icon"
                                     onClick={() => handleViewCompanyAdmin(u)}
-                            >
+                                  >
                                     <Eye className="h-4 w-4" />
-                            </Button>
-                              <Button
-                                variant="ghost"
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
                                     size="icon"
                                     onClick={() => handleEditCompanyAdmin(u)}
-                              >
+                                  >
                                     <Edit className="h-4 w-4 text-blue-600" />
-                              </Button>
-                              <Button
-                                variant="ghost"
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
                                     size="icon"
-                                    onClick={() => handleDeleteCompanyAdmin(u.id)}
-                              >
+                                    onClick={() =>
+                                      handleDeleteCompanyAdmin(u.id)
+                                    }
+                                  >
                                     <Trash2 className="h-4 w-4 text-red-600" />
-                              </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
           )}
 
-{!isAddingNew && !isViewing && (isSuperAdmin || isServiceProvider) && !companyAdminDrawerOpen && !isModuleDrawerOpen && (<>
-            <FilterBar
-              search={{
-                value: table.search,
-                onChange: table.setSearch,
-                placeholder: "Search companies…",
-              }}
-            />
+          {!isAddingNew &&
+            !isViewing &&
+            (isSuperAdmin || isServiceProvider) &&
+            !companyAdminDrawerOpen &&
+            !isModuleDrawerOpen && (
+              <>
+                <FilterBar
+                  search={{
+                    value: table.search,
+                    onChange: table.setSearch,
+                    placeholder: "Search companies…",
+                  }}
+                />
 
-            <EntityListShell
-              title="Company list"
-              columns={companyColumns}
-              rows={filteredCompanies}
-              rowKey={(c) => String(c.id)}
-              isLoading={listLoading}
-              sortBy={table.sortBy}
-              sortDir={table.sortDir}
-              onSort={table.setSort}
-              emptyTitle="No companies found"
-              emptyDescription="Try adjusting your search criteria."
-              emptyAction={
-                user?.role === "SUPERADMIN" ? (
-                  <Button
-                    onClick={async () => {
-                      resetForm()
-                      setIsAddingNew(true)
-                      await applySoleServiceProviderToForm()
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-1" /> Add Company
-                  </Button>
-                ) : undefined
-              }
-            />
-          </>
-          )}
+                <EntityListShell
+                  title="Company list"
+                  columns={companyColumns}
+                  rows={filteredCompanies}
+                  rowKey={(c) => String(c.id)}
+                  isLoading={listLoading}
+                  sortBy={table.sortBy}
+                  sortDir={table.sortDir}
+                  onSort={table.setSort}
+                  emptyTitle="No companies found"
+                  emptyDescription="Try adjusting your search criteria."
+                  emptyAction={
+                    user?.role === "SUPERADMIN" ? (
+                      <Button
+                        onClick={async () => {
+                          resetForm();
+                          setIsAddingNew(true);
+                          await applySoleServiceProviderToForm();
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-1" /> Add Company
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              </>
+            )}
         </>
       )}
     </div>
-  )
+  );
 }
