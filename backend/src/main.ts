@@ -20,9 +20,13 @@ function sanitize(name: string) {
 
 async function bootstrap() {
   // --- API server (8000) ---
+  console.log('[BOOT_STAGE_1] Starting NestJS AppModule creation');
+
   const app = await NestFactory.create(AppModule, {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
   });
+
+  console.log('[BOOT_STAGE_2] NestJS AppModule creation completed');
   app.enableCors({
     origin: [
       'https://app.openhrm.in',
@@ -44,6 +48,7 @@ async function bootstrap() {
   app.use(bodyParser.urlencoded({ extended: true, limit: '5mb' }));
   app.useGlobalFilters(new PrismaClientExceptionFilter());
   const port = parseInt(process.env.PORT || '8000', 10);
+  console.log(`[BOOT_STAGE_3] Starting HTTP listener on port ${port}`);
   await app.listen(port, '0.0.0.0');
   console.log(`API listening on 0.0.0.0:${port}`);
 

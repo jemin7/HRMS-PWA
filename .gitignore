@@ -48,3 +48,5 @@ scripts/import/vamshik-attendance-import-report.json
 
 # Local validation output
 .expo-validation/
+
+/testing Nest.js/
