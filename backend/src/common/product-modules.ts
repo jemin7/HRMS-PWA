@@ -65,41 +65,107 @@ export const ADDON_MODULE_KEYS = [
   DOCUMENTS_MODULE,
 ] as const;
 
-export const PRODUCT_MODULE_CATALOG: { moduleKey: string; moduleName: string; sortOrder: number }[] = [
+export const PRODUCT_MODULE_CATALOG: {
+  moduleKey: string;
+  moduleName: string;
+  sortOrder: number;
+}[] = [
   { moduleKey: ATTENDANCE_MODULE, moduleName: 'Attendance', sortOrder: 1 },
-  { moduleKey: ATTENDANCE_HISTORY_MODULE, moduleName: 'Attendance History', sortOrder: 2 },
-  { moduleKey: WORKSHIFT_ROSTER_MODULE, moduleName: 'WorkShift & Roster', sortOrder: 3 },
-  { moduleKey: ATTENDANCE_POLICY_MODULE, moduleName: 'Attendance Policy', sortOrder: 14 },
-  { moduleKey: REGULARISATION_MODULE, moduleName: 'Regularization', sortOrder: 15 },
+  {
+    moduleKey: ATTENDANCE_HISTORY_MODULE,
+    moduleName: 'Attendance History',
+    sortOrder: 2,
+  },
+  {
+    moduleKey: WORKSHIFT_ROSTER_MODULE,
+    moduleName: 'WorkShift & Roster',
+    sortOrder: 3,
+  },
+  {
+    moduleKey: ATTENDANCE_POLICY_MODULE,
+    moduleName: 'Attendance Policy',
+    sortOrder: 14,
+  },
+  {
+    moduleKey: REGULARISATION_MODULE,
+    moduleName: 'Regularization',
+    sortOrder: 15,
+  },
   { moduleKey: HOLIDAY_MODULE, moduleName: 'Holidays', sortOrder: 16 },
   { moduleKey: DELEGATION_MODULE, moduleName: 'Delegation', sortOrder: 17 },
   { moduleKey: MY_CALENDAR_MODULE, moduleName: 'My Calendar', sortOrder: 18 },
-  { moduleKey: TEAM_APPROVALS_MODULE, moduleName: 'Team Approvals', sortOrder: 19 },
+  {
+    moduleKey: TEAM_APPROVALS_MODULE,
+    moduleName: 'Team Approvals',
+    sortOrder: 19,
+  },
   { moduleKey: PROMOTIONS_MODULE, moduleName: 'Promotions', sortOrder: 20 },
   { moduleKey: TRANSFERS_MODULE, moduleName: 'Transfers', sortOrder: 21 },
   { moduleKey: GEO_MARKING_MODULE, moduleName: 'Geo Marking', sortOrder: 4 },
   { moduleKey: GEO_FENCING_MODULE, moduleName: 'Geo Fencing', sortOrder: 5 },
   { moduleKey: PAYROLL_MODULE, moduleName: 'Payroll', sortOrder: 6 },
   { moduleKey: OFF_BOARDING_MODULE, moduleName: 'Off Boarding', sortOrder: 7 },
-  { moduleKey: REIMBURSEMENT_MODULE, moduleName: 'Reimbursement', sortOrder: 8 },
+  {
+    moduleKey: REIMBURSEMENT_MODULE,
+    moduleName: 'Reimbursement',
+    sortOrder: 8,
+  },
   { moduleKey: IM_MODULE, moduleName: 'Instant Messaging', sortOrder: 9 },
   { moduleKey: TASK_MODULE, moduleName: 'Task Management', sortOrder: 10 },
-  { moduleKey: ONFIELD_TASK_MODULE, moduleName: 'On-Field Task Management', sortOrder: 11 },
-  { moduleKey: CONTRACTOR_MODULE, moduleName: 'Contractor Management', sortOrder: 12 },
-  { moduleKey: ADVANCE_REPORTING_MODULE, moduleName: 'Advance Reporting', sortOrder: 13 },
+  {
+    moduleKey: ONFIELD_TASK_MODULE,
+    moduleName: 'On-Field Task Management',
+    sortOrder: 11,
+  },
+  {
+    moduleKey: CONTRACTOR_MODULE,
+    moduleName: 'Contractor Management',
+    sortOrder: 12,
+  },
+  {
+    moduleKey: ADVANCE_REPORTING_MODULE,
+    moduleName: 'Advance Reporting',
+    sortOrder: 13,
+  },
   { moduleKey: PAYSLIP_MODULE, moduleName: 'Payslip', sortOrder: 22 },
-  { moduleKey: LOAN_ADVANCE_MODULE, moduleName: 'Loan Advances', sortOrder: 23 },
+  {
+    moduleKey: LOAN_ADVANCE_MODULE,
+    moduleName: 'Loan Advances',
+    sortOrder: 23,
+  },
   { moduleKey: LEAVE_MODULE, moduleName: 'Leave', sortOrder: 24 },
-  { moduleKey: EMPLOYEE_MANAGEMENT_MODULE, moduleName: 'Employee Management', sortOrder: 25 },
+  {
+    moduleKey: EMPLOYEE_MANAGEMENT_MODULE,
+    moduleName: 'Employee Management',
+    sortOrder: 25,
+  },
   { moduleKey: ONBOARDING_MODULE, moduleName: 'Onboarding', sortOrder: 26 },
-  { moduleKey: WORKFLOW_MODULE, moduleName: 'Workflow Management', sortOrder: 27 },
-  { moduleKey: DOCUMENTS_MODULE, moduleName: 'Documents & Templates', sortOrder: 28 },
-  { moduleKey: TAX_COMPLIANCE_MODULE, moduleName: 'Tax & Compliance', sortOrder: 29 },
+  {
+    moduleKey: WORKFLOW_MODULE,
+    moduleName: 'Workflow Management',
+    sortOrder: 27,
+  },
+  {
+    moduleKey: DOCUMENTS_MODULE,
+    moduleName: 'Documents & Templates',
+    sortOrder: 28,
+  },
+  {
+    moduleKey: TAX_COMPLIANCE_MODULE,
+    moduleName: 'Tax & Compliance',
+    sortOrder: 29,
+  },
   { moduleKey: CRM_MODULE, moduleName: 'CRM', sortOrder: 30 },
-  { moduleKey: ASSET_MANAGEMENT_MODULE, moduleName: 'Asset Management', sortOrder: 31 },
+  {
+    moduleKey: ASSET_MANAGEMENT_MODULE,
+    moduleName: 'Asset Management',
+    sortOrder: 31,
+  },
 ];
 
-export const ALL_PRODUCT_MODULE_KEYS = PRODUCT_MODULE_CATALOG.map((item) => item.moduleKey);
+export const ALL_PRODUCT_MODULE_KEYS = PRODUCT_MODULE_CATALOG.map(
+  (item) => item.moduleKey,
+);
 
 const PRIVILEGED_ROLES = new Set(['SUPERADMIN', 'SERVICE_PROVIDER']);
 
@@ -107,7 +173,9 @@ export function isPrivilegedSubscriptionRole(role?: string | null): boolean {
   return PRIVILEGED_ROLES.has(String(role || '').toUpperCase());
 }
 
-export function isSubscriptionExemptCompany(_companyId?: number | null): boolean {
+export function isSubscriptionExemptCompany(
+  _companyId?: number | null,
+): boolean {
   return false;
 }
 
@@ -142,25 +210,35 @@ export function rightsKeysForProductModule(moduleKey: string): string[] {
     case ADVANCE_REPORTING_MODULE:
       return ['REPORTS'];
     case EMPLOYEE_MANAGEMENT_MODULE:
-      return ['EMPLOYEES', 'DEPARTMENTS', 'DESIGNATIONS', 'BRANCHES', 'DEVICES'];
+      return [
+        'EMPLOYEES',
+        'DEPARTMENTS',
+        'DESIGNATIONS',
+        'BRANCHES',
+        'DEVICES',
+      ];
     default:
       return [];
   }
 }
 
 /** Rights keys unlocked by the given product modules. A key with no product module is omitted. */
-export function rightsKeysCoveredByProductModules(moduleKeys: string[]): Set<string> {
+export function rightsKeysCoveredByProductModules(
+  moduleKeys: string[],
+): Set<string> {
   const keys = new Set<string>();
   for (const moduleKey of moduleKeys) {
-    for (const rightsKey of rightsKeysForProductModule(moduleKey)) keys.add(rightsKey);
+    for (const rightsKey of rightsKeysForProductModule(moduleKey))
+      keys.add(rightsKey);
   }
   return keys;
 }
 
 function cleanPath(url: string): string {
   const noQuery = String(url || '').split('?')[0];
-  const stripped = noQuery.replace(/^\https://hrms-api-test.onrender.com(?=\/)/, '');
-  if (stripped.length > 1 && stripped.endsWith('/')) return stripped.slice(0, -1);
+  const stripped = noQuery.replace(/^\/backend(?=\/)/, '');
+  if (stripped.length > 1 && stripped.endsWith('/'))
+    return stripped.slice(0, -1);
   return stripped || '/';
 }
 
@@ -169,11 +247,17 @@ function starts(path: string, prefix: string): boolean {
 }
 
 /** Any listed module satisfies the request. Null means the route is not subscription-gated. */
-export function productModulesForRequest(url: string, method?: string): string[] | null {
+export function productModulesForRequest(
+  url: string,
+  method?: string,
+): string[] | null {
   const path = cleanPath(url);
   const verb = String(method || 'GET').toUpperCase();
 
-  if (path.includes('/delegations') || path.endsWith('/delegation-colleagues')) {
+  if (
+    path.includes('/delegations') ||
+    path.endsWith('/delegation-colleagues')
+  ) {
     return [DELEGATION_MODULE];
   }
   if (
@@ -195,7 +279,8 @@ export function productModulesForRequest(url: string, method?: string): string[]
     return [WORKSHIFT_ROSTER_MODULE];
   }
   if (starts(path, '/attendance-policy')) return [ATTENDANCE_POLICY_MODULE];
-  if (starts(path, '/emp-attendance-regularise')) return [REGULARISATION_MODULE];
+  if (starts(path, '/emp-attendance-regularise'))
+    return [REGULARISATION_MODULE];
   if (
     starts(path, '/manage-holiday') ||
     starts(path, '/public-holiday') ||
@@ -230,19 +315,28 @@ export function productModulesForRequest(url: string, method?: string): string[]
     return verb === 'GET' ? [PAYSLIP_MODULE, PAYROLL_MODULE] : [PAYROLL_MODULE];
   }
   if (starts(path, '/employee-memo')) return [IM_MODULE];
-  if (starts(path, '/task-customers') || starts(path, '/task-customer-sites')) return [TASK_MODULE];
+  if (starts(path, '/task-customers') || starts(path, '/task-customer-sites'))
+    return [TASK_MODULE];
   if (starts(path, '/task-projects')) return [TASK_MODULE];
   if (starts(path, '/emp-promotion') || starts(path, '/promotion-request')) {
     return [PROMOTIONS_MODULE, TRANSFERS_MODULE];
   }
-  if (starts(path, '/contractors') || starts(path, '/contractor-payout') || starts(path, '/contractor-rates')) {
+  if (
+    starts(path, '/contractors') ||
+    starts(path, '/contractor-payout') ||
+    starts(path, '/contractor-rates')
+  ) {
     return [CONTRACTOR_MODULE];
   }
   if (starts(path, '/termination')) return [OFF_BOARDING_MODULE];
   return null;
 }
 
-export function istCalendarParts(input: Date): { y: number; m: number; d: number } {
+export function istCalendarParts(input: Date): {
+  y: number;
+  m: number;
+  d: number;
+} {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Kolkata',
     year: 'numeric',
@@ -259,7 +353,9 @@ export function istCalendarParts(input: Date): { y: number; m: number; d: number
 /** Inclusive start of the IST calendar day. */
 export function startOfIstDay(input: Date): Date {
   const { y, m, d } = istCalendarParts(input);
-  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0) - (5 * 60 + 30) * 60 * 1000);
+  return new Date(
+    Date.UTC(y, m - 1, d, 0, 0, 0, 0) - (5 * 60 + 30) * 60 * 1000,
+  );
 }
 
 /** Inclusive end of the IST calendar day, validityDays after the start day (day 1 is the start date). */
@@ -267,5 +363,15 @@ export function endOfIstValidity(start: Date, validityDays: number): Date {
   const { y, m, d } = istCalendarParts(start);
   const end = new Date(Date.UTC(y, m - 1, d));
   end.setUTCDate(end.getUTCDate() + Math.max(1, validityDays) - 1);
-  return new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate(), 18, 29, 59, 999));
+  return new Date(
+    Date.UTC(
+      end.getUTCFullYear(),
+      end.getUTCMonth(),
+      end.getUTCDate(),
+      18,
+      29,
+      59,
+      999,
+    ),
+  );
 }
