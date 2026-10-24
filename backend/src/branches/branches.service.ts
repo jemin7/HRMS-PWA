@@ -6,7 +6,10 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBranchesDto } from './dto/create-branch.dto';
 import { UpdateBranchesDto } from './dto/update-branch.dto';
-import { composeAddressQuery } from '../common/reverse-geocode';
+import {
+  composeAddressQuery,
+  geocodeAddressParts,
+} from '../common/reverse-geocode';
 import { GoogleMapsService } from '../google-maps/google-maps.service';
 
 @Injectable()
@@ -97,28 +100,60 @@ export class BranchesService {
           opts.existing.country,
         )
       : '';
-    const pin = await this.googleMaps.resolvePin({
-      feature: 'branch',
-      addressQuery,
-      incomingLat: opts.latitude,
-      incomingLng: opts.longitude,
-      incomingPlaceId: opts.placeId,
-      incomingSource: opts.locationSource,
-      refetch: opts.refetchLocation === true,
-      existing: opts.existing
-        ? { ...opts.existing, address: existingQuery }
-        : null,
-      missingMessage:
-        'Could not find coordinates for this branch address. Please check the address.',
-    });
-    if (!pin) return {};
-    return {
-      latitude: pin.latitude,
-      longitude: pin.longitude,
-      placeId: pin.placeId,
-      locationSource: pin.locationSource,
-      locationVerified: pin.locationVerified,
-    };
+    try {
+      const pin = await this.googleMaps.resolvePin({
+        feature: 'branch',
+        addressQuery,
+        incomingLat: opts.latitude,
+        incomingLng: opts.longitude,
+        incomingPlaceId: opts.placeId,
+        incomingSource: opts.locationSource,
+        refetch: opts.refetchLocation === true,
+        existing: opts.existing
+          ? { ...opts.existing, address: existingQuery }
+          : null,
+        missingMessage:
+          'Could not find coordinates for this branch address. Please check the address.',
+      });
+
+      if (!pin) return {};
+
+      return {
+        latitude: pin.latitude,
+        longitude: pin.longitude,
+        placeId: pin.placeId,
+        locationSource: pin.locationSource,
+        locationVerified: pin.locationVerified,
+      };
+    } catch (error) {
+      // Keep explicit location re-fetches under Google's normal lookup flow.
+      if (opts.refetchLocation === true) {
+        throw error;
+      }
+
+      // Fallback: try the address, city, state, PIN code and country.
+      const fallback = await geocodeAddressParts({
+        address: opts.address,
+        city: opts.city,
+        state: opts.state,
+        pincode: opts.pincode,
+        country: opts.country,
+      });
+
+      // Preserve the original error when neither geocoder finds a location.
+      if (!fallback) {
+        throw error;
+      }
+
+      return {
+        latitude: String(fallback.lat),
+        longitude: String(fallback.lng),
+        placeId: null,
+        locationSource: 'nominatim',
+        locationVerified: false,
+      };
+    }
+    
   }
 
   async create(dto: CreateBranchesDto) {
@@ -134,7 +169,10 @@ export class BranchesService {
       refetchLocation,
       ...branch
     } = dto;
-    const resolved = await this.resolveCompanyAndSp(companyID, serviceProviderID);
+    const resolved = await this.resolveCompanyAndSp(
+      companyID,
+      serviceProviderID,
+    );
     const coords = await this.resolveBranchPin({
       ...branch,
       latitude: _lat,
@@ -212,7 +250,10 @@ export class BranchesService {
     });
 
     return this.prisma.$transaction(async (tx) => {
-      let companyConnect: { connect: { id: number } } | { disconnect: true } | undefined;
+      let companyConnect:
+        | { connect: { id: number } }
+        | { disconnect: true }
+        | undefined;
       let spConnect:
         | { connect: { id: number } }
         | { disconnect: true }

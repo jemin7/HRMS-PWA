@@ -1576,9 +1576,10 @@ export function BranchManagement() {
                     title="Branch information"
                     description="Core branch details and classification."
                   >
-                    <div className="flex items-center gap-2.5 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-3">
+                    <div className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/50 p-3">
                       <Checkbox
                         id="sameAsCompany"
+                        className="border-input bg-background"
                         checked={sameAsCompany}
                         disabled={companyFillLoading}
                         onCheckedChange={async (checked) => {

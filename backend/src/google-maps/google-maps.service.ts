@@ -2,9 +2,19 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export type GoogleFeature = 'branch' | 'wfh' | 'site' | 'ENPL Site';
-export type GoogleApiName = 'places_autocomplete' | 'place_details' | 'geocode' | 'reverse_geocode';
+export type GoogleApiName =
+  | 'places_autocomplete'
+  | 'place_details'
+  | 'geocode'
+  | 'reverse_geocode';
 
-const SOURCES = new Set(['google_place', 'google_geocode', 'manual', 'device']);
+const SOURCES = new Set([
+  'google_place',
+  'google_geocode',
+  'manual',
+  'device',
+  'nominatim',
+]);
 
 export type ResolvedPin = {
   latitude: string;
@@ -14,7 +24,10 @@ export type ResolvedPin = {
   locationVerified: boolean;
 };
 
-function usablePair(lat: unknown, lng: unknown): { lat: number; lng: number } | null {
+function usablePair(
+  lat: unknown,
+  lng: unknown,
+): { lat: number; lng: number } | null {
   if (lat == null || lng == null || lat === '' || lng === '') return null;
   const la = typeof lat === 'number' ? lat : Number(String(lat).trim());
   const ln = typeof lng === 'number' ? lng : Number(String(lng).trim());
@@ -25,25 +38,38 @@ function usablePair(lat: unknown, lng: unknown): { lat: number; lng: number } | 
 }
 
 function normAddress(value?: string | null): string {
-  return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 }
 
 function componentText(row: any): string {
-  return String(row?.longText || row?.long_name || row?.shortText || row?.short_name || '').trim();
+  return String(
+    row?.longText || row?.long_name || row?.shortText || row?.short_name || '',
+  ).trim();
 }
 
 function addressParts(components: any[] | undefined) {
   const list = Array.isArray(components) ? components : [];
   const pick = (...types: string[]) => {
     for (const type of types) {
-      const hit = list.find((row) => Array.isArray(row?.types) && row.types.includes(type));
+      const hit = list.find(
+        (row) => Array.isArray(row?.types) && row.types.includes(type),
+      );
       const text = componentText(hit);
       if (text) return text;
     }
     return '';
   };
   return {
-    city: pick('locality', 'postal_town', 'administrative_area_level_3', 'administrative_area_level_2', 'sublocality'),
+    city: pick(
+      'locality',
+      'postal_town',
+      'administrative_area_level_3',
+      'administrative_area_level_2',
+      'sublocality',
+    ),
     state: pick('administrative_area_level_1'),
     pinCode: pick('postal_code'),
   };
@@ -52,7 +78,10 @@ function addressParts(components: any[] | undefined) {
 @Injectable()
 export class GoogleMapsService {
   private readonly logger = new Logger(GoogleMapsService.name);
-  private readonly autocompleteCache = new Map<string, { at: number; rows: { placeId: string; label: string }[] }>();
+  private readonly autocompleteCache = new Map<
+    string,
+    { at: number; rows: { placeId: string; label: string }[] }
+  >();
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -60,7 +89,11 @@ export class GoogleMapsService {
     return String(process.env.GOOGLE_MAPS_SERVER_KEY || '').trim();
   }
 
-  async autocomplete(query: string, feature: GoogleFeature, sessionToken: string) {
+  async autocomplete(
+    query: string,
+    feature: GoogleFeature,
+    sessionToken: string,
+  ) {
     const q = query.trim();
     if (q.length < 3) return [];
     if (!this.apiKey()) return [];
@@ -76,7 +109,8 @@ export class GoogleMapsService {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': this.apiKey(),
-          'X-Goog-FieldMask': 'suggestions.placePrediction.placeId,suggestions.placePrediction.text',
+          'X-Goog-FieldMask':
+            'suggestions.placePrediction.placeId,suggestions.placePrediction.text',
         },
         body: JSON.stringify({
           input: q,
@@ -87,7 +121,9 @@ export class GoogleMapsService {
       },
       sessionToken,
     );
-    const suggestions = Array.isArray(data?.suggestions) ? data.suggestions : [];
+    const suggestions = Array.isArray(data?.suggestions)
+      ? data.suggestions
+      : [];
     const rows = suggestions
       .map((row: any) => {
         const prediction = row?.placePrediction;
@@ -101,7 +137,11 @@ export class GoogleMapsService {
     return rows;
   }
 
-  async placeDetails(placeId: string, feature: GoogleFeature, sessionToken: string) {
+  async placeDetails(
+    placeId: string,
+    feature: GoogleFeature,
+    sessionToken: string,
+  ) {
     const id = placeId.trim();
     if (!id) throw new BadRequestException('Place is required.');
     if (!this.apiKey()) {
@@ -199,9 +239,12 @@ export class GoogleMapsService {
 
   async reverseGeocode(lat: unknown, lng: unknown, feature: GoogleFeature) {
     const point = usablePair(lat, lng);
-    if (!point) throw new BadRequestException('Enter a valid latitude and longitude.');
+    if (!point)
+      throw new BadRequestException('Enter a valid latitude and longitude.');
     if (!this.apiKey()) {
-      throw new BadRequestException('Could not find an address for these coordinates.');
+      throw new BadRequestException(
+        'Could not find an address for these coordinates.',
+      );
     }
     const url =
       `https://maps.googleapis.com/maps/api/geocode/json?latlng=${encodeURIComponent(`${point.lat},${point.lng}`)}` +
@@ -210,7 +253,9 @@ export class GoogleMapsService {
     const hit = data?.results?.[0];
     const formattedAddress = String(hit?.formatted_address || '').trim();
     if (!formattedAddress) {
-      throw new BadRequestException('Could not find an address for these coordinates.');
+      throw new BadRequestException(
+        'Could not find an address for these coordinates.',
+      );
     }
     return {
       placeId: hit?.place_id ? String(hit.place_id) : null,
@@ -225,9 +270,12 @@ export class GoogleMapsService {
   async enplReverseGeocode(lat: unknown, lng: unknown) {
     const feature: GoogleFeature = 'ENPL Site';
     const point = usablePair(lat, lng);
-    if (!point) throw new BadRequestException('Enter a valid latitude and longitude.');
+    if (!point)
+      throw new BadRequestException('Enter a valid latitude and longitude.');
     if (!this.apiKey()) {
-      throw new BadRequestException('Could not find an address for these coordinates.');
+      throw new BadRequestException(
+        'Could not find an address for these coordinates.',
+      );
     }
     const url =
       `https://maps.googleapis.com/maps/api/geocode/json?latlng=${encodeURIComponent(`${point.lat},${point.lng}`)}` +
@@ -236,7 +284,9 @@ export class GoogleMapsService {
     const hit = data?.results?.[0];
     const formattedAddress = String(hit?.formatted_address || '').trim();
     if (!formattedAddress) {
-      throw new BadRequestException('Could not find an address for these coordinates.');
+      throw new BadRequestException(
+        'Could not find an address for these coordinates.',
+      );
     }
     const parts = addressParts(hit?.address_components);
     return {
@@ -301,7 +351,10 @@ export class GoogleMapsService {
       };
     }
 
-    const existingPoint = usablePair(opts.existing?.latitude, opts.existing?.longitude);
+    const existingPoint = usablePair(
+      opts.existing?.latitude,
+      opts.existing?.longitude,
+    );
     const addressSame =
       normAddress(query) === normAddress(opts.existing?.address) || !query;
     if (existingPoint && (opts.existing?.locationVerified || addressSame)) {
@@ -334,18 +387,28 @@ export class GoogleMapsService {
       month: '2-digit',
       day: '2-digit',
     }).formatToParts(now);
-    const num = (type: string) => Number(parts.find((part) => part.type === type)?.value);
+    const num = (type: string) =>
+      Number(parts.find((part) => part.type === type)?.value);
     const year = num('year');
     const month = num('month');
     const day = num('day');
     const istStart = (y: number, m: number, d: number) =>
-      new Date(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T00:00:00+05:30`);
+      new Date(
+        `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T00:00:00+05:30`,
+      );
     const thisStart = istStart(year, month, 1);
-    const prevStart = month === 1 ? istStart(year - 1, 12, 1) : istStart(year, month - 1, 1);
+    const prevStart =
+      month === 1 ? istStart(year - 1, 12, 1) : istStart(year, month - 1, 1);
     const todayStart = istStart(year, month, day);
     const rows = await this.prisma.googleApiUsage.findMany({
       where: { createdAt: { gte: prevStart } },
-      select: { api: true, feature: true, httpStatus: true, sessionToken: true, createdAt: true },
+      select: {
+        api: true,
+        feature: true,
+        httpStatus: true,
+        sessionToken: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
     const blank = () => ({
@@ -366,7 +429,9 @@ export class GoogleMapsService {
     const trend = Array.from({ length: 14 }, (_, index) => {
       const start = new Date(todayStart.getTime() - (13 - index) * 86400000);
       const end = new Date(start.getTime() + 86400000);
-      const count = rows.filter((row) => row.createdAt >= start && row.createdAt < end).length;
+      const count = rows.filter(
+        (row) => row.createdAt >= start && row.createdAt < end,
+      ).length;
       const label = new Intl.DateTimeFormat('en-IN', {
         timeZone: 'Asia/Kolkata',
         month: 'short',
@@ -379,13 +444,20 @@ export class GoogleMapsService {
     return {
       source: 'internal_request_count',
       configured: !!this.apiKey(),
-      services: ['Address Autocomplete', 'Place Details', 'Geocoding', 'Reverse Geocoding'],
+      services: [
+        'Address Autocomplete',
+        'Place Details',
+        'Geocoding',
+        'Reverse Geocoding',
+      ],
       note: 'These are requests counted inside OpenHRM. They are not Google Cloud invoices. Official billing, quotas, and budget alerts stay in Google Cloud Console.',
       mapsNote:
         'The map itself uses a separate referrer-restricted browser key. Map loads are not included in this internal count.',
       quotaLimit,
       quotaPercent:
-        quotaLimit != null ? Math.round((current.total / quotaLimit) * 1000) / 10 : null,
+        quotaLimit != null
+          ? Math.round((current.total / quotaLimit) * 1000) / 10
+          : null,
       today,
       currentMonth: current,
       previousMonth: previous,
@@ -417,7 +489,8 @@ export class GoogleMapsService {
     let billableAutocomplete = 0;
     let billablePlaceDetails = 0;
     for (const row of reached) {
-      if (row.api !== 'places_autocomplete' && row.api !== 'place_details') continue;
+      if (row.api !== 'places_autocomplete' && row.api !== 'place_details')
+        continue;
       if (!row.sessionToken) {
         if (row.api === 'places_autocomplete') billableAutocomplete += 1;
         else billablePlaceDetails += 1;
@@ -473,7 +546,14 @@ export class GoogleMapsService {
       return null;
     } finally {
       void this.prisma.googleApiUsage
-        .create({ data: { api, feature, httpStatus: status, sessionToken: sessionToken || null } })
+        .create({
+          data: {
+            api,
+            feature,
+            httpStatus: status,
+            sessionToken: sessionToken || null,
+          },
+        })
         .catch(() => null);
     }
   }
