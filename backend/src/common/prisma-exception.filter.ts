@@ -13,8 +13,8 @@ function fkConstraintMessage(
   const field = String(
     meta?.field_name ?? meta?.constraint ?? '',
   ).toLowerCase();
-  if (field.includes('manageemployee_serviceproviderid_fkey')) {
-    return 'The selected service provider does not exist. Refresh the page and try again.';
+  if (field.includes('serviceproviderid_fkey')) {
+    return 'The selected service provider association is invalid. Refresh the page and try again.';
   }
   if (field.includes('branch')) {
     return 'Cannot delete this branch because it is linked to other records (employees, departments, policies, etc.). Remove or reassign those links first.';

@@ -1267,10 +1267,10 @@ export class ManageEmployeeService {
                * onboarding approval steps are completed.
                */
               isActive: !onboardingApproval.approvalRequired,
-
-              serviceProviderID: serviceProviderID ?? undefined,
-              companyID: companyID ?? undefined,
-              branchesID: branchesID ?? undefined,
+              
+              serviceProviderID: employee.serviceProviderID ?? undefined,
+              companyID: employee.companyID ?? undefined,
+              branchesID: employee.branchesID ?? undefined,
             },
           });
         }
