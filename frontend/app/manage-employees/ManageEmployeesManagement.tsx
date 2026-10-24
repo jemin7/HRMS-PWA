@@ -4378,10 +4378,34 @@ export function ManageEmployeesManagement() {
     setIsViewing(false);
 
     try {
-      // ✅ Fetch fresh data for this specific employee
-      const response = await fetch(`${API.manageEmp}/${r.id}`);
-      if (!response.ok) throw new Error("Failed to fetch employee data");
-      const freshData = await response.json();
+      // Fetch the latest employee data with authentication and active-company context.
+      const response = await fetch(`${API.manageEmp}/${r.id}`, {
+        method: "GET",
+        headers: authHeaders(),
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+
+        throw new Error(
+          `Failed to fetch employee data (${response.status} ${response.statusText})` +
+            (errorBody ? `: ${errorBody}` : ""),
+        );
+      }
+
+      const responseData = await response.json();
+
+      // Support both a direct employee object and a { data: employee } response.
+      const freshData = responseData?.data ?? responseData;
+
+      if (
+        !freshData ||
+        typeof freshData !== "object" ||
+        Array.isArray(freshData)
+      ) {
+        throw new Error("Employee API returned an unexpected response format.");
+      }
 
       // Now use freshData instead of r for all mappings
       const eduForm: EduForm[] = (freshData.empEduQualification ?? []).map(

@@ -6,11 +6,77 @@ import { UpdateDepartmentsDto } from './dto/update-department.dto';
 @Injectable()
 export class DepartmentsService {
   constructor(private prisma: PrismaService) {}
+  private toPositiveId(value: unknown): number | null {
+    const id = Number(value);
+    return Number.isFinite(id) && id > 0 ? id : null;
+  }
 
-  private async syncBranches(departmentID: number, branchIDs?: number[], fallbackBranchID?: number | null) {
+  private async resolveCompanyAndSp(
+    companyID?: number | null,
+    serviceProviderID?: number | null,
+  ): Promise<{
+    companyID: number | null;
+    serviceProviderID: number | null;
+  }> {
+    const resolvedCompanyID = this.toPositiveId(companyID);
+
+    // The selected company is the source of truth for its service provider.
+    if (resolvedCompanyID !== null) {
+      const company = await this.prisma.company.findUnique({
+        where: { id: resolvedCompanyID },
+        select: {
+          id: true,
+          serviceProviderID: true,
+        },
+      });
+
+      if (!company) {
+        throw new BadRequestException(
+          `Company with ID ${resolvedCompanyID} was not found.`,
+        );
+      }
+
+      return {
+        companyID: company.id,
+        serviceProviderID: this.toPositiveId(company.serviceProviderID),
+      };
+    }
+
+    // If no company is supplied, validate the service provider separately.
+    const resolvedServiceProviderID = this.toPositiveId(serviceProviderID);
+
+    if (resolvedServiceProviderID !== null) {
+      const serviceProvider = await this.prisma.serviceProvider.findUnique({
+        where: { id: resolvedServiceProviderID },
+        select: { id: true },
+      });
+
+      if (!serviceProvider) {
+        throw new BadRequestException(
+          `Service provider with ID ${resolvedServiceProviderID} was not found.`,
+        );
+      }
+    }
+
+    return {
+      companyID: null,
+      serviceProviderID: resolvedServiceProviderID,
+    };
+  }
+
+  private async syncBranches(
+    departmentID: number,
+    branchIDs?: number[],
+    fallbackBranchID?: number | null,
+  ) {
     const ids = [
       ...new Set(
-        (branchIDs?.length ? branchIDs : fallbackBranchID ? [fallbackBranchID] : [])
+        (branchIDs?.length
+          ? branchIDs
+          : fallbackBranchID
+            ? [fallbackBranchID]
+            : []
+        )
           .map((id) => Number(id))
           .filter((id) => Number.isFinite(id) && id > 0),
       ),
@@ -32,25 +98,51 @@ export class DepartmentsService {
   }
 
   async create(data: CreateDepartmentsDto) {
-    const { branchIDs, parentDepartmentID, ...rest } = data;
+    const {
+      branchIDs,
+      parentDepartmentID,
+      companyID,
+      serviceProviderID,
+      ...rest
+    } = data;
+
+    const resolved = await this.resolveCompanyAndSp(
+      companyID,
+      serviceProviderID,
+    );
+
     if (parentDepartmentID) {
       const parent = await this.prisma.departments.findUnique({
         where: { id: parentDepartmentID },
         select: { id: true, companyID: true },
       });
-      if (!parent) throw new BadRequestException('Parent department not found');
-      if (rest.companyID && parent.companyID && parent.companyID !== rest.companyID) {
-        throw new BadRequestException('Parent department must belong to the same company');
+
+      if (!parent) {
+        throw new BadRequestException('Parent department not found');
+      }
+
+      if (
+        resolved.companyID != null &&
+        parent.companyID != null &&
+        parent.companyID !== resolved.companyID
+      ) {
+        throw new BadRequestException(
+          'Parent department must belong to the same company',
+        );
       }
     }
 
     const created = await this.prisma.departments.create({
       data: {
         ...rest,
+        companyID: resolved.companyID,
+        serviceProviderID: resolved.serviceProviderID,
         parentDepartmentID: parentDepartmentID ?? null,
       },
     });
+
     await this.syncBranches(created.id, branchIDs, rest.branchesID ?? null);
+
     return this.findOne(created.id);
   }
 
@@ -121,23 +213,71 @@ export class DepartmentsService {
   }
 
   async update(id: number, data: UpdateDepartmentsDto) {
-    const { branchIDs, parentDepartmentID, ...rest } = data as CreateDepartmentsDto & UpdateDepartmentsDto;
-    if (parentDepartmentID != null && Number(parentDepartmentID) === Number(id)) {
+    const {
+      branchIDs,
+      parentDepartmentID,
+      companyID,
+      serviceProviderID,
+      ...rest
+    } = data as CreateDepartmentsDto & UpdateDepartmentsDto;
+
+    if (
+      parentDepartmentID != null &&
+      Number(parentDepartmentID) === Number(id)
+    ) {
       throw new BadRequestException('Department cannot be its own parent');
     }
+
+    const existing = await this.prisma.departments.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        companyID: true,
+        serviceProviderID: true,
+      },
+    });
+
+    if (!existing) {
+      throw new BadRequestException('Department not found');
+    }
+
+    const resolved = await this.resolveCompanyAndSp(
+      companyID !== undefined ? companyID : existing.companyID,
+      serviceProviderID !== undefined
+        ? serviceProviderID
+        : existing.serviceProviderID,
+    );
+
     if (parentDepartmentID) {
       const parent = await this.prisma.departments.findUnique({
         where: { id: parentDepartmentID },
         select: { id: true, companyID: true },
       });
-      if (!parent) throw new BadRequestException('Parent department not found');
+
+      if (!parent) {
+        throw new BadRequestException('Parent department not found');
+      }
+
+      if (
+        resolved.companyID != null &&
+        parent.companyID != null &&
+        parent.companyID !== resolved.companyID
+      ) {
+        throw new BadRequestException(
+          'Parent department must belong to the same company',
+        );
+      }
     }
 
     await this.prisma.departments.update({
       where: { id },
       data: {
         ...rest,
-        ...(parentDepartmentID !== undefined ? { parentDepartmentID: parentDepartmentID ?? null } : {}),
+        companyID: resolved.companyID,
+        serviceProviderID: resolved.serviceProviderID,
+        ...(parentDepartmentID !== undefined
+          ? { parentDepartmentID: parentDepartmentID ?? null }
+          : {}),
       },
     });
 

@@ -1,5 +1,6 @@
 "use client";
 import { TableBodySkeleton } from "../components/ui/TableBodySkeleton";
+import { authHeaders } from "@/lib/auth";
 
 import {
   hasModuleWriteAccess,
@@ -128,8 +129,19 @@ const MIN_CHARS = 0;
 const DEBOUNCE_MS = 250;
 
 async function fetchJSONSafe<T>(url: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(url, { signal });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  const res = await fetch(url, {
+    signal,
+    headers: authHeaders(),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(
+      `${res.status} ${res.statusText}${errorBody ? `: ${errorBody}` : ""}`,
+    );
+  }
+
   const raw = await res.json();
   return (raw?.data ?? raw) as T;
 }
@@ -665,7 +677,10 @@ export function DepartmentManagement() {
 
   const handleDelete = async (id: ID) => {
     try {
-      const res = await fetch(`${API.departments}/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API.departments}/${id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
       if (!res.ok) throw new Error(await res.text());
       await fetchRows();
       toast.success("Department deleted successfully");
@@ -729,14 +744,14 @@ export function DepartmentManagement() {
       if (editing) {
         const res = await fetch(`${API.departments}/${editing.id}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error(await res.text());
       } else {
         const res = await fetch(API.departments, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error(await res.text());
