@@ -7,15 +7,22 @@ import {
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 
-function fkConstraintMessage(meta: Record<string, unknown> | undefined): string {
-  const field = String(meta?.field_name ?? meta?.constraint ?? '').toLowerCase();
+function fkConstraintMessage(
+  meta: Record<string, unknown> | undefined,
+): string {
+  const field = String(
+    meta?.field_name ?? meta?.constraint ?? '',
+  ).toLowerCase();
   if (field.includes('branch')) {
     return 'Cannot delete this branch because it is linked to other records (employees, departments, policies, etc.). Remove or reassign those links first.';
   }
   if (field.includes('leavepolicy') || field.includes('leave_policy')) {
     return 'Cannot delete this leave policy because it is assigned to employees or related records. Reassign those employees first.';
   }
-  if (field.includes('attendancepolicy') || field.includes('attendance_policy')) {
+  if (
+    field.includes('attendancepolicy') ||
+    field.includes('attendance_policy')
+  ) {
     return 'Cannot delete this attendance policy because it is linked to employees or other records.';
   }
   if (field.includes('department')) {
@@ -38,13 +45,21 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
   catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    console.error('[Prisma Database Error]', {
+      code: exception.code,
+      message: exception.message,
+      meta: exception.meta,
+      clientVersion: exception.clientVersion,
+    });
 
     let message = 'Database operation failed';
     let status = HttpStatus.BAD_REQUEST;
 
     switch (exception.code) {
       case 'P2003':
-        message = fkConstraintMessage(exception.meta as Record<string, unknown>);
+        message = fkConstraintMessage(
+          exception.meta as Record<string, unknown>,
+        );
         break;
       case 'P2014':
         message =

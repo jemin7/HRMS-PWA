@@ -33,5 +33,5 @@ export const formDropdownClass = cn(
 
 export const formDropdownItemClass = cn(
   "relative flex w-full cursor-pointer select-none items-center rounded-lg px-3 py-2.5 text-sm outline-none transition-colors",
-  "hover:bg-[#F8FAFC] focus:bg-[#F8FAFC] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+  "hover:bg-[#F1F5F9] hover:text-[#0F172A] focus:bg-[#F1F5F9] focus:text-[#0F172A] dark:hover:bg-[#3F3F46] dark:hover:text-[#FAFAFA] dark:focus:bg-[#3F3F46] dark:focus:text-[#FAFAFA] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
 );

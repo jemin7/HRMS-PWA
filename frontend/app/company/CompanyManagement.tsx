@@ -669,10 +669,6 @@ export function CompanyManagement() {
       // Always bind the sole live service provider (never stale localStorage / typed text).
       const soleSp = await resolveSoleServiceProvider();
       const resolvedServiceProviderID = soleSp?.id;
-      if (!resolvedServiceProviderID) {
-        toast.error("Create a Service Provider first, then add a tenant.");
-        return;
-      }
 
       const finalData = buildCompanyPayload(
         formData as Record<string, unknown>,
@@ -1500,6 +1496,16 @@ export function CompanyManagement() {
 
   return (
     <div className="space-y-6 w-full max-w-none animate-fade-in page-content-enter pb-6 min-h-0">
+      <style jsx global>{`
+        .dark .tenant-company-select-content [data-highlighted],
+        .dark .tenant-company-select-content [data-highlighted]:hover,
+        .dark .tenant-company-select-content [data-highlighted]:focus,
+        .dark .tenant-company-select-content .tenant-company-select-item:focus,
+        .dark .tenant-company-select-content .tenant-company-select-item:hover {
+          background-color: #3f3f46 !important;
+          color: #f4f4f5 !important;
+        }
+      `}</style>
       {listLoading && isCompanyProfileOnly && <ListAreaSkeleton rows={6} />}
 
       {!listLoading && (
@@ -1584,9 +1590,13 @@ export function CompanyManagement() {
                           <SelectTrigger>
                             <SelectValue placeholder="Select company type" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="tenant-company-select-content">
                             {LEGAL_ENTITY_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
+                              <SelectItem
+                                key={opt.value}
+                                value={opt.value}
+                                className="tenant-company-select-item"
+                              >
                                 {opt.label}
                               </SelectItem>
                             ))}
@@ -1658,11 +1668,19 @@ export function CompanyManagement() {
                         <SelectTrigger>
                           <SelectValue placeholder="Select registration type" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Unregistered">
+                        <SelectContent className="tenant-company-select-content">
+                          <SelectItem
+                            value="Unregistered"
+                            className="tenant-company-select-item"
+                          >
                             Unregistered
                           </SelectItem>
-                          <SelectItem value="Registered">Registered</SelectItem>
+                          <SelectItem
+                            value="Registered"
+                            className="tenant-company-select-item"
+                          >
+                            Registered
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </FormField>
@@ -1788,12 +1806,19 @@ export function CompanyManagement() {
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select title" />
                                   </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="__none__">
+                                  <SelectContent className="tenant-company-select-content">
+                                    <SelectItem
+                                      value="__none__"
+                                      className="tenant-company-select-item"
+                                    >
                                       Select title
                                     </SelectItem>
                                     {CONTACT_TITLE_OPTIONS.map((opt) => (
-                                      <SelectItem key={opt} value={opt}>
+                                      <SelectItem
+                                        key={opt}
+                                        value={opt}
+                                        className="tenant-company-select-item"
+                                      >
                                         {opt}
                                       </SelectItem>
                                     ))}
@@ -1905,12 +1930,19 @@ export function CompanyManagement() {
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select designation" />
                                   </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="__none__">
+                                  <SelectContent className="tenant-company-select-content">
+                                    <SelectItem
+                                      value="__none__"
+                                      className="tenant-company-select-item"
+                                    >
                                       Select designation
                                     </SelectItem>
                                     {designationOptions.map((opt) => (
-                                      <SelectItem key={opt} value={opt}>
+                                      <SelectItem
+                                        key={opt}
+                                        value={opt}
+                                        className="tenant-company-select-item"
+                                      >
                                         {opt}
                                       </SelectItem>
                                     ))}
@@ -2335,12 +2367,19 @@ export function CompanyManagement() {
                               <SelectTrigger>
                                 <SelectValue placeholder="Select title" />
                               </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="__none__">
+                              <SelectContent className="tenant-company-select-content">
+                                <SelectItem
+                                  value="__none__"
+                                  className="tenant-company-select-item"
+                                >
                                   Select title
                                 </SelectItem>
                                 {CONTACT_TITLE_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt} value={opt}>
+                                  <SelectItem
+                                    key={opt}
+                                    value={opt}
+                                    className="tenant-company-select-item"
+                                  >
                                     {opt}
                                   </SelectItem>
                                 ))}
@@ -2446,14 +2485,21 @@ export function CompanyManagement() {
                             <SelectTrigger>
                               <SelectValue placeholder="Select designation" />
                             </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">
+                            <SelectContent className="tenant-company-select-content">
+                              <SelectItem
+                                value="__none__"
+                                className="tenant-company-select-item"
+                              >
                                 Select designation
                               </SelectItem>
                               {userTypeOptionsForEntity(
                                 selectedCompanyForAdmin.legalEntityType,
                               ).map((opt) => (
-                                <SelectItem key={opt} value={opt}>
+                                <SelectItem
+                                  key={opt}
+                                  value={opt}
+                                  className="tenant-company-select-item"
+                                >
                                   {opt}
                                 </SelectItem>
                               ))}
