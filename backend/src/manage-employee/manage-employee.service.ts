@@ -179,7 +179,10 @@ export class ManageEmployeeService {
   }
 
   // Helper method to verify password
-  async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
+  async verifyPassword(
+    plainPassword: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
     return this.passwordMatches(plainPassword, hashedPassword);
   }
 
@@ -197,26 +200,33 @@ export class ManageEmployeeService {
     return String(employeeID || '').trim();
   }
 
-  private employeeLoginEmail(row?: {
-    businessEmail?: string | null;
-    personalEmail?: string | null;
-  } | null): string {
-    return String(row?.businessEmail || '').trim() || String(row?.personalEmail || '').trim();
+  private employeeLoginEmail(
+    row?: {
+      businessEmail?: string | null;
+      personalEmail?: string | null;
+    } | null,
+  ): string {
+    return (
+      String(row?.businessEmail || '').trim() ||
+      String(row?.personalEmail || '').trim()
+    );
   }
 
-  private async emailTemporaryLogin(row: {
-    id?: number;
-    employeeID?: string | null;
-    employeeFirstName?: string | null;
-    employeeLastName?: string | null;
-    businessEmail?: string | null;
-    personalEmail?: string | null;
-    company?: { companyName?: string | null } | null;
-    initialPassword?: string | null;
-    approval?: { required?: boolean; credentialsActive?: boolean };
-    employeeCredentials?: { isActive?: boolean } | null;
-    onboardingApprovalStatus?: string | null;
-  } | null): Promise<boolean> {
+  private async emailTemporaryLogin(
+    row: {
+      id?: number;
+      employeeID?: string | null;
+      employeeFirstName?: string | null;
+      employeeLastName?: string | null;
+      businessEmail?: string | null;
+      personalEmail?: string | null;
+      company?: { companyName?: string | null } | null;
+      initialPassword?: string | null;
+      approval?: { required?: boolean; credentialsActive?: boolean };
+      employeeCredentials?: { isActive?: boolean } | null;
+      onboardingApprovalStatus?: string | null;
+    } | null,
+  ): Promise<boolean> {
     const to = this.employeeLoginEmail(row);
     const temporaryPassword = String(row?.initialPassword || '');
     const username = this.employeeCodeUsername(row?.employeeID);
@@ -812,8 +822,48 @@ export class ManageEmployeeService {
 
     const forcedCompanyID = await this.tenantForcedCompanyID(req);
     const companyID = forcedCompanyID ?? incomingCompanyID;
+
     if (forcedCompanyID && !this.toPositiveId(companyID)) {
       throw new BadRequestException('Company is required to save an employee');
+    }
+
+    // Resolve the service provider from the saved company.
+    // Do not trust a potentially stale provider ID from the frontend.
+    const normalizedCompanyID = this.toPositiveId(companyID);
+    let resolvedServiceProviderID: number | undefined;
+
+    if (normalizedCompanyID) {
+      const company = await this.prisma.company.findUnique({
+        where: { id: normalizedCompanyID },
+        select: { serviceProviderID: true },
+      });
+
+      if (!company) {
+        throw new BadRequestException('Selected company was not found.');
+      }
+
+      // A company without a service provider is valid.
+      resolvedServiceProviderID =
+        this.toPositiveId(company.serviceProviderID) ?? undefined;
+    } else {
+      // If no company was selected, accept a provider ID only if it exists.
+      const requestedServiceProviderID = this.toPositiveId(serviceProviderID);
+
+      if (requestedServiceProviderID) {
+        const existingServiceProvider =
+          await this.prisma.serviceProvider.findUnique({
+            where: { id: requestedServiceProviderID },
+            select: { id: true },
+          });
+
+        if (!existingServiceProvider) {
+          throw new BadRequestException(
+            'Selected service provider does not exist. Refresh the page and try again.',
+          );
+        }
+
+        resolvedServiceProviderID = existingServiceProvider.id;
+      }
     }
     await assertEmailNotInUse(this.prisma, [
       scalars.businessEmail,
@@ -939,7 +989,7 @@ export class ManageEmployeeService {
             : {}),
 
           // Foreign key fields
-          serviceProviderID: serviceProviderID ?? undefined,
+          serviceProviderID: resolvedServiceProviderID,
           companyID: companyID ?? undefined,
           branchesID: branchesID ?? undefined,
           contractorID: contractorID ?? undefined,
@@ -1303,7 +1353,9 @@ export class ManageEmployeeService {
       };
     });
 
-    const createdName = created ? this.employeeDisplayName(created) : 'Employee';
+    const createdName = created
+      ? this.employeeDisplayName(created)
+      : 'Employee';
     await this.auditLog.logFromRequest(req, {
       action: 'CREATE',
       module: 'EMPLOYEE',
@@ -2617,11 +2669,9 @@ export class ManageEmployeeService {
         });
       }
 
-        // Create credentials on first save from the employee ID. Do not
-        // overwrite an existing login password when the employee is updated.
-        const nextLoginUsername = this.employeeCodeUsername(
-          oldData?.employeeID,
-        );
+      // Create credentials on first save from the employee ID. Do not
+      // overwrite an existing login password when the employee is updated.
+      const nextLoginUsername = this.employeeCodeUsername(oldData?.employeeID);
 
       if (
         nextLoginUsername ||
@@ -2645,10 +2695,7 @@ export class ManageEmployeeService {
             where: { employeeID: id },
             data: updateData,
           });
-        } else if (
-          nextLoginUsername &&
-          !oldData?.isCompanyOwner
-        ) {
+        } else if (nextLoginUsername && !oldData?.isCompanyOwner) {
           const taken = await tx.employeeCredentials.findFirst({
             where: {
               username: { equals: nextLoginUsername, mode: 'insensitive' },
@@ -3612,7 +3659,7 @@ export class ManageEmployeeService {
     });
   }
 
-async remove(id: number, req?: Request) {
+  async remove(id: number, req?: Request) {
     try {
       const existing = await this.prisma.manageEmployee.findUnique({
         where: {
