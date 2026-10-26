@@ -29,7 +29,9 @@ export function OptionCardGroup({
   const toggle = (optionValue: string, checked: boolean) => {
     if (multiple) {
       onChange(
-        checked ? [...value, optionValue] : value.filter((v) => v !== optionValue),
+        checked
+          ? [...value, optionValue]
+          : value.filter((v) => v !== optionValue),
       );
       return;
     }
@@ -48,12 +50,14 @@ export function OptionCardGroup({
               "relative flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 transition-all duration-150",
               selected
                 ? "border-primary bg-primary/5"
-                : "border-[#E2E8F0] bg-background hover:border-[#CBD5E1] hover:bg-[#F8FAFC]",
+                : "border-border bg-background hover:border-primary/40 hover:bg-muted/50",
             )}
           >
             <Checkbox
               checked={selected}
-              onCheckedChange={(checked) => toggle(option.value, checked === true)}
+              onCheckedChange={(checked) =>
+                toggle(option.value, checked === true)
+              }
               className="mt-0.5"
             />
             <div className="min-w-0 flex-1 space-y-0.5">
@@ -66,7 +70,9 @@ export function OptionCardGroup({
                     )}
                   />
                 )}
-                <p className="text-sm font-medium text-foreground">{option.label}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {option.label}
+                </p>
               </div>
               {option.description && (
                 <p className="text-xs text-muted-foreground leading-snug pl-5">

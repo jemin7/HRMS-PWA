@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type MouseEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 import {
   Controls,
@@ -15,7 +21,12 @@ import "@xyflow/react/dist/style.css";
 import { CompanyNode } from "./CompanyNode";
 import { DepartmentNode } from "./DepartmentNode";
 import { EmployeeNode } from "./EmployeeNode";
-import { layoutOrgTree, placeUnlinkedOnLastRow, NODE_SIZE, type LayoutTree } from "./layout";
+import {
+  layoutOrgTree,
+  placeUnlinkedOnLastRow,
+  NODE_SIZE,
+  type LayoutTree,
+} from "./layout";
 import { OrgChartToolbar } from "./OrgChartToolbar";
 import type {
   DepartmentNodeData,
@@ -40,7 +51,10 @@ type ChartView = "employees" | "departments";
 
 function pruneCollapsed(node: LayoutTree, collapsed: Set<string>): LayoutTree {
   if (collapsed.has(node.id)) return { ...node, children: [] };
-  return { ...node, children: node.children.map((c) => pruneCollapsed(c, collapsed)) };
+  return {
+    ...node,
+    children: node.children.map((c) => pruneCollapsed(c, collapsed)),
+  };
 }
 
 function reportsByManager(employees: Employee[]) {
@@ -57,9 +71,7 @@ function reportsByManager(employees: Employee[]) {
   return reports;
 }
 
-function buildEmployeeTree(
-  employees: Employee[],
-): {
+function buildEmployeeTree(employees: Employee[]): {
   tree: LayoutTree;
   linkedEdges: Set<string>;
   childMap: Map<string, string[]>;
@@ -77,19 +89,44 @@ function buildEmployeeTree(
   };
 
   const walk = (emp: Employee): LayoutTree => {
+    // Defensive guard against circular reporting relationships.
+    if (placed.has(emp.id)) {
+      return {
+        id: emp.id,
+        kind: "employee",
+        children: [],
+      };
+    }
+
     placed.add(emp.id);
+
     const kids: LayoutTree[] = [];
+
     for (const child of reports.get(emp.id) || []) {
+      // Stop cycles before creating a duplicate edge or recursing.
+      if (placed.has(child.id)) {
+        continue;
+      }
+
       addChild(emp.id, child.id, true);
       kids.push(walk(child));
     }
-    return { id: emp.id, kind: "employee", children: kids };
+
+    return {
+      id: emp.id,
+      kind: "employee",
+      children: kids,
+    };
   };
 
   const roots = employees
     .filter((e) => e.isCompanyOwner || e.isL1 || !e.department)
     .filter((e) => !e.managerId || e.isCompanyOwner || e.isL1)
-    .sort((a, b) => Number(b.isCompanyOwner) - Number(a.isCompanyOwner) || a.name.localeCompare(b.name));
+    .sort(
+      (a, b) =>
+        Number(b.isCompanyOwner) - Number(a.isCompanyOwner) ||
+        a.name.localeCompare(b.name),
+    );
 
   const uniqueRoots: Employee[] = [];
   const seen = new Set<string>();
@@ -99,10 +136,17 @@ function buildEmployeeTree(
     uniqueRoots.push(e);
   }
 
-  const companyChildren: LayoutTree[] = uniqueRoots.map((emp) => {
+  const companyChildren: LayoutTree[] = [];
+
+  for (const emp of uniqueRoots) {
+    // An earlier root may already have included this employee.
+    if (placed.has(emp.id)) {
+      continue;
+    }
+
     addChild("company", emp.id, true);
-    return walk(emp);
-  });
+    companyChildren.push(walk(emp));
+  }
 
   const unlinkedIds = employees
     .filter((e) => !placed.has(e.id))
@@ -170,7 +214,8 @@ function buildDepartmentTree(
     return { id: dept.id, kind: "department", children: kids };
   };
 
-  const roots = byParent.get(null) || departments.filter((d) => !d.parentDepartmentId);
+  const roots =
+    byParent.get(null) || departments.filter((d) => !d.parentDepartmentId);
   const companyChildren = roots.map((dept) => {
     addChild("company", dept.id);
     return walkDept(dept);
@@ -192,13 +237,21 @@ function AlignTreeTop({ nodes, view }: { nodes: RFNode[]; view: ChartView }) {
     const frame = window.requestAnimationFrame(() => {
       if (cancelled) return;
       const bounds = getNodesBounds(nodes);
-      const pane = document.querySelector(".org-chart-canvas") as HTMLElement | null;
+      const pane = document.querySelector(
+        ".org-chart-canvas",
+      ) as HTMLElement | null;
       const w = pane?.clientWidth ?? 0;
       const h = pane?.clientHeight ?? 0;
       if (w < 80 || h < 80) return;
       const zoom = Math.min(
         1,
-        Math.max(MIN_ZOOM, Math.min((w - 48) / Math.max(bounds.width, 1), (h - 32) / Math.max(bounds.height, 1))),
+        Math.max(
+          MIN_ZOOM,
+          Math.min(
+            (w - 48) / Math.max(bounds.width, 1),
+            (h - 32) / Math.max(bounds.height, 1),
+          ),
+        ),
       );
       const x = (w - bounds.width * zoom) / 2 - bounds.x * zoom;
       const y = 12 - bounds.y * zoom;
@@ -274,7 +327,12 @@ export function OrgChart({ data }: { data: OrgChartData }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  const { tree: fullTree, linkedEdges, childMap, unlinkedIds } = useMemo(
+  const {
+    tree: fullTree,
+    linkedEdges,
+    childMap,
+    unlinkedIds,
+  } = useMemo(
     () =>
       view === "employees"
         ? buildEmployeeTree(data.employees)
@@ -282,7 +340,10 @@ export function OrgChart({ data }: { data: OrgChartData }) {
     [view, data],
   );
 
-  const tree = useMemo(() => pruneCollapsed(fullTree, collapsed), [fullTree, collapsed]);
+  const tree = useMemo(
+    () => pruneCollapsed(fullTree, collapsed),
+    [fullTree, collapsed],
+  );
   const positions = useMemo(() => {
     const pos = layoutOrgTree(tree);
     placeUnlinkedOnLastRow(pos, unlinkedIds);
@@ -313,7 +374,8 @@ export function OrgChart({ data }: { data: OrgChartData }) {
   const nodes: RFNode[] = useMemo(() => {
     const byEmp = new Map(data.employees.map((e) => [e.id, e]));
     const byDept = new Map(data.departments.map((d) => [d.id, d]));
-    const reportsOf = (id: string) => data.employees.filter((e) => e.managerId === id);
+    const reportsOf = (id: string) =>
+      data.employees.filter((e) => e.managerId === id);
     const list: RFNode[] = [];
 
     for (const [id, pos] of positions) {
@@ -330,7 +392,10 @@ export function OrgChart({ data }: { data: OrgChartData }) {
           selectable: false,
           className: hoveredId === id ? "nopan org-node-hovered" : "nopan",
           zIndex: hoveredId === id ? 1000 : 1,
-          style: { width: NODE_SIZE.company.width, height: NODE_SIZE.company.height },
+          style: {
+            width: NODE_SIZE.company.width,
+            height: NODE_SIZE.company.height,
+          },
           data: {
             kind: "company",
             company: data.company,
@@ -354,7 +419,10 @@ export function OrgChart({ data }: { data: OrgChartData }) {
           selectable: false,
           className: hoveredId === id ? "nopan org-node-hovered" : "nopan",
           zIndex: hoveredId === id ? 1000 : 2,
-          style: { width: NODE_SIZE.employee.width, height: NODE_SIZE.employee.height },
+          style: {
+            width: NODE_SIZE.employee.width,
+            height: NODE_SIZE.employee.height,
+          },
           data: {
             kind: "employee",
             employee: emp,
@@ -381,12 +449,17 @@ export function OrgChart({ data }: { data: OrgChartData }) {
           selectable: false,
           className: hoveredId === id ? "nopan org-node-hovered" : "nopan",
           zIndex: hoveredId === id ? 1000 : 2,
-          style: { width: NODE_SIZE.department.width, height: NODE_SIZE.department.height },
+          style: {
+            width: NODE_SIZE.department.width,
+            height: NODE_SIZE.department.height,
+          },
           data: {
             kind: "department",
             department: {
               ...dept,
-              employeeCount: (childMap.get(dept.id) || []).filter((cid) => byEmp.has(cid)).length || dept.employeeCount,
+              employeeCount:
+                (childMap.get(dept.id) || []).filter((cid) => byEmp.has(cid))
+                  .length || dept.employeeCount,
             },
             colorIndex: colorIndex < 0 ? 0 : colorIndex,
             selected: false,

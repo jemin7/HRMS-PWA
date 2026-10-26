@@ -1,5 +1,6 @@
 "use client";
 import { TableBodySkeleton } from "../components/ui/TableBodySkeleton";
+import { authHeaders } from "@/lib/auth";
 
 import {
   hasCompanyAccessFlag,
@@ -144,8 +145,19 @@ const MIN_CHARS = 0;
 const DEBOUNCE_MS = 250;
 
 async function fetchJSONSafe<T>(url: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(url, { signal });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  const res = await fetch(url, {
+    signal,
+    headers: authHeaders(),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(
+      `${res.status} ${res.statusText}${errorBody ? `: ${errorBody}` : ""}`,
+    );
+  }
+
   const raw = await res.json();
   return (raw?.data ?? raw) as T;
 }
@@ -285,41 +297,60 @@ export function DesignationManagement() {
     masterDataLoadedRef.current = true;
 
     const loadAllData = async () => {
-      try {
-        const [sps, cos, brs, depts] = await Promise.all([
-          fetchJSONSafe<ServiceProvider[]>(API.serviceProviders),
-          fetchJSONSafe<Company[]>(API.companies),
-          fetchJSONSafe<Branch[]>(API.branches),
-          fetchJSONSafe<Department[]>(API.departments),
-        ]);
+      const results = await Promise.allSettled([
+        fetchJSONSafe<ServiceProvider[]>(API.serviceProviders),
+        fetchJSONSafe<Company[]>(API.companies),
+        fetchJSONSafe<Branch[]>(API.branches),
+        fetchJSONSafe<Department[]>(API.departments),
+      ] as const);
 
-        setAllCompanies(cos || []);
-        setAllBranches(brs || []);
-        setAllDepartments(depts || []);
+      const [spsResult, cosResult, brsResult, deptsResult] = results;
 
-        setSpMap(
-          Object.fromEntries(
-            (sps || []).map((s) => [s.id, s.companyName ?? ""]),
-          ),
-        );
-        setCoMap(
-          Object.fromEntries(
-            (cos || []).map((c) => [c.id, c.companyName ?? ""]),
-          ),
-        );
-        setBrMap(
-          Object.fromEntries(
-            (brs || []).map((b) => [b.id, b.branchName ?? ""]),
-          ),
-        );
-        setDeptMap(
-          Object.fromEntries(
-            (depts || []).map((d) => [d.id, d.departmentName ?? ""]),
-          ),
-        );
-      } catch (error) {
-        console.error("Failed to load master data:", error);
+      const sps =
+        spsResult.status === "fulfilled" && Array.isArray(spsResult.value)
+          ? spsResult.value
+          : [];
+      const cos =
+        cosResult.status === "fulfilled" && Array.isArray(cosResult.value)
+          ? cosResult.value
+          : [];
+      const brs =
+        brsResult.status === "fulfilled" && Array.isArray(brsResult.value)
+          ? brsResult.value
+          : [];
+      const depts =
+        deptsResult.status === "fulfilled" && Array.isArray(deptsResult.value)
+          ? deptsResult.value
+          : [];
+
+      if (spsResult.status === "rejected") {
+        console.error("Failed to load service providers:", spsResult.reason);
       }
+      if (cosResult.status === "rejected") {
+        console.error("Failed to load companies:", cosResult.reason);
+      }
+      if (brsResult.status === "rejected") {
+        console.error("Failed to load branches:", brsResult.reason);
+      }
+      if (deptsResult.status === "rejected") {
+        console.error("Failed to load departments:", deptsResult.reason);
+      }
+
+      setAllCompanies(cos);
+      setAllBranches(brs);
+      setAllDepartments(depts);
+
+      setSpMap(Object.fromEntries(sps.map((s) => [s.id, s.companyName ?? ""])));
+      setCoMap(Object.fromEntries(cos.map((c) => [c.id, c.companyName ?? ""])));
+      setBrMap(Object.fromEntries(brs.map((b) => [b.id, b.branchName ?? ""])));
+      setDeptMap(
+        Object.fromEntries(depts.map((d) => [d.id, d.departmentName ?? ""])),
+      );
+
+      // Allow another load when any master-data request failed.
+      masterDataLoadedRef.current = results.every(
+        (result) => result.status === "fulfilled",
+      );
     };
 
     loadAllData();
@@ -856,6 +887,7 @@ export function DesignationManagement() {
     deptTimerRef.current = setTimeout(() => {
       const companyID =
         formData.companyID ??
+        currentUserMapping?.companyID ??
         resolveScopedCompanyId(user) ??
         user?.companyID ??
         null;
@@ -1214,9 +1246,11 @@ export function DesignationManagement() {
                     user?.companyID
                   }
                   required={false}
+                  lockSingleBranch={false}
                   disabled={
                     !(
                       formData.companyID ||
+                      currentUserMapping?.companyID ||
                       resolveScopedCompanyId(user) ||
                       user?.companyID
                     )
@@ -1239,9 +1273,7 @@ export function DesignationManagement() {
                     }));
                     setSuggestedBranches([]);
                   }}
-                  onFetch={(q) => {
-                    if (!editing) fetchBranchSuggestions(q);
-                  }}
+                  onFetch={fetchBranchSuggestions}
                   options={suggestedBranches}
                   optionsLoading={loadingBranches}
                 />
@@ -1263,14 +1295,14 @@ export function DesignationManagement() {
                       parentDesignationID: null,
                       parentAutocomplete: "",
                     }));
-                    if (!editing) {
-                      fetchDepartmentSuggestions(val);
-                    }
+                    fetchDepartmentSuggestions(val);
                   }}
                   onFocus={() => {
                     if (
-                      !editing &&
-                      (formData.companyID || resolveScopedCompanyId(user)) &&
+                      (formData.companyID ||
+                        currentUserMapping?.companyID ||
+                        resolveScopedCompanyId(user) ||
+                        user?.companyID) &&
                       formData.deptAutocomplete.length >= MIN_CHARS
                     ) {
                       fetchDepartmentSuggestions(formData.deptAutocomplete);
@@ -1297,7 +1329,7 @@ export function DesignationManagement() {
                     )
                   }
                 />
-                {suggestedDepartments.length > 0 && !editing && (
+                {suggestedDepartments.length > 0 && (
                   <div className="absolute z-10 bg-popover text-popover-foreground border border-border rounded w-full shadow max-h-48 overflow-y-auto">
                     {loadingDepartments && (
                       <div className="px-3 py-2 text-sm text-gray-500">

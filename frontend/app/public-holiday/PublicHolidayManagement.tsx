@@ -4,6 +4,13 @@ import { useState, useEffect, useMemo } from "react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import { Label } from "../components/ui/label";
 import { FormDrawer } from "../components/ui/form-drawer";
 import { Icon } from "@iconify/react";
@@ -25,7 +32,9 @@ import { getSidebarContext } from "../utils/sidebarContext";
 import {
   canDesktopManagerManage,
   isCompanyModuleOperator,
+  resolveScopedCompanyId,
 } from "../utils/scopeContext";
+import { authHeaders } from "@/lib/auth";
 
 interface PublicHoliday {
   id: string;
@@ -151,7 +160,10 @@ export function PublicHolidayManagement() {
       try {
         // --- MANAGER ---
         if (user.role === "SERVICE_PROVIDER") {
-          const usersRes = await fetch(`${BACKEND_URL}/users`);
+          const usersRes = await fetch(`${BACKEND_URL}/users`, {
+            headers: authHeaders(),
+            cache: "no-store",
+          });
           const users = await usersRes.json();
           const me = users.find((u: any) => u.username === user.username);
           setManagerData(me || null);
@@ -172,6 +184,10 @@ export function PublicHolidayManagement() {
         if (user.role === "EMPLOYEE") {
           const credsRes = await fetch(
             `${BACKEND_URL}/manage-emp/credentials/all`,
+            {
+              headers: authHeaders(),
+              cache: "no-store",
+            },
           );
           const creds = await credsRes.json();
           const me = creds.find((u: any) => u.username === user.username);
@@ -229,8 +245,15 @@ export function PublicHolidayManagement() {
   }, [formData.branchesID, formData.companyID]);
 
   async function robustGet<T = any>(url: string): Promise<T> {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`${res.status}`);
+    const res = await fetch(url, {
+      cache: "no-store",
+      headers: authHeaders(),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Request failed (${res.status}): ${url}`);
+    }
+
     return res.json();
   }
 
@@ -270,57 +293,103 @@ export function PublicHolidayManagement() {
   // Branch fetch (filtered by company)
   const fetchBranches = async (q: string = "") => {
     try {
-      // Determine company ID based on role
-      let companyIdToUse: number | undefined;
+      const ctx = getSidebarContext();
+      const scopedCompanyId = resolveScopedCompanyId(user);
+
+      let companyCandidate: unknown;
 
       if (user?.role === "SUPERADMIN") {
-        companyIdToUse = formData.companyID;
+        companyCandidate =
+          formData.companyID ??
+          ctx?.companyID ??
+          scopedCompanyId ??
+          user?.companyID;
       } else if (user?.role === "SERVICE_PROVIDER") {
-        const ctx = getSidebarContext();
-        companyIdToUse =
-          managerData?.companyID ?? ctx?.companyID ?? user?.companyID;
+        companyCandidate =
+          managerData?.companyID ??
+          ctx?.companyID ??
+          scopedCompanyId ??
+          user?.companyID;
       } else if (user?.role === "EMPLOYEE") {
-        companyIdToUse = empCreds?.companyID;
+        companyCandidate =
+          empCreds?.companyID ??
+          scopedCompanyId ??
+          formData.companyID ??
+          user?.companyID;
       } else {
-        // COMPANY_ADMIN / BRANCH_ADMIN
-        const ctx = getSidebarContext();
-        companyIdToUse =
-          formData.companyID ?? ctx?.companyID ?? user?.companyID;
+        companyCandidate =
+          scopedCompanyId ??
+          formData.companyID ??
+          ctx?.companyID ??
+          managerData?.companyID ??
+          empCreds?.companyID ??
+          user?.companyID;
       }
 
-      if (!companyIdToUse) return [];
+      const parsedCompanyId = Number(companyCandidate);
+      const companyIdToUse =
+        Number.isFinite(parsedCompanyId) && parsedCompanyId > 0
+          ? parsedCompanyId
+          : undefined;
 
-      const data = await robustGet<any[]>(`${BACKEND_URL}/branches`);
-      const allBranches = Array.isArray(data) ? data : [];
+      const response = await robustGet<any>(`${BACKEND_URL}/branches`);
 
-      // Filter branches by company
-      const filteredByCompany = allBranches.filter(
-        (b: any) => Number(b.companyID) === Number(companyIdToUse),
-      );
-      // 🔒 BRANCH_ADMIN — restrict to their own branch only
-      const branchScope =
-        user?.role === "BRANCH_ADMIN" && user?.branchesID
-          ? filteredByCompany.filter(
-              (b: any) => Number(b.id) === Number(user.branchesID),
-            )
-          : filteredByCompany;
+      const allBranches = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.data)
+          ? response.data
+          : [];
 
-      // Apply search filter if query provided
-      const matched = q
-        ? branchScope.filter((b: any) =>
-            (b.branchName || "").toLowerCase().includes(q.toLowerCase()),
+      // Super Admin can choose a branch even when no company
+      // has yet been selected. The selected branch supplies its company ID.
+      let branchScope = companyIdToUse
+        ? allBranches.filter(
+            (branch: any) =>
+              Number(branch.companyID ?? branch.company?.id) === companyIdToUse,
+          )
+        : user?.role === "SUPERADMIN"
+          ? allBranches
+          : [];
+
+      // Branch admins must only see their assigned branch.
+      if (user?.role === "BRANCH_ADMIN") {
+        const assignedBranchId = Number(
+          user?.branchesID ?? managerData?.branchesID ?? empCreds?.branchesID,
+        );
+
+        branchScope =
+          Number.isFinite(assignedBranchId) && assignedBranchId > 0
+            ? branchScope.filter(
+                (branch: any) => Number(branch.id) === assignedBranchId,
+              )
+            : [];
+      }
+
+      const query = q.trim().toLowerCase();
+
+      const matched = query
+        ? branchScope.filter((branch: any) =>
+            String(branch.branchName ?? "")
+              .toLowerCase()
+              .includes(query),
           )
         : branchScope;
 
+      // Remove duplicate branch IDs.
       const seen = new Set<number>();
-      return matched.filter((b: any) => {
-        const id = Number(b.id);
-        if (!Number.isFinite(id) || seen.has(id)) return false;
+
+      return matched.filter((branch: any) => {
+        const id = Number(branch.id);
+
+        if (!Number.isFinite(id) || id <= 0 || seen.has(id)) {
+          return false;
+        }
+
         seen.add(id);
         return true;
       });
     } catch (error) {
-      console.error("Error fetching branches:", error);
+      console.error("Failed to load public-holiday branch suggestions:", error);
       return [];
     }
   };
@@ -412,10 +481,12 @@ export function PublicHolidayManagement() {
       // Transform all holidays first
       const mapped = holidays.map((h) => ({
         id: String(h.id),
-        serviceProviderID: h.serviceProviderID,
-        companyID: h.companyID,
-        branchesID: h.branchesID,
-        manageHolidayID: h.manageHolidayID,
+        serviceProviderID:
+          h.serviceProviderID == null ? undefined : Number(h.serviceProviderID),
+        companyID: h.companyID == null ? undefined : Number(h.companyID),
+        branchesID: h.branchesID == null ? undefined : Number(h.branchesID),
+        manageHolidayID:
+          h.manageHolidayID == null ? undefined : Number(h.manageHolidayID),
         serviceProvider: h.serviceProvider?.companyName || "",
         companyName: h.company?.companyName || "",
         branchName: h.branches?.branchName || "",
@@ -433,63 +504,95 @@ export function PublicHolidayManagement() {
       }));
 
       // ---- Role-based filtering ----
+      const ctx = getSidebarContext();
+
       if (user?.role === "SUPERADMIN") {
-        const ctx = getSidebarContext();
-        if (ctx?.companyID) {
-          setPublicHolidays(
-            mapped.filter((r: any) => r.companyID === ctx.companyID),
-          );
-        } else {
-          setPublicHolidays(mapped);
-        }
+        const companyID = ctx?.companyID;
+
+        setPublicHolidays(
+          companyID
+            ? mapped.filter((h) => Number(h.companyID) === Number(companyID))
+            : mapped,
+        );
         return;
       }
 
       if (user?.role === "SERVICE_PROVIDER") {
-        const ctx = getSidebarContext();
-        if (ctx?.companyID) {
+        const companyID = ctx?.companyID;
+        const serviceProviderID =
+          managerData?.serviceProviderID ?? user?.serviceProviderID;
+
+        if (companyID != null) {
           setPublicHolidays(
-            mapped.filter((h: any) => h.companyID === ctx.companyID),
+            mapped.filter((h) => Number(h.companyID) === Number(companyID)),
           );
-          return;
-        }
-        if (managerData?.serviceProviderID) {
+        } else if (serviceProviderID != null) {
           setPublicHolidays(
             mapped.filter(
-              (h: any) => h.serviceProviderID === managerData.serviceProviderID,
+              (h) => Number(h.serviceProviderID) === Number(serviceProviderID),
             ),
           );
-          return;
+        } else {
+          setPublicHolidays([]);
         }
-        setPublicHolidays([]);
         return;
       }
 
       if (user?.role === "EMPLOYEE") {
-        const filtered = mapped.filter(
-          (h) =>
-            h.companyID === empCreds?.companyID &&
-            h.branchesID === empCreds?.branchesID,
-        );
-        setPublicHolidays(filtered);
+        if (isCompanyModuleOperator(user)) {
+          // Company-level operators can manage holidays across branches.
+          const companyID =
+            resolveScopedCompanyId(user, ctx) ??
+            empCreds?.companyID ??
+            user.companyID;
+
+          setPublicHolidays(
+            companyID != null
+              ? mapped.filter((h) => Number(h.companyID) === Number(companyID))
+              : [],
+          );
+        } else {
+          // Ordinary employees only see holidays assigned to their branch.
+          const companyID = empCreds?.companyID ?? user.companyID;
+          const branchesID = empCreds?.branchesID ?? user.branchesID;
+
+          setPublicHolidays(
+            companyID != null && branchesID != null
+              ? mapped.filter(
+                  (h) =>
+                    Number(h.companyID) === Number(companyID) &&
+                    Number(h.branchesID) === Number(branchesID),
+                )
+              : [],
+          );
+        }
         return;
       }
 
-      // COMPANY_ADMIN / BRANCH_ADMIN → filter by company (branch admin also by branch)
+      // Company admins see holidays for their company.
+      // Branch admins see only holidays for their assigned branch.
       {
-        const ctx = getSidebarContext();
-        const companyID = ctx?.companyID ?? user?.companyID;
-        if (companyID) {
-          if (user?.role === "BRANCH_ADMIN" && user?.branchesID) {
+        const companyID =
+          resolveScopedCompanyId(user, ctx) ??
+          ctx?.companyID ??
+          user?.companyID;
+
+        if (companyID != null) {
+          if (user?.role === "BRANCH_ADMIN") {
+            const branchesID = user?.branchesID ?? managerData?.branchesID;
+
             setPublicHolidays(
-              mapped.filter(
-                (h: any) =>
-                  h.companyID === companyID && h.branchesID === user.branchesID,
-              ),
+              branchesID != null
+                ? mapped.filter(
+                    (h) =>
+                      Number(h.companyID) === Number(companyID) &&
+                      Number(h.branchesID) === Number(branchesID),
+                  )
+                : [],
             );
           } else {
             setPublicHolidays(
-              mapped.filter((h: any) => h.companyID === companyID),
+              mapped.filter((h) => Number(h.companyID) === Number(companyID)),
             );
           }
           return;
@@ -559,31 +662,67 @@ export function PublicHolidayManagement() {
   };
 
   const handleBranchSelect = async (selected: SelectedItem) => {
-    // Get all branches to find the selected one
-    const allBranches = await fetchBranches("");
-    const selectedBranch = allBranches.find((b) => b.id === selected.value);
+    const branch = selected.item ?? {};
+    const branchId = Number(selected.value);
+    const ctx = getSidebarContext();
 
-    if (selectedBranch) {
-      setFormData((prev) => ({
-        ...prev,
-        branchName: selected.display,
-        branchesID: selected.value,
-        // For SUPERADMIN, ensure companyID matches the branch's company
-        ...(user?.role === "SUPERADMIN" && {
-          companyID: selectedBranch.companyID,
-          companyName: selectedBranch.company?.companyName || "",
-        }),
-        // Clear holiday selection
-        holidayName: "",
-        manageHolidayID: undefined,
-        financialYear: "",
-      }));
+    const rawCompanyId =
+      branch.companyID ??
+      branch.company?.id ??
+      formData.companyID ??
+      ctx?.companyID ??
+      managerData?.companyID ??
+      empCreds?.companyID ??
+      user?.companyID;
 
-      // Load financial year and holiday options
-      if (selectedBranch.companyID) {
-        await loadFinancialYearOptions(selectedBranch.companyID);
-        await loadHolidayOptions(selectedBranch.companyID, selected.value);
-      }
+    const rawServiceProviderId =
+      branch.serviceProviderID ??
+      branch.serviceProvider?.id ??
+      branch.company?.serviceProviderID;
+
+    const companyId = Number(rawCompanyId);
+    const validCompanyId =
+      Number.isFinite(companyId) && companyId > 0 ? companyId : undefined;
+
+    const serviceProviderId = Number(rawServiceProviderId);
+    const validServiceProviderId =
+      Number.isFinite(serviceProviderId) && serviceProviderId > 0
+        ? serviceProviderId
+        : undefined;
+
+    if (!Number.isFinite(branchId) || branchId <= 0) {
+      toast.error("Please select a valid branch.");
+      return;
+    }
+
+    // Save the selected branch immediately.
+    // Do not depend on a second API request to confirm the selection.
+    setFormData((prev) => ({
+      ...prev,
+      branchName: selected.display || branch.branchName || "",
+      branchesID: branchId,
+      companyID: validCompanyId ?? prev.companyID,
+      serviceProviderID: validServiceProviderId,
+      ...(validCompanyId ? { companyID: validCompanyId } : {}),
+      ...(user?.role === "SUPERADMIN"
+        ? {
+            companyName:
+              branch.company?.companyName ??
+              branch.companyName ??
+              prev.companyName,
+          }
+        : {}),
+      holidayName: "",
+      manageHolidayID: undefined,
+      financialYear: "",
+    }));
+
+    if (validCompanyId) {
+      await loadFinancialYearOptions(validCompanyId);
+      await loadHolidayOptions(validCompanyId, branchId);
+    } else {
+      setFinancialYearOptions([]);
+      setHolidayOptions([]);
     }
   };
 
@@ -613,33 +752,35 @@ export function PublicHolidayManagement() {
     // Determine IDs based on role
     let serviceProviderID, companyID, branchesID;
 
+    const ctx = getSidebarContext();
+
     if (user?.role === "SUPERADMIN") {
       serviceProviderID = formData.serviceProviderID;
       companyID = formData.companyID;
       branchesID = formData.branchesID;
     } else if (user?.role === "SERVICE_PROVIDER") {
-      serviceProviderID = managerData?.serviceProviderID;
-      companyID = managerData?.companyID;
+      serviceProviderID =
+        formData.serviceProviderID ?? managerData?.serviceProviderID;
+      companyID = formData.companyID ?? managerData?.companyID;
       branchesID = formData.branchesID;
     } else if (
       isCompanyAdminLikeRole(user?.role) ||
       user?.role === "BRANCH_ADMIN"
     ) {
-      const ctx = getSidebarContext();
-      serviceProviderID = ctx?.serviceProviderID ?? formData.serviceProviderID;
+      serviceProviderID = formData.serviceProviderID ?? ctx?.serviceProviderID;
       companyID = formData.companyID ?? ctx?.companyID ?? user?.companyID;
       branchesID = formData.branchesID;
     } else if (user?.role === "EMPLOYEE") {
       serviceProviderID =
-        empCreds?.serviceProviderID ?? formData.serviceProviderID;
+        formData.serviceProviderID ?? empCreds?.serviceProviderID;
       companyID = formData.companyID ?? empCreds?.companyID;
       branchesID = formData.branchesID ?? empCreds?.branchesID;
     }
 
     const holidayName = formData.holidayName.trim();
-    if (!companyID || !branchesID || !holidayName) {
+    if (!companyID || !branchesID || !holidayName || !formData.financialYear) {
       toast.error(
-        "Please make sure all required fields are selected: Branch and Holiday Name",
+        "Please select a branch, enter a holiday name, and select a financial year.",
       );
       return;
     }
@@ -659,7 +800,10 @@ export function PublicHolidayManagement() {
         } else {
           const mhRes = await fetch(`${BACKEND_URL}/manage-holiday`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              ...authHeaders(),
+              "Content-Type": "application/json",
+            },
             body: JSON.stringify({
               holidayName,
               serviceProviderID,
@@ -667,12 +811,27 @@ export function PublicHolidayManagement() {
               branchesID,
             }),
           });
+
           if (!mhRes.ok) {
             const errorText = await mhRes.text();
-            console.error("Manage holiday create error:", errorText);
-            toast.error("Could not create holiday name. Try again.");
+
+            console.error("Manage holiday creation failed:", {
+              status: mhRes.status,
+              payload: {
+                holidayName,
+                serviceProviderID,
+                companyID,
+                branchesID,
+              },
+              response: errorText,
+            });
+
+            toast.error(
+              `Could not create holiday (${mhRes.status}): ${errorText.slice(0, 180)}`,
+            );
             return;
           }
+
           const created = await mhRes.json();
           manageHolidayID = Number(created?.id ?? created?.data?.id);
         }
@@ -1015,6 +1174,7 @@ export function PublicHolidayManagement() {
                     displayField="branchName"
                     valueField="id"
                     companyID={formData.companyID}
+                    autoSelectSingle={false}
                     required
                   />
                   {user?.role === "SERVICE_PROVIDER" && (
@@ -1083,6 +1243,39 @@ export function PublicHolidayManagement() {
             <h3 className="text-lg font-semibold">Date Range</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
+                <div>
+                  <Label>Financial Year *</Label>
+                  <Select
+                    value={formData.financialYear}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        financialYear: value,
+                      }))
+                    }
+                    disabled={
+                      !formData.branchesID || financialYearOptions.length === 0
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          !formData.branchesID
+                            ? "Select branch first"
+                            : "Select financial year"
+                        }
+                      />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {financialYearOptions.map((year) => (
+                        <SelectItem key={year} value={year}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Label>Start Date *</Label>
                 <Input
                   type="date"

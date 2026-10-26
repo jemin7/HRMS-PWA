@@ -8,6 +8,76 @@ import { UpdateWorkShiftDto } from './dto/update-work-shift.dto';
 export class WorkShiftService {
   constructor(private prisma: PrismaService) {}
 
+  private toPositiveId(value: unknown): number | null {
+    const id = Number(value);
+    return Number.isInteger(id) && id > 0 ? id : null;
+  }
+
+  private async resolveServiceProviderAssociation(
+    companyID?: number | null,
+    branchesID?: number | null,
+    requestedServiceProviderID?: number | null,
+  ): Promise<number | null> {
+    const companyId = this.toPositiveId(companyID);
+    const branchId = this.toPositiveId(branchesID);
+
+    const branch = branchId
+      ? await this.prisma.branches.findUnique({
+          where: { id: branchId },
+          select: {
+            companyID: true,
+            serviceProviderID: true,
+          },
+        })
+      : null;
+
+    const effectiveCompanyId =
+      companyId ?? this.toPositiveId(branch?.companyID);
+
+    const company = effectiveCompanyId
+      ? await this.prisma.company.findUnique({
+          where: { id: effectiveCompanyId },
+          select: { serviceProviderID: true },
+        })
+      : null;
+
+    // Prefer the association stored on the company, then the branch.
+    const candidates = [
+      this.toPositiveId(company?.serviceProviderID),
+      this.toPositiveId(branch?.serviceProviderID),
+    ].filter((id): id is number => id !== null);
+
+    for (const id of [...new Set(candidates)]) {
+      const provider = await this.prisma.serviceProvider.findUnique({
+        where: { id },
+        select: { id: true },
+      });
+
+      if (provider) {
+        return provider.id;
+      }
+    }
+
+    // Without a company or branch association, validate the supplied ID.
+    if (!effectiveCompanyId && !branchId) {
+      const requestedId = this.toPositiveId(requestedServiceProviderID);
+
+      if (!requestedId) {
+        return null;
+      }
+
+      const provider = await this.prisma.serviceProvider.findUnique({
+        where: { id: requestedId },
+        select: { id: true },
+      });
+
+      return provider?.id ?? null;
+    }
+
+    // Never save a stale, unverified provider ID.
+    return null;
+  }
+
   async create(data: CreateWorkShiftDto) {
     const { workShiftDays, ...workShiftData } = data;
     const branchesID = await snapBranchesIDToCompany(
@@ -16,21 +86,28 @@ export class WorkShiftService {
       workShiftData.branchesID,
     );
 
+    const resolvedServiceProviderID =
+      await this.resolveServiceProviderAssociation(
+        workShiftData.companyID,
+        branchesID,
+        workShiftData.serviceProviderID,
+      );
+
     // Prepare the data object for creation
     const createData: any = {
-      serviceProviderID: workShiftData.serviceProviderID,
+      serviceProviderID: resolvedServiceProviderID,
       companyID: workShiftData.companyID,
       branchesID,
       workShiftName: workShiftData.workShiftName,
       workShiftType: workShiftData.workShiftType,
       isFlexible: workShiftData.isFlexible ?? false,
       isRotating: workShiftData.isRotating ?? false,
-      isActive: workShiftData.isActive || "1",
+      isActive: workShiftData.isActive || '1',
       breakTimeMin: workShiftData.breakTimeMin ?? 0,
     };
 
     // Remove undefined values to avoid Prisma errors
-    Object.keys(createData).forEach(key => {
+    Object.keys(createData).forEach((key) => {
       if (createData[key] === undefined) {
         delete createData[key];
       }
@@ -97,15 +174,27 @@ export class WorkShiftService {
     if (workShiftData.serviceProviderID !== undefined) {
       updateData.serviceProviderID = workShiftData.serviceProviderID;
     }
-    if (workShiftData.companyID !== undefined || workShiftData.branchesID !== undefined) {
+    if (
+      workShiftData.companyID !== undefined ||
+      workShiftData.branchesID !== undefined
+    ) {
       const existing = await this.prisma.workShift.findUnique({
         where: { id },
         select: { companyID: true, branchesID: true },
       });
-      const companyID = workShiftData.companyID !== undefined ? workShiftData.companyID : existing?.companyID;
+      const companyID =
+        workShiftData.companyID !== undefined
+          ? workShiftData.companyID
+          : existing?.companyID;
       const requestedBranch =
-        workShiftData.branchesID !== undefined ? workShiftData.branchesID : existing?.branchesID;
-      updateData.branchesID = await snapBranchesIDToCompany(this.prisma, companyID, requestedBranch);
+        workShiftData.branchesID !== undefined
+          ? workShiftData.branchesID
+          : existing?.branchesID;
+      updateData.branchesID = await snapBranchesIDToCompany(
+        this.prisma,
+        companyID,
+        requestedBranch,
+      );
       if (workShiftData.companyID !== undefined) {
         updateData.companyID = workShiftData.companyID;
       }
@@ -162,9 +251,9 @@ export class WorkShiftService {
     return this.prisma.$transaction(async (prisma) => {
       // First delete all related WorkShiftDay records
       await prisma.workShiftDay.deleteMany({
-        where: { workShiftID: id }
+        where: { workShiftID: id },
       });
-      
+
       // Then delete the WorkShift record
       return prisma.workShift.delete({ where: { id } });
     });

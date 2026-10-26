@@ -13,8 +13,13 @@ type AutocompleteBranchFieldProps = {
   companyID?: number | null;
   required?: boolean;
   disabled?: boolean;
+  lockSingleBranch?: boolean;
   onInputChange: (display: string) => void;
-  onBranchSelect: (branch: { id: number; branchName: string; item?: any }) => void;
+  onBranchSelect: (branch: {
+    id: number;
+    branchName: string;
+    item?: any;
+  }) => void;
   onFetch: (query: string) => void;
   options: Array<{ id: number; branchName?: string | null }>;
   optionsLoading?: boolean;
@@ -34,6 +39,7 @@ export function AutocompleteBranchField({
   companyID,
   required = true,
   disabled = false,
+  lockSingleBranch = true,
   onInputChange,
   onBranchSelect,
   onFetch,
@@ -77,7 +83,7 @@ export function AutocompleteBranchField({
     branchId,
   ]);
 
-  if (loading || isSingleBranch) {
+  if (loading || (lockSingleBranch && isSingleBranch)) {
     return (
       <div className="space-y-2">
         <Label>{label}</Label>
@@ -98,7 +104,9 @@ export function AutocompleteBranchField({
   const uniqueOptions = options.filter((br) => {
     const id = Number(br.id);
     if (!Number.isFinite(id) || seen.has(id)) return false;
-    const nameKey = String(br.branchName || "").trim().toLowerCase();
+    const nameKey = String(br.branchName || "")
+      .trim()
+      .toLowerCase();
     if (nameKey && seenNames.has(nameKey)) return false;
     seen.add(id);
     if (nameKey) seenNames.add(nameKey);
@@ -124,7 +132,9 @@ export function AutocompleteBranchField({
       {uniqueOptions.length > 0 && (
         <div className="absolute z-10 bg-white dark:bg-card border rounded w-full shadow max-h-48 overflow-y-auto">
           {optionsLoading && (
-            <div className="px-3 py-2 text-sm text-muted-foreground">Loading…</div>
+            <div className="px-3 py-2 text-sm text-muted-foreground">
+              Loading…
+            </div>
           )}
           {uniqueOptions.map((br) => (
             <div
