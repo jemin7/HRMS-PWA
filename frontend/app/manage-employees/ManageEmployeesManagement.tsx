@@ -2967,6 +2967,25 @@ export function ManageEmployeesManagement() {
   // Employment Status multi-entry helpers (staging pattern)
   const addEmpEmploymentStatus = () => {
     if (!stagingES.employmentStatus) return;
+
+    // Probation period must be a whole number from 1 to 12 months.
+    if (stagingES.employmentStatus === "Probation") {
+      const months = Number(stagingES.probationPeriod);
+
+      if (
+        !/^\d+$/.test(stagingES.probationPeriod) ||
+        months < 1 ||
+        months > 12
+      ) {
+        toast.error(
+          "Probation Period must be a whole number from 1 to 12 months.",
+        );
+        return;
+      }
+    }
+
+    // Keep the existing const newEntry code here.
+    if (!stagingES.employmentStatus) return;
     const newEntry: EmpEmploymentStatusForm = {
       _localId: uid(),
       employmentStatus: stagingES.employmentStatus,
@@ -6744,16 +6763,34 @@ export function ManageEmployeesManagement() {
                         </div>
                         {stagingES.employmentStatus === "Probation" && (
                           <div className="space-y-2">
-                            <Label>Probation Period</Label>
+                            <Label htmlFor="staging-probation-period">
+                              Probation Period (months)
+                            </Label>
                             <Input
+                              id="staging-probation-period"
+                              type="number"
+                              min={1}
+                              max={12}
+                              step={1}
+                              inputMode="numeric"
                               value={stagingES.probationPeriod}
-                              onChange={(e) =>
-                                setStagingES((p) => ({
-                                  ...p,
-                                  probationPeriod: e.target.value,
-                                }))
+                              onChange={(e) => {
+                                const value = e.target.value;
+
+                                if (value === "" || /^\d{1,2}$/.test(value)) {
+                                  setStagingES((p) => ({
+                                    ...p,
+                                    probationPeriod: value,
+                                  }));
+                                }
+                              }}
+                              placeholder="1–12 months"
+                              aria-invalid={
+                                stagingES.probationPeriod !== "" &&
+                                (!/^\d+$/.test(stagingES.probationPeriod) ||
+                                  Number(stagingES.probationPeriod) < 1 ||
+                                  Number(stagingES.probationPeriod) > 12)
                               }
-                              placeholder="e.g. 6 months"
                             />
                           </div>
                         )}
@@ -6773,7 +6810,13 @@ export function ManageEmployeesManagement() {
                         <Button
                           type="button"
                           size="sm"
-                          disabled={!stagingES.employmentStatus}
+                          disabled={
+                            !stagingES.employmentStatus ||
+                            (stagingES.employmentStatus === "Probation" &&
+                              (!/^\d+$/.test(stagingES.probationPeriod) ||
+                                Number(stagingES.probationPeriod) < 1 ||
+                                Number(stagingES.probationPeriod) > 12))
+                          }
                           onClick={addEmpEmploymentStatus}
                         >
                           Add
@@ -6782,7 +6825,9 @@ export function ManageEmployeesManagement() {
                       <div className="border border-gray-200 rounded-lg overflow-hidden">
                         <div className="bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide flex">
                           <span className="flex-1">Status</span>
-                          <span className="w-28 text-center">Probation</span>
+                          <span className="w-28 text-center">
+                            Probation (months)
+                          </span>
                           <span className="w-32 text-center">WEF</span>
                           <span className="w-10"></span>
                         </div>
@@ -6800,7 +6845,9 @@ export function ManageEmployeesManagement() {
                                 {es.employmentStatus || "—"}
                               </span>
                               <span className="w-28 text-center text-gray-500">
-                                {es.probationPeriod || "—"}
+                                {es.probationPeriod
+                                  ? `${es.probationPeriod} months`
+                                  : "—"}
                               </span>
                               <span className="w-32 text-center text-gray-500">
                                 {es.effectFrom || "—"}

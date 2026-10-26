@@ -14,6 +14,7 @@ import {} from "../components/ui/dialog";
 import { FormDrawer } from "../components/ui/form-drawer";
 import { FormModal } from "../components/ui/form-modal";
 import { Badge } from "../components/ui/badge";
+import { authHeaders } from "@/lib/auth";
 import {
   Edit,
   Trash2,
@@ -49,7 +50,10 @@ import {
   displayStatusLabel,
   isPartiallyApprovedStatus,
 } from "../utils/statusDisplay";
-import { resolveScopedCompanyId } from "../utils/scopeContext";
+import {
+  isCompanyModuleOperator,
+  resolveScopedCompanyId,
+} from "../utils/scopeContext";
 import { localDateISO } from "../utils/localDate";
 
 interface ReimbursementItem {
@@ -1021,14 +1025,50 @@ export function ReimbursementManagement() {
 
   // ---------- APIs ----------
   async function robustGet<T = any>(url: string): Promise<T> {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`${res.status}`);
+    const res = await fetch(url, {
+      headers: authHeaders(),
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      const errorBody = await res.text().catch(() => "");
+      console.error("API GET failed:", {
+        url,
+        status: res.status,
+        response: errorBody,
+      });
+      throw new Error(`${res.status}`);
+    }
+
     return res.json();
   }
 
   async function robustFetch(url: string, init?: RequestInit) {
-    const res = await fetch(url, init);
-    if (!res.ok) throw new Error(`${res.status}`);
+    const headers = new Headers(authHeaders());
+
+    // Preserve headers such as Content-Type supplied by the caller.
+    new Headers(init?.headers).forEach((value, key) => {
+      headers.set(key, value);
+    });
+
+    const res = await fetch(url, {
+      ...init,
+      headers,
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      const errorBody = await res.text().catch(() => "");
+      console.error("API request failed:", {
+        url,
+        method: init?.method ?? "GET",
+        status: res.status,
+        response: errorBody,
+      });
+      throw new Error(`${res.status}`);
+    }
+
     return res.json().catch(() => ({}));
   }
 
@@ -1174,11 +1214,26 @@ export function ReimbursementManagement() {
       const mapped = reimbursements.map((r) => ({
         id: String(r.id),
         date: r.date || "",
-        serviceProviderID: r.serviceProviderID,
-        companyID: r.companyID,
-        branchesID: r.branchesID,
-        manageEmployeeID: r.manageEmployeeID,
-        companyName: r.company?.companyName || "",
+        serviceProviderID:
+          r.serviceProviderID ??
+          r.branches?.serviceProviderID ??
+          r.branches?.serviceProvider?.id ??
+          r.company?.serviceProviderID ??
+          r.manageEmployee?.serviceProviderID,
+
+        companyID:
+          r.companyID ??
+          r.branches?.companyID ??
+          r.branches?.company?.id ??
+          r.manageEmployee?.companyID ??
+          r.manageEmployee?.company?.id,
+
+        branchesID: r.branchesID ?? r.branches?.id,
+
+        manageEmployeeID: r.manageEmployeeID ?? r.manageEmployee?.id,
+
+        companyName:
+          r.company?.companyName || r.branches?.company?.companyName || "",
         branchName: r.branches?.branchName || "",
         employeeName: r.manageEmployee
           ? `${r.manageEmployee.employeeFirstName || ""} ${r.manageEmployee.employeeLastName || ""} (${r.manageEmployee.employeeID})`
@@ -1216,46 +1271,131 @@ export function ReimbursementManagement() {
       }
 
       if (user?.role === "SERVICE_PROVIDER") {
-        const ctx = getSidebarContext();
-        if (ctx?.companyID) {
-          setReimbursements(
-            mapped.filter((r: any) => r.companyID === ctx.companyID),
-          );
-          return;
-        }
         try {
           const usersData = await robustGet<any[]>(`${BACKEND_URL}/users`);
+
           const currentUser = usersData.find(
-            (u) => u.username === user.username,
+            (u: any) =>
+              String(u.username ?? "")
+                .trim()
+                .toLowerCase() ===
+              String(user.username ?? "")
+                .trim()
+                .toLowerCase(),
           );
-          if (currentUser?.serviceProviderID) {
-            setReimbursements(
-              mapped.filter(
-                (r: any) =>
-                  r.serviceProviderID === currentUser.serviceProviderID,
-              ),
+
+          // Match the company resolution used when creating reimbursements.
+          const companyID =
+            currentUser?.companyID ??
+            managerData?.companyID ??
+            resolvedCompanyID ??
+            getSidebarContext()?.companyID;
+
+          if (companyID) {
+            const filtered = mapped.filter(
+              (r: any) => Number(r.companyID) === Number(companyID),
             );
+
+            console.log("[Reimbursements] Company filter:", {
+              companyID,
+              totalFromAPI: mapped.length,
+              visibleAfterFilter: filtered.length,
+            });
+
+            setReimbursements(filtered);
             return;
           }
-        } catch (e) {
-          console.error("Error fetching /users for MANAGER", e);
+
+          const serviceProviderID =
+            currentUser?.serviceProviderID ??
+            managerData?.serviceProviderID ??
+            user.serviceProviderID;
+
+          if (serviceProviderID) {
+            const filtered = mapped.filter(
+              (r: any) =>
+                Number(r.serviceProviderID) === Number(serviceProviderID),
+            );
+
+            console.log("[Reimbursements] Provider filter:", {
+              serviceProviderID,
+              totalFromAPI: mapped.length,
+              visibleAfterFilter: filtered.length,
+            });
+
+            setReimbursements(filtered);
+            return;
+          }
+
+          console.error(
+            "[Reimbursements] Unable to resolve company or service provider scope.",
+          );
+          setReimbursements([]);
+          return;
+        } catch (error) {
+          console.error(
+            "[Reimbursements] Failed to resolve provider scope:",
+            error,
+          );
+          setReimbursements([]);
+          return;
         }
       }
 
       // COMPANY_ADMIN / BRANCH_ADMIN: filter by company
       if (isCompanyAdminLikeRole(user?.role) || user?.role === "BRANCH_ADMIN") {
         const ctx = getSidebarContext();
-        const companyID = ctx?.companyID ?? user?.companyID;
+        const companyID =
+          resolveScopedCompanyId(user, ctx) ??
+          user?.companyID ??
+          ctx?.companyID;
         if (companyID) {
           setReimbursements(
-            mapped.filter((r: any) => r.companyID === companyID),
+            mapped.filter(
+              (r: any) => Number(r.companyID) === Number(companyID),
+            ),
           );
         } else {
           setReimbursements([]);
         }
         return;
       }
+      // ADMIN and company-level operators logged in as EMPLOYEE
+      // must see reimbursements belonging to their company, not just
+      // reimbursements assigned to their own employee record.
+      if (
+        user?.role === "ADMIN" ||
+        (user?.role === "EMPLOYEE" && isCompanyModuleOperator(user))
+      ) {
+        const ctx = getSidebarContext();
+        const companyID =
+          resolveScopedCompanyId(user, ctx) ??
+          user?.companyID ??
+          ctx?.companyID;
 
+        if (!companyID) {
+          console.error(
+            "[Reimbursements] Company could not be resolved for company-level user.",
+            { role: user?.role },
+          );
+          setReimbursements([]);
+          return;
+        }
+
+        const filtered = mapped.filter(
+          (r: any) => Number(r.companyID) === Number(companyID),
+        );
+
+        console.log("[Reimbursements] Company-level filtering:", {
+          role: user.role,
+          companyID,
+          recordsReturnedByAPI: mapped.length,
+          recordsVisible: filtered.length,
+        });
+
+        setReimbursements(filtered);
+        return;
+      }
       // Normal user: filter by /manage-emp/credentials/all
       try {
         const creds = await robustGet<any[]>(
@@ -1267,9 +1407,9 @@ export function ReimbursementManagement() {
         if (emp) {
           const filtered = mapped.filter(
             (r) =>
-              r.companyID === emp.companyID &&
-              r.branchesID === emp.branchesID &&
-              r.manageEmployeeID === emp.employeeID,
+              Number(r.companyID) === Number(emp.companyID) &&
+              Number(r.branchesID) === Number(emp.branchesID) &&
+              Number(r.manageEmployeeID) === Number(emp.employeeID),
           );
           setReimbursements(filtered);
         } else {
@@ -1308,11 +1448,38 @@ export function ReimbursementManagement() {
 
   // ---------- Form handlers ----------
   const handleEmployeeSelect = (selected: SelectedItem) => {
-    const emp = selected.item;
+    const emp = selected.item ?? {};
+
     setFormData((p) => ({
       ...p,
       employeeName: selected.display,
-      manageEmployeeID: selected.value,
+      manageEmployeeID: Number(emp.id ?? selected.value) || undefined,
+
+      serviceProviderID:
+        Number(
+          emp.serviceProviderID ??
+            emp.serviceProvider?.id ??
+            p.serviceProviderID ??
+            resolvedServiceProviderID,
+        ) || undefined,
+
+      companyID:
+        Number(
+          emp.companyID ?? emp.company?.id ?? p.companyID ?? resolvedCompanyID,
+        ) || undefined,
+
+      branchesID:
+        Number(
+          emp.branchesID ??
+            emp.branches?.id ??
+            p.branchesID ??
+            resolvedBranchID ??
+            (user?.role === "BRANCH_ADMIN" ? user.branchesID : undefined),
+        ) || undefined,
+
+      companyName: emp.company?.companyName ?? emp.companyName ?? p.companyName,
+
+      branchName: emp.branches?.branchName ?? emp.branchName ?? p.branchName,
     }));
   };
 
@@ -1439,28 +1606,83 @@ export function ReimbursementManagement() {
       payload.manageEmployeeID = formData.manageEmployeeID;
     }
 
-    // MANAGER (auto)
+    // SERVICE_PROVIDER
     if (user?.role === "SERVICE_PROVIDER" && managerData) {
-      payload.serviceProviderID = managerData.serviceProviderID;
-      payload.companyID = managerData.companyID;
-      payload.branchesID = managerData.branchesID;
+      payload.serviceProviderID =
+        managerData.serviceProviderID ?? resolvedServiceProviderID;
+
+      payload.companyID =
+        formData.companyID ?? resolvedCompanyID ?? managerData.companyID;
+
+      // Preserve the branch selected in the reimbursement form.
+      payload.branchesID = formData.branchesID ?? managerData.branchesID;
+
       payload.manageEmployeeID = formData.manageEmployeeID;
     }
 
     // COMPANY_ADMIN / BRANCH_ADMIN
     if (isCompanyAdminLikeRole(user?.role) || user?.role === "BRANCH_ADMIN") {
-      payload.serviceProviderID = formData.serviceProviderID;
-      payload.companyID = formData.companyID;
-      payload.branchesID = formData.branchesID;
+      payload.serviceProviderID =
+        formData.serviceProviderID ??
+        ctx?.serviceProviderID ??
+        (user as any)?.serviceProviderID;
+
+      payload.companyID =
+        formData.companyID ??
+        resolvedCompanyID ??
+        ctx?.companyID ??
+        user?.companyID;
+
+      payload.branchesID =
+        formData.branchesID ??
+        (user?.role === "BRANCH_ADMIN" ? user.branchesID : undefined);
+
       payload.manageEmployeeID = formData.manageEmployeeID;
     }
 
     // EMPLOYEE (auto)
-    if (user?.role === "EMPLOYEE" && empCreds) {
-      payload.serviceProviderID = empCreds.serviceProviderID;
-      payload.companyID = empCreds.companyID;
-      payload.branchesID = empCreds.branchesID;
-      payload.manageEmployeeID = empCreds.employeeID;
+    if (user?.role === "EMPLOYEE") {
+      const employeeUser = user as any;
+
+      payload.serviceProviderID =
+        formData.serviceProviderID ??
+        empCreds?.serviceProviderID ??
+        employeeUser?.serviceProviderID ??
+        ctx?.serviceProviderID;
+
+      payload.companyID =
+        formData.companyID ??
+        empCreds?.companyID ??
+        resolvedCompanyID ??
+        ctx?.companyID ??
+        employeeUser?.companyID;
+
+      payload.branchesID =
+        formData.branchesID ?? empCreds?.branchesID ?? employeeUser?.branchesID;
+
+      payload.manageEmployeeID =
+        formData.manageEmployeeID ??
+        empCreds?.employeeID ??
+        employeeUser?.employeeId ??
+        employeeUser?.employee?.id;
+    }
+
+    if (
+      !Number(payload.companyID) ||
+      !Number(payload.branchesID) ||
+      !Number(payload.manageEmployeeID)
+    ) {
+      console.error("Incomplete reimbursement associations:", {
+        role: user?.role,
+        companyID: payload.companyID,
+        branchesID: payload.branchesID,
+        manageEmployeeID: payload.manageEmployeeID,
+      });
+
+      toast.error(
+        "Cannot save reimbursement: verify the selected company, branch, and employee.",
+      );
+      return;
     }
 
     if (editing) {
@@ -2168,6 +2390,24 @@ export function ReimbursementManagement() {
                           ...p,
                           branchesID: s.value,
                           branchName: s.display,
+
+                          companyID:
+                            Number(
+                              s.item?.companyID ??
+                                p.companyID ??
+                                resolvedCompanyID ??
+                                0,
+                            ) || undefined,
+
+                          serviceProviderID:
+                            Number(
+                              s.item?.serviceProviderID ??
+                                s.item?.serviceProvider?.id ??
+                                s.item?.company?.serviceProviderID ??
+                                p.serviceProviderID ??
+                                resolvedServiceProviderID ??
+                                0,
+                            ) || undefined,
                         }))
                       }
                       fetchData={(q) => fetchBranches(q)}
@@ -2384,13 +2624,13 @@ export function ReimbursementManagement() {
             </div>
           </form>
         </div>
-        <div className="flex gap-3 w-full px-0 py-4 border-t bg-[#f8fafc] sticky bottom-0">
+        <div className="flex gap-3 w-full px-0 py-4 border-t border-border bg-background dark:bg-card sticky bottom-0">
           <div className="flex gap-3 w-full">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsDialogOpen(false)}
-              className="flex-1 border-[#d1d5db] hover:bg-[#eef2ff] rounded-lg"
+              className="flex-1 border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground rounded-lg dark:bg-card dark:hover:bg-muted"
             >
               Cancel
             </Button>

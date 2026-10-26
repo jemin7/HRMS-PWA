@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { FormDrawer } from "../components/ui/form-drawer";
+import { authHeaders } from "@/lib/auth";
 import {
   hasModuleWriteAccess,
   isCompanyAdminLikeRole,
@@ -227,9 +228,33 @@ export function LeaveApplicationsManagement() {
       try {
         // --- MANAGER ---
         if (user.role === "SERVICE_PROVIDER") {
-          const usersRes = await fetch(`${BACKEND_URL}/users`);
-          const users = await usersRes.json();
-          const me = users.find((u: any) => u.username === user.username);
+          const usersRes = await fetch(`${BACKEND_URL}/users`, {
+            headers: authHeaders(),
+            credentials: "include",
+            cache: "no-store",
+          });
+
+          if (!usersRes.ok) {
+            throw new Error(`Unable to load user profile (${usersRes.status})`);
+          }
+
+          const usersPayload = await usersRes.json();
+          const users = Array.isArray(usersPayload)
+            ? usersPayload
+            : Array.isArray(usersPayload?.data)
+              ? usersPayload.data
+              : [];
+
+          const me = users.find(
+            (u: any) =>
+              String(u.username ?? "")
+                .trim()
+                .toLowerCase() ===
+              String(user.username ?? "")
+                .trim()
+                .toLowerCase(),
+          );
+
           setManagerData(me || null);
         }
 
@@ -237,23 +262,103 @@ export function LeaveApplicationsManagement() {
         if (user.role === "EMPLOYEE") {
           const credsRes = await fetch(
             `${BACKEND_URL}/manage-emp/credentials/all`,
+            {
+              headers: authHeaders(),
+              credentials: "include",
+              cache: "no-store",
+            },
           );
-          const creds = await credsRes.json();
-          const me = creds.find((u: any) => u.username === user.username);
-          setEmpCreds(me || null);
 
-          // Auto-populate employee data for normal users
-          if (me) {
-            setFormData((prev) => ({
-              ...prev,
-              manageEmployeeID: me.manageEmployeeID,
-              employeeName:
-                `${me.employeeFirstName || ""} ${me.employeeLastName || ""}`.trim(),
-            }));
-            // Load leave types for the logged-in employee
-            loadEmployeeLeaveTypes(me.manageEmployeeID);
-            setIsEmployeeSelected(true);
+          if (!credsRes.ok) {
+            throw new Error(
+              `Unable to load employee credentials (${credsRes.status})`,
+            );
           }
+
+          const raw = await credsRes.json();
+
+          const credentials = Array.isArray(raw)
+            ? raw
+            : Array.isArray(raw?.data)
+              ? raw.data
+              : [];
+
+          const normalize = (value: unknown) =>
+            String(value ?? "")
+              .trim()
+              .toLowerCase();
+
+          const tokenEmployeeID = Number(
+            (user as any).employee?.id ??
+              (user as any).employeeId ??
+              ((user as any).type === "employee" ? user.id : 0),
+          );
+
+          const me =
+            credentials.find(
+              (item: any) =>
+                normalize(item.username) === normalize(user.username),
+            ) ??
+            credentials.find(
+              (item: any) =>
+                Number(
+                  item.employeeID ?? item.manageEmployeeID ?? item.employee?.id,
+                ) === tokenEmployeeID,
+            ) ??
+            (credentials.length === 1 ? credentials[0] : null);
+
+          const manageEmployeeID = Number(
+            me?.employeeID ??
+              me?.manageEmployeeID ??
+              me?.employee?.id ??
+              tokenEmployeeID,
+          );
+
+          if (!Number.isInteger(manageEmployeeID) || manageEmployeeID <= 0) {
+            setEmpCreds(null);
+            throw new Error(
+              "Could not resolve your employee record. Check the employee credentials and login mapping.",
+            );
+          }
+
+          const employeeCredentials = {
+            ...me,
+            manageEmployeeID,
+            employeeFirstName:
+              me?.employee?.employeeFirstName ??
+              me?.employeeFirstName ??
+              user.firstName ??
+              "",
+            employeeLastName:
+              me?.employee?.employeeLastName ??
+              me?.employeeLastName ??
+              user.lastName ??
+              "",
+            companyID:
+              Number(me?.companyID ?? user.companyID ?? 0) || undefined,
+            branchesID:
+              Number(me?.branchesID ?? user.branchesID ?? 0) || undefined,
+            serviceProviderID:
+              Number(me?.serviceProviderID ?? user.serviceProviderID ?? 0) ||
+              undefined,
+          };
+
+          setEmpCreds(employeeCredentials);
+
+          setFormData((prev) => ({
+            ...prev,
+            manageEmployeeID,
+            companyID: employeeCredentials.companyID,
+            branchesID: employeeCredentials.branchesID,
+            serviceProviderID: employeeCredentials.serviceProviderID,
+            employeeName:
+              `${employeeCredentials.employeeFirstName} ${employeeCredentials.employeeLastName}`.trim(),
+            branchName: me?.branches?.branchName ?? prev.branchName,
+            companyName: me?.company?.companyName ?? prev.companyName,
+          }));
+
+          await loadEmployeeLeaveTypes(manageEmployeeID);
+          setIsEmployeeSelected(true);
         }
       } catch (error) {
         console.error("Error loading user data:", error);
@@ -269,20 +374,47 @@ export function LeaveApplicationsManagement() {
     try {
       // 1. Fetch employee with leave policy
       const empRes = await fetch(`${BACKEND_URL}/manage-emp/${employeeId}`, {
+        headers: authHeaders(),
+        credentials: "include",
         cache: "no-store",
       });
+
+      if (!empRes.ok) {
+        throw new Error(
+          `Failed to load employee leave policy (${empRes.status})`,
+        );
+      }
+
       const employee = await empRes.json();
 
       // Use direct leavePolicy relation; fall back to most recent empLeavePolicy history entry
-      const policy =
-        employee.leavePolicy ||
-        [...(employee.empLeavePolicy ?? [])].sort(
-          (a: any, b: any) =>
-            new Date(b.effectFrom || 0).getTime() -
-            new Date(a.effectFrom || 0).getTime(),
-        )[0]?.leavePolicy ||
-        {};
+      const policyAssignments = [...(employee.empLeavePolicy ?? [])].sort(
+        (a: any, b: any) =>
+          new Date(b.effectFrom || 0).getTime() -
+          new Date(a.effectFrom || 0).getTime(),
+      );
 
+      const promotions = [...(employee.empPromotion ?? [])].sort(
+        (a: any, b: any) => Number(b.id ?? 0) - Number(a.id ?? 0),
+      );
+
+      const policyCandidates = [
+        employee.leavePolicy,
+        policyAssignments[0]?.leavePolicy,
+        promotions[0]?.leavePolicy,
+      ].filter(Boolean);
+
+      const policy =
+        policyCandidates.find((candidate: any) =>
+          [
+            candidate.sickLeaveCount,
+            candidate.casualLeaveCount,
+            candidate.maternityLeaveCount,
+            candidate.paternityLeaveCount,
+          ].some((value) => Number(value) > 0),
+        ) ??
+        policyCandidates[0] ??
+        {};
       // Get policy limits
       const totalSick = Number(policy.sickLeaveCount) || 0;
       const totalCasual = Number(policy.casualLeaveCount) || 0;
@@ -336,13 +468,28 @@ export function LeaveApplicationsManagement() {
       const joiningDate = employee.joiningDate ?? null;
 
       // 2. Fetch all leave applications for this employee
-      const leaveRes = await fetch(`${BACKEND_URL}/leave-application`);
-      const allLeaves = await leaveRes.json();
+      const leaveRes = await fetch(`${BACKEND_URL}/leave-application`, {
+        headers: authHeaders(),
+        credentials: "include",
+        cache: "no-store",
+      });
 
-      // Filter only this employee's APPROVED leaves
+      if (!leaveRes.ok) {
+        throw new Error(`Failed to load leave history (${leaveRes.status})`);
+      }
+
+      const leavesRaw = await leaveRes.json();
+
+      const allLeaves = Array.isArray(leavesRaw)
+        ? leavesRaw
+        : Array.isArray(leavesRaw?.data)
+          ? leavesRaw.data
+          : [];
+
       const employeeApprovedLeaves = allLeaves.filter(
         (leave: any) =>
-          leave.manageEmployeeID === employeeId && leave.status === "Approved",
+          Number(leave.manageEmployeeID) === Number(employeeId) &&
+          ["Approved", "Accepted"].includes(String(leave.status)),
       );
 
       // 3. Calculate USED leave counts by type using dayStatuses
@@ -1282,8 +1429,15 @@ export function LeaveApplicationsManagement() {
     try {
       setListLoading(true);
       const res = await fetch(`${BACKEND_URL}/leave-application`, {
+        headers: authHeaders(),
+        credentials: "include",
         cache: "no-store",
       });
+
+      if (!res.ok) {
+        throw new Error(`Failed to load leave applications (${res.status})`);
+      }
+
       const data = await res.json();
 
       console.log("API Response data:", data);
@@ -1373,7 +1527,9 @@ export function LeaveApplicationsManagement() {
         const ctx = getSidebarContext();
         if (ctx?.companyID) {
           setLeaveApplications(
-            splitApplications.filter((r: any) => r.companyID === ctx.companyID),
+            splitApplications.filter(
+              (r: any) => Number(r.companyID) === Number(ctx.companyID),
+            ),
           );
         } else {
           setLeaveApplications(splitApplications);
@@ -1385,20 +1541,44 @@ export function LeaveApplicationsManagement() {
         const ctx = getSidebarContext();
         if (ctx?.companyID) {
           setLeaveApplications(
-            splitApplications.filter((a: any) => a.companyID === ctx.companyID),
+            splitApplications.filter(
+              (a: any) => Number(a.companyID) === Number(ctx.companyID),
+            ),
           );
           return;
         }
-        const usersData = await fetch(`${BACKEND_URL}/users`).then((r) =>
-          r.json(),
-        );
+        const usersRes = await fetch(`${BACKEND_URL}/users`, {
+          headers: authHeaders(),
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!usersRes.ok) {
+          throw new Error(`Unable to load users (${usersRes.status})`);
+        }
+
+        const usersPayload = await usersRes.json();
+        const usersData = Array.isArray(usersPayload)
+          ? usersPayload
+          : Array.isArray(usersPayload?.data)
+            ? usersPayload.data
+            : [];
+
         const currentUser = usersData.find(
-          (u: any) => u.username === user.username,
+          (u: any) =>
+            String(u.username ?? "")
+              .trim()
+              .toLowerCase() ===
+            String(user.username ?? "")
+              .trim()
+              .toLowerCase(),
         );
         if (currentUser?.serviceProviderID) {
           setLeaveApplications(
             splitApplications.filter(
-              (a: any) => a.serviceProviderID === currentUser.serviceProviderID,
+              (a: any) =>
+                Number(a.serviceProviderID) ===
+                Number(currentUser.serviceProviderID),
             ),
           );
           return;
@@ -1414,12 +1594,15 @@ export function LeaveApplicationsManagement() {
             setLeaveApplications(
               splitApplications.filter(
                 (a: any) =>
-                  a.companyID === companyID && a.branchesID === user.branchesID,
+                  Number(a.companyID) === Number(companyID) &&
+                  Number(a.branchesID) === Number(user.branchesID),
               ),
             );
           } else {
             setLeaveApplications(
-              splitApplications.filter((a: any) => a.companyID === companyID),
+              splitApplications.filter(
+                (a: any) => Number(a.companyID) === Number(companyID),
+              ),
             );
           }
         } else {
@@ -1428,21 +1611,19 @@ export function LeaveApplicationsManagement() {
         return;
       }
 
-      // For employees or others → get from /manage-emp/credentials/all
-      const creds = await fetch(
-        `${BACKEND_URL}/manage-emp/credentials/all`,
-      ).then((r) => r.json());
-      const emp = creds.find((c: any) => c.username === user.username);
-      if (emp) {
-        const filtered = splitApplications.filter(
-          (a) =>
-            a.companyID === emp.companyID && a.branchesID === emp.branchesID,
+      // The backend already scopes GET /leave-application
+      // to the authenticated employee's own applications.
+      if (user.role === "EMPLOYEE") {
+        console.log(
+          "Employee leave applications returned by API:",
+          splitApplications,
         );
-        console.log("Filtered for EMPLOYEE:", filtered);
-        setLeaveApplications(filtered);
-      } else {
-        setLeaveApplications([]);
+
+        setLeaveApplications(splitApplications);
+        return;
       }
+
+      setLeaveApplications([]);
     } catch (error) {
       console.error("Error loading leave applications:", error);
       toast.error("Failed to load data.");
@@ -1477,48 +1658,6 @@ export function LeaveApplicationsManagement() {
       }));
     }
   }, [user, managerData]);
-
-  useEffect(() => {
-    if (user?.role === "SUPERADMIN" && formData.serviceProviderID) {
-      setFormData((prev) => ({
-        ...prev,
-        companyName: "",
-        companyID: undefined,
-        branchName: "",
-        branchesID: undefined,
-        employeeName: "",
-        manageEmployeeID: undefined,
-      }));
-      resetEmployeeState();
-    }
-  }, [formData.serviceProviderID, user?.role]);
-
-  useEffect(() => {
-    if (user?.role === "SUPERADMIN" && formData.companyID) {
-      setFormData((prev) => ({
-        ...prev,
-        branchName: "",
-        branchesID: undefined,
-        employeeName: "",
-        manageEmployeeID: undefined,
-      }));
-      resetEmployeeState();
-    }
-  }, [formData.companyID, user?.role]);
-
-  useEffect(() => {
-    if (
-      (user?.role === "SUPERADMIN" && formData.branchesID) ||
-      (user?.role === "SERVICE_PROVIDER" && formData.branchesID)
-    ) {
-      setFormData((prev) => ({
-        ...prev,
-        employeeName: "",
-        manageEmployeeID: undefined,
-      }));
-      resetEmployeeState();
-    }
-  }, [formData.branchesID, user?.role]);
 
   const resetEmployeeState = () => {
     setSelectedEmployee(null);
@@ -1572,27 +1711,45 @@ export function LeaveApplicationsManagement() {
   };
 
   const handleEmployeeSelect = async (selected: SelectedItem) => {
+    const employee = selected.item ?? {};
+    const empId = Number(
+      selected.value ??
+        employee.id ??
+        employee.employeeID ??
+        employee.manageEmployeeID,
+    );
+
+    if (!Number.isInteger(empId) || empId <= 0) {
+      toast.error("Please select a valid employee from the suggestions.");
+      return;
+    }
+
+    setSelectedEmployeeData(employee);
+
+    // Save the selected employee immediately, before API calls.
+    setFormData((prev) => ({
+      ...prev,
+      employeeName: selected.display,
+      manageEmployeeID: empId,
+      companyID: Number(employee.companyID ?? prev.companyID) || undefined,
+      branchesID: Number(employee.branchesID ?? prev.branchesID) || undefined,
+      serviceProviderID:
+        Number(employee.serviceProviderID ?? prev.serviceProviderID) ||
+        undefined,
+      branchName:
+        employee.branches?.branchName ??
+        employee.branch?.branchName ??
+        prev.branchName,
+    }));
+
+    setIsEmployeeSelected(true);
+
+    // Load balances after saving the selected employee ID.
     try {
-      const empId = selected.value;
-
-      setSelectedEmployee(null);
-      setAvailableLeaveTypes(["LoP"]);
-      setIsEmployeeSelected(false);
-
-      // Load employee data and calculate leave balance
       await loadEmployeeLeaveTypes(empId);
-
-      setFormData((prev) => ({
-        ...prev,
-        employeeName: selected.display,
-        manageEmployeeID: empId,
-      }));
-
-      setIsEmployeeSelected(true);
     } catch (error) {
-      console.error("Error selecting employee:", error);
-      toast.error("Operation failed. Please try again.");
-      setAvailableLeaveTypes(["LoP"]);
+      console.error("Failed to load selected employee's leave balance:", error);
+      toast.error("Employee selected, but leave balances could not be loaded.");
     }
   };
 
@@ -1904,19 +2061,63 @@ export function LeaveApplicationsManagement() {
           (user as any)?.companyID);
 
     // Ensure we have the required IDs
-    if (!companyID || !formData.branchesID || !formData.manageEmployeeID) {
-      toast.error(
-        "Please make sure all required fields are selected: Branch and Employee",
-      );
+    const resolvedCompanyID =
+      Number(companyID) > 0
+        ? Number(companyID)
+        : Number(isNormalUser ? empCreds?.companyID : 0);
+
+    const resolvedBranchID =
+      Number(formData.branchesID) > 0
+        ? Number(formData.branchesID)
+        : Number(
+            selectedEmployeeData?.branchesID ??
+              (isNormalUser ? empCreds?.branchesID : undefined) ??
+              (isSingleBranch ? autoBranchId : undefined) ??
+              0,
+          );
+
+    const resolvedEmployeeID =
+      [
+        formData.manageEmployeeID,
+        selectedEmployeeData?.id,
+        selectedEmployeeData?.employeeID,
+        selectedEmployeeData?.manageEmployeeID,
+        selectedEmployeeData?.employee?.id,
+        empCreds?.manageEmployeeID,
+        empCreds?.employeeID,
+        empCreds?.employee?.id,
+        (user as any)?.employee?.id,
+        (user as any)?.employeeId,
+        (user as any)?.type === "employee" ? user?.id : undefined,
+      ]
+        .map(Number)
+        .find((id) => Number.isInteger(id) && id > 0) ?? 0;
+
+    const missingFields: string[] = [];
+
+    if (!Number.isInteger(resolvedCompanyID) || resolvedCompanyID <= 0) {
+      missingFields.push("Company");
+    }
+
+    if (!Number.isInteger(resolvedBranchID) || resolvedBranchID <= 0) {
+      missingFields.push("Branch");
+    }
+
+    if (!Number.isInteger(resolvedEmployeeID) || resolvedEmployeeID <= 0) {
+      missingFields.push("Employee");
+    }
+
+    if (missingFields.length > 0) {
+      toast.error(`Please select or resolve: ${missingFields.join(", ")}.`);
       return;
     }
 
     try {
       const leaveApplicationData = {
         serviceProviderID: serviceProviderID,
-        companyID: companyID,
-        branchesID: formData.branchesID,
-        manageEmployeeID: formData.manageEmployeeID,
+        companyID: resolvedCompanyID,
+        branchesID: resolvedBranchID,
+        manageEmployeeID: resolvedEmployeeID,
         remainingSickLeave: selectedEmployee?.remainingSickLeave || 0,
         remainingCasualLeave: selectedEmployee?.remainingCasualLeave || 0,
         appliedLeaveType: formData.leaveType,
@@ -1934,7 +2135,10 @@ export function LeaveApplicationsManagement() {
 
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({
+          "Content-Type": "application/json",
+        }),
+        credentials: "include",
         body: JSON.stringify(leaveApplicationData),
       });
       if (!res.ok) {
@@ -1962,7 +2166,14 @@ export function LeaveApplicationsManagement() {
     setFormData({
       serviceProvider: ctx?.serviceProviderName ?? "",
       companyName: ctx?.companyName ?? "",
-      branchName: isSingleBranch ? autoBranchName || "" : "",
+      branchName: isNormalUser
+        ? empCreds?.branches?.branchName ||
+          empCreds?.branch?.branchName ||
+          autoBranchName ||
+          ""
+        : isSingleBranch
+          ? autoBranchName || ""
+          : "",
       employeeName: isNormalUser
         ? `${empCreds?.employeeFirstName || ""} ${empCreds?.employeeLastName || ""}`.trim()
         : "",
@@ -1972,9 +2183,28 @@ export function LeaveApplicationsManagement() {
       fromDate: "",
       toDate: "",
       purpose: "",
-      serviceProviderID: ctx?.serviceProviderID ?? undefined,
-      companyID: ctx?.companyID ?? undefined,
-      branchesID: isSingleBranch && autoBranchId ? autoBranchId : undefined,
+      serviceProviderID:
+        Number(
+          empCreds?.serviceProviderID ??
+            ctx?.serviceProviderID ??
+            user?.serviceProviderID ??
+            0,
+        ) || undefined,
+
+      companyID:
+        Number(
+          (isNormalUser ? empCreds?.companyID : undefined) ??
+            ctx?.companyID ??
+            user?.companyID ??
+            0,
+        ) || undefined,
+
+      branchesID:
+        Number(
+          (isNormalUser ? empCreds?.branchesID : undefined) ??
+            (isSingleBranch ? autoBranchId : undefined) ??
+            0,
+        ) || undefined,
       manageEmployeeID: isNormalUser ? empCreds?.manageEmployeeID : undefined,
     });
     setSelectedEmployee(null);
@@ -2320,36 +2550,31 @@ export function LeaveApplicationsManagement() {
                 />
               )}
 
-              {/* Branch Name - hidden when company has only one branch */}
+              {/* Branch Name - always allow branch selection */}
               <div
                 style={{
                   gridColumn: user?.role !== "SUPERADMIN" ? "span 3" : "span 1",
                 }}
               >
-                {isSingleBranch ? (
-                  <div className="space-y-2">
-                    <Label>Branch</Label>
-                    <Input
-                      value={formData.branchName || autoBranchName || ""}
-                      readOnly
-                      className="bg-muted"
-                    />
-                  </div>
-                ) : (
-                  <SearchSuggestInput
-                    label="Branch Name"
-                    placeholder="Start typing branch name..."
-                    value={formData.branchName}
-                    onChange={(value) =>
-                      setFormData((prev) => ({ ...prev, branchName: value }))
-                    }
-                    onSelect={handleBranchSelect}
-                    fetchData={fetchBranches}
-                    displayField="branchName"
-                    valueField="id"
-                    required
-                  />
-                )}
+                <SearchSuggestInput
+                  label="Branch Name"
+                  placeholder="Search and select a branch..."
+                  value={formData.branchName}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      branchName: value,
+                      branchesID: undefined,
+                      employeeName: "",
+                      manageEmployeeID: undefined,
+                    }))
+                  }
+                  onSelect={handleBranchSelect}
+                  fetchData={fetchBranches}
+                  displayField="branchName"
+                  valueField="id"
+                  required
+                />
               </div>
             </div>
           </div>

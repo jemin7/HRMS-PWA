@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReimbursementDto } from './dto/create-reimbursement.dto';
 import { UpdateReimbursementDto } from './dto/update-reimbursement.dto';
@@ -21,13 +25,16 @@ export class ReimbursementService {
     private readonly employeeMemoService: EmployeeMemoService,
   ) {}
 
-  private employeeDisplayName(emp?: {
-    employeeFirstName?: string | null;
-    employeeLastName?: string | null;
-    employeeID?: string | null;
-  } | null): string {
+  private employeeDisplayName(
+    emp?: {
+      employeeFirstName?: string | null;
+      employeeLastName?: string | null;
+      employeeID?: string | null;
+    } | null,
+  ): string {
     if (!emp) return 'An employee';
-    const name = `${emp.employeeFirstName ?? ''} ${emp.employeeLastName ?? ''}`.trim();
+    const name =
+      `${emp.employeeFirstName ?? ''} ${emp.employeeLastName ?? ''}`.trim();
     return name || emp.employeeID || 'An employee';
   }
 
@@ -81,7 +88,9 @@ export class ReimbursementService {
     const dateOnly = this.parseDateOnly(dateStr);
     if (!dateOnly) return;
     if (dateOnly > this.kolkataDateISO()) {
-      throw new BadRequestException('Reimbursement date cannot be in the future');
+      throw new BadRequestException(
+        'Reimbursement date cannot be in the future',
+      );
     }
   }
 
@@ -101,7 +110,22 @@ export class ReimbursementService {
     const { items = [], ...parent } = dto;
     this.assertNotFutureDate(parent.date);
     const date = this.parseDateOnly(parent.date) ?? parent.date ?? null;
+    const companyID = Number(parent.companyID);
+    const branchesID = Number(parent.branchesID);
+    const manageEmployeeID = Number(parent.manageEmployeeID);
 
+    if (
+      !Number.isInteger(companyID) ||
+      companyID <= 0 ||
+      !Number.isInteger(branchesID) ||
+      branchesID <= 0 ||
+      !Number.isInteger(manageEmployeeID) ||
+      manageEmployeeID <= 0
+    ) {
+      throw new BadRequestException(
+        'Company, branch, and employee are required to create a reimbursement.',
+      );
+    }
     const created = await this.prisma.reimbursement.create({
       data: {
         serviceProviderID: parent.serviceProviderID ?? null,
@@ -158,15 +182,15 @@ export class ReimbursementService {
 
   /** Bulk create multiple parent reimbursements */
   async createMany(dtos: CreateReimbursementDto[]) {
-    return this.prisma.reimbursement.createMany({ 
-      data: dtos.map(dto => ({
+    return this.prisma.reimbursement.createMany({
+      data: dtos.map((dto) => ({
         ...dto,
         paymentMode: dto.paymentMode ?? null,
         paymentType: dto.paymentType ?? null,
         paymentDate: dto.paymentDate ?? null,
         paymentRemark: dto.paymentRemark ?? null,
         paymentProof: dto.paymentProof ?? null,
-      }))
+      })),
     });
   }
 
@@ -177,8 +201,6 @@ export class ReimbursementService {
       orderBy: { id: 'desc' },
     });
   }
-
-  
 
   async findOne(id: number) {
     const rec = await this.prisma.reimbursement.findUnique({
@@ -255,7 +277,9 @@ export class ReimbursementService {
 
       // If items array provided, replace all existing line items
       if (items) {
-        await tx.reimbursementItem.deleteMany({ where: { reimbursementID: id } });
+        await tx.reimbursementItem.deleteMany({
+          where: { reimbursementID: id },
+        });
         if (items.length) {
           await tx.reimbursementItem.createMany({
             data: items.map((i) => ({
@@ -295,14 +319,17 @@ export class ReimbursementService {
   }
 
   // NEW: Update payment details specifically
-  async updatePayment(id: number, paymentData: {
-    paymentMode?: string;
-    paymentType?: string;
-    paymentDate?: string;
-    paymentRemark?: string;
-    paymentProof?: string;
-    status?: string;
-  }) {
+  async updatePayment(
+    id: number,
+    paymentData: {
+      paymentMode?: string;
+      paymentType?: string;
+      paymentDate?: string;
+      paymentRemark?: string;
+      paymentProof?: string;
+      status?: string;
+    },
+  ) {
     await this.ensureExists(id);
 
     return this.prisma.reimbursement.update({
@@ -316,13 +343,16 @@ export class ReimbursementService {
   }
 
   // NEW: Update approval details specifically
-  async updateApproval(id: number, approvalData: {
-    approvalType?: string;
-    salaryPeriod?: string;
-    voucherCode?: string;
-    voucherDate?: string;
-    status?: string;
-  }) {
+  async updateApproval(
+    id: number,
+    approvalData: {
+      approvalType?: string;
+      salaryPeriod?: string;
+      voucherCode?: string;
+      voucherDate?: string;
+      status?: string;
+    },
+  ) {
     await this.ensureExists(id);
 
     const updated = await this.prisma.reimbursement.update({
@@ -335,12 +365,14 @@ export class ReimbursementService {
     });
 
     if ((updated as any).manageEmployeeID) {
-      this.pushService.sendToEmployeeAndManagers(
-        (updated as any).manageEmployeeID,
-        reimbursementPushTitle('Approved'),
-        'Your reimbursement request has been approved.',
-        { url: '/empReimbursement', kind: 'reimbursement' },
-      ).catch(() => null);
+      this.pushService
+        .sendToEmployeeAndManagers(
+          (updated as any).manageEmployeeID,
+          reimbursementPushTitle('Approved'),
+          'Your reimbursement request has been approved.',
+          { url: '/empReimbursement', kind: 'reimbursement' },
+        )
+        .catch(() => null);
     }
     this.postReimbursementBroadcast(updated);
 
@@ -363,7 +395,11 @@ export class ReimbursementService {
   }
 
   /** Approve a single reimbursement line (voucher only for now). */
-  async approveItem(reimbursementID: number, itemId: number, actorRole?: string) {
+  async approveItem(
+    reimbursementID: number,
+    itemId: number,
+    actorRole?: string,
+  ) {
     const actorLabel = actorRole ? senderLabelFromRole(actorRole) : undefined;
     await this.ensureExists(reimbursementID);
     const item = await this.prisma.reimbursementItem.findFirst({
@@ -396,7 +432,11 @@ export class ReimbursementService {
   }
 
   /** Reject a single reimbursement line. */
-  async rejectItem(reimbursementID: number, itemId: number, actorRole?: string) {
+  async rejectItem(
+    reimbursementID: number,
+    itemId: number,
+    actorRole?: string,
+  ) {
     const actorLabel = actorRole ? senderLabelFromRole(actorRole) : undefined;
     await this.ensureExists(reimbursementID);
     const item = await this.prisma.reimbursementItem.findFirst({
@@ -445,7 +485,7 @@ export class ReimbursementService {
       data: {
         paidStatus,
         paymentRemark:
-          paidStatus === 'Paid' ? body.paymentRemark ?? null : null,
+          paidStatus === 'Paid' ? (body.paymentRemark ?? null) : null,
       },
     });
 
@@ -485,9 +525,7 @@ export class ReimbursementService {
       if (statuses.some((s) => s === 'Approved')) {
         approvalType = 'Voucher';
       }
-    } else if (
-      statuses.some((s) => s === 'Approved' || s === 'Rejected')
-    ) {
+    } else if (statuses.some((s) => s === 'Approved' || s === 'Rejected')) {
       status = 'Partially Approved';
       if (statuses.some((s) => s === 'Approved')) {
         approvalType = 'Voucher';
