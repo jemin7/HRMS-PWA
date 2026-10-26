@@ -167,37 +167,74 @@ export class WorkShiftService {
   async update(id: number, data: UpdateWorkShiftDto) {
     const { workShiftDays, ...workShiftData } = data;
 
-    // Prepare the update data object
+    // Resolve the existing associations first so partial updates
+    // preserve the current company and branch.
+    const existing = await this.prisma.workShift.findUnique({
+      where: { id },
+      select: {
+        companyID: true,
+        branchesID: true,
+        serviceProviderID: true,
+      },
+    });
+
+    const companyWasProvided = workShiftData.companyID !== undefined;
+    const branchWasProvided = workShiftData.branchesID !== undefined;
+    const providerWasProvided = workShiftData.serviceProviderID !== undefined;
+
+    const requestedCompanyID = companyWasProvided
+      ? workShiftData.companyID
+      : existing?.companyID;
+
+    const requestedBranchesID = branchWasProvided
+      ? workShiftData.branchesID
+      : existing?.branchesID;
+
+    // Resolve the branch's actual company when the request has no
+    // valid company ID.
+    const requestedBranchId = this.toPositiveId(requestedBranchesID);
+
+    const branchRecord = requestedBranchId
+      ? await this.prisma.branches.findUnique({
+          where: { id: requestedBranchId },
+          select: {
+            companyID: true,
+          },
+        })
+      : null;
+
+    const effectiveCompanyID =
+      this.toPositiveId(requestedCompanyID) ??
+      this.toPositiveId(branchRecord?.companyID);
+
+    const resolvedBranchesID = await snapBranchesIDToCompany(
+      this.prisma,
+      effectiveCompanyID,
+      requestedBranchesID,
+    );
+
+    const requestedServiceProviderID = providerWasProvided
+      ? workShiftData.serviceProviderID
+      : existing?.serviceProviderID;
+
+    const resolvedServiceProviderID =
+      await this.resolveServiceProviderAssociation(
+        effectiveCompanyID,
+        resolvedBranchesID,
+        requestedServiceProviderID,
+      );
+
     const updateData: any = {};
 
-    // Only add fields that are provided
-    if (workShiftData.serviceProviderID !== undefined) {
-      updateData.serviceProviderID = workShiftData.serviceProviderID;
+    // Update organizational associations only when relevant fields
+    // were provided. Always use the validated provider ID.
+    if (companyWasProvided || branchWasProvided) {
+      updateData.companyID = effectiveCompanyID;
+      updateData.branchesID = resolvedBranchesID;
     }
-    if (
-      workShiftData.companyID !== undefined ||
-      workShiftData.branchesID !== undefined
-    ) {
-      const existing = await this.prisma.workShift.findUnique({
-        where: { id },
-        select: { companyID: true, branchesID: true },
-      });
-      const companyID =
-        workShiftData.companyID !== undefined
-          ? workShiftData.companyID
-          : existing?.companyID;
-      const requestedBranch =
-        workShiftData.branchesID !== undefined
-          ? workShiftData.branchesID
-          : existing?.branchesID;
-      updateData.branchesID = await snapBranchesIDToCompany(
-        this.prisma,
-        companyID,
-        requestedBranch,
-      );
-      if (workShiftData.companyID !== undefined) {
-        updateData.companyID = workShiftData.companyID;
-      }
+
+    if (providerWasProvided || companyWasProvided || branchWasProvided) {
+      updateData.serviceProviderID = resolvedServiceProviderID;
     }
     if (workShiftData.workShiftName !== undefined) {
       updateData.workShiftName = workShiftData.workShiftName;
