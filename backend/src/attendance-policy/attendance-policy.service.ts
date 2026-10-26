@@ -9,6 +9,64 @@ import { UpdateAttendancePolicyDto } from './dto/update-attendance-policy.dto';
 export class AttendancePolicyService {
   constructor(private prisma: PrismaService) {}
 
+  private toPositiveId(value: unknown): number | null {
+    const id = Number(value);
+    return Number.isInteger(id) && id > 0 ? id : null;
+  }
+
+  private async resolveServiceProviderAssociation(
+    companyID?: number | null,
+    branchesID?: number | null,
+    requestedServiceProviderID?: number | null,
+  ): Promise<number | null> {
+    const companyId = this.toPositiveId(companyID);
+    const branchId = this.toPositiveId(branchesID);
+
+    const branch = branchId
+      ? await this.prisma.branches.findUnique({
+          where: { id: branchId },
+          select: {
+            companyID: true,
+            serviceProviderID: true,
+          },
+        })
+      : null;
+
+    const effectiveCompanyId =
+      companyId ?? this.toPositiveId(branch?.companyID);
+
+    const company = effectiveCompanyId
+      ? await this.prisma.company.findUnique({
+          where: { id: effectiveCompanyId },
+          select: { serviceProviderID: true },
+        })
+      : null;
+
+    // Prefer the provider associated with the company, then the branch.
+    // Use the submitted ID only if it refers to a real provider.
+    const candidates = [
+      company?.serviceProviderID,
+      branch?.serviceProviderID,
+      requestedServiceProviderID,
+    ]
+      .map((value) => this.toPositiveId(value))
+      .filter((id): id is number => id !== null);
+
+    for (const id of [...new Set(candidates)]) {
+      const provider = await this.prisma.serviceProvider.findUnique({
+        where: { id },
+        select: { id: true },
+      });
+
+      if (provider) {
+        return provider.id;
+      }
+    }
+
+    // Never save a nonexistent service provider ID.
+    return null;
+  }
+
   async create(data: CreateAttendancePolicyDto) {
     // Check unique policy name per company
     if (data.companyID && data.attendancePolicyName) {
@@ -24,10 +82,21 @@ export class AttendancePolicyService {
         );
       }
     }
-    const branchesID = await snapBranchesIDToCompany(this.prisma, data.companyID, data.branchesID);
+    const branchesID = await snapBranchesIDToCompany(
+      this.prisma,
+      data.companyID,
+      data.branchesID,
+    );
+
+    const serviceProviderID = await this.resolveServiceProviderAssociation(
+      data.companyID,
+      branchesID,
+      data.serviceProviderID,
+    );
+
     return this.prisma.attendancePolicy.create({
       data: {
-        serviceProviderID: data.serviceProviderID,
+        serviceProviderID,
         companyID: data.companyID,
         branchesID,
         attendancePolicyName: data.attendancePolicyName,
@@ -48,7 +117,8 @@ export class AttendancePolicyService {
         minOvertimeHrs: data.minOvertimeHrs ?? 0,
         maxOvertimeHrs: data.maxOvertimeHrs ?? 0,
         overtimeTrimmingApply: data.overtimeTrimmingApply ?? false,
-        checkoutGracePeriodForOvertimeTrimming: data.checkoutGracePeriodForOvertimeTrimming ?? 0,
+        checkoutGracePeriodForOvertimeTrimming:
+          data.checkoutGracePeriodForOvertimeTrimming ?? 0,
         breakTimeForOT: data.breakTimeForOT ?? 0,
         otMealApply: data.otMealApply ?? false,
         minsForOTMealToken: data.minsForOTMealToken ?? 0,
@@ -112,53 +182,134 @@ export class AttendancePolicyService {
     }
     const updateData: any = {};
 
-    // Only include fields that are provided
-    if (data.serviceProviderID !== undefined) updateData.serviceProviderID = data.serviceProviderID;
-    if (data.companyID !== undefined || data.branchesID !== undefined) {
+    const companyWasProvided = data.companyID !== undefined;
+    const branchWasProvided = data.branchesID !== undefined;
+    const providerWasProvided = data.serviceProviderID !== undefined;
+
+    if (companyWasProvided || branchWasProvided || providerWasProvided) {
       const existing = await this.prisma.attendancePolicy.findUnique({
         where: { id },
-        select: { companyID: true, branchesID: true },
+        select: {
+          companyID: true,
+          branchesID: true,
+          serviceProviderID: true,
+        },
       });
-      const companyID = data.companyID !== undefined ? data.companyID : existing?.companyID;
-      const requestedBranch = data.branchesID !== undefined ? data.branchesID : existing?.branchesID;
-      updateData.branchesID = await snapBranchesIDToCompany(this.prisma, companyID, requestedBranch);
-      if (data.companyID !== undefined) updateData.companyID = data.companyID;
+
+      if (!existing) {
+        throw new Error(`Attendance policy ${id} was not found.`);
+      }
+
+      const requestedCompanyID = companyWasProvided
+        ? data.companyID
+        : existing.companyID;
+
+      const requestedBranchesID = branchWasProvided
+        ? data.branchesID
+        : existing.branchesID;
+
+      const requestedBranchId = this.toPositiveId(requestedBranchesID);
+
+      const branchRecord = requestedBranchId
+        ? await this.prisma.branches.findUnique({
+            where: { id: requestedBranchId },
+            select: { companyID: true },
+          })
+        : null;
+
+      const effectiveCompanyID =
+        this.toPositiveId(requestedCompanyID) ??
+        this.toPositiveId(branchRecord?.companyID);
+
+      const resolvedBranchesID = await snapBranchesIDToCompany(
+        this.prisma,
+        effectiveCompanyID,
+        requestedBranchesID,
+      );
+
+      const requestedServiceProviderID = providerWasProvided
+        ? data.serviceProviderID
+        : existing.serviceProviderID;
+
+      const resolvedServiceProviderID =
+        await this.resolveServiceProviderAssociation(
+          effectiveCompanyID,
+          resolvedBranchesID,
+          requestedServiceProviderID,
+        );
+
+      if (companyWasProvided) {
+        updateData.companyID = effectiveCompanyID;
+      }
+
+      if (companyWasProvided || branchWasProvided) {
+        updateData.branchesID = resolvedBranchesID;
+      }
+
+      updateData.serviceProviderID = resolvedServiceProviderID;
     }
-    if (data.attendancePolicyName !== undefined) updateData.attendancePolicyName = data.attendancePolicyName;
-    if (data.workingHoursType !== undefined) updateData.workingHoursType = data.workingHoursType;
-    if (data.checkin_begin_before_min !== undefined) updateData.checkin_begin_before_min = data.checkin_begin_before_min;
-    if (data.checkout_end_after_min !== undefined) updateData.checkout_end_after_min = data.checkout_end_after_min;
-    if (data.checkin_grace_time_min !== undefined) updateData.checkin_grace_time_min = data.checkin_grace_time_min;
-    if (data.min_work_hours_half_day_min !== undefined) updateData.min_work_hours_half_day_min = data.min_work_hours_half_day_min;
-    if (data.max_late_check_in_time !== undefined) updateData.max_late_check_in_time = data.max_late_check_in_time;
-    if (data.earlyCheckoutBeforeEndMin !== undefined) updateData.earlyCheckoutBeforeEndMin = data.earlyCheckoutBeforeEndMin;
+    if (data.attendancePolicyName !== undefined)
+      updateData.attendancePolicyName = data.attendancePolicyName;
+    if (data.workingHoursType !== undefined)
+      updateData.workingHoursType = data.workingHoursType;
+    if (data.checkin_begin_before_min !== undefined)
+      updateData.checkin_begin_before_min = data.checkin_begin_before_min;
+    if (data.checkout_end_after_min !== undefined)
+      updateData.checkout_end_after_min = data.checkout_end_after_min;
+    if (data.checkin_grace_time_min !== undefined)
+      updateData.checkin_grace_time_min = data.checkin_grace_time_min;
+    if (data.min_work_hours_half_day_min !== undefined)
+      updateData.min_work_hours_half_day_min = data.min_work_hours_half_day_min;
+    if (data.max_late_check_in_time !== undefined)
+      updateData.max_late_check_in_time = data.max_late_check_in_time;
+    if (data.earlyCheckoutBeforeEndMin !== undefined)
+      updateData.earlyCheckoutBeforeEndMin = data.earlyCheckoutBeforeEndMin;
     if (data.markAs !== undefined) updateData.markAs = data.markAs;
-    if (data.lateMarkCount !== undefined) updateData.lateMarkCount = data.lateMarkCount;
-    if (data.allow_self_mark_attendance !== undefined) updateData.allow_self_mark_attendance = data.allow_self_mark_attendance;
-    if (data.allow_manager_update_ot !== undefined) updateData.allow_manager_update_ot = data.allow_manager_update_ot;
-    if (data.max_ot_hours_per_day_min !== undefined) updateData.max_ot_hours_per_day_min = data.max_ot_hours_per_day_min;
-    
+    if (data.lateMarkCount !== undefined)
+      updateData.lateMarkCount = data.lateMarkCount;
+    if (data.allow_self_mark_attendance !== undefined)
+      updateData.allow_self_mark_attendance = data.allow_self_mark_attendance;
+    if (data.allow_manager_update_ot !== undefined)
+      updateData.allow_manager_update_ot = data.allow_manager_update_ot;
+    if (data.max_ot_hours_per_day_min !== undefined)
+      updateData.max_ot_hours_per_day_min = data.max_ot_hours_per_day_min;
+
     // New fields
-    if (data.overtimeApplicable !== undefined) updateData.overtimeApplicable = data.overtimeApplicable;
-    if (data.minOvertimeHrs !== undefined) updateData.minOvertimeHrs = data.minOvertimeHrs;
-    if (data.maxOvertimeHrs !== undefined) updateData.maxOvertimeHrs = data.maxOvertimeHrs;
-    if (data.overtimeTrimmingApply !== undefined) updateData.overtimeTrimmingApply = data.overtimeTrimmingApply;
-    if (data.checkoutGracePeriodForOvertimeTrimming !== undefined) updateData.checkoutGracePeriodForOvertimeTrimming = data.checkoutGracePeriodForOvertimeTrimming;
-    if (data.breakTimeForOT !== undefined) updateData.breakTimeForOT = data.breakTimeForOT;
-    if (data.otMealApply !== undefined) updateData.otMealApply = data.otMealApply;
-    if (data.minsForOTMealToken !== undefined) updateData.minsForOTMealToken = data.minsForOTMealToken;
-    if (data.minsForBreakTimeForMeal !== undefined) updateData.minsForBreakTimeForMeal = data.minsForBreakTimeForMeal;
+    if (data.overtimeApplicable !== undefined)
+      updateData.overtimeApplicable = data.overtimeApplicable;
+    if (data.minOvertimeHrs !== undefined)
+      updateData.minOvertimeHrs = data.minOvertimeHrs;
+    if (data.maxOvertimeHrs !== undefined)
+      updateData.maxOvertimeHrs = data.maxOvertimeHrs;
+    if (data.overtimeTrimmingApply !== undefined)
+      updateData.overtimeTrimmingApply = data.overtimeTrimmingApply;
+    if (data.checkoutGracePeriodForOvertimeTrimming !== undefined)
+      updateData.checkoutGracePeriodForOvertimeTrimming =
+        data.checkoutGracePeriodForOvertimeTrimming;
+    if (data.breakTimeForOT !== undefined)
+      updateData.breakTimeForOT = data.breakTimeForOT;
+    if (data.otMealApply !== undefined)
+      updateData.otMealApply = data.otMealApply;
+    if (data.minsForOTMealToken !== undefined)
+      updateData.minsForOTMealToken = data.minsForOTMealToken;
+    if (data.minsForBreakTimeForMeal !== undefined)
+      updateData.minsForBreakTimeForMeal = data.minsForBreakTimeForMeal;
     if (data.leaveAroundHolidayCounted !== undefined) {
       updateData.leaveAroundHolidayCounted = data.leaveAroundHolidayCounted;
     }
     if (data.countWorkhoursInMinutes !== undefined) {
       updateData.countWorkhoursInMinutes = data.countWorkhoursInMinutes;
     }
-    if (data.lateMarkMarkAs !== undefined) updateData.lateMarkMarkAs = data.lateMarkMarkAs;
-    if (data.lateMarkMarkCount !== undefined) updateData.lateMarkMarkCount = data.lateMarkMarkCount;
-    if (data.maxLateCheckinMarkAs !== undefined) updateData.maxLateCheckinMarkAs = data.maxLateCheckinMarkAs;
-    if (data.trimPreshiftMin !== undefined) updateData.trimPreshiftMin = data.trimPreshiftMin;
-    if (data.trimPostshiftMin !== undefined) updateData.trimPostshiftMin = data.trimPostshiftMin;
+    if (data.lateMarkMarkAs !== undefined)
+      updateData.lateMarkMarkAs = data.lateMarkMarkAs;
+    if (data.lateMarkMarkCount !== undefined)
+      updateData.lateMarkMarkCount = data.lateMarkMarkCount;
+    if (data.maxLateCheckinMarkAs !== undefined)
+      updateData.maxLateCheckinMarkAs = data.maxLateCheckinMarkAs;
+    if (data.trimPreshiftMin !== undefined)
+      updateData.trimPreshiftMin = data.trimPreshiftMin;
+    if (data.trimPostshiftMin !== undefined)
+      updateData.trimPostshiftMin = data.trimPostshiftMin;
 
     return this.prisma.attendancePolicy.update({
       where: { id },
