@@ -34,9 +34,8 @@ export class ManageEmployeeController {
 
   @Get('credentials/all')
   @UseGuards(AuthGuard('jwt'))
-  async getAllCredentials() {
-    const data = await this.service.getAllCredentials();
-    return data;
+  async getAllCredentials(@Req() req: Request) {
+    return this.service.getAllCredentials(req);
   }
 
   // 1. Get credentials by employee ID
@@ -144,7 +143,9 @@ export class ManageEmployeeController {
       await this.service.logJoiningFormDownload(id, req, true);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : 'Failed to generate joining form PDF';
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate joining form PDF';
       await this.service.logJoiningFormDownload(id, req, false, message);
       res.status(500).json({ message });
     }
