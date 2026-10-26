@@ -307,27 +307,56 @@ export function AttendanceRegularisationManagement() {
           const credsRes = await fetch(
             `${BACKEND_URL}/manage-emp/credentials/all`,
             {
+              headers: getAuthHeaders(),
+              credentials: "include",
               cache: "no-store",
             },
           );
+
+          if (!credsRes.ok) {
+            throw new Error(
+              `Failed to load employee credentials (${credsRes.status})`,
+            );
+          }
+
           const creds = await credsRes.json();
 
+          const normalizeUsername = (value: unknown) =>
+            String(value ?? "")
+              .trim()
+              .toLowerCase();
+
           const me = Array.isArray(creds)
-            ? creds.find((item: any) => item.username === user.username)
+            ? (creds.find(
+                (item: any) =>
+                  normalizeUsername(item.username) ===
+                  normalizeUsername(user.username),
+              ) ??
+              creds.find(
+                (item: any) =>
+                  Number(item.manageEmployeeID ?? item.employee?.id ?? 0) ===
+                  Number(user.employee?.id ?? -1),
+              ))
             : null;
 
           setEmpCreds(me || null);
 
           const manageEmployeeID = Number(
-            me?.manageEmployeeID ?? me?.employee?.id ?? 0,
+            me?.manageEmployeeID ??
+              me?.employee?.id ??
+              user.employee?.id ??
+              (user.type === "employee" ? user.id : 0),
           );
 
           if (manageEmployeeID > 0) {
             const employeeRes = await fetch(
               `${BACKEND_URL}/manage-emp/${manageEmployeeID}`,
-              { cache: "no-store" },
+              {
+                headers: getAuthHeaders(),
+                credentials: "include",
+                cache: "no-store",
+              },
             );
-
             if (employeeRes.ok) {
               const employee = await employeeRes.json();
 
@@ -961,64 +990,75 @@ export function AttendanceRegularisationManagement() {
       const res = await fetch(`${BACKEND_URL}/emp-attendance-regularise`, {
         cache: "no-store",
       });
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "");
+        throw new Error(
+          `Failed to load regularisations (${res.status}): ${errorText.slice(0, 200)}`,
+        );
+      }
+
       const data = await res.json();
-      const regularisationsData = (Array.isArray(data) ? data : []).map(
-        (regularisation: any) => ({
-          id: regularisation.id.toString(),
 
-          approvalActionTaken: regularisation.approvalActionTaken === true,
+      const sourceRows = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data)
+          ? data.data
+          : [];
 
-          serviceProviderID: regularisation.serviceProviderID,
-          companyID: regularisation.companyID,
-          branchesID: regularisation.branchesID,
-          manageEmployeeID: regularisation.manageEmployeeID,
-          serviceProvider: regularisation.serviceProvider?.companyName || "",
-          companyName: regularisation.company?.companyName || "",
-          branchName: regularisation.branches?.branchName || "",
-          departmentID:
-            regularisation.departmentID ??
-            regularisation.manageEmployee?.departmentNameID ??
-            regularisation.manageEmployee?.departments?.id,
-          designationID:
-            regularisation.designationID ??
-            regularisation.manageEmployee?.designationID ??
-            regularisation.manageEmployee?.designations?.id ??
-            regularisation.manageEmployee?.empDesignation?.[0]?.designationID ??
-            regularisation.manageEmployee?.empDesignation?.[0]?.designation?.id,
-          departmentName:
-            regularisation.departments?.departmentName ||
-            regularisation.manageEmployee?.departments?.departmentName ||
-            "",
-          employeeId: regularisation.manageEmployee?.employeeID || "",
+      const regularisationsData = sourceRows.map((regularisation: any) => ({
+        id: regularisation.id.toString(),
 
-          day: regularisation.day || "",
-          employeeName: regularisation.manageEmployee
-            ? `${regularisation.manageEmployee.employeeFirstName || ""} ${regularisation.manageEmployee.employeeLastName || ""}`.trim()
-            : "",
-          attendanceDate: regularisation.attendanceDate
-            ? new Date(regularisation.attendanceDate)
-                .toISOString()
-                .split("T")[0]
-            : "",
-          checkInTime: regularisation.checkInTime
-            ? new Date(regularisation.checkInTime).toTimeString().split(" ")[0]
-            : "",
-          checkOutTime: regularisation.checkOutTime
-            ? new Date(regularisation.checkOutTime).toTimeString().split(" ")[0]
-            : "",
-          actualStatus: regularisation.actualStatus || "",
-          requestedStatus: regularisation.requestedStatus || "",
-          reason: regularisation.reason || "",
-          remarks: regularisation.remarks,
-          status: (regularisation.status || "Pending") as
-            | "Pending"
-            | "Approved"
-            | "Rejected",
-          createdAt: regularisation.createdAt
-            ? new Date(regularisation.createdAt).toISOString().split("T")[0]
-            : new Date().toISOString().split("T")[0],
-        }),
-      );
+        approvalActionTaken: regularisation.approvalActionTaken === true,
+
+        serviceProviderID: regularisation.serviceProviderID,
+        companyID: regularisation.companyID,
+        branchesID: regularisation.branchesID,
+        manageEmployeeID: regularisation.manageEmployeeID,
+        serviceProvider: regularisation.serviceProvider?.companyName || "",
+        companyName: regularisation.company?.companyName || "",
+        branchName: regularisation.branches?.branchName || "",
+        departmentID:
+          regularisation.departmentID ??
+          regularisation.manageEmployee?.departmentNameID ??
+          regularisation.manageEmployee?.departments?.id,
+        designationID:
+          regularisation.designationID ??
+          regularisation.manageEmployee?.designationID ??
+          regularisation.manageEmployee?.designations?.id ??
+          regularisation.manageEmployee?.empDesignation?.[0]?.designationID ??
+          regularisation.manageEmployee?.empDesignation?.[0]?.designation?.id,
+        departmentName:
+          regularisation.departments?.departmentName ||
+          regularisation.manageEmployee?.departments?.departmentName ||
+          "",
+        employeeId: regularisation.manageEmployee?.employeeID || "",
+
+        day: regularisation.day || "",
+        employeeName: regularisation.manageEmployee
+          ? `${regularisation.manageEmployee.employeeFirstName || ""} ${regularisation.manageEmployee.employeeLastName || ""}`.trim()
+          : "",
+        attendanceDate: regularisation.attendanceDate
+          ? new Date(regularisation.attendanceDate).toISOString().split("T")[0]
+          : "",
+        checkInTime: regularisation.checkInTime
+          ? new Date(regularisation.checkInTime).toTimeString().split(" ")[0]
+          : "",
+        checkOutTime: regularisation.checkOutTime
+          ? new Date(regularisation.checkOutTime).toTimeString().split(" ")[0]
+          : "",
+        actualStatus: regularisation.actualStatus || "",
+        requestedStatus: regularisation.requestedStatus || "",
+        reason: regularisation.reason || "",
+        remarks: regularisation.remarks,
+        status: (regularisation.status || "Pending") as
+          | "Pending"
+          | "Approved"
+          | "Rejected",
+        createdAt: regularisation.createdAt
+          ? new Date(regularisation.createdAt).toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0],
+      }));
 
       const managerMap = await loadLinkedManagersForRows(regularisationsData);
 
@@ -1033,7 +1073,7 @@ export function AttendanceRegularisationManagement() {
         if (ctx?.companyID) {
           setRegularisations(
             regularisationsData.filter(
-              (r: any) => r.companyID === ctx.companyID,
+              (r: any) => Number(r.companyID) === Number(ctx.companyID),
             ),
           );
         } else {
@@ -1047,7 +1087,7 @@ export function AttendanceRegularisationManagement() {
         if (ctx?.companyID) {
           setRegularisations(
             regularisationsData.filter(
-              (a: any) => a.companyID === ctx.companyID,
+              (a: any) => Number(a.companyID) === Number(ctx.companyID),
             ),
           );
           return;
@@ -1061,7 +1101,9 @@ export function AttendanceRegularisationManagement() {
         if (currentUser?.serviceProviderID) {
           setRegularisations(
             regularisationsData.filter(
-              (a: any) => a.serviceProviderID === currentUser.serviceProviderID,
+              (a: any) =>
+                Number(a.serviceProviderID) ===
+                Number(currentUser.serviceProviderID),
             ),
           );
           return;
@@ -1074,7 +1116,9 @@ export function AttendanceRegularisationManagement() {
         const companyID = ctx?.companyID ?? user?.companyID;
         if (companyID) {
           setRegularisations(
-            regularisationsData.filter((a: any) => a.companyID === companyID),
+            regularisationsData.filter(
+              (a: any) => Number(a.companyID) === Number(companyID),
+            ),
           );
         } else {
           setRegularisations([]);
@@ -1101,6 +1145,9 @@ export function AttendanceRegularisationManagement() {
       setRegularisations([]);
     } catch (error) {
       console.error("Error loading attendance regularisations:", error);
+      toast.error(
+        "Could not load attendance regularisations. Check the browser console for the API error.",
+      );
     } finally {
       setListLoading(false);
     }
@@ -1781,14 +1828,28 @@ export function AttendanceRegularisationManagement() {
     pendingAssignments: MyApprovalAssignment[],
     assignedAssignments: MyApprovalAssignment[],
   ): boolean => {
-    if (user?.role !== "EMPLOYEE" || !currentEmployee) {
+    if (user?.role !== "EMPLOYEE") {
       return false;
     }
 
-    const loggedEmployeeID = Number(currentEmployee.id);
+    const loggedEmployeeID = Number(
+      currentEmployee?.id ??
+        empCreds?.manageEmployeeID ??
+        empCreds?.employee?.id ??
+        user?.employee?.id ??
+        (user?.type === "employee" ? user.id : 0),
+    );
+
+    const loggedCompanyID = Number(
+      currentEmployee?.companyID ?? empCreds?.companyID ?? user?.companyID ?? 0,
+    );
 
     const requestEmployeeID = Number(row.manageEmployeeID ?? 0);
 
+    const isLoggedInCompanyOwner =
+      currentEmployee?.isCompanyOwner === true ||
+      empCreds?.isCompanyOwner === true ||
+      empCreds?.employee?.isCompanyOwner === true;
     /*
      * COMPANY OWNER
      *
@@ -1798,10 +1859,8 @@ export function AttendanceRegularisationManagement() {
      * This is visibility only.
      * Approval permission is handled separately.
      */
-    if (currentEmployee.isCompanyOwner === true) {
-      return (
-        Number(row.companyID ?? 0) === Number(currentEmployee.companyID ?? 0)
-      );
+    if (isLoggedInCompanyOwner && loggedCompanyID > 0) {
+      return Number(row.companyID ?? 0) === loggedCompanyID;
     }
 
     /*
@@ -1843,8 +1902,14 @@ export function AttendanceRegularisationManagement() {
 
     /*
      * Legacy fallback for old rows created before ApprovalRequest integration.
+    
      * It is visibility-only and NEVER grants approve/reject permission.
      */
+
+    // Legacy approver matching requires the full employee profile.
+    if (!currentEmployee) {
+      return false;
+    }
     if (row.status !== "Pending") {
       return false;
     }

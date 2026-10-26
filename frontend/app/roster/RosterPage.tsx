@@ -52,6 +52,7 @@ import {
   isCompanyAdminLikeRole,
 } from "@/lib/companyAccess";
 import { resolveScopedCompanyId } from "../utils/scopeContext";
+import { authHeaders } from "@/lib/auth";
 // ==================== TYPES ====================
 type ID = number;
 type RosterLeaveType = "CASUAL" | "SICK" | "LOP" | "PL" | "COMP_OFF";
@@ -73,10 +74,16 @@ interface Branch {
 }
 interface Department {
   id: ID;
-  serviceProviderID: ID;
-  companyID: ID;
-  branchesID: ID;
+  serviceProviderID?: ID | null;
+  companyID?: ID | null;
+  branchesID?: ID | null;
   departmentName: string;
+  departmentBranches?: Array<{
+    branchesID: ID;
+    branches?: {
+      id: ID;
+    } | null;
+  }>;
 }
 interface Designation {
   id: ID;
@@ -505,11 +512,53 @@ export function RosterManagement() {
   };
 
   // ✅ EFFECTIVE SCOPE
+
   const effectiveServiceProviderID = useMemo(() => {
-    if (isServiceProvider && currentUserMapping)
-      return currentUserMapping.serviceProviderID;
-    return serviceProviderID;
-  }, [isServiceProvider, currentUserMapping, serviceProviderID]);
+    const selectedBranch = brList.find(
+      (branch) => Number(branch.id) === Number(branchesID),
+    );
+
+    const selectedCompany = coList.find(
+      (company) => Number(company.id) === Number(companyID),
+    );
+
+    const activeCompanyID = getActiveRosterCompanyID();
+
+    const activeCompany = coList.find(
+      (company) => Number(company.id) === Number(activeCompanyID),
+    );
+
+    // Resolve the provider from the selected organizational scope first.
+    const candidates = [
+      selectedBranch?.serviceProviderID,
+      selectedCompany?.serviceProviderID,
+      activeCompany?.serviceProviderID,
+      currentUserMapping?.serviceProviderID,
+      currentUserMapping?.serviceProvider?.id,
+      user?.serviceProviderID,
+      user?.serviceProvider?.id,
+      serviceProviderID,
+    ];
+
+    for (const candidate of candidates) {
+      const id = Number(candidate);
+
+      if (Number.isInteger(id) && id > 0) {
+        return id;
+      }
+    }
+
+    return "";
+  }, [
+    branchesID,
+    brList,
+    companyID,
+    coList,
+    user,
+    userRole,
+    currentUserMapping,
+    serviceProviderID,
+  ]);
 
   const effectiveCompanyID = useMemo(() => {
     const activeCompanyID = getActiveRosterCompanyID();
@@ -608,34 +657,25 @@ export function RosterManagement() {
   }, [fromDate, toDate]);
 
   const canLoadEmployees = useMemo(() => {
-    if (isSuperAdmin) {
-      return (
-        !!serviceProviderID &&
-        !!companyID &&
-        !!branchesID &&
-        !!fromDate &&
-        !!toDate
-      );
-    }
+    const hasRequiredScope = Boolean(
+      effectiveServiceProviderID &&
+      effectiveCompanyID &&
+      effectiveBranchesID &&
+      fromDate &&
+      toDate,
+    );
 
-    if (isServiceProvider) {
-      return (
-        !!currentUserMapping?.serviceProviderID &&
-        !!companyID &&
-        !!branchesID &&
-        !!fromDate &&
-        !!toDate
-      );
-    }
+    const hasPermissionToLoad =
+      isSuperAdmin || isServiceProviderRole || isServiceProvider;
 
-    return false;
+    return hasPermissionToLoad && hasRequiredScope;
   }, [
     isSuperAdmin,
+    isServiceProviderRole,
     isServiceProvider,
-    serviceProviderID,
-    companyID,
-    branchesID,
-    currentUserMapping,
+    effectiveServiceProviderID,
+    effectiveCompanyID,
+    effectiveBranchesID,
     fromDate,
     toDate,
   ]);
@@ -693,17 +733,32 @@ export function RosterManagement() {
 
   const fetchLeaveApplications = useCallback(async () => {
     setIsLoading((prev) => ({ ...prev, leaves: true }));
+
     try {
       const applications = await safeFetch<LeaveApplication[]>(
         API.leaveApplications,
+        {
+          headers: authHeaders(),
+          cache: "no-store",
+        },
       );
+
+      if (!Array.isArray(applications)) {
+        throw new Error("The leave applications API did not return a list.");
+      }
+
       const approvedLeaves = applications.filter(
         (app) => app.status === "Approved",
       );
+
       setLeaveApplications(approvedLeaves);
     } catch (error) {
       console.error("Failed to load leave applications:", error);
-      toast.error("Failed to load leave applications");
+      toast.error(
+        error instanceof Error
+          ? `Failed to load leave applications: ${error.message}`
+          : "Failed to load leave applications.",
+      );
       setLeaveApplications([]);
     } finally {
       setIsLoading((prev) => ({ ...prev, leaves: false }));
@@ -711,15 +766,77 @@ export function RosterManagement() {
   }, []);
 
   const fetchEmployees = useCallback(async () => {
-    if (!canLoadEmployees) return;
+    const missing: string[] = [];
+    const sidebarContext = getSidebarContext();
+    const activeCompanyID = getActiveRosterCompanyID();
+    const companyIDForRequest = activeCompanyID ?? effectiveCompanyID;
+
+    const selectedCompany = coList.find(
+      (company) => Number(company.id) === Number(companyIDForRequest),
+    );
+
+    const selectedBranch = brList.find(
+      (branch) => Number(branch.id) === Number(effectiveBranchesID),
+    );
+
+    // Resolve the provider from the selected scope and available mappings.
+    const providerCandidates = [
+      effectiveServiceProviderID,
+      effectiveCompanyID,
+      effectiveBranchesID,
+      coList,
+      brList,
+      currentUserMapping,
+      user,
+      serviceProviderID,
+      fromDate,
+      toDate,
+      departmentID,
+      designationID,
+      fetchLeaveApplications,
+    ];
+
+    const providerIdForRequest = providerCandidates
+      .map((value) => Number(value))
+      .find((id) => Number.isInteger(id) && id > 0);
+
+    if (!providerIdForRequest) {
+      console.error("Roster: unable to resolve service provider ID", {
+        role: userRole,
+        userServiceProviderID: user?.serviceProviderID,
+        mappedServiceProviderID: currentUserMapping?.serviceProviderID,
+        sidebarServiceProviderID: sidebarContext?.serviceProviderID,
+        companyID: companyIDForRequest,
+        branchesID: effectiveBranchesID,
+      });
+
+      missing.push("Service Provider");
+    }
+
+    if (!(Number(companyIDForRequest) > 0)) {
+      missing.push("Company");
+    }
+
+    if (!(Number(effectiveBranchesID) > 0)) {
+      missing.push("Branch");
+    }
+
+    if (!fromDate || !toDate) {
+      missing.push("From Date and To Date");
+    }
+
+    if (missing.length > 0) {
+      toast.error(`Please select or resolve: ${missing.join(", ")}.`);
+      return;
+    }
 
     setIsLoading((prev) => ({ ...prev, employees: true }));
     try {
       const activeCompanyID = getActiveRosterCompanyID();
 
       const params = new URLSearchParams({
-        serviceProviderID: String(effectiveServiceProviderID),
-        companyID: String(activeCompanyID ?? effectiveCompanyID),
+        serviceProviderID: String(providerIdForRequest),
+        companyID: String(companyIDForRequest),
         branchesID: String(effectiveBranchesID),
       });
 
@@ -889,12 +1006,49 @@ export function RosterManagement() {
         const depsAll = await safeFetch<Department[]>(API.departments);
 
         // Filter departments based on SP, Company, and Branch
-        const filteredDeps = depsAll.filter(
-          (d) =>
-            d.serviceProviderID === effectiveServiceProviderID &&
-            d.companyID === effectiveCompanyID &&
-            d.branchesID === effectiveBranchesID,
-        );
+        const selectedCompanyId = Number(effectiveCompanyID);
+        const selectedBranchId = Number(effectiveBranchesID);
+        const selectedProviderId = Number(effectiveServiceProviderID);
+
+        const filteredDeps = depsAll.filter((d) => {
+          // Keep departments belonging to the selected company.
+          if (
+            !Number.isFinite(selectedCompanyId) ||
+            selectedCompanyId <= 0 ||
+            Number(d.companyID) !== selectedCompanyId
+          ) {
+            return false;
+          }
+
+          // Support both the legacy single-branch field and
+          // the newer multi-branch DepartmentBranch relation.
+          const matchesLegacyBranch = Number(d.branchesID) === selectedBranchId;
+
+          const matchesMappedBranch = (d.departmentBranches ?? []).some(
+            (mapping) =>
+              Number(mapping.branchesID ?? mapping.branches?.id) ===
+              selectedBranchId,
+          );
+
+          if (!matchesLegacyBranch && !matchesMappedBranch) {
+            return false;
+          }
+
+          // If the department has a provider association, ensure
+          // it matches the selected provider.
+          if (
+            Number.isFinite(selectedProviderId) &&
+            selectedProviderId > 0 &&
+            d.serviceProviderID != null &&
+            Number(d.serviceProviderID) > 0 &&
+            Number(d.serviceProviderID) !== selectedProviderId
+          ) {
+            return false;
+          }
+
+          return true;
+        });
+
         setDepList(filteredDeps);
         console.log("📋 Departments loaded:", filteredDeps.length);
       } catch (error) {
@@ -927,21 +1081,42 @@ export function RosterManagement() {
       try {
         const desAll = await safeFetch<Designation[]>(API.designations);
 
-        let filteredDes = desAll.filter(
-          (d) =>
-            d.serviceProviderID === effectiveServiceProviderID &&
-            d.companyID === effectiveCompanyID &&
-            d.branchesID === effectiveBranchesID,
-        );
+        const selectedCompanyId = Number(effectiveCompanyID);
+        const selectedDepartmentId = Number(departmentID);
+        const selectedProviderId = Number(effectiveServiceProviderID);
 
-        // Filter by department if one is selected
-        if (departmentID) {
-          filteredDes = filteredDes.filter(
-            (d) => d.departmentID === departmentID,
-          );
-        }
+        const filteredDes = desAll.filter((d) => {
+          // Match the selected company, normalizing numeric IDs.
+          if (
+            !Number.isFinite(selectedCompanyId) ||
+            selectedCompanyId <= 0 ||
+            Number(d.companyID) !== selectedCompanyId
+          ) {
+            return false;
+          }
+
+          // Only show designations for the selected department.
+          if (departmentID && Number(d.departmentID) !== selectedDepartmentId) {
+            return false;
+          }
+
+          // Validate the provider when a designation has one assigned.
+          const designationProviderId = Number(d.serviceProviderID);
+
+          if (
+            selectedProviderId > 0 &&
+            Number.isFinite(designationProviderId) &&
+            designationProviderId > 0 &&
+            designationProviderId !== selectedProviderId
+          ) {
+            return false;
+          }
+
+          return true;
+        });
 
         setDesList(filteredDes);
+        console.log("📋 Designations loaded:", filteredDes.length);
       } catch (error) {
         console.error("Failed to load designations:", error);
       }
@@ -1554,9 +1729,10 @@ export function RosterManagement() {
 
             <div className="space-y-2">
               <Button
+                type="button"
                 className={cn(listPrimaryButtonClass, "w-full")}
                 onClick={fetchEmployees}
-                disabled={!canLoadEmployees || isLoading.employees}
+                disabled={isLoading.employees}
               >
                 {isLoading.employees ? (
                   <>
