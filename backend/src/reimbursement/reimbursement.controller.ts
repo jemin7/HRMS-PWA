@@ -8,11 +8,24 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Req,
+  ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { ReimbursementService } from './reimbursement.service';
 import { CreateReimbursementDto } from './dto/create-reimbursement.dto';
 import { UpdateReimbursementDto } from './dto/update-reimbursement.dto';
 import { AuthGuard } from '@nestjs/passport';
+
+type AuthenticatedRequest = Request & {
+  user?: {
+    employeeId?: number | string;
+    sub?: number | string;
+    role?: string;
+    type?: string;
+  };
+};
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('reimbursement')
@@ -38,9 +51,72 @@ export class ReimbursementController {
   }
 
   // 👨 Employee specific reimbursements
+
   @Get('employee/:empId')
-  findByEmployee(@Param('empId', ParseIntPipe) empId: number) {
+  async findByEmployee(
+    @Param('empId', ParseIntPipe) empId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const user = req.user;
+
+    const isEmployee =
+      user?.type === 'employee' ||
+      String(user?.role || '').toUpperCase() === 'EMPLOYEE';
+
+    if (isEmployee) {
+      const viewerId = Number(user?.employeeId ?? user?.sub);
+
+      if (!Number.isInteger(viewerId) || viewerId <= 0) {
+        throw new UnauthorizedException(
+          'Employee ID not found in authentication token',
+        );
+      }
+
+      const allowed = await this.service.canViewEmployeeClaims(viewerId, empId);
+
+      if (!allowed) {
+        throw new ForbiddenException(
+          'You are not allowed to view this employee’s reimbursement claims',
+        );
+      }
+    }
+
     return this.service.findByEmployee(empId);
+  }
+
+  /** Team claims can only be requested for the signed-in employee's own team. */
+  @Get('team/:managerId')
+  async findTeamByManager(
+    @Param('managerId', ParseIntPipe) managerId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const user = req.user;
+
+    const isEmployee =
+      user?.type === 'employee' ||
+      String(user?.role || '').toUpperCase() === 'EMPLOYEE';
+
+    if (!isEmployee) {
+      throw new ForbiddenException(
+        'An employee account is required to load team reimbursement claims',
+      );
+    }
+
+    const viewerId = Number(user?.employeeId ?? user?.sub);
+
+    if (!Number.isInteger(viewerId) || viewerId <= 0) {
+      throw new UnauthorizedException(
+        'Employee ID not found in authentication token',
+      );
+    }
+
+    if (viewerId !== managerId) {
+      throw new ForbiddenException(
+        'You can only load your own reporting hierarchy',
+      );
+    }
+
+    return this.service.findByManager(managerId);
   }
 
   // 🏢 Company specific reimbursements

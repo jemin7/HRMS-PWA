@@ -512,15 +512,51 @@ export function EmpReimbursement() {
   console.log("CURRENT USER =>", user);
 
   // ---------- APIs ----------
+
+  function authHeaders(extraHeaders?: HeadersInit): Headers {
+    const headers = new Headers(extraHeaders);
+
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("token") ||
+          localStorage.getItem("accessToken") ||
+          ""
+        : "";
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return headers;
+  }   
+
   async function robustGet<T = any>(url: string): Promise<T> {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`${res.status}`);
+    const res = await fetch(url, {
+      cache: "no-store",
+      headers: authHeaders(),
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(body || `Request failed with status ${res.status}`);
+    }
+
     return res.json();
   }
 
   async function robustFetch(url: string, init?: RequestInit) {
-    const res = await fetch(url, init);
-    if (!res.ok) throw new Error(`${res.status}`);
+    const res = await fetch(url, {
+      ...init,
+      headers: authHeaders(init?.headers),
+      credentials: init?.credentials ?? "include",
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(body || `Request failed with status ${res.status}`);
+    }
+
     return res.json().catch(() => ({}));
   }
 

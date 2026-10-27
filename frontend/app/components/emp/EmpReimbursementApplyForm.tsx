@@ -124,9 +124,23 @@ export function EmpReimbursementApplyForm({
     }
     setSubmitting(true);
     try {
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        "";
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${BACKEND}/reimbursement`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
+        credentials: "include",
         body: JSON.stringify({
           serviceProviderID: creds.serviceProviderID,
           companyID: creds.companyID,
@@ -138,6 +152,7 @@ export function EmpReimbursementApplyForm({
           items: items.filter((i) => i.amount && parseFloat(i.amount) > 0),
         }),
       });
+
       if (!res.ok) {
         let apiMessage = "Could not submit reimbursement";
         try {

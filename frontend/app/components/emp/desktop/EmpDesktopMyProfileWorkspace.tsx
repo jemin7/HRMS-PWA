@@ -205,7 +205,11 @@ function EmpDesktopMyProfileWorkspaceInner() {
             )}
             {activeTab === "reimbursement" &&
               canViewProductModule("REIMBURSEMENT_MODULE") && (
-                <EmpReimbursementMobile desktopTab="overview" embedded />
+                <EmpReimbursementMobile
+                  desktopTab="overview"
+                  embedded
+                  selfOnly
+                />
               )}
             {activeTab === "regularisation" &&
               canViewProductModule("REGULARISATION_MODULE") && (

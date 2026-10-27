@@ -95,13 +95,20 @@ function displayStatus(s: string) {
 export function EmpReimbursementMobile({
   desktopTab,
   embedded = false,
-}: { desktopTab?: string; embedded?: boolean } = {}) {
+  selfOnly = false,
+}: {
+  desktopTab?: string;
+  embedded?: boolean;
+  selfOnly?: boolean;
+} = {}) {
   const user = useCurrentUser();
   const isPortalDesktop = useEmpPortalDesktop();
   const inWorkspace = !!desktopTab;
   const { scope, isManagerView } = useEmpManagerScope();
-  const [rows, setRows] = useState<ReimbursementRow[]>(
-    () => getPageCache<ReimbursementRow[]>("empReimbursements") ?? [],
+  const [rows, setRows] = useState<ReimbursementRow[]>(() =>
+    selfOnly
+      ? []
+      : (getPageCache<ReimbursementRow[]>("empReimbursements") ?? []),
   );
   const [employeeId, setEmployeeId] = useState<number | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
@@ -121,78 +128,134 @@ export function EmpReimbursementMobile({
   } = listControls;
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const load = useCallback(async (empId: number) => {
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("token") ||
-          localStorage.getItem("accessToken") ||
-          ""
-        : "";
-    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-    try {
-      const data = await fetch(`${BACKEND}/reimbursement/employee/${empId}`, {
-        cache: "no-store",
-        headers,
-      }).then((r) => (r.ok ? r.json() : []));
-      const mapped = (Array.isArray(data) ? data : []).map((r: any) => {
-        const items =
-          Array.isArray(r.items) && r.items.length > 0
-            ? r.items.map((i: any) => ({
-                reimbursementType: i.reimbursementType,
-                amount: i.amount,
-                description: i.description,
-                status: i.status || "Pending",
-                paidStatus: i.paidStatus,
-              }))
-            : r.reimbursementType
-              ? [
-                  {
-                    reimbursementType: r.reimbursementType,
-                    amount: r.amount,
-                    description: r.description,
-                    status: r.status || "Pending",
-                  },
-                ]
-              : [];
-        const amt = items.reduce(
-          (s: number, i: any) => s + parseFloat(i.amount || "0"),
-          0,
-        );
-        return {
-          id: String(r.id),
-          date: r.date || "",
-          taskProjectID: r.taskProjectID ?? null,
-          amount: amt,
-          status: r.status || "Pending",
-          items,
-          serviceProviderID: r.serviceProviderID,
-          companyID: r.companyID,
-          branchesID: r.branchesID,
-          manageEmployeeID: r.manageEmployeeID,
-          manageEmployee: r.manageEmployee,
-        };
-      });
-      setPageCache("empReimbursements", mapped);
-      setRows(mapped);
-    } catch {
-      setRows([]);
-    }
-  }, []);
+  const load = useCallback(
+    async (empId: number) => {
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("token") ||
+            localStorage.getItem("accessToken") ||
+            ""
+          : "";
+      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+      try {
+        const listUrl =
+          !selfOnly && isManagerView
+            ? `${BACKEND}/reimbursement/team/${empId}`
+            : `${BACKEND}/reimbursement/employee/${empId}`;
+
+        const data = await fetch(listUrl, {
+          cache: "no-store",
+          headers,
+        }).then((r) => (r.ok ? r.json() : []));
+        const mapped = (Array.isArray(data) ? data : []).map((r: any) => {
+          const items =
+            Array.isArray(r.items) && r.items.length > 0
+              ? r.items.map((i: any) => ({
+                  reimbursementType: i.reimbursementType,
+                  amount: i.amount,
+                  description: i.description,
+                  status: i.status || "Pending",
+                  paidStatus: i.paidStatus,
+                }))
+              : r.reimbursementType
+                ? [
+                    {
+                      reimbursementType: r.reimbursementType,
+                      amount: r.amount,
+                      description: r.description,
+                      status: r.status || "Pending",
+                    },
+                  ]
+                : [];
+          const amt = items.reduce(
+            (s: number, i: any) => s + parseFloat(i.amount || "0"),
+            0,
+          );
+          return {
+            id: String(r.id),
+            date: r.date || "",
+            taskProjectID: r.taskProjectID ?? null,
+            amount: amt,
+            status: r.status || "Pending",
+            items,
+            serviceProviderID: r.serviceProviderID,
+            companyID: r.companyID,
+            branchesID: r.branchesID,
+            manageEmployeeID: r.manageEmployeeID,
+            manageEmployee: r.manageEmployee,
+          };
+        });
+        if (!selfOnly) {
+          setPageCache("empReimbursements", mapped);
+        }
+        setRows(mapped);
+      } catch {
+        setRows([]);
+      }
+    },
+    [isManagerView, selfOnly],
+  );
 
   useEffect(() => {
-    if (!user?.username) return;
-    fetch(
-      `${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`,
-    )
-      .then((r) => (r.ok ? r.json() : null))
-      .then((creds) => {
-        const id = creds?.employee?.id;
-        if (id) {
-          setEmployeeId(id);
-          load(id);
+    const username = user?.username;
+    if (!username) return;
+
+    let cancelled = false;
+
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("accessToken") ||
+      "";
+
+    const headers: HeadersInit = token
+      ? { Authorization: `Bearer ${token}` }
+      : {};
+
+    fetch(`${BACKEND}/manage-emp/credentials/${encodeURIComponent(username)}`, {
+      cache: "no-store",
+      headers,
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const body = await response.text().catch(() => "");
+          throw new Error(
+            `Could not load employee credentials (${response.status}): ${body}`,
+          );
         }
+
+        return response.json();
+      })
+      .then((creds) => {
+        if (cancelled) return;
+
+        const id = Number(creds?.employee?.id);
+
+        if (Number.isInteger(id) && id > 0) {
+          setEmployeeId(id);
+          void load(id);
+        } else {
+          setEmployeeId(null);
+          console.error(
+            "Reimbursement: employee ID missing from credentials response",
+            creds,
+          );
+        }
+      })
+      .catch((error) => {
+        if (cancelled) return;
+
+        console.error(
+          "Reimbursement: failed to load employee credentials",
+          error,
+        );
+        setEmployeeId(null);
+        setRows([]);
       });
-  }, [user, load]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.username, load]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this reimbursement request?")) return;

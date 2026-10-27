@@ -211,13 +211,39 @@ export class ReimbursementService {
     return rec;
   }
 
+  /** Return claims belonging to one specific employee only. */
   async findByEmployee(empId: number) {
-    const scopeIds = await this.managerScope.getReporteeIds(empId);
+    return this.prisma.reimbursement.findMany({
+      where: { manageEmployeeID: empId },
+      include: this.includeRels(),
+      orderBy: { id: 'desc' },
+    });
+  }
+
+  /** Return claims for a manager and their reporting hierarchy. */
+  async findByManager(managerEmployeeId: number) {
+    const scopeIds = await this.managerScope.getReporteeIds(managerEmployeeId);
+
     return this.prisma.reimbursement.findMany({
       where: { manageEmployeeID: { in: scopeIds } },
       include: this.includeRels(),
       orderBy: { id: 'desc' },
     });
+  }
+
+  /** Allow an employee to view their own claims or a reportee's claims. */
+  async canViewEmployeeClaims(
+    viewerEmployeeId: number,
+    targetEmployeeId: number,
+  ): Promise<boolean> {
+    if (viewerEmployeeId === targetEmployeeId) {
+      return true;
+    }
+
+    const reporteeIds =
+      await this.managerScope.getDescendantReporteeIds(viewerEmployeeId);
+
+    return reporteeIds.includes(targetEmployeeId);
   }
 
   async findByCompany(companyID: number) {

@@ -106,6 +106,19 @@ function getPayableAmount(r: Reimbursement): number {
   );
 }
 
+function getReimbursementTotal(r: Reimbursement): number {
+  const items = r.items ?? [];
+
+  if (items.length > 0) {
+    return items.reduce(
+      (sum, item) => sum + (Number.parseFloat(item.amount || "0") || 0),
+      0,
+    );
+  }
+
+  return Number.parseFloat(r.amount || "0") || 0;
+}
+
 interface Reimbursement {
   id: string;
   serviceProviderID?: number;
@@ -1060,13 +1073,29 @@ export function ReimbursementManagement() {
 
     if (!res.ok) {
       const errorBody = await res.text().catch(() => "");
+      let backendMessage = errorBody || res.statusText || "Request failed";
+
+      try {
+        const parsed = JSON.parse(errorBody);
+        const message = parsed?.message ?? parsed?.error;
+
+        if (Array.isArray(message)) {
+          backendMessage = message.join("; ");
+        } else if (typeof message === "string") {
+          backendMessage = message;
+        }
+      } catch {
+        // The response may not be JSON.
+      }
+
       console.error("API request failed:", {
         url,
         method: init?.method ?? "GET",
         status: res.status,
         response: errorBody,
       });
-      throw new Error(`${res.status}`);
+
+      throw new Error(`${res.status}: ${backendMessage}`);
     }
 
     return res.json().catch(() => ({}));
@@ -1644,11 +1673,9 @@ export function ReimbursementManagement() {
     if (user?.role === "EMPLOYEE") {
       const employeeUser = user as any;
 
-      payload.serviceProviderID =
-        formData.serviceProviderID ??
-        empCreds?.serviceProviderID ??
-        employeeUser?.serviceProviderID ??
-        ctx?.serviceProviderID;
+      // Do not send serviceProviderID for employee submissions.
+      // The provider association is optional and inferred IDs may be invalid.
+      // On PATCH, omitting this field preserves the existing database value.
 
       payload.companyID =
         formData.companyID ??
@@ -1685,18 +1712,31 @@ export function ReimbursementManagement() {
       return;
     }
 
-    if (editing) {
-      await robustFetch(`${BACKEND_URL}/reimbursement/${editing.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } else {
-      await robustFetch(`${BACKEND_URL}/reimbursement`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    try {
+      if (editing) {
+        await robustFetch(`${BACKEND_URL}/reimbursement/${editing.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await robustFetch(`${BACKEND_URL}/reimbursement`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      await loadReimbursements();
+      resetForm();
+    } catch (error) {
+      console.error("Failed to save reimbursement:", error);
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to save reimbursement.",
+      );
     }
 
     await loadReimbursements();
@@ -2048,7 +2088,7 @@ export function ReimbursementManagement() {
       if (key === "employeeName") return r.employeeName ?? "";
       if (key === "branchName") return r.branchName ?? "";
       if (key === "date") return r.date ?? "";
-      if (key === "amount") return getPayableAmount(r);
+      if (key === "amount") return getReimbursementTotal(r);
       if (key === "status") return r.status ?? "";
       return "";
     });
@@ -2099,7 +2139,7 @@ export function ReimbursementManagement() {
         colSpan: 2,
         cell: (r) => (
           <span className="font-semibold text-green-700 tabular-nums">
-            ₹{getPayableAmount(r).toFixed(2)}
+            ₹{getReimbursementTotal(r).toFixed(2)}
           </span>
         ),
       },

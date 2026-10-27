@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import { CheckCircle, Plus } from "lucide-react";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 import { useEmpManagerScope } from "@/app/hooks/useEmpManagerScope";
+import { EmpRegularisationApprovals } from "./EmpRegularisationApprovals";
 import {
   isTeamMemberId,
   nameForEmployeeId,
@@ -24,13 +25,18 @@ import type { ReimbursementRow } from "./EmpReimbursementMobile";
 import { totalAmount } from "./EmpReimbursementMobile";
 import { Button } from "../ui/button";
 import { cn } from "@/app/utils/cn";
-import { useRouter } from "next/navigation";
+
 import { canViewProductModule, useProductAccess } from "@/lib/productAccess";
 
 const BACKEND =
   process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
 
-type FilterType = "all" | "leave" | "reimbursement" | "advance";
+type FilterType =
+  | "all"
+  | "leave"
+  | "reimbursement"
+  | "advance"
+  | "regularisation";
 
 type AdvanceRow = {
   id: string;
@@ -114,11 +120,12 @@ export function EmpTeamApprovalsPanel({
   const [selectedLeave, setSelectedLeave] = useState<LeaveAppRow | null>(null);
   const [selectedReimbId, setSelectedReimbId] = useState<string | null>(null);
   const [newRequestOpen, setNewRequestOpen] = useState(false);
-  const router = useRouter();
+
   useProductAccess();
   const leaveEnabled = canViewProductModule("LEAVE_MODULE");
   const reimbEnabled = canViewProductModule("REIMBURSEMENT_MODULE");
   const advanceEnabled = canViewProductModule("LOAN_ADVANCE_MODULE");
+  const regularisationEnabled = canViewProductModule("REGULARISATION_MODULE");
 
   const loadData = useCallback(async (empId: number) => {
     setLoading(true);
@@ -128,7 +135,7 @@ export function EmpTeamApprovalsPanel({
           headers: authHeaders(),
           cache: "no-store",
         }),
-        fetch(`${BACKEND}/reimbursement/employee/${empId}`, {
+        fetch(`${BACKEND}/reimbursement/team/${empId}`, {
           headers: authHeaders(),
           cache: "no-store",
         }),
@@ -456,13 +463,22 @@ export function EmpTeamApprovalsPanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          {(["all", "leave", "reimbursement", "advance"] as FilterType[])
+          {(
+            [
+              "all",
+              "leave",
+              "reimbursement",
+              "advance",
+              "regularisation",
+            ] as FilterType[]
+          )
             .filter(
               (f) =>
                 f === "all" ||
                 (f === "leave" && leaveEnabled) ||
                 (f === "reimbursement" && reimbEnabled) ||
-                (f === "advance" && advanceEnabled),
+                (f === "advance" && advanceEnabled) ||
+                (f === "regularisation" && regularisationEnabled),
             )
             .map((f) => (
               <Button
@@ -478,18 +494,11 @@ export function EmpTeamApprovalsPanel({
                     ? "Leave"
                     : f === "reimbursement"
                       ? "Reimbursement"
-                      : "Loan advance"}
+                      : f === "advance"
+                        ? "Loan advance"
+                        : "Regularization"}
               </Button>
             ))}
-
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => router.push("/empTeam/regularisation")}
-          >
-            Regularization
-          </Button>
         </div>
         {allowNewRequest ? (
           <Button type="button" onClick={() => setNewRequestOpen(true)}>
@@ -499,7 +508,9 @@ export function EmpTeamApprovalsPanel({
         ) : null}
       </div>
 
-      {loading || scopeLoading ? (
+      {filter === "regularisation" ? (
+        <EmpRegularisationApprovals />
+      ) : loading || scopeLoading ? (
         <p className="text-sm text-muted-foreground py-8 text-center">
           Loading approvals…
         </p>
@@ -507,7 +518,8 @@ export function EmpTeamApprovalsPanel({
         <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
           {noAccessMessage}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : filtered.length === 0 &&
+        !(filter === "all" && regularisationEnabled) ? (
         <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
           {emptyMessage}
         </div>
@@ -595,6 +607,11 @@ export function EmpTeamApprovalsPanel({
               )}
             </div>
           ))}
+          {filter === "all" && regularisationEnabled ? (
+            <EmpRegularisationApprovals
+              showEmptyState={filtered.length === 0}
+            />
+          ) : null}
         </div>
       )}
 
