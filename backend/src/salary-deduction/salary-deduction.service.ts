@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSalaryDeductionDto } from './dto/create-salary-deduction.dto';
 import { UpdateSalaryDeductionDto } from './dto/update-salary-deduction.dto';
@@ -17,9 +21,42 @@ export class SalaryDeductionService {
   }
 
   async create(dto: CreateSalaryDeductionDto) {
+    let serviceProviderID = dto.serviceProviderID ?? null;
+
+    // Use the company's saved service-provider association.
+    if (dto.companyID != null) {
+      const company = await this.prisma.company.findUnique({
+        where: { id: dto.companyID },
+        select: {
+          id: true,
+          serviceProviderID: true,
+        },
+      });
+
+      if (!company) {
+        throw new NotFoundException(
+          'The selected company was not found. Refresh the page and try again.',
+        );
+      }
+
+      serviceProviderID = company.serviceProviderID ?? null;
+    } else if (serviceProviderID != null) {
+      // Validate the provider when no company is supplied.
+      const provider = await this.prisma.serviceProvider.findUnique({
+        where: { id: serviceProviderID },
+        select: { id: true },
+      });
+
+      if (!provider) {
+        throw new BadRequestException(
+          'The selected service provider does not exist. Refresh the page and try again.',
+        );
+      }
+    }
+
     return this.prisma.salaryDeduction.create({
       data: {
-        serviceProviderID: dto.serviceProviderID ?? null,
+        serviceProviderID,
         companyID: dto.companyID ?? null,
         branchesID: dto.branchesID ?? null,
         salaryDeductionName: dto.salaryDeductionName ?? null,
@@ -70,19 +107,18 @@ export class SalaryDeductionService {
     });
   }
 
- async remove(id: number) {
-  await this.ensureExists(id);
+  async remove(id: number) {
+    await this.ensureExists(id);
 
-  // Delete dependent MonthlyPayGradeDeductionList entries first
-  await this.prisma.monthlyPayGradeDeductionList.deleteMany({
-    where: { salaryDeductionID: id },
-  });
+    // Delete dependent MonthlyPayGradeDeductionList entries first
+    await this.prisma.monthlyPayGradeDeductionList.deleteMany({
+      where: { salaryDeductionID: id },
+    });
 
-  return this.prisma.salaryDeduction.delete({
-    where: { id },
-  });
-}
-
+    return this.prisma.salaryDeduction.delete({
+      where: { id },
+    });
+  }
 
   private async ensureExists(id: number) {
     const ok = await this.prisma.salaryDeduction.findUnique({ where: { id } });
