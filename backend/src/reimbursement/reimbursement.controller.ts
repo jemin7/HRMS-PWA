@@ -46,7 +46,25 @@ export class ReimbursementController {
 
   // 📄 All reimbursements
   @Get()
-  findAll() {
+  async findAll(@Req() req: AuthenticatedRequest) {
+    const user = req.user;
+
+    const isEmployee =
+      user?.type === 'employee' ||
+      String(user?.role || '').toUpperCase() === 'EMPLOYEE';
+
+    if (isEmployee) {
+      const viewerId = Number(user?.employeeId ?? user?.sub);
+
+      if (!Number.isInteger(viewerId) || viewerId <= 0) {
+        throw new UnauthorizedException(
+          'Employee ID not found in authentication token',
+        );
+      }
+
+      return this.service.findByEmployee(viewerId);
+    }
+
     return this.service.findAll();
   }
 

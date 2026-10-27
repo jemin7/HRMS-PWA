@@ -226,19 +226,69 @@ export function EmpTeamApprovalsPanel({
   }, []);
 
   useEffect(() => {
-    if (!user?.username) return;
-    fetch(
-      `${BACKEND}/manage-emp/credentials/${encodeURIComponent(user.username)}`,
-    )
-      .then((r) => (r.ok ? r.json() : null))
-      .then((creds) => {
-        const id = creds?.employee?.id;
-        if (id) {
-          setEmployeeId(id);
-          void loadData(id);
-        } else setLoading(false);
-      });
-  }, [user, loadData]);
+    if (!user?.username) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const resolveEmployee = async () => {
+      try {
+        const response = await fetch(
+          `${BACKEND}/manage-emp/credentials/${encodeURIComponent(
+            user.username,
+          )}`,
+          {
+            headers: authHeaders(),
+            credentials: "include",
+            cache: "no-store",
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Unable to load employee credentials (${response.status})`,
+          );
+        }
+
+        const credentials = await response.json();
+        const id = Number(credentials?.employee?.id);
+
+        if (cancelled) return;
+
+        if (!Number.isInteger(id) || id <= 0) {
+          throw new Error(
+            "No valid employee ID was returned for the logged-in user.",
+          );
+        }
+
+        setEmployeeId(id);
+        await loadData(id);
+      } catch (error) {
+        if (
+          cancelled ||
+          (error instanceof Error && error.name === "AbortError")
+        ) {
+          return;
+        }
+
+        console.error("Failed to resolve employee for Team Approvals:", error);
+
+        setEmployeeId(null);
+        setLoading(false);
+      }
+    };
+
+    void resolveEmployee();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [user?.username, loadData]);
 
   const employeeName = (
     manageEmployeeID?: number,
