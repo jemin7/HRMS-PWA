@@ -1299,11 +1299,29 @@ export function ManageEmployeesManagement() {
       linkedEmpAbortRef.current = ctrl;
       setLinkedEmpLoading(true);
       try {
-        let all = await fetchRefCached<Mgr[]>(API.employees, ctrl.signal);
+        let all = await fetchRefCached<Mgr[]>(API.manageEmpList, ctrl.signal);
         all = scopeRecordsToFormCompany(all);
-        // Exclude already linked employees and the current employee being edited
+
+        // Allow only the signed-in company owner to select themself.
+        // Keep the existing exclusions for everyone else.
+        const currentEmployeeId = Number(
+          user?.employee?.id ??
+            (String(user?.type ?? "").toLowerCase() === "employee"
+              ? user?.id
+              : 0),
+        );
+
+        const canSelectSelfAsManager =
+          editingRow?.isCompanyOwner === true &&
+          currentEmployeeId > 0 &&
+          currentEmployeeId === Number(editingRow.id);
+
         const excludeIds = new Set(linkedEmployees.map((le) => le.id));
-        if (editingRow) excludeIds.add(editingRow.id);
+
+        if (editingRow && !canSelectSelfAsManager) {
+          excludeIds.add(editingRow.id);
+        }
+
         all = all.filter((e) => !excludeIds.has(e.id));
         const ql = q.trim().toLowerCase();
         const filtered =

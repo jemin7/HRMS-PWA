@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReimbursementDto } from './dto/create-reimbursement.dto';
@@ -418,6 +419,96 @@ export class ReimbursementService {
       where: { id },
       include: this.includeRels(),
     });
+  }
+
+  /**
+   * Validate employee authorization before approving or rejecting
+   * a reimbursement request.
+   *
+   * Own claims require an explicit self-manager link.
+   * Other claims require company ownership or a reportee relationship.
+   */
+  async assertSelfApprovalAllowed(
+    reimbursementID: number,
+    actorEmployeeID: number,
+  ): Promise<void> {
+    const reimbursement = await this.findOne(reimbursementID);
+    const targetEmployeeID = Number(reimbursement.manageEmployeeID);
+
+    const [actor, target] = await Promise.all([
+      this.prisma.manageEmployee.findUnique({
+        where: { id: actorEmployeeID },
+        select: {
+          id: true,
+          companyID: true,
+          isCompanyOwner: true,
+          isDeleted: true,
+        },
+      }),
+      this.prisma.manageEmployee.findUnique({
+        where: { id: targetEmployeeID },
+        select: {
+          id: true,
+          companyID: true,
+          isDeleted: true,
+        },
+      }),
+    ]);
+
+    if (!actor || actor.isDeleted) {
+      throw new ForbiddenException(
+        'The logged-in employee account is invalid.',
+      );
+    }
+
+    if (!target || target.isDeleted) {
+      throw new NotFoundException('The reimbursement employee was not found.');
+    }
+
+    if (
+      !actor.companyID ||
+      Number(reimbursement.companyID) !== Number(actor.companyID) ||
+      Number(target.companyID) !== Number(actor.companyID)
+    ) {
+      throw new ForbiddenException(
+        'You cannot review reimbursement claims outside your company.',
+      );
+    }
+
+    // Self-approval requires an explicit self-manager relationship.
+    if (targetEmployeeID === actorEmployeeID) {
+      const selfManagerLink = await this.prisma.employeeLink.findFirst({
+        where: {
+          employeeId: actorEmployeeID,
+          linkedEmployeeId: actorEmployeeID,
+        },
+        select: { id: true },
+      });
+
+      if (!selfManagerLink) {
+        throw new ForbiddenException(
+          'You can approve your own reimbursement only when configured as your own manager.',
+        );
+      }
+
+      return;
+    }
+
+    // A verified company owner can review claims within their company.
+    if (actor.isCompanyOwner === true) {
+      return;
+    }
+
+    // Other employees must actually manage the employee whose claim
+    // they are attempting to review.
+    const reporteeIds =
+      await this.managerScope.getDescendantReporteeIds(actorEmployeeID);
+
+    if (!reporteeIds.includes(targetEmployeeID)) {
+      throw new ForbiddenException(
+        'You can only review reimbursement claims from your reportees.',
+      );
+    }
   }
 
   /** Approve a single reimbursement line (voucher only for now). */

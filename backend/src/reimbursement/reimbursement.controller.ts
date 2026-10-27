@@ -144,20 +144,58 @@ export class ReimbursementController {
   }
 
   @Patch(':id/items/:itemId/approve')
-  approveItem(
+  async approveItem(
     @Param('id', ParseIntPipe) id: number,
     @Param('itemId', ParseIntPipe) itemId: number,
-    @Body() body?: { actorRole?: string },
+    @Body() body: { actorRole?: string } | undefined,
+    @Req() req: AuthenticatedRequest,
   ) {
+    const user = req.user;
+
+    const isEmployee =
+      user?.type === 'employee' ||
+      String(user?.role || '').toUpperCase() === 'EMPLOYEE';
+
+    if (isEmployee) {
+      const actorEmployeeID = Number(user?.employeeId ?? user?.sub);
+
+      if (!Number.isInteger(actorEmployeeID) || actorEmployeeID <= 0) {
+        throw new UnauthorizedException(
+          'Employee ID not found in authentication token',
+        );
+      }
+
+      await this.service.assertSelfApprovalAllowed(id, actorEmployeeID);
+    }
+
     return this.service.approveItem(id, itemId, body?.actorRole);
   }
 
   @Patch(':id/items/:itemId/reject')
-  rejectItem(
+  async rejectItem(
     @Param('id', ParseIntPipe) id: number,
     @Param('itemId', ParseIntPipe) itemId: number,
-    @Body() body?: { actorRole?: string },
+    @Body() body: { actorRole?: string } | undefined,
+    @Req() req: AuthenticatedRequest,
   ) {
+    const user = req.user;
+
+    const isEmployee =
+      user?.type === 'employee' ||
+      String(user?.role || '').toUpperCase() === 'EMPLOYEE';
+
+    if (isEmployee) {
+      const actorEmployeeID = Number(user?.employeeId ?? user?.sub);
+
+      if (!Number.isInteger(actorEmployeeID) || actorEmployeeID <= 0) {
+        throw new UnauthorizedException(
+          'Employee ID not found in authentication token',
+        );
+      }
+
+      await this.service.assertSelfApprovalAllowed(id, actorEmployeeID);
+    }
+
     return this.service.rejectItem(id, itemId, body?.actorRole);
   }
 
@@ -178,10 +216,37 @@ export class ReimbursementController {
 
   // ✏️ Update reimbursement
   @Patch(':id')
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateReimbursementDto,
+    @Req() req: AuthenticatedRequest,
   ) {
+    const user = req.user;
+
+    const isEmployee =
+      String(user?.type ?? '').toLowerCase() === 'employee' ||
+      String(user?.role ?? '').toUpperCase() === 'EMPLOYEE';
+
+    const status = String(dto.status ?? '').toUpperCase();
+
+    const isApprovalDecision = [
+      'APPROVED',
+      'REJECTED',
+      'PARTIALLY APPROVED',
+    ].includes(status);
+
+    if (isEmployee && isApprovalDecision) {
+      const actorEmployeeID = Number(user?.employeeId ?? user?.sub);
+
+      if (!Number.isInteger(actorEmployeeID) || actorEmployeeID <= 0) {
+        throw new UnauthorizedException(
+          'Employee ID not found in authentication token',
+        );
+      }
+
+      await this.service.assertSelfApprovalAllowed(id, actorEmployeeID);
+    }
+
     return this.service.update(id, dto);
   }
 
@@ -212,7 +277,26 @@ export class ReimbursementController {
       voucherDate?: string;
       status?: string;
     },
+    @Req() req: AuthenticatedRequest,
   ) {
+    const user = req.user;
+
+    const isEmployee =
+      String(user?.type ?? '').toLowerCase() === 'employee' ||
+      String(user?.role ?? '').toUpperCase() === 'EMPLOYEE';
+
+    if (isEmployee) {
+      const actorEmployeeID = Number(user?.employeeId ?? user?.sub);
+
+      if (!Number.isInteger(actorEmployeeID) || actorEmployeeID <= 0) {
+        throw new UnauthorizedException(
+          'Employee ID not found in authentication token',
+        );
+      }
+
+      await this.service.assertSelfApprovalAllowed(Number(id), actorEmployeeID);
+    }
+
     return this.service.updateApproval(+id, approvalData);
   }
 

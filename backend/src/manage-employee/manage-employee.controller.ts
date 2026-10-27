@@ -243,10 +243,12 @@ export class ManageEmployeeController {
   }
 
   @Post(':id/linked-employees')
+  @UseGuards(AuthGuard('jwt'))
   saveLinkedEmployees(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { linkedEmployeeIds: number[] },
+    @Req() req: Request,
   ) {
-    return this.service.saveLinkedEmployees(id, body.linkedEmployeeIds);
+    return this.service.saveLinkedEmployees(id, body.linkedEmployeeIds, req);
   }
 }

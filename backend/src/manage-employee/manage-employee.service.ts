@@ -1267,7 +1267,7 @@ export class ManageEmployeeService {
                * onboarding approval steps are completed.
                */
               isActive: !onboardingApproval.approvalRequired,
-              
+
               serviceProviderID: employee.serviceProviderID ?? undefined,
               companyID: employee.companyID ?? undefined,
               branchesID: employee.branchesID ?? undefined,
@@ -3948,19 +3948,76 @@ export class ManageEmployeeService {
     return links.map((l) => l.linkedEmployee);
   }
 
-  async saveLinkedEmployees(employeeId: number, linkedEmployeeIds: number[]) {
+  async saveLinkedEmployees(
+    employeeId: number,
+    linkedEmployeeIds: number[],
+    req?: Request,
+  ) {
     return this.prisma.$transaction(async (tx) => {
-      await tx.employeeLink.deleteMany({ where: { employeeId } });
-      if (linkedEmployeeIds && linkedEmployeeIds.length > 0) {
+      const employee = await tx.manageEmployee.findUnique({
+        where: { id: employeeId },
+        select: {
+          id: true,
+          isCompanyOwner: true,
+          isDeleted: true,
+        },
+      });
+
+      if (!employee || employee.isDeleted) {
+        throw new NotFoundException('Employee not found');
+      }
+
+      const authUser = (
+        req as Request & {
+          user?: {
+            employeeId?: number | string;
+            sub?: number | string;
+            role?: string;
+            type?: string;
+          };
+        }
+      )?.user;
+
+      const isEmployeeAccount =
+        String(authUser?.type ?? '').toLowerCase() === 'employee' ||
+        String(authUser?.role ?? '').toUpperCase() === 'EMPLOYEE';
+
+      const actorEmployeeId = Number(authUser?.employeeId ?? authUser?.sub);
+
+      const requestedIds = [
+        ...new Set(
+          (Array.isArray(linkedEmployeeIds) ? linkedEmployeeIds : [])
+            .map(Number)
+            .filter((id) => Number.isInteger(id) && id > 0),
+        ),
+      ];
+
+      // Only the company owner may assign themself as their own manager,
+      // and only while signed in to their own employee account.
+      if (
+        requestedIds.includes(employeeId) &&
+        (employee.isCompanyOwner !== true ||
+          !isEmployeeAccount ||
+          actorEmployeeId !== employeeId)
+      ) {
+        throw new ForbiddenException(
+          'Only the verified company owner may assign themself as their own manager',
+        );
+      }
+
+      await tx.employeeLink.deleteMany({
+        where: { employeeId },
+      });
+
+      if (requestedIds.length > 0) {
         await tx.employeeLink.createMany({
-          data: linkedEmployeeIds
-            .filter((lid) => lid !== employeeId)
-            .map((lid) => ({
-              employeeId,
-              linkedEmployeeId: lid,
-            })),
+          data: requestedIds.map((managerId) => ({
+            employeeId,
+            linkedEmployeeId: managerId,
+          })),
         });
       }
+
       const links = await tx.employeeLink.findMany({
         where: { employeeId },
         include: {
@@ -3975,7 +4032,8 @@ export class ManageEmployeeService {
         },
         orderBy: { id: 'asc' },
       });
-      return links.map((l) => l.linkedEmployee);
+
+      return links.map((link) => link.linkedEmployee);
     });
   }
 }

@@ -235,10 +235,25 @@ export class LeaveApplicationController {
         'You cannot review leave requests outside your company.',
       );
     }
-    if (Number(leave.manageEmployeeID) === actorId) {
-      throw new ForbiddenException(
-        'You cannot approve or reject your own leave request.',
-      );
+
+    const isOwnRequest = Number(leave.manageEmployeeID) === actorId;
+
+    if (isOwnRequest) {
+      const selfManagerLink = await this.prisma.employeeLink.findFirst({
+        where: {
+          employeeId: actorId,
+          linkedEmployeeId: actorId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!selfManagerLink) {
+        throw new ForbiddenException(
+          'You can approve your own leave only when you are configured as your own manager.',
+        );
+      }
     }
     // Company Owners can review leave requests for their verified company.
     if (actor.isCompanyOwner === true) {
@@ -257,7 +272,10 @@ export class LeaveApplicationController {
       const reporteeIds =
         await this.managerScope.getDescendantReporteeIds(actorId);
 
-      if (!reporteeIds.includes(Number(leave.manageEmployeeID))) {
+      if (
+        !isOwnRequest &&
+        !reporteeIds.includes(Number(leave.manageEmployeeID))
+      ) {
         throw new ForbiddenException(
           'You can only review leave requests from your reportees.',
         );

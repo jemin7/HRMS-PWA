@@ -1039,9 +1039,7 @@ export class ApprovalEngineService {
       new Set(
         links
           .map((link) => Number(link.linkedEmployeeId))
-          .filter(
-            (id) => Number.isInteger(id) && id > 0 && id !== subject.employeeID,
-          ),
+          .filter((id) => Number.isInteger(id) && id > 0),
       ),
     );
 

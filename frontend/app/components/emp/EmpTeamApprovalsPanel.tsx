@@ -108,13 +108,15 @@ export function EmpTeamApprovalsPanel({
   const user = useCurrentUser();
   const isCompanyOwner =
     user?.isCompanyOwner === true || user?.employee?.isCompanyOwner === true;
-  const { scope, isManagerView, loading: scopeLoading } = useEmpManagerScope();
+  const { scope, loading: scopeLoading } = useEmpManagerScope();
   const [filter, setFilter] = useState<FilterType>("all");
   const [leaveApps, setLeaveApps] = useState<LeaveAppRow[]>([]);
   const [reimbRows, setReimbRows] = useState<ReimbursementRow[]>([]);
   const [advanceRows, setAdvanceRows] = useState<AdvanceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [employeeId, setEmployeeId] = useState<number | null>(null);
+  const currentScope =
+    employeeId != null && scope?.employeeId === employeeId ? scope : null;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<TeamApprovalType>("leave");
   const [selectedLeave, setSelectedLeave] = useState<LeaveAppRow | null>(null);
@@ -304,7 +306,7 @@ export function EmpTeamApprovalsPanel({
         .trim();
       if (n) return n;
     }
-    return nameForEmployeeId(scope, manageEmployeeID) || "Team member";
+    return nameForEmployeeId(currentScope, manageEmployeeID) || "Team member";
   };
 
   const pendingLeave = useMemo(
@@ -314,10 +316,10 @@ export function EmpTeamApprovalsPanel({
           (isCompanyOwner
             ? Number(a.manageEmployeeID) > 0 &&
               Number(a.manageEmployeeID) !== employeeId
-            : isTeamMemberId(scope, a.manageEmployeeID)) &&
+            : isTeamMemberId(currentScope, a.manageEmployeeID)) &&
           getDisplayLeaveStatus(a.status, a.dayStatuses) === "Approval Pending",
       ),
-    [leaveApps, scope, isCompanyOwner, employeeId],
+    [leaveApps, currentScope, isCompanyOwner, employeeId],
   );
 
   const pendingOwnLeave = useMemo(
@@ -334,7 +336,7 @@ export function EmpTeamApprovalsPanel({
   const pendingReimb = useMemo(
     () =>
       reimbRows.filter((r) => {
-        if (!isTeamMemberId(scope, r.manageEmployeeID)) return false;
+        if (!isTeamMemberId(currentScope, r.manageEmployeeID)) return false;
         const hasPendingItems = (r.items || []).some(
           (i) => (i.status || "Pending") === "Pending",
         );
@@ -343,17 +345,17 @@ export function EmpTeamApprovalsPanel({
           (isPartiallyApprovedStatus(r.status) && hasPendingItems)
         );
       }),
-    [reimbRows, scope],
+    [reimbRows, currentScope],
   );
 
   const pendingAdvance = useMemo(
     () =>
       advanceRows.filter(
         (row) =>
-          isTeamMemberId(scope, row.manageEmployeeID) &&
+          isTeamMemberId(currentScope, row.manageEmployeeID) &&
           (row.status || "Pending") === "Pending",
       ),
-    [advanceRows, scope],
+    [advanceRows, currentScope],
   );
 
   const pendingOwnAdvance = useMemo(
@@ -383,7 +385,7 @@ export function EmpTeamApprovalsPanel({
     [reimbRows, employeeId],
   );
 
-  const canReviewTeam = isManagerView || isCompanyOwner;
+  const canReviewTeam = Boolean(currentScope?.hasReportees) || isCompanyOwner;
   const showOwnSubmissions = includeOwnSubmissions || !canReviewTeam;
 
   const unified: UnifiedRow[] = useMemo(() => {
@@ -475,7 +477,7 @@ export function EmpTeamApprovalsPanel({
   });
 
   const openReview = (row: UnifiedRow) => {
-    if (row.isOwn || row.kind === "advance") return;
+    if (row.kind === "advance") return;
     if (row.kind === "leave") {
       setDialogType("leave");
       setSelectedLeave(row.leave);
@@ -619,32 +621,34 @@ export function EmpTeamApprovalsPanel({
                   </p>
                 </div>
               </div>
-              {row.isOwn ? (
-                <span className="text-xs font-medium text-amber-600 shrink-0">
-                  Awaiting approval
-                </span>
-              ) : row.kind === "advance" ? (
-                <div className="flex gap-2 shrink-0">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      void decideAdvance(row.advance.id, "Rejected")
-                    }
-                  >
-                    Reject
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() =>
-                      void decideAdvance(row.advance.id, "Approved")
-                    }
-                  >
-                    Approve
-                  </Button>
-                </div>
+              {row.kind === "advance" ? (
+                row.isOwn ? (
+                  <span className="text-xs font-medium text-amber-600 shrink-0">
+                    Awaiting approval
+                  </span>
+                ) : (
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        void decideAdvance(row.advance.id, "Rejected")
+                      }
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() =>
+                        void decideAdvance(row.advance.id, "Approved")
+                      }
+                    >
+                      Approve
+                    </Button>
+                  </div>
+                )
               ) : (
                 <Button
                   type="button"

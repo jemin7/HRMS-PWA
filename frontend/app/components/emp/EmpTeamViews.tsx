@@ -454,5 +454,5 @@ export function EmpTeamMyTeam() {
 }
 
 export function EmpTeamApprovalsHub() {
-  return <EmpTeamApprovalsPanel />;
+  return <EmpTeamApprovalsPanel includeOwnSubmissions />;
 }
