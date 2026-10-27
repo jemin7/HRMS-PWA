@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSalaryAllowanceDto } from './dto/create-salary-allowance.dto';
 import { UpdateSalaryAllowanceDto } from './dto/update-salary-allowance.dto';
@@ -17,9 +21,42 @@ export class SalaryAllowanceService {
   }
 
   async create(dto: CreateSalaryAllowanceDto) {
+    let serviceProviderID = dto.serviceProviderID ?? null;
+
+    // The company's saved association is the source of truth.
+    if (dto.companyID != null) {
+      const company = await this.prisma.company.findUnique({
+        where: { id: dto.companyID },
+        select: {
+          id: true,
+          serviceProviderID: true,
+        },
+      });
+
+      if (!company) {
+        throw new NotFoundException(
+          'The selected company was not found. Refresh the page and try again.',
+        );
+      }
+
+      serviceProviderID = company.serviceProviderID ?? null;
+    } else if (serviceProviderID != null) {
+      // Validate a provider when no company is supplied.
+      const provider = await this.prisma.serviceProvider.findUnique({
+        where: { id: serviceProviderID },
+        select: { id: true },
+      });
+
+      if (!provider) {
+        throw new BadRequestException(
+          'The selected service provider does not exist. Refresh the page and try again.',
+        );
+      }
+    }
+
     return this.prisma.salaryAllowance.create({
       data: {
-        serviceProviderID: dto.serviceProviderID ?? null,
+        serviceProviderID,
         companyID: dto.companyID ?? null,
         branchesID: dto.branchesID ?? null,
         salaryAllowanceName: dto.salaryAllowanceName ?? null,
@@ -28,7 +65,6 @@ export class SalaryAllowanceService {
         basedOn: dto.basedOn ?? null,
         salaryAllowanceType: dto.salaryAllowanceType ?? null,
         salaryAllowanceValue: dto.salaryAllowanceValue ?? null,
-
         salaryAllowanceMonthLimit: dto.salaryAllowanceMonthLimit ?? null,
       },
       include: this.includeRels(),
@@ -72,15 +108,14 @@ export class SalaryAllowanceService {
   }
 
   async remove(id: number) {
-  await this.ensureExists(id);
-  await this.prisma.monthlyPayGradeAllowanceList.deleteMany({
-    where: { salaryallowanceID: id },
-  });
-  return this.prisma.salaryAllowance.delete({
-    where: { id },
-  });
-
-}
+    await this.ensureExists(id);
+    await this.prisma.monthlyPayGradeAllowanceList.deleteMany({
+      where: { salaryallowanceID: id },
+    });
+    return this.prisma.salaryAllowance.delete({
+      where: { id },
+    });
+  }
 
   private async ensureExists(id: number) {
     const ok = await this.prisma.salaryAllowance.findUnique({ where: { id } });

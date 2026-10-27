@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { authHeaders } from "@/lib/auth";
 
 const BACKEND =
   process.env.NEXT_PUBLIC_BACKEND_URL || "https://hrms-api-test.onrender.com";
@@ -13,8 +14,15 @@ export type LeaveBalanceCard = {
 };
 
 async function robustGet<T>(url: string): Promise<T> {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(String(res.status));
+  const res = await fetch(url, {
+    headers: authHeaders(),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status} ${url}`);
+  }
+
   return res.json();
 }
 

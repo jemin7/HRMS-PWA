@@ -659,7 +659,7 @@ export function EmpTeamApprovalsPanel({
                   Review
                 </Button>
               )}
-              
+
             </div>
           ))}
           {filter === "all" && regularisationEnabled ? (
@@ -674,7 +674,6 @@ export function EmpTeamApprovalsPanel({
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         type={dialogType}
-        onTypeChange={setDialogType}
         leaveApplication={selectedLeave}
         reimbursementId={selectedReimbId}
         onDone={() => {

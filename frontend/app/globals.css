@@ -109,7 +109,8 @@
   * {
     @apply border-border;
   }
-  html, body {
+  html,
+  body {
     overflow-x: hidden;
     max-width: 100vw;
     overscroll-behavior: none;
@@ -140,7 +141,10 @@
     overscroll-behavior: none;
   }
 
-  h1, h2, h3, h4 {
+  h1,
+  h2,
+  h3,
+  h4 {
     font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
     letter-spacing: -0.01em;
     font-weight: 600;
@@ -149,7 +153,14 @@
     -moz-osx-font-smoothing: auto;
   }
 
-  p, span, li, label, a, button, td, th {
+  p,
+  span,
+  li,
+  label,
+  a,
+  button,
+  td,
+  th {
     -webkit-font-smoothing: auto;
     -moz-osx-font-smoothing: auto;
     text-rendering: auto;
@@ -164,13 +175,16 @@
     color: hsl(0 0% 84%) !important;
   }
 
-  code, pre, kbd {
+  code,
+  pre,
+  kbd {
     font-family: var(--font-mono), ui-monospace, monospace;
   }
   /* Restore natural scrolling on desktop — overscroll-behavior: none can block
      trackpad two-finger scrolling on Windows/macOS on desktop viewports */
   @media (min-width: 768px) {
-    html, body {
+    html,
+    body {
       overscroll-behavior: auto;
     }
   }
@@ -186,17 +200,33 @@ html.hrms-admin-shell body {
 }
 
 /* Stronger panel borders so white cards/tables read clearly on grey canvas */
-html:not(.dark):not([data-emp-theme="dark"]) .hrms-admin-content .border-\[\#e5eeff\],
-html:not(.dark):not([data-emp-theme="dark"]) .emp-workspace-shell .border-\[\#e5eeff\],
-html:not(.dark):not([data-emp-theme="dark"]) .hrms-admin-content .border-\[\#E8EDF5\],
-html:not(.dark):not([data-emp-theme="dark"]) .emp-workspace-shell .border-\[\#E8EDF5\] {
+html:not(.dark):not([data-emp-theme="dark"])
+  .hrms-admin-content
+  .border-\[\#e5eeff\],
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-workspace-shell
+  .border-\[\#e5eeff\],
+html:not(.dark):not([data-emp-theme="dark"])
+  .hrms-admin-content
+  .border-\[\#E8EDF5\],
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-workspace-shell
+  .border-\[\#E8EDF5\] {
   border-color: #cbd5e1 !important;
 }
 
-html:not(.dark):not([data-emp-theme="dark"]) .hrms-admin-content .border-\[\#E5E7EB\],
-html:not(.dark):not([data-emp-theme="dark"]) .emp-workspace-shell .border-\[\#E5E7EB\],
-html:not(.dark):not([data-emp-theme="dark"]) .hrms-admin-content .border-\[\#E5E7EB\]\/80,
-html:not(.dark):not([data-emp-theme="dark"]) .emp-workspace-shell .border-\[\#E5E7EB\]\/80 {
+html:not(.dark):not([data-emp-theme="dark"])
+  .hrms-admin-content
+  .border-\[\#E5E7EB\],
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-workspace-shell
+  .border-\[\#E5E7EB\],
+html:not(.dark):not([data-emp-theme="dark"])
+  .hrms-admin-content
+  .border-\[\#E5E7EB\]\/80,
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-workspace-shell
+  .border-\[\#E5E7EB\]\/80 {
   border-color: #cbd5e1 !important;
 }
 
@@ -220,10 +250,16 @@ html.dark .form-drawer-body {
 }
 
 .app-form-control,
-.login-page input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+.login-page
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="file"]
+  ):not([type="hidden"]),
 .login-page select,
 .login-page textarea,
-.emp-pwa-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+.emp-pwa-shell
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="file"]
+  ):not([type="hidden"]),
 .emp-pwa-shell select,
 .emp-pwa-shell textarea {
   background-color: #ffffff !important;
@@ -233,7 +269,11 @@ html.dark .form-drawer-body {
   appearance: none;
 }
 
-html[data-emp-theme="dark"] .emp-pwa-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+html[data-emp-theme="dark"]
+  .emp-pwa-shell
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="file"]
+  ):not([type="hidden"]),
 html[data-emp-theme="dark"] .emp-pwa-shell select,
 html[data-emp-theme="dark"] .emp-pwa-shell textarea {
   background-color: #1a1a1a !important;
@@ -289,7 +329,11 @@ html[data-emp-theme="dark"] .emp-pwa-shell textarea:-webkit-autofill {
 }
 
 html[data-emp-theme="dark"] .emp-pwa-shell .app-form-control,
-html[data-emp-theme="dark"] .emp-pwa-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+html[data-emp-theme="dark"]
+  .emp-pwa-shell
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="file"]
+  ):not([type="hidden"]),
 html[data-emp-theme="dark"] .emp-pwa-shell select,
 html[data-emp-theme="dark"] .emp-pwa-shell textarea {
   background-color: hsl(var(--background)) !important;
@@ -333,7 +377,9 @@ html[data-emp-theme="dark"] .emp-pwa-shell select:-webkit-autofill {
 }
 
 /* Override menu button sizing — force square icon button */
-[data-collapsible="icon"] [data-sidebar="sidebar"] [data-sidebar="menu-button"] {
+[data-collapsible="icon"]
+  [data-sidebar="sidebar"]
+  [data-sidebar="menu-button"] {
   width: 2.75rem !important;
   height: 2.75rem !important;
   min-height: 2.75rem !important;
@@ -402,7 +448,10 @@ html[data-emp-theme="dark"] .emp-pwa-shell select:-webkit-autofill {
 /* Collapsed: hide nested sub-menus (show top-level icons only) */
 [data-collapsible="icon"] [data-sidebar="menu-sub"],
 [data-collapsible="icon"] [data-sidebar="menu-sub-button"],
-[data-collapsible="icon"] [data-sidebar="group"] [data-state="open"] > *:not([data-sidebar="menu-button"]) {
+[data-collapsible="icon"]
+  [data-sidebar="group"]
+  [data-state="open"]
+  > *:not([data-sidebar="menu-button"]) {
   display: none !important;
 }
 
@@ -489,7 +538,9 @@ html[data-emp-theme="dark"] .emp-pwa-shell select:-webkit-autofill {
 .form-drawer-body .absolute.z-10 {
   border-radius: calc(var(--radius) - 2px);
   border-color: #cbd5e1;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 /* Repeater card sections (bank details, items, etc.) */
@@ -516,7 +567,10 @@ html[data-emp-theme="dark"] .emp-pwa-shell select:-webkit-autofill {
   color: #111827;
   background-color: #f9fafb;
   padding: 0.5rem 0.75rem;
-  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    background-color 0.15s;
 }
 
 .form-drawer-body select:focus {
@@ -547,7 +601,10 @@ html[data-emp-theme="dark"] .emp-pwa-shell select:-webkit-autofill {
   background-color: #f9fafb;
   padding: 0.5rem 0.75rem;
   color-scheme: light;
-  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    background-color 0.15s;
 }
 
 .app-select:focus {
@@ -576,13 +633,15 @@ input[type="week"]::-webkit-calendar-picker-indicator {
   width: 1.125rem;
   height: 1.125rem;
   margin-left: 0.25rem;
-  filter: invert(28%) sepia(8%) saturate(900%) hue-rotate(182deg) brightness(92%) contrast(88%);
+  filter: invert(28%) sepia(8%) saturate(900%) hue-rotate(182deg)
+    brightness(92%) contrast(88%);
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator:hover,
 input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
 input[type="time"]::-webkit-calendar-picker-indicator:hover {
-  filter: invert(24%) sepia(90%) saturate(2500%) hue-rotate(234deg) brightness(92%) contrast(95%);
+  filter: invert(24%) sepia(90%) saturate(2500%) hue-rotate(234deg)
+    brightness(92%) contrast(95%);
 }
 
 /* Employee PWA appearance theme (scoped) */
@@ -780,8 +839,12 @@ html[data-emp-theme="dark"] .emp-pwa-bottom-nav .text-gray-400 {
   color: #94a3b8 !important;
 }
 
-html[data-emp-theme="dark"] .emp-pwa-bottom-nav .group-active\:text-gray-500:active,
-html[data-emp-theme="dark"] .emp-pwa-bottom-nav .group-active\:text-gray-600:active {
+html[data-emp-theme="dark"]
+  .emp-pwa-bottom-nav
+  .group-active\:text-gray-500:active,
+html[data-emp-theme="dark"]
+  .emp-pwa-bottom-nav
+  .group-active\:text-gray-600:active {
   color: #cbd5e1 !important;
 }
 
@@ -912,7 +975,10 @@ html[data-emp-theme="dark"] .emp-pwa-shell .emp-mobile-date-field {
   border-color: #334155 !important;
 }
 
-html[data-emp-theme="dark"] .emp-pwa-shell .emp-mobile-date-field input[type="date"] {
+html[data-emp-theme="dark"]
+  .emp-pwa-shell
+  .emp-mobile-date-field
+  input[type="date"] {
   color-scheme: light;
 }
 
@@ -921,7 +987,9 @@ html[data-emp-theme="dark"] .emp-pwa-shell .emp-mobile-date-field input[type="da
 }
 
 .emp-pwa-shell .emp-mobile-date-field input[type="date"]::-webkit-datetime-edit,
-.emp-pwa-shell .emp-mobile-date-field input[type="date"]::-webkit-date-and-time-value {
+.emp-pwa-shell
+  .emp-mobile-date-field
+  input[type="date"]::-webkit-date-and-time-value {
   opacity: 0;
 }
 
@@ -951,9 +1019,15 @@ html[data-emp-theme="dark"] .emp-pwa-shell .emp-mobile-date-field input[type="da
 }
 
 @keyframes mobile-msg-sent-pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .mobile-msg-sent-pop {
@@ -976,8 +1050,12 @@ html[data-emp-theme="dark"] .emp-pwa-shell .emp-mobile-date-field input[type="da
 }
 
 @keyframes mobile-sheet-backdrop-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .mobile-sheet-backdrop {
@@ -987,7 +1065,9 @@ html[data-emp-theme="dark"] .emp-pwa-shell .emp-mobile-date-field input[type="da
 .mobile-input-focus-ring:focus-within {
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
   border-color: rgba(79, 70, 229, 0.35);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .mobile-send-btn:not(:disabled):active {
@@ -1004,8 +1084,14 @@ html[data-emp-theme="dark"] .emp-pwa-shell .emp-mobile-date-field input[type="da
 
 /* ── Page content fade-in ───────────────────────────────────────────────── */
 @keyframes page-fade-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .page-content-enter {
   display: flex;
@@ -1027,8 +1113,12 @@ html[data-emp-theme="dark"] .emp-pwa-shell .emp-mobile-date-field input[type="da
 
 /* ── Skeleton pulse override for table rows ────────────────────────────── */
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 .skeleton-shimmer {
   background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e4 50%, #f0f0f0 75%);
@@ -1102,7 +1192,9 @@ html[data-emp-theme="dark"] .emp-pwa-shell .emp-mobile-date-field input[type="da
 
 .emp-portal-desktop .rounded-2xl.border.border-gray-100 {
   border-radius: 10px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .emp-portal-desktop .rounded-2xl.border.border-gray-100:hover {
@@ -1331,7 +1423,9 @@ html[data-emp-theme="dark"] .emp-pwa-shell .emp-mobile-date-field input[type="da
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .emp-portal-desktop .emp-ws-nav-tile:hover {
@@ -1355,14 +1449,16 @@ html[data-emp-theme="dark"] .emp-pwa-shell .emp-mobile-date-field input[type="da
   }
 }
 
-
 @layer utilities {
   .grain {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
   }
 
   .dotted-bg {
-    background-image: radial-gradient(hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px);
+    background-image: radial-gradient(
+      hsl(var(--muted-foreground) / 0.15) 1px,
+      transparent 1px
+    );
     background-size: 18px 18px;
   }
 
@@ -1372,8 +1468,14 @@ html[data-emp-theme="dark"] .emp-pwa-shell .emp-mobile-date-field input[type="da
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Hidden scrollbar (overflow still works) ── */
@@ -1494,8 +1596,14 @@ html.dark .hrms-admin-content [data-hrms-table-header] {
   color: hsl(var(--muted-foreground)) !important;
 }
 
-html.dark .hrms-admin-content [data-hrms-table-header] .hover\:text-foreground:hover,
-html.dark .hrms-admin-content [data-hrms-table-header] [class*="hover:text-foreground"]:hover {
+html.dark
+  .hrms-admin-content
+  [data-hrms-table-header]
+  .hover\:text-foreground:hover,
+html.dark
+  .hrms-admin-content
+  [data-hrms-table-header]
+  [class*="hover:text-foreground"]:hover {
   color: hsl(var(--foreground)) !important;
 }
 
@@ -1517,7 +1625,6 @@ html.dark .hrms-admin-content [data-hrms-table-header] [class*="hover:text-foreg
   min-height: 0;
   flex: 1 1 auto;
 }
-
 
 .hrms-admin-content .text-indigo-600,
 .hrms-admin-content .text-indigo-700 {
@@ -1607,7 +1714,11 @@ html.dark .form-drawer-body .absolute.z-10 {
   border-color: hsl(var(--border));
 }
 
-html.dark .form-drawer-body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+html.dark
+  .form-drawer-body
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="file"]
+  ):not([type="hidden"]),
 html.dark .form-drawer-body textarea {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
@@ -1634,8 +1745,12 @@ html.dark .app-select:focus {
 
 /* ── Premium SaaS micro-interactions ── */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton-shimmer {
@@ -1650,7 +1765,9 @@ html.dark .app-select:focus {
 }
 
 /* Aether HR app form styling (visual only) */
-.aether-form-modal .form-drawer-body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.aether-form-modal
+  .form-drawer-body
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 .aether-form-modal .form-drawer-body textarea,
 .aether-form-modal .form-drawer-body select {
   background-color: #f8f9ff !important;
@@ -1681,25 +1798,64 @@ html.dark .app-select:focus {
 }
 
 /* Employee portal — force white data surfaces on light theme */
-html:not(.dark):not([data-emp-theme="dark"]) .emp-portal-desktop .hrms-admin-content table,
-html:not(.dark):not([data-emp-theme="dark"]) .emp-portal-desktop .hrms-admin-content thead,
-html:not(.dark):not([data-emp-theme="dark"]) .emp-portal-desktop .hrms-admin-content tbody,
-html:not(.dark):not([data-emp-theme="dark"]) .emp-portal-desktop .hrms-admin-content tbody tr,
-html:not(.dark):not([data-emp-theme="dark"]) .emp-portal-desktop .hrms-admin-content thead tr,
-html:not(.dark):not([data-emp-theme="dark"]) .emp-portal-desktop .hrms-admin-content thead th,
-html:not(.dark):not([data-emp-theme="dark"]) .emp-portal-desktop .hrms-admin-content tbody td {
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-portal-desktop
+  .hrms-admin-content
+  table,
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-portal-desktop
+  .hrms-admin-content
+  thead,
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-portal-desktop
+  .hrms-admin-content
+  tbody,
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-portal-desktop
+  .hrms-admin-content
+  tbody
+  tr,
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-portal-desktop
+  .hrms-admin-content
+  thead
+  tr,
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-portal-desktop
+  .hrms-admin-content
+  thead
+  th,
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-portal-desktop
+  .hrms-admin-content
+  tbody
+  td {
   background-color: #ffffff !important;
 }
 
 /* Report matrix headers — keep muted teal tint readable in light mode */
-html:not(.dark):not([data-emp-theme="dark"]) .emp-portal-desktop .hrms-admin-content thead[data-hrms-report-header],
-html:not(.dark):not([data-emp-theme="dark"]) .emp-portal-desktop .hrms-admin-content thead[data-hrms-report-header] tr,
-html:not(.dark):not([data-emp-theme="dark"]) .emp-portal-desktop .hrms-admin-content thead[data-hrms-report-header] th {
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-portal-desktop
+  .hrms-admin-content
+  thead[data-hrms-report-header],
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-portal-desktop
+  .hrms-admin-content
+  thead[data-hrms-report-header]
+  tr,
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-portal-desktop
+  .hrms-admin-content
+  thead[data-hrms-report-header]
+  th {
   background-color: #f0f7f6 !important;
   color: #0f766e !important;
 }
 
-html:not(.dark):not([data-emp-theme="dark"]) .emp-portal-desktop .hrms-admin-content .bg-card {
+html:not(.dark):not([data-emp-theme="dark"])
+  .emp-portal-desktop
+  .hrms-admin-content
+  .bg-card {
   background-color: #ffffff !important;
 }
 
@@ -1718,4 +1874,49 @@ html:not(.dark):not([data-emp-theme="dark"]) .emp-portal-desktop .hrms-admin-con
 html.emp-layout-mobile .emp-portal-desktop,
 html[data-emp-layout="mobile"] .emp-portal-desktop {
   display: none !important;
+}
+
+/* Team approval popup: support employee dark mode outside the app shell */
+html[data-emp-theme="dark"] .emp-team-approval-dialog {
+  background-color: #121212 !important;
+  color: #f5f5f5 !important;
+  border-color: #2a2a2a !important;
+  color-scheme: dark;
+}
+
+html[data-emp-theme="dark"] .emp-team-approval-dialog .bg-white,
+html[data-emp-theme="dark"] .emp-team-approval-dialog [class*="bg-white"] {
+  background-color: #1a1a1a !important;
+}
+
+html[data-emp-theme="dark"] .emp-team-approval-dialog [class*="bg-[#f8f9fb]"],
+html[data-emp-theme="dark"] .emp-team-approval-dialog [class*="bg-[#f2f4f7]"] {
+  background-color: #121212 !important;
+}
+
+html[data-emp-theme="dark"] .emp-team-approval-dialog select,
+html[data-emp-theme="dark"] .emp-team-approval-dialog .app-form-control {
+  background-color: #1a1a1a !important;
+  color: #f5f5f5 !important;
+  border-color: #2a2a2a !important;
+  color-scheme: dark;
+}
+
+html[data-emp-theme="dark"] .emp-team-approval-dialog .text-gray-900,
+html[data-emp-theme="dark"] .emp-team-approval-dialog .text-gray-800 {
+  color: #f5f5f5 !important;
+}
+
+html[data-emp-theme="dark"] .emp-team-approval-dialog .text-gray-600,
+html[data-emp-theme="dark"] .emp-team-approval-dialog .text-gray-500 {
+  color: #a3a3a3 !important;
+}
+
+html[data-emp-theme="dark"] .emp-team-approval-dialog .border-t,
+html[data-emp-theme="dark"] .emp-team-approval-dialog .border-b,
+html[data-emp-theme="dark"] .emp-team-approval-dialog .border-gray-200,
+html[data-emp-theme="dark"]
+  .emp-team-approval-dialog
+  [class*="border-[#cbd5e1]"] {
+  border-color: #2a2a2a !important;
 }
