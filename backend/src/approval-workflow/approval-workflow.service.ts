@@ -785,6 +785,9 @@ export class ApprovalWorkflowService {
   }) {
     return this.prisma.approvalWorkflow.findMany({
       where: {
+        workflowName: {
+          not: '__SYSTEM_DEFAULT_ATTENDANCE_REGULARISATION__',
+        },
         ...(filters?.companyID && {
           companyID: filters.companyID,
         }),
@@ -794,14 +797,11 @@ export class ApprovalWorkflowService {
         }),
 
         ...(filters?.companyModuleID && {
-          companyModuleID:
-            filters.companyModuleID,
+          companyModuleID: filters.companyModuleID,
         }),
 
-        ...(typeof filters?.workflowStatus ===
-          'boolean' && {
-          workflowStatus:
-            filters.workflowStatus,
+        ...(typeof filters?.workflowStatus === 'boolean' && {
+          workflowStatus: filters.workflowStatus,
         }),
 
         ...(filters?.search?.trim() && {
