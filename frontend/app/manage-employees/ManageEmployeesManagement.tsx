@@ -1312,10 +1312,9 @@ export function ManageEmployeesManagement() {
         );
 
         const canSelectSelfAsManager =
-          editingRow?.isCompanyOwner === true &&
+          editingRow != null &&
           currentEmployeeId > 0 &&
           currentEmployeeId === Number(editingRow.id);
-
         const excludeIds = new Set(linkedEmployees.map((le) => le.id));
 
         if (editingRow && !canSelectSelfAsManager) {

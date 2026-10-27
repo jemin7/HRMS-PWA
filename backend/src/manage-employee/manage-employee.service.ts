@@ -3996,12 +3996,10 @@ export class ManageEmployeeService {
       // and only while signed in to their own employee account.
       if (
         requestedIds.includes(employeeId) &&
-        (employee.isCompanyOwner !== true ||
-          !isEmployeeAccount ||
-          actorEmployeeId !== employeeId)
+        (!isEmployeeAccount || actorEmployeeId !== employeeId)
       ) {
         throw new ForbiddenException(
-          'Only the verified company owner may assign themself as their own manager',
+          'You can assign yourself as your own manager only from your own employee account',
         );
       }
 

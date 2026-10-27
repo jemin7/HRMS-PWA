@@ -86,12 +86,27 @@ export function EmpReimbursementApprovalSheet({
           body: JSON.stringify({ actorRole: "MANAGER" }),
         },
       );
-      if (!res.ok) throw new Error("Approve failed");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+
+        const message = Array.isArray(errorData?.message)
+          ? errorData.message.join(", ")
+          : typeof errorData?.message === "string"
+            ? errorData.message
+            : `Approval failed (HTTP ${res.status})`;
+
+        throw new Error(message);
+      }
+
       toast.success("Item approved (Voucher)");
       await load();
       onDone();
-    } catch {
-      toast.error("Could not approve item");
+    } catch (error) {
+      console.error("Reimbursement approval failed:", error);
+
+      toast.error(
+        error instanceof Error ? error.message : "Could not approve item",
+      );
     } finally {
       setActing(false);
     }
