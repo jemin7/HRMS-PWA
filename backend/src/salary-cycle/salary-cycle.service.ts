@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSalaryCycleDto } from './dto/create-salary-cycle.dto';
 import { UpdateSalaryCycleDto } from './dto/update-salary-cycle.dto';
@@ -17,9 +21,42 @@ export class SalaryCycleService {
   }
 
   async create(dto: CreateSalaryCycleDto) {
+    let serviceProviderID = dto.serviceProviderID ?? null;
+
+    // The selected company's saved provider association is authoritative.
+    if (dto.companyID != null) {
+      const company = await this.prisma.company.findUnique({
+        where: { id: dto.companyID },
+        select: {
+          id: true,
+          serviceProviderID: true,
+        },
+      });
+
+      if (!company) {
+        throw new NotFoundException(
+          'The selected company was not found. Refresh the page and try again.',
+        );
+      }
+
+      serviceProviderID = company.serviceProviderID ?? null;
+    } else if (serviceProviderID != null) {
+      // Validate the provider if no company was supplied.
+      const provider = await this.prisma.serviceProvider.findUnique({
+        where: { id: serviceProviderID },
+        select: { id: true },
+      });
+
+      if (!provider) {
+        throw new BadRequestException(
+          'The selected service provider does not exist. Refresh the page and try again.',
+        );
+      }
+    }
+
     return this.prisma.salaryCycle.create({
       data: {
-        serviceProviderID: dto.serviceProviderID ?? null,
+        serviceProviderID,
         companyID: dto.companyID ?? null,
         branchesID: dto.branchesID ?? null,
         salaryCycleName: dto.salaryCycleName ?? null,
@@ -36,14 +73,13 @@ export class SalaryCycleService {
     });
   }
 
-   async findByCompany(companyID: number) {
+  async findByCompany(companyID: number) {
     return this.prisma.salaryCycle.findMany({
       where: { companyID },
       include: this.includeRels(),
       orderBy: { id: 'desc' },
     });
   }
-
 
   async findOne(id: number) {
     const rec = await this.prisma.salaryCycle.findUnique({
